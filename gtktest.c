@@ -1,3 +1,4 @@
+/* reallly long line for testing purposes  reallly long line for testing purposes  reallly long line for testing purposes  reallly long line for testing purposes  reallly long line for testing purposes  reallly long line for testing purposes  reallly long line for testing purposes  reallly long line for testing purposes */
 #include <gtk/gtk.h>
 #include <cairo.h>
 #include <cairo-ft.h>
@@ -6,18 +7,72 @@
 #include FT_FREETYPE_H
 #include <stdlib.h>
 #include <stdint.h>
+#include <stdio.h>
 
 FT_Library library;
 FT_Face face;
 cairo_font_face_t *cairoface;
 
-char *blap[] = { "T. L. WÀfWAfanculò", "ProoooooooOOOOOOOOooooooOOOOOOOooooooottttt", "blap" };
+
+typedef struct _line_t {
+  char *text;
+  int allocated_text;
+  int text_cap;
+} line_t;
+
+line_t *lines;
+int allocated_lines;
+int lines_cap;
+
+void init_line(line_t *line) {
+  line->text = NULL;
+  line->allocated_text = 0;
+  line->text_cap = 0;
+}
+
+void init_lines() {
+  int i = 0;
+  allocated_lines = 10;
+  lines = malloc(allocated_lines * sizeof(line_t));
+  lines_cap = 0;
+  if (!lines) {
+    perror("lines allocation failed");
+    exit(EXIT_FAILURE);
+  }
+  for (i = 0; i < allocated_lines; ++i) {
+    init_line(lines+i);
+  }
+}
+
+void grow_lines() {
+  int new_allocated_lines = allocated_lines * 2;
+  int i;
+  lines = realloc(lines, new_allocated_lines * sizeof(line_t));
+  if (!lines) {
+    perror("lines allocation failed");
+    exit(EXIT_FAILURE);
+  }
+  for (i = allocated_lines; i < new_allocated_lines; ++i) {
+    init_line(lines+i);
+  }
+  allocated_lines = new_allocated_lines;
+}
+
+void grow_line(line_t *line) {
+  if (line->allocated_text == 0) {
+    line->allocated_text = 10;
+  } else {
+    line->allocated_text *= 2;
+  }
+
+  line->text = realloc(line->text, line->allocated_text * sizeof(char));
+}
 
 /* TODO:
-   - caricare da un file esterno
-   - non scrivere oltre (o prima) l'area disegnabile    
-   - scrollbars
-   - trucchetto degli spazi iniziali
+   - vertical scrollbar
+   - initial space trick
+   - cursor positioning
+   - drawing header
 */
 
 uint8_t first_byte_processing(uint8_t ch) {
@@ -37,13 +92,16 @@ uint8_t first_byte_processing(uint8_t ch) {
   return ch;
 }
 
-gboolean expose_event_callback (GtkWidget *widget, GdkEventExpose *event, gpointer data) {
+gboolean expose_event_callback(GtkWidget *widget, GdkEventExpose *event, gpointer data) {
   cairo_t *cr = gdk_cairo_create(widget->window);
   int i;
   double y ;
   cairo_font_extents_t font_extents;
   cairo_glyph_t *glyphs;
   int allocated_glyphs = 10;
+  GtkAllocation allocation;
+
+  gtk_widget_get_allocation(widget, &allocation);
 
   glyphs = malloc(allocated_glyphs*sizeof(cairo_glyph_t));
   if (!glyphs) {
@@ -53,40 +111,47 @@ gboolean expose_event_callback (GtkWidget *widget, GdkEventExpose *event, gpoint
 
   cairo_set_source_rgb(cr, 255, 255, 255);
   cairo_set_font_face(cr, cairoface);
-  cairo_set_font_size(cr, 40);
+  cairo_set_font_size(cr, 25);
 
   cairo_scaled_font_extents(cairo_get_scaled_font(cr), &font_extents);
 
   y = font_extents.height;
 
-  for (i = 0; i < 3; ++i) {
+  for (i = 0; i < lines_cap; ++i) {
     FT_Face scaledface = cairo_ft_scaled_font_lock_face(cairo_get_scaled_font(cr));
     int src, dst;
     double x = 5.0; /* left margin */
     FT_Bool use_kerning = FT_HAS_KERNING(scaledface);
     FT_UInt previous = 0;
+    char *text = lines[i].text;
 
-    for (src = 0, dst = 0; src < strlen(blap[i]); ++dst) {
+    if (y - font_extents.height > allocation.height) break; /* if we passed the visible area the just stop displaying */
+    if (y < 0) { /* If the line is before the visible area, just increment y and move to the next line */
+      y += font_extents.height;
+      continue;
+    }
+
+    for (src = 0, dst = 0; src < lines[i].text_cap;) {
       cairo_text_extents_t extents;
       uint32_t code;
       FT_UInt glyph_index;
 
-      if ((uint8_t)blap[i][src] > 127) {
-	printf("first byte\n");
-	code = first_byte_processing(blap[i][src]);
+      /* get next unicode codepoint in code, advance src */
+      if ((uint8_t)text[src] > 127) {
+	code = first_byte_processing(text[src]);
 	++src;
 
-	for (; ((uint8_t)blap[i][src] > 127) && (src < strlen(blap[i])); ++src) {
+	for (; ((uint8_t)text[src] > 127) && (src < lines[i].text_cap); ++src) {
 	  code <<= 6;
-	  code += (blap[i][src] & 0x3F);
+	  code += (text[src] & 0x3F);
 	}
       } else {
-	code = blap[i][src];
+	code = text[src];
 	++src;
       }
-
       glyph_index = FT_Get_Char_Index(scaledface, code);
 
+      /* Kerning correction for x */
       if (use_kerning && previous && glyph_index) {
 	FT_Vector delta;
 
@@ -102,12 +167,19 @@ gboolean expose_event_callback (GtkWidget *widget, GdkEventExpose *event, gpoint
 	  
       previous = glyphs[dst].index = glyph_index;
       cairo_glyph_extents(cr, glyphs+dst, 1, &extents);
-      glyphs[dst].x = x;
+
+      if (x + extents.x_advance >= 0) { /* only show visible glyphs */
+	glyphs[dst].x = x;
+	glyphs[dst].y = y;
+	
+	if (glyphs[dst].x > allocation.width) { ++dst; break; }
+	++dst;
+      }
+
       x += extents.x_advance;
-      glyphs[dst].y = y;
     }
     
-    cairo_show_glyphs(cr, glyphs, strlen(blap[i]));
+    cairo_show_glyphs(cr, glyphs, dst);
     y += font_extents.height;
   }
 
@@ -118,11 +190,48 @@ gboolean expose_event_callback (GtkWidget *widget, GdkEventExpose *event, gpoint
   return TRUE;
 }
 
+void load_text_file(const char *filename) {
+  FILE *fin = fopen(filename, "r");
+  char ch;
+  if (!fin) {
+    perror("Couldn't open input file");
+    exit(EXIT_FAILURE);
+  }
+
+  while ((ch = fgetc(fin)) != EOF) {
+    if (lines_cap >= allocated_lines) {
+      grow_lines();
+    }
+    if (ch == '\n') {
+      ++lines_cap;
+    } else {
+      if (lines[lines_cap].text_cap >= lines[lines_cap].allocated_text) {
+	grow_line(lines+lines_cap);
+      }
+      lines[lines_cap].text[lines[lines_cap].text_cap] = ch;
+      ++(lines[lines_cap].text_cap);
+    }
+  }
+
+  fclose(fin);
+}
+
 int main(int argc, char *argv[]) {
-  GtkWidget *window, *drar;
+  GtkWidget *window;
+  GtkWidget *drar;
   int error;
 
   gtk_init(&argc, &argv);
+
+  if (argc <= 1) {
+    printf("Nothing to show\n");
+    exit(EXIT_SUCCESS);
+  }
+
+  printf("Will show: %s\n", argv[1]);
+
+  init_lines();
+  load_text_file(argv[1]);
 
   error = FT_Init_FreeType(&library);
 
@@ -147,12 +256,24 @@ int main(int argc, char *argv[]) {
 
   g_signal_connect_swapped(G_OBJECT(window), "destroy", G_CALLBACK(gtk_main_quit), NULL);
 
+  
   drar = gtk_drawing_area_new();
-  gtk_widget_set_size_request(drar, 100, 100);
-  gtk_container_add(GTK_CONTAINER(window), drar);
 
   g_signal_connect(G_OBJECT(drar), "expose_event",
-		   G_CALLBACK(expose_event_callback), NULL); 
+		   G_CALLBACK(expose_event_callback), NULL);
+
+  {
+    GtkWidget *drarscroll = gtk_vscrollbar_new(NULL);
+    GtkWidget *hbox = gtk_hbox_new(FALSE, 1);
+
+    gtk_container_add(GTK_CONTAINER(hbox), drar);
+    gtk_container_add(GTK_CONTAINER(hbox), drarscroll);
+
+    gtk_box_set_child_packing(GTK_BOX(hbox), drar, TRUE, TRUE, 0, GTK_PACK_START);
+    gtk_box_set_child_packing(GTK_BOX(hbox), drarscroll, FALSE, FALSE, 0, GTK_PACK_END);
+
+    gtk_container_add(GTK_CONTAINER(window), hbox);
+  }
 
   gtk_widget_show_all(window);
 
