@@ -6,5 +6,5 @@ all: gtktest
 clean:
 	rm *.o gtktest
 
-gtktest: gtktest.o
-	$(CC) -o $@ $< $(LIBS) 
+gtktest: gtktest.o 
+	$(CC) -o $@ $^ $(LIBS) 
