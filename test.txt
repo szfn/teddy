@@ -1,0 +1,3 @@
+  Spazi iniziali
+	Tab iniziale
+tab	dentro il testo
