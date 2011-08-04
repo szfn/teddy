@@ -12,6 +12,9 @@
 FT_Library library;
 FT_Face face;
 cairo_font_face_t *cairoface;
+cairo_scaled_font_t *cairofont;
+cairo_matrix_t font_size_matrix, font_ctm;
+cairo_font_options_t *font_options;
 GtkObject *adjustment;
 GtkWidget *drar;
 int tab_width = 4;
@@ -117,17 +120,16 @@ gboolean expose_event_callback(GtkWidget *widget, GdkEventExpose *event, gpointe
     cairo_fill(cr);
 
     cairo_set_source_rgb(cr, 255, 255, 255);
-    cairo_set_font_face(cr, cairoface);
-    cairo_set_font_size(cr, 16);
+    cairo_set_scaled_font(cr, cairofont);
 
-    cairo_scaled_font_extents(cairo_get_scaled_font(cr), &font_extents);
+    cairo_scaled_font_extents(cairofont, &font_extents);
 
     y = font_extents.height - gtk_adjustment_get_value(GTK_ADJUSTMENT(adjustment));
 
     /*printf("DRAWING!\n");*/
 
     for (i = 0; i < lines_cap; ++i) {
-        FT_Face scaledface = cairo_ft_scaled_font_lock_face(cairo_get_scaled_font(cr));
+        FT_Face scaledface = cairo_ft_scaled_font_lock_face(cairofont);
         int src, dst;
         double x = 5.0; /* left margin */
         FT_Bool use_kerning = FT_HAS_KERNING(scaledface);
@@ -298,7 +300,15 @@ int main(int argc, char *argv[]) {
         exit(EXIT_FAILURE);
     }
 
+
+
     cairoface = cairo_ft_font_face_create_for_ft_face(face, 0);
+
+    cairo_matrix_init(&font_size_matrix, 16, 0, 0, 16, 0, 0);
+    cairo_matrix_init(&font_ctm, 1, 0, 0, 1, 0, 0);
+    font_options = cairo_font_options_create();
+                      
+    cairofont = cairo_scaled_font_create(cairoface, &font_size_matrix, &font_ctm, font_options);
 
     window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
 
@@ -333,3 +343,10 @@ int main(int argc, char *argv[]) {
 
     return 0;
 }
+
+/* Font CTM matrix:
+   xx = 1; yx = 0; xy = 0; yy = 1; x0 = 0; y0 = 0;
+
+   Font Resize matrix:
+   xx = pixel_size; yx = 0; xy = 0; yy = pixel_size; x0 = 0; y0 = 0;
+*/
