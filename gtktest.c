@@ -9,69 +9,14 @@
 #include <stdint.h>
 #include <stdio.h>
 
+#include "buffer.h"
+
 FT_Library library;
-FT_Face face;
-cairo_font_face_t *cairoface;
-cairo_scaled_font_t *cairofont;
-cairo_matrix_t font_size_matrix, font_ctm;
-cairo_font_options_t *font_options;
+
+buffer_t *buffer;
+
 GtkObject *adjustment;
 GtkWidget *drar;
-int tab_width = 4;
-
-typedef struct _line_t {
-    char *text;
-    int allocated_text;
-    int text_cap;
-} line_t;
-
-line_t *lines;
-int allocated_lines;
-int lines_cap;
-
-void init_line(line_t *line) {
-    line->text = NULL;
-    line->allocated_text = 0;
-    line->text_cap = 0;
-}
-
-void init_lines() {
-    int i = 0;
-    allocated_lines = 10;
-    lines = malloc(allocated_lines * sizeof(line_t));
-    lines_cap = 0;
-    if (!lines) {
-        perror("lines allocation failed");
-        exit(EXIT_FAILURE);
-    }
-    for (i = 0; i < allocated_lines; ++i) {
-        init_line(lines+i);
-    }
-}
-
-void grow_lines() {
-    int new_allocated_lines = allocated_lines * 2;
-    int i;
-    lines = realloc(lines, new_allocated_lines * sizeof(line_t));
-    if (!lines) {
-        perror("lines allocation failed");
-        exit(EXIT_FAILURE);
-    }
-    for (i = allocated_lines; i < new_allocated_lines; ++i) {
-        init_line(lines+i);
-    }
-    allocated_lines = new_allocated_lines;
-}
-
-void grow_line(line_t *line) {
-    if (line->allocated_text == 0) {
-        line->allocated_text = 10;
-    } else {
-        line->allocated_text *= 2;
-    }
-
-    line->text = realloc(line->text, line->allocated_text * sizeof(char));
-}
 
 /* TODO:
    - create glyphs at load time
@@ -120,21 +65,21 @@ gboolean expose_event_callback(GtkWidget *widget, GdkEventExpose *event, gpointe
     cairo_fill(cr);
 
     cairo_set_source_rgb(cr, 255, 255, 255);
-    cairo_set_scaled_font(cr, cairofont);
+    cairo_set_scaled_font(cr, buffer->cairofont);
 
-    cairo_scaled_font_extents(cairofont, &font_extents);
+    cairo_scaled_font_extents(buffer->cairofont, &font_extents);
 
     y = font_extents.height - gtk_adjustment_get_value(GTK_ADJUSTMENT(adjustment));
 
     /*printf("DRAWING!\n");*/
 
-    for (i = 0; i < lines_cap; ++i) {
-        FT_Face scaledface = cairo_ft_scaled_font_lock_face(cairofont);
+    for (i = 0; i < buffer->lines_cap; ++i) {
+        FT_Face scaledface = cairo_ft_scaled_font_lock_face(buffer->cairofont);
         int src, dst;
         double x = 5.0; /* left margin */
         FT_Bool use_kerning = FT_HAS_KERNING(scaledface);
         FT_UInt previous = 0;
-        char *text = lines[i].text;
+        char *text = buffer->lines[i].text;
         int initial_spaces = 1;
         double em_advance;
 
@@ -150,7 +95,7 @@ gboolean expose_event_callback(GtkWidget *widget, GdkEventExpose *event, gpointe
             em_advance = em_extents.width;
         }
 
-        for (src = 0, dst = 0; src < lines[i].text_cap;) {
+        for (src = 0, dst = 0; src < buffer->lines[i].text_cap;) {
             uint32_t code;
             FT_UInt glyph_index;
             cairo_text_extents_t extents;
@@ -160,7 +105,7 @@ gboolean expose_event_callback(GtkWidget *widget, GdkEventExpose *event, gpointe
                 code = first_byte_processing(text[src]);
                 ++src;
 
-                for (; ((uint8_t)text[src] > 127) && (src < lines[i].text_cap); ++src) {
+                for (; ((uint8_t)text[src] > 127) && (src < buffer->lines[i].text_cap); ++src) {
                     code <<= 6;
                     code += (text[src] & 0x3F);
                 }
@@ -199,13 +144,13 @@ gboolean expose_event_callback(GtkWidget *widget, GdkEventExpose *event, gpointe
                 if (code == 0x20) {
                     extents.x_advance = em_advance;
                 } else if (code == 0x09) {
-                    extents.x_advance = em_advance * tab_width;
+                    extents.x_advance = em_advance * buffer->tab_width;
                 } else {
                     initial_spaces = 0;
                 }
             } else {
                 if (code == 0x09) {
-                    extents.x_advance *= tab_width;
+                    extents.x_advance *= buffer->tab_width;
                 }
             }
 
@@ -227,7 +172,7 @@ gboolean expose_event_callback(GtkWidget *widget, GdkEventExpose *event, gpointe
         y += font_extents.height;
     }
 
-    gtk_adjustment_set_upper(GTK_ADJUSTMENT(adjustment), (lines_cap+1) * font_extents.height);
+    gtk_adjustment_set_upper(GTK_ADJUSTMENT(adjustment), (buffer->lines_cap+1) * font_extents.height);
     gtk_adjustment_set_page_size(GTK_ADJUSTMENT(adjustment), allocation.height);
     gtk_adjustment_set_page_increment(GTK_ADJUSTMENT(adjustment), allocation.height/2);
 
@@ -244,37 +189,17 @@ gboolean scrolled_callback(GtkWidget *widget, GdkEventExpose *event, gpointer da
     return TRUE;
 }
 
-void load_text_file(const char *filename) {
-    FILE *fin = fopen(filename, "r");
-    char ch;
-    if (!fin) {
-        perror("Couldn't open input file");
-        exit(EXIT_FAILURE);
-    }
-
-    while ((ch = fgetc(fin)) != EOF) {
-        if (lines_cap >= allocated_lines) {
-            grow_lines();
-        }
-        if (ch == '\n') {
-            ++lines_cap;
-        } else {
-            if (lines[lines_cap].text_cap >= lines[lines_cap].allocated_text) {
-                grow_line(lines+lines_cap);
-            }
-            lines[lines_cap].text[lines[lines_cap].text_cap] = ch;
-            ++(lines[lines_cap].text_cap);
-        }
-    }
-
-    fclose(fin);
-}
-
 int main(int argc, char *argv[]) {
     GtkWidget *window;
     int error;
 
     gtk_init(&argc, &argv);
+
+    error = FT_Init_FreeType(&library);
+    if (error) {
+        printf("Freetype initialization error\n");
+        exit(EXIT_FAILURE);
+    }
 
     if (argc <= 1) {
         printf("Nothing to show\n");
@@ -283,32 +208,9 @@ int main(int argc, char *argv[]) {
 
     printf("Will show: %s\n", argv[1]);
 
-    init_lines();
-    load_text_file(argv[1]);
+    buffer = buffer_create(&library);
 
-    error = FT_Init_FreeType(&library);
-
-    if (error) {
-        printf("Freetype initialization error\n");
-        exit(EXIT_FAILURE);
-    }
-
-    error = FT_New_Face(library, "/usr/share/fonts/truetype/msttcorefonts/arial.ttf", 0, &face);
-
-    if (error) {
-        printf("Error loading freetype font\n");
-        exit(EXIT_FAILURE);
-    }
-
-
-
-    cairoface = cairo_ft_font_face_create_for_ft_face(face, 0);
-
-    cairo_matrix_init(&font_size_matrix, 16, 0, 0, 16, 0, 0);
-    cairo_matrix_init(&font_ctm, 1, 0, 0, 1, 0, 0);
-    font_options = cairo_font_options_create();
-                      
-    cairofont = cairo_scaled_font_create(cairoface, &font_size_matrix, &font_ctm, font_options);
+    load_text_file(buffer, argv[1]);
 
     window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
 
@@ -343,10 +245,3 @@ int main(int argc, char *argv[]) {
 
     return 0;
 }
-
-/* Font CTM matrix:
-   xx = 1; yx = 0; xy = 0; yy = 1; x0 = 0; y0 = 0;
-
-   Font Resize matrix:
-   xx = pixel_size; yx = 0; xy = 0; yy = pixel_size; x0 = 0; y0 = 0;
-*/
