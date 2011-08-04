@@ -232,7 +232,7 @@ void load_text_file(buffer_t *buffer, const char *filename) {
 }
 
 void buffer_cursor_position(buffer_t *buffer, double origin_x, double origin_y, double *x, double *y) {
-    int i;
+    /*int i;*/
     line_t *line;
     
     *y = origin_y + (buffer->line_height * buffer->cursor_line);
@@ -241,11 +241,17 @@ void buffer_cursor_position(buffer_t *buffer, double origin_x, double origin_y, 
     if (buffer->cursor_line >= buffer->lines_cap) return;
 
     line = buffer->lines + buffer->cursor_line;
-    
+
+    if (buffer->cursor_glyph < line->glyphs_cap) {
+        *x = line->glyphs[buffer->cursor_glyph].x;
+    } else if (line->glyphs_cap > 0) {
+        *x = line->glyphs[line->glyphs_cap-1].x + line->glyph_info[line->glyphs_cap-1].x_advance;
+    }
+    /*
     for (i = 0; (i < buffer->cursor_glyph) && (i < line->glyphs_cap); ++i) {
         *x += line->glyph_info[i].kerning_correction;
         *x += line->glyph_info[i].x_advance;
-    }
+        }*/
 }
 
 buffer_t *buffer_create(FT_Library *library) {

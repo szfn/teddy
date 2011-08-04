@@ -8,6 +8,7 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <gdk/gdkkeysyms.h>
 
 #include "buffer.h"
 
@@ -51,6 +52,70 @@ double calculate_y_origin(GtkAllocation *allocation) {
     }
 
     return origin_y;
+}
+
+static void redraw_cursor_line(gboolean large) {
+    double origin_x, origin_y;
+    double x, y, height, width;
+    GtkAllocation allocation;
+
+    gtk_widget_get_allocation(drar, &allocation);
+
+    origin_x = calculate_x_origin(&allocation);
+    origin_y = calculate_y_origin(&allocation);
+
+    buffer_cursor_position(buffer, origin_x, origin_y, &x, &y);
+
+    y -= buffer->ascent;
+    x = 0.0;
+    height = buffer->ascent + buffer->descent;
+    width = allocation.width;
+
+    if (large) {
+        y -= buffer->line_height;
+        height += 2*buffer->line_height;
+    }
+
+    gtk_widget_queue_draw_area(drar, x, y, width, height);
+}
+
+static void move_cursor(int delta_line, int delta_char) {
+    redraw_cursor_line(FALSE);
+    
+    buffer->cursor_line += delta_line;
+
+    if (buffer->cursor_line >= buffer->lines_cap) buffer->cursor_line = buffer->lines_cap-1;
+    if (buffer->cursor_line < 0) buffer->cursor_line = 0;    
+
+    buffer->cursor_glyph += delta_char;
+
+    if (buffer->cursor_line >= buffer->lines_cap) buffer->cursor_glyph = 0; /* only happens when there are no lines */
+    if (buffer->cursor_glyph > buffer->lines[buffer->cursor_line].glyphs_cap) buffer->cursor_glyph = buffer->lines[buffer->cursor_line].glyphs_cap;
+    if (buffer->cursor_glyph < 0) buffer->cursor_glyph = 0;
+
+    cursor_visible = TRUE;
+
+    redraw_cursor_line(FALSE);
+}
+
+static gboolean key_press_callback(GtkWidget *widget, GdkEventKey *event, gpointer data) {
+    switch(event->keyval) {
+    case GDK_KEY_Up:
+        move_cursor(-1, 0);
+        break;
+    case GDK_KEY_Down:
+        move_cursor(1, 0);
+        break;
+    case GDK_KEY_Right:
+        move_cursor(0, 1);
+        break;
+    case GDK_KEY_Left:
+        move_cursor(0, -1);
+        break;
+    }
+
+
+    return TRUE;
 }
 
 gboolean expose_event_callback(GtkWidget *widget, GdkEventExpose *event, gpointer data) {
@@ -120,38 +185,22 @@ gboolean expose_event_callback(GtkWidget *widget, GdkEventExpose *event, gpointe
     return TRUE;
 }
 
-gboolean scrolled_callback(GtkWidget *widget, GdkEvent *event, gpointer data) {
+static gboolean scrolled_callback(GtkWidget *widget, GdkEvent *event, gpointer data) {
     /*printf("Scrolled to: %g\n", gtk_adjustment_get_value(GTK_ADJUSTMENT(adjustment)));*/
     gtk_widget_queue_draw(drar);
     return TRUE;
 }
 
-gboolean hscrolled_callback(GtkWidget *widget, GdkEvent *event, gpointer data) {
+static gboolean hscrolled_callback(GtkWidget *widget, GdkEvent *event, gpointer data) {
     /* printf("HScrolled to: %g\n", gtk_adjustment_get_value(GTK_ADJUSTMENT(hadjustment)));*/
     gtk_widget_queue_draw(drar);
     return TRUE;
 }
 
 static gboolean cursor_blinker(GtkWidget *widget) {
-    double origin_x, origin_y;
-    double x, y, height, width;
-    GtkAllocation allocation;
-
-    gtk_widget_get_allocation(drar, &allocation);
-
-    origin_x = calculate_x_origin(&allocation);
-    origin_y = calculate_y_origin(&allocation);
-
-    buffer_cursor_position(buffer, origin_x, origin_y, &x, &y);
-
-    y = y-buffer->ascent;
-    x = 0.0;
-    height = buffer->ascent + buffer->descent;
-    width = allocation.width;
-    
     cursor_visible = !cursor_visible;
 
-    gtk_widget_queue_draw_area(drar, x, y, width, height);
+    redraw_cursor_line(FALSE);
 
     return TRUE;
 }
@@ -188,8 +237,13 @@ int main(int argc, char *argv[]) {
 
     drar = gtk_drawing_area_new();
 
+    gtk_widget_set_can_focus(GTK_WIDGET(drar), TRUE);
+
     g_signal_connect(G_OBJECT(drar), "expose_event",
                      G_CALLBACK(expose_event_callback), NULL);
+
+    g_signal_connect(G_OBJECT(drar), "key-press-event",
+                     G_CALLBACK(key_press_callback), NULL);
 
     {
         GtkWidget *drarscroll = gtk_vscrollbar_new((GtkAdjustment *)(adjustment = gtk_adjustment_new(0.0, 0.0, 1.0, 1.0, 1.0, 1.0)));
@@ -202,13 +256,15 @@ int main(int argc, char *argv[]) {
 
         gtk_container_add(GTK_CONTAINER(window), table);
 
-        g_signal_connect_swapped(G_OBJECT(drarscroll), "value_changed", G_CALLBACK(scrolled_callback), NULL);
-        g_signal_connect_swapped(G_OBJECT(drarhscroll), "value_changed", G_CALLBACK(hscrolled_callback), NULL);
+        g_signal_connect(G_OBJECT(drarscroll), "value_changed", G_CALLBACK(scrolled_callback), NULL);
+        g_signal_connect(G_OBJECT(drarhscroll), "value_changed", G_CALLBACK(hscrolled_callback), NULL);
     }
 
     g_timeout_add(1000, (GSourceFunc)cursor_blinker, (gpointer)window);
 
     gtk_widget_show_all(window);
+
+    gtk_widget_grab_focus(GTK_WIDGET(drar));
 
     gtk_main();
 
