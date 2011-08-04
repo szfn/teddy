@@ -9,8 +9,15 @@ static void init_line(line_t *line) {
 
     line->allocated_glyphs = 10;
     line->glyphs = malloc(sizeof(cairo_glyph_t) * line->allocated_glyphs);
+    if (!(line->glyphs)) {
+        perror("Couldn't allocate glyphs space");
+        exit(EXIT_FAILURE);
+    }
     line->glyph_info = malloc(sizeof(my_glyph_info_t) * line->allocated_glyphs);
-    /* TODO: check for successful allocation */
+    if (!(line->glyphs)) {
+        perror("Couldn't allocate glyphs space");
+        exit(EXIT_FAILURE);
+    }
     line->glyphs_cap = 0;
 }
 
@@ -68,8 +75,15 @@ static void line_recalculate_glyphs(buffer_t *buffer, int line_idx) {
         if (dst >= buffer->lines[line_idx].allocated_glyphs) {
             buffer->lines[line_idx].allocated_glyphs *= 2;
             buffer->lines[line_idx].glyphs = realloc(buffer->lines[line_idx].glyphs, sizeof(cairo_glyph_t) * buffer->lines[line_idx].allocated_glyphs);
+            if (!(buffer->lines[line_idx].glyphs)) {
+                perror("Couldn't allocate glyphs space");
+                exit(EXIT_FAILURE);
+            }
             buffer->lines[line_idx].glyph_info = realloc(buffer->lines[line_idx].glyph_info, sizeof(my_glyph_info_t) * buffer->lines[line_idx].allocated_glyphs);
-            /* TODO: check that allocation is successful */
+            if (!(buffer->lines[line_idx].glyph_info)) {
+                perror("Couldn't allocate glyphs space");
+                exit(EXIT_FAILURE);
+            }
         }
 
         /* Kerning correction for x */
@@ -110,6 +124,8 @@ static void line_recalculate_glyphs(buffer_t *buffer, int line_idx) {
         width += extents.x_advance;
         ++dst;
     }
+
+    width += buffer->em_advance;
 
     buffer->lines[line_idx].glyphs_cap = dst;
 
@@ -215,6 +231,23 @@ void load_text_file(buffer_t *buffer, const char *filename) {
     fclose(fin);
 }
 
+void buffer_cursor_position(buffer_t *buffer, double origin_x, double origin_y, double *x, double *y) {
+    int i;
+    line_t *line;
+    
+    *y = origin_y + (buffer->line_height * buffer->cursor_line);
+
+    *x = origin_x;
+    if (buffer->cursor_line >= buffer->lines_cap) return;
+
+    line = buffer->lines + buffer->cursor_line;
+    
+    for (i = 0; (i < buffer->cursor_glyph) && (i < line->glyphs_cap); ++i) {
+        *x += line->glyph_info[i].kerning_correction;
+        *x += line->glyph_info[i].x_advance;
+    }
+}
+
 buffer_t *buffer_create(FT_Library *library) {
     buffer_t *buffer = malloc(sizeof(buffer_t));
     int error;
@@ -242,12 +275,17 @@ buffer_t *buffer_create(FT_Library *library) {
 
         cairo_scaled_font_extents(buffer->cairofont, &font_extents);
         buffer->line_height = font_extents.height;
+        buffer->ascent = font_extents.ascent;
+        buffer->descent = font_extents.descent;
     }
 
     init_lines(buffer);
 
     buffer->rendered_height = 0.0;
     buffer->rendered_width = 0.0;
+
+    buffer->cursor_line = 0;
+    buffer->cursor_glyph = 0;
 
     buffer->tab_width = 4;
     buffer->left_margin = 5.0;
@@ -256,11 +294,20 @@ buffer_t *buffer_create(FT_Library *library) {
 }
 
 void buffer_free(buffer_t *buffer) {
-    /* TODO: deallocare tutto:
-     - face
-     - cairoface
-     - font_options
-     - cairo_scaled_font
-     - lines
-    */
+    int i;
+    
+    for (i = 0; i < buffer->allocated_lines; ++i) {
+        line_t *curline = buffer->lines+i;
+        if (curline->text != NULL) free(curline->text);
+        if (curline->glyphs != NULL) free(curline->glyphs);
+        if (curline->glyph_info != NULL) free(curline->glyph_info);
+    }
+
+    free(buffer->lines);
+
+    cairo_scaled_font_destroy(buffer->cairofont);
+    cairo_font_options_destroy(buffer->font_options);
+    cairo_font_face_destroy(buffer->cairoface);
+
+    FT_Done_Face(buffer->face);
 }
