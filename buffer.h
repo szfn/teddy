@@ -40,8 +40,13 @@ typedef struct _buffer_t {
     int allocated_lines;
     int lines_cap;
 
+    /* Buffer's secondary properties (calculated) */
+    double rendered_height;
+    double rendered_width;
+
     /* User options */
     int tab_width;
+    double left_margin;
     
 } buffer_t;
 

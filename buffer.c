@@ -38,6 +38,7 @@ static void line_recalculate_glyphs(buffer_t *buffer, int line_idx) {
     FT_UInt previous = 0;
     int initial_spaces = 1;
     int src, dst;
+    double width = 0.0;
 
     for (src = 0, dst = 0; src < buffer->lines[line_idx].text_cap; ) {
         uint32_t code;
@@ -81,6 +82,8 @@ static void line_recalculate_glyphs(buffer_t *buffer, int line_idx) {
         } else {
             buffer->lines[line_idx].glyph_info[dst].kerning_correction = 0;
         }
+
+        width += buffer->lines[line_idx].glyph_info[dst].kerning_correction;
         
         previous = buffer->lines[line_idx].glyphs[dst].index = glyph_index;
         buffer->lines[line_idx].glyphs[dst].x = 0.0;
@@ -104,10 +107,15 @@ static void line_recalculate_glyphs(buffer_t *buffer, int line_idx) {
         }
         
         buffer->lines[line_idx].glyph_info[dst].x_advance = extents.x_advance;
+        width += extents.x_advance;
         ++dst;
     }
 
     buffer->lines[line_idx].glyphs_cap = dst;
+
+    if (width > buffer->rendered_width) {
+        buffer->rendered_width = width;
+    }
 
     cairo_ft_scaled_font_unlock_face(buffer->cairofont);
 }
@@ -202,6 +210,8 @@ void load_text_file(buffer_t *buffer, const char *filename) {
         ++(buffer->lines_cap);
     }
 
+    buffer->rendered_height = buffer->line_height * (1+buffer->lines_cap);
+
     fclose(fin);
 }
 
@@ -236,7 +246,11 @@ buffer_t *buffer_create(FT_Library *library) {
 
     init_lines(buffer);
 
+    buffer->rendered_height = 0.0;
+    buffer->rendered_width = 0.0;
+
     buffer->tab_width = 4;
+    buffer->left_margin = 5.0;
 
     return buffer;
 }

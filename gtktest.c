@@ -13,13 +13,14 @@
 
 FT_Library library;
 
+
 buffer_t *buffer;
 
-GtkObject *adjustment;
+GtkObject *adjustment, *hadjustment;
 GtkWidget *drar;
+GtkWidget *drarhscroll;
 
 /* TODO:
-   - horizontal scrollbar
    - cursor positioning
    - editing
    - drawing header
@@ -28,7 +29,7 @@ GtkWidget *drar;
 gboolean expose_event_callback(GtkWidget *widget, GdkEventExpose *event, gpointer data) {
     cairo_t *cr = gdk_cairo_create(widget->window);
     int i;
-    double y ;
+    double y, x;
     GtkAllocation allocation;
 
     gtk_widget_get_allocation(widget, &allocation);
@@ -40,13 +41,23 @@ gboolean expose_event_callback(GtkWidget *widget, GdkEventExpose *event, gpointe
     cairo_set_source_rgb(cr, 255, 255, 255);
     cairo_set_scaled_font(cr, buffer->cairofont);
 
-    y = buffer->line_height - gtk_adjustment_get_value(GTK_ADJUSTMENT(adjustment));
+    if (allocation.height > buffer->rendered_height) {
+        /* if there is enough space to show everything then there is no need to use the scrollbar */
+        y = buffer->line_height;
+    } else {
+        y = buffer->line_height - gtk_adjustment_get_value(GTK_ADJUSTMENT(adjustment));
+    }
+
+    if (allocation.width > buffer->rendered_width) {
+        /* if there is enough space to show everything then there is no need to use the scrollbar */
+        x = buffer->left_margin;
+    } else {
+        x = buffer->left_margin - gtk_adjustment_get_value(GTK_ADJUSTMENT(hadjustment));
+    }
 
     /*printf("DRAWING!\n");*/
 
     for (i = 0; i < buffer->lines_cap; ++i) {
-        double x = 5.0; /* left margin */
-
         if (y - buffer->line_height > allocation.height) break; /* if we passed the visible area the just stop displaying */
         if (y < 0) { /* If the line is before the visible area, just increment y and move to the next line */
             y += buffer->line_height;
@@ -58,9 +69,20 @@ gboolean expose_event_callback(GtkWidget *widget, GdkEventExpose *event, gpointe
         y += buffer->line_height;
     }
 
-    gtk_adjustment_set_upper(GTK_ADJUSTMENT(adjustment), (buffer->lines_cap+1) * buffer->line_height);
+    gtk_adjustment_set_upper(GTK_ADJUSTMENT(adjustment), buffer->rendered_height);
     gtk_adjustment_set_page_size(GTK_ADJUSTMENT(adjustment), allocation.height);
     gtk_adjustment_set_page_increment(GTK_ADJUSTMENT(adjustment), allocation.height/2);
+    gtk_adjustment_set_step_increment(GTK_ADJUSTMENT(adjustment), buffer->line_height);
+
+    if (buffer->rendered_width < allocation.width) {
+        gtk_widget_hide(GTK_WIDGET(drarhscroll));
+    } else {
+        gtk_widget_show(GTK_WIDGET(drarhscroll));
+        gtk_adjustment_set_upper(GTK_ADJUSTMENT(hadjustment), buffer->rendered_width);
+        gtk_adjustment_set_page_size(GTK_ADJUSTMENT(hadjustment), allocation.width);
+        gtk_adjustment_set_page_increment(GTK_ADJUSTMENT(hadjustment), allocation.width/2);
+        gtk_adjustment_set_step_increment(GTK_ADJUSTMENT(hadjustment), buffer->em_advance);
+    }
 
     cairo_destroy(cr);
   
@@ -68,7 +90,13 @@ gboolean expose_event_callback(GtkWidget *widget, GdkEventExpose *event, gpointe
 }
 
 gboolean scrolled_callback(GtkWidget *widget, GdkEventExpose *event, gpointer data) {
-    printf("Scrolled to: %g\n", gtk_adjustment_get_value(GTK_ADJUSTMENT(adjustment)));
+    /*printf("Scrolled to: %g\n", gtk_adjustment_get_value(GTK_ADJUSTMENT(adjustment)));*/
+    gtk_widget_queue_draw(drar);
+    return TRUE;
+}
+
+gboolean hscrolled_callback(GtkWidget *widget, GdkEventExpose *event, gpointer data) {
+    /* printf("HScrolled to: %g\n", gtk_adjustment_get_value(GTK_ADJUSTMENT(hadjustment)));*/
     gtk_widget_queue_draw(drar);
     return TRUE;
 }
@@ -110,17 +138,17 @@ int main(int argc, char *argv[]) {
 
     {
         GtkWidget *drarscroll = gtk_vscrollbar_new((GtkAdjustment *)(adjustment = gtk_adjustment_new(0.0, 0.0, 1.0, 1.0, 1.0, 1.0)));
-        GtkWidget *hbox = gtk_hbox_new(FALSE, 1);
+        drarhscroll = gtk_hscrollbar_new((GtkAdjustment *)(hadjustment = gtk_adjustment_new(0.0, 0.0, 1.0, 1.0, 1.0, 1.0)));
+        GtkWidget *table = gtk_table_new(2, 2, FALSE);
 
-        gtk_container_add(GTK_CONTAINER(hbox), drar);
-        gtk_container_add(GTK_CONTAINER(hbox), drarscroll);
+        gtk_table_attach(GTK_TABLE(table), drar, 0, 1, 0, 1, GTK_EXPAND | GTK_FILL, GTK_EXPAND | GTK_FILL, 1, 1);
+        gtk_table_attach(GTK_TABLE(table), drarscroll, 1, 2, 0, 1, 0, GTK_EXPAND|GTK_FILL, 1, 1);
+        gtk_table_attach(GTK_TABLE(table), drarhscroll, 0, 1, 1, 2, GTK_EXPAND|GTK_FILL, 0, 1, 1);
 
-        gtk_box_set_child_packing(GTK_BOX(hbox), drar, TRUE, TRUE, 0, GTK_PACK_START);
-        gtk_box_set_child_packing(GTK_BOX(hbox), drarscroll, FALSE, FALSE, 0, GTK_PACK_END);
-
-        gtk_container_add(GTK_CONTAINER(window), hbox);
+        gtk_container_add(GTK_CONTAINER(window), table);
 
         g_signal_connect_swapped(G_OBJECT(drarscroll), "value_changed", G_CALLBACK(scrolled_callback), NULL);
+        g_signal_connect_swapped(G_OBJECT(drarhscroll), "value_changed", G_CALLBACK(hscrolled_callback), NULL);
     }
 
     gtk_widget_show_all(window);
