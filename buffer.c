@@ -247,11 +247,6 @@ void buffer_cursor_position(buffer_t *buffer, double origin_x, double origin_y, 
     } else if (line->glyphs_cap > 0) {
         *x = line->glyphs[line->glyphs_cap-1].x + line->glyph_info[line->glyphs_cap-1].x_advance;
     }
-    /*
-    for (i = 0; (i < buffer->cursor_glyph) && (i < line->glyphs_cap); ++i) {
-        *x += line->glyph_info[i].kerning_correction;
-        *x += line->glyph_info[i].x_advance;
-        }*/
 }
 
 buffer_t *buffer_create(FT_Library *library) {

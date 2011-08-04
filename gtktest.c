@@ -54,9 +54,9 @@ double calculate_y_origin(GtkAllocation *allocation) {
     return origin_y;
 }
 
-static void redraw_cursor_line(gboolean large) {
+static void redraw_cursor_line(gboolean large, gboolean move_origin_when_outside) {
     double origin_x, origin_y;
-    double x, y, height, width;
+    double cursor_x, x, y, height, width;
     GtkAllocation allocation;
 
     gtk_widget_get_allocation(drar, &allocation);
@@ -64,7 +64,7 @@ static void redraw_cursor_line(gboolean large) {
     origin_x = calculate_x_origin(&allocation);
     origin_y = calculate_y_origin(&allocation);
 
-    buffer_cursor_position(buffer, origin_x, origin_y, &x, &y);
+    buffer_cursor_position(buffer, origin_x, origin_y, &cursor_x, &y);
 
     y -= buffer->ascent;
     x = 0.0;
@@ -76,11 +76,39 @@ static void redraw_cursor_line(gboolean large) {
         height += 2*buffer->line_height;
     }
 
+    if (move_origin_when_outside) {
+        if (y+height > allocation.height) {
+            double diff = y+height - allocation.height;
+            gtk_adjustment_set_value(GTK_ADJUSTMENT(adjustment), gtk_adjustment_get_value(GTK_ADJUSTMENT(adjustment)) + diff);
+            gtk_widget_queue_draw(drar);
+            return;
+        }
+
+        if (y < 0.0) {
+            gtk_adjustment_set_value(GTK_ADJUSTMENT(adjustment), gtk_adjustment_get_value(GTK_ADJUSTMENT(adjustment)) + y);
+            gtk_widget_queue_draw(drar);
+            return;
+        }
+
+        if (cursor_x + buffer->em_advance > allocation.width) {
+            double diff = cursor_x + buffer->em_advance - allocation.width;
+            gtk_adjustment_set_value(GTK_ADJUSTMENT(hadjustment), gtk_adjustment_get_value(GTK_ADJUSTMENT(hadjustment)) + diff);
+            gtk_widget_queue_draw(drar);
+            return;
+        }
+
+        if (cursor_x - buffer->left_margin < 0.0) {
+            gtk_adjustment_set_value(GTK_ADJUSTMENT(hadjustment), gtk_adjustment_get_value(GTK_ADJUSTMENT(hadjustment)) + cursor_x - buffer->left_margin);
+            gtk_widget_queue_draw(drar);
+            return;
+        }
+    }
+    
     gtk_widget_queue_draw_area(drar, x, y, width, height);
 }
 
 static void move_cursor(int delta_line, int delta_char) {
-    redraw_cursor_line(FALSE);
+    redraw_cursor_line(FALSE, FALSE);
     
     buffer->cursor_line += delta_line;
 
@@ -95,7 +123,7 @@ static void move_cursor(int delta_line, int delta_char) {
 
     cursor_visible = TRUE;
 
-    redraw_cursor_line(FALSE);
+    redraw_cursor_line(FALSE, TRUE);
 }
 
 static gboolean key_press_callback(GtkWidget *widget, GdkEventKey *event, gpointer data) {
@@ -200,7 +228,7 @@ static gboolean hscrolled_callback(GtkWidget *widget, GdkEvent *event, gpointer 
 static gboolean cursor_blinker(GtkWidget *widget) {
     cursor_visible = !cursor_visible;
 
-    redraw_cursor_line(FALSE);
+    redraw_cursor_line(FALSE, FALSE);
 
     return TRUE;
 }
