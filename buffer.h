@@ -5,19 +5,17 @@
 #include <cairo-ft.h>
 #include <ft2build.h>
 #include FT_FREETYPE_H
+#include <stdint.h>
 
 #include "font.h"
 
 typedef struct _my_glyph_info_t {
     double kerning_correction;
     double x_advance;
+    uint32_t code;
 } my_glyph_info_t;
 
 typedef struct _line_t {
-    char *text;
-    int allocated_text;
-    int text_cap;
-
     cairo_glyph_t *glyphs;
     my_glyph_info_t *glyph_info;
     int allocated_glyphs;
