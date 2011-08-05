@@ -1,10 +1,9 @@
 #include "font.h"
 
-void acmacs_font_init(acmacs_font_t *font, FT_Library *library) {
+void acmacs_font_init(acmacs_font_t *font, FT_Library *library, const char *fontfile, int text_size) {
     int error;
-    int text_size = 24;
     
-    error = FT_New_Face(*library, "/usr/share/fonts/truetype/msttcorefonts/arial.ttf", 0, &(font->face));
+    error = FT_New_Face(*library, fontfile, 0, &(font->face));
     if (error) {
         printf("Error loading freetype font\n");
         exit(EXIT_FAILURE);

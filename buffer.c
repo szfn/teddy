@@ -292,7 +292,8 @@ buffer_t *buffer_create(FT_Library *library) {
 
     buffer->library = library;
     
-    acmacs_font_init(&(buffer->main_font), library);
+    acmacs_font_init(&(buffer->main_font), library, "/usr/share/fonts/truetype/msttcorefonts/arial.ttf", 24);
+    acmacs_font_init(&(buffer->posbox_font), library, "/usr/share/fonts/truetype/msttcorefonts/arial.ttf", 12);
     
     {
         cairo_text_extents_t em_extents;
@@ -334,4 +335,5 @@ void buffer_free(buffer_t *buffer) {
     free(buffer->lines);
 
     acmacs_font_free(&(buffer->main_font));
+    acmacs_font_free(&(buffer->posbox_font));
 }

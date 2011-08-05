@@ -13,7 +13,7 @@ typedef struct _acmacs_font_t {
     cairo_font_options_t *font_options;
 } acmacs_font_t;
 
-void acmacs_font_init(acmacs_font_t *font, FT_Library *library);
+void acmacs_font_init(acmacs_font_t *font, FT_Library *library, const char *fontfile, int text_size);
 void acmacs_font_free(acmacs_font_t *font);
 
 #endif

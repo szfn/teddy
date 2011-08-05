@@ -104,6 +104,7 @@ static void redraw_cursor_line(gboolean large, gboolean move_origin_when_outside
     }
     
     gtk_widget_queue_draw_area(drar, x, y, width, height);
+    gtk_widget_queue_draw_area(drar, 0.0, allocation.height-buffer->line_height, allocation.width, buffer->line_height);
 }
 
 static void move_cursor(int delta_line, int delta_char) {
@@ -209,7 +210,33 @@ static gboolean expose_event_callback(GtkWidget *widget, GdkEventExpose *event, 
         cairo_rectangle(cr, cursor_x, cursor_y-buffer->ascent, 2, buffer->ascent+buffer->descent);
         cairo_fill(cr);
     }
-    
+
+    {
+        char *posbox_text;
+        asprintf(&posbox_text, " %d,%d %0.0f%%", buffer->cursor_line, buffer->cursor_glyph, (100.0 * buffer->cursor_line / buffer->lines_cap));
+        cairo_text_extents_t posbox_ext;
+        double x, y;
+
+        cairo_set_scaled_font(cr, buffer->posbox_font.cairofont);
+
+        cairo_text_extents(cr, posbox_text, &posbox_ext);
+
+        y = allocation.height - posbox_ext.height - 4.0;
+        x = allocation.width - posbox_ext.x_advance - 4.0;
+
+        cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
+        cairo_rectangle(cr, x-1.0, y-1.0, posbox_ext.x_advance+4.0, posbox_ext.height+4.0);
+        cairo_fill(cr);
+        cairo_set_source_rgb(cr, 238.0/255, 221.0/255, 130.0/255);
+        cairo_rectangle(cr, x, y, posbox_ext.x_advance + 2.0, posbox_ext.height + 2.0);
+        cairo_fill(cr);
+
+        cairo_move_to(cr, x+1.0, y+posbox_ext.height);
+        cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
+        cairo_show_text(cr, posbox_text);
+        
+        free(posbox_text);
+    }
 
     gtk_adjustment_set_upper(GTK_ADJUSTMENT(adjustment), buffer->rendered_height);
     gtk_adjustment_set_page_size(GTK_ADJUSTMENT(adjustment), allocation.height);
