@@ -1,6 +1,7 @@
 #include "buffer.h"
 
 #include <stdint.h>
+#include <stdlib.h>
 #include <math.h>
 
 static void init_line(line_t *line) {
@@ -35,7 +36,7 @@ static uint8_t utf8_first_byte_processing(uint8_t ch) {
     return ch;
 }
 
-static void buffer_line_insert_utf8_text(buffer_t *buffer, int line_idx, char *text, int len) {
+void buffer_line_insert_utf8_text(buffer_t *buffer, int line_idx, char *text, int len, int insertion_point, int move_cursor) {
     FT_Face scaledface = cairo_ft_scaled_font_lock_face(buffer->main_font.cairofont);
     FT_Bool use_kerning = FT_HAS_KERNING(scaledface);
     FT_UInt previous = 0;
@@ -44,7 +45,7 @@ static void buffer_line_insert_utf8_text(buffer_t *buffer, int line_idx, char *t
     double width = 0.0;
     line_t *line = buffer->lines + line_idx;
     
-    for (src = 0, dst = line->glyphs_cap; src < len; ) {
+    for (src = 0, dst = insertion_point; src < len; ) {
         uint32_t code;
         FT_UInt glyph_index;
         cairo_text_extents_t extents;
@@ -71,10 +72,13 @@ static void buffer_line_insert_utf8_text(buffer_t *buffer, int line_idx, char *t
             glyph_index = FT_Get_Char_Index(scaledface, 0x20);
         }
 
-        if (dst >= line->allocated_glyphs) {
+        /*printf("cap: %d allocated: %d\n", line->glyphs_cap, line->allocated_glyphs);*/
+
+        if (line->glyphs_cap >= line->allocated_glyphs) {
             line->allocated_glyphs *= 2;
+            /*printf("new size: %d\n", line->allocated_glyphs);*/
             line->glyphs = realloc(line->glyphs, sizeof(cairo_glyph_t) * line->allocated_glyphs);
-            if (!(buffer->lines[line_idx].glyphs)) {
+            if (!(line->glyphs)) {
                 perror("Couldn't allocate glyphs space");
                 exit(EXIT_FAILURE);
             }
@@ -84,6 +88,12 @@ static void buffer_line_insert_utf8_text(buffer_t *buffer, int line_idx, char *t
                 exit(EXIT_FAILURE);
             }
         }
+
+        if (dst < line->glyphs_cap) {
+            /*printf("memmove %x <- %x %d\n", line->glyphs+dst+1, line->glyphs+dst, line->glyphs_cap - dst); */
+            memmove(line->glyphs+dst+1, line->glyphs+dst, sizeof(cairo_glyph_t)*(line->glyphs_cap - dst));
+            memmove(line->glyph_info+dst+1, line->glyph_info+dst, sizeof(my_glyph_info_t)*(line->glyphs_cap - dst));
+        } 
 
         line->glyph_info[dst].code = code;
 
@@ -124,11 +134,14 @@ static void buffer_line_insert_utf8_text(buffer_t *buffer, int line_idx, char *t
         line->glyph_info[dst].x_advance = extents.x_advance;
         width += extents.x_advance;
         ++dst;
+        ++(line->glyphs_cap);
+
+        if (move_cursor) {
+            buffer->cursor_glyph++;
+        }
     }
     
     width += buffer->em_advance;
-
-    line->glyphs_cap = dst;
 
     if (width > buffer->rendered_width) {
         buffer->rendered_width = width;
@@ -215,7 +228,7 @@ void load_text_file(buffer_t *buffer, const char *filename) {
         if (ch == '\n') {
             last_was_newline = 1;
             text[i] = '\0';
-            buffer_line_insert_utf8_text(buffer, buffer->lines_cap, text, strlen(text));
+            buffer_line_insert_utf8_text(buffer, buffer->lines_cap, text, strlen(text), buffer->lines[buffer->lines_cap].glyphs_cap, 0);
             ++(buffer->lines_cap);
             if (buffer->lines_cap >= buffer->allocated_lines) {
                 grow_lines(buffer);

@@ -23,7 +23,6 @@ GtkIMContext *drarim;
 gboolean cursor_visible = TRUE;
 
 /* TODO:
-   - remove storage of utf8 array
    - editing
    - soft line wrap
    - key bindings
@@ -166,7 +165,9 @@ static gboolean key_press_callback(GtkWidget *widget, GdkEventKey *event, gpoint
 static void text_entry_callback(GtkIMContext *context, gchar *str, gpointer data) {
     printf("entered: %s\n", str);
 
-    /* TODO Insert text correctly */
+    buffer_line_insert_utf8_text(buffer, buffer->cursor_line, str, strlen(str), buffer->cursor_glyph, 1);
+    
+    redraw_cursor_line(FALSE, TRUE);
 }
 
 static gboolean button_press_callback(GtkWidget *widget, GdkEventButton *event, gpointer data) {
