@@ -1,3 +1,4 @@
   Spazi iniziali
 	Tab iniziale
 tab	dentro il testo
+due accentate di seguito: àà

@@ -19,15 +19,18 @@ buffer_t *buffer;
 GtkObject *adjustment, *hadjustment;
 GtkWidget *drar;
 GtkWidget *drarhscroll;
+GtkIMContext *drarim;
 gboolean cursor_visible = TRUE;
 
 /* TODO:
-   - drawing modebox at bottom right (show line number, column number and percentage position)
+   - remove storage of utf8 array
    - editing
-   - drawing header
+   - soft line wrap
+   - key bindings
+   - highlighting
 */
 
-double calculate_x_origin(GtkAllocation *allocation) {
+static double calculate_x_origin(GtkAllocation *allocation) {
     double origin_x;
 
     if (allocation->width > buffer->rendered_width) {
@@ -40,7 +43,7 @@ double calculate_x_origin(GtkAllocation *allocation) {
     return origin_x;
 }
 
-double calculate_y_origin(GtkAllocation *allocation) {
+static double calculate_y_origin(GtkAllocation *allocation) {
     double origin_y;
     
     if (allocation->height > buffer->rendered_height) {
@@ -130,19 +133,40 @@ static gboolean key_press_callback(GtkWidget *widget, GdkEventKey *event, gpoint
     switch(event->keyval) {
     case GDK_KEY_Up:
         move_cursor(-1, 0);
-        break;
+        return TRUE;
     case GDK_KEY_Down:
         move_cursor(1, 0);
-        break;
+        return TRUE;
     case GDK_KEY_Right:
         move_cursor(0, 1);
-        break;
+        return TRUE;
     case GDK_KEY_Left:
         move_cursor(0, -1);
-        break;
+        return TRUE;
     }
 
+    if (gtk_im_context_filter_keypress(drarim, event)) {
+        return TRUE;
+    }
+    
+    printf("Unknown key sequence: %d\n", event->keyval);
+
+    /* TODO:
+       - manage pageup / pagedown
+       - manage home/end
+       - manage DELETE key
+       - manage Enter key
+       - manage Tab key
+       - manage Backspace key
+     */
+    
     return TRUE;
+}
+
+static void text_entry_callback(GtkIMContext *context, gchar *str, gpointer data) {
+    printf("entered: %s\n", str);
+
+    /* TODO Insert text correctly */
 }
 
 static gboolean button_press_callback(GtkWidget *widget, GdkEventButton *event, gpointer data) {
@@ -311,6 +335,7 @@ int main(int argc, char *argv[]) {
     g_signal_connect_swapped(G_OBJECT(window), "destroy", G_CALLBACK(gtk_main_quit), NULL);
 
     drar = gtk_drawing_area_new();
+    drarim = gtk_im_multicontext_new();
 
     gtk_widget_set_can_focus(GTK_WIDGET(drar), TRUE);
 
@@ -322,6 +347,9 @@ int main(int argc, char *argv[]) {
 
     g_signal_connect(G_OBJECT(drar), "button-press-event",
                      G_CALLBACK(button_press_callback), NULL);
+
+    g_signal_connect(G_OBJECT(drarim), "commit",
+                     G_CALLBACK(text_entry_callback), NULL);
 
     {
         GtkWidget *drarscroll = gtk_vscrollbar_new((GtkAdjustment *)(adjustment = gtk_adjustment_new(0.0, 0.0, 1.0, 1.0, 1.0, 1.0)));

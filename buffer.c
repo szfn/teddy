@@ -53,12 +53,16 @@ static void line_recalculate_glyphs(buffer_t *buffer, int line_idx) {
         FT_UInt glyph_index;
         cairo_text_extents_t extents;
 
+        /*printf("First char: %02x\n", (uint8_t)text[src]);*/
+
         /* get next unicode codepoint in code, advance src */
         if ((uint8_t)text[src] > 127) {
             code = utf8_first_byte_processing(text[src]);
             ++src;
+
+            /*printf("   Next char: %02x (%02x)\n", (uint8_t)text[src], (uint8_t)text[src] & 0xC0);*/
             
-            for (; ((uint8_t)text[src] > 127) && (src < buffer->lines[line_idx].text_cap); ++src) {
+            for (; (((uint8_t)text[src] & 0xC0) == 0x80) && (src < buffer->lines[line_idx].text_cap); ++src) {
                 code <<= 6;
                 code += (text[src] & 0x3F);
             }
