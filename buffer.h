@@ -59,6 +59,7 @@ void load_text_file(buffer_t *buffer, const char *filename);
 void buffer_line_adjust_glyphs(buffer_t *buffer, int line_idx, double x, double y);
 void buffer_cursor_position(buffer_t *buffer, double origin_x, double origin_y, double *x, double *y);
 void buffer_cursor_line_rectangle(buffer_t *buffer, double origin_x, double origin_y, double *x, double *y, double *height, double *width);
+void buffer_move_cursor_to_position(buffer_t *buffer, double origin_x, double origin_y, double x, double y);
 
 
 #endif

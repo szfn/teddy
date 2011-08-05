@@ -1,6 +1,7 @@
 #include "buffer.h"
 
 #include <stdint.h>
+#include <math.h>
 
 static void init_line(line_t *line) {
     line->text = NULL;
@@ -249,9 +250,47 @@ void buffer_cursor_position(buffer_t *buffer, double origin_x, double origin_y, 
     }
 }
 
+void buffer_move_cursor_to_position(buffer_t *buffer, double origin_x, double origin_y, double x, double y) {
+    int i;
+    line_t *line;
+
+    buffer->cursor_line = ceil((y - origin_y) / buffer->line_height);
+
+    if (buffer->cursor_line >= buffer->lines_cap) buffer->cursor_line = buffer->lines_cap - 1;
+    if (buffer->cursor_line < 0) buffer->cursor_line = 0;
+
+    if (buffer->lines_cap <= 0) {
+        buffer->cursor_glyph = 0;
+        return;
+    }
+
+    line = buffer->lines + buffer->cursor_line;
+
+    for (i = 0; i < line->glyphs_cap; ++i) {
+        double glyph_start = line->glyphs[i].x;
+        double glyph_end = glyph_start + line->glyph_info[i].x_advance;
+
+        if ((x >= glyph_start) && (x <= glyph_end)) {
+            double dist_start = x - glyph_start;
+            double dist_end = glyph_end - x;
+            if (dist_start < dist_end) {
+                buffer->cursor_glyph = i;
+            } else {
+                buffer->cursor_glyph = i+1;
+            }
+            break;
+        }
+    }
+
+    if (i >= line->glyphs_cap) {
+        buffer->cursor_glyph = line->glyphs_cap;
+    }
+}
+
 buffer_t *buffer_create(FT_Library *library) {
     buffer_t *buffer = malloc(sizeof(buffer_t));
     int error;
+    int text_size = 24;
 
     error = FT_New_Face(*library, "/usr/share/fonts/truetype/msttcorefonts/arial.ttf", 0, &(buffer->face));
     if (error) {
@@ -261,7 +300,7 @@ buffer_t *buffer_create(FT_Library *library) {
 
     buffer->cairoface = cairo_ft_font_face_create_for_ft_face(buffer->face, 0);
 
-    cairo_matrix_init(&(buffer->font_size_matrix), 16, 0, 0, 16, 0, 0);
+    cairo_matrix_init(&(buffer->font_size_matrix), text_size, 0, 0, text_size, 0, 0);
     cairo_matrix_init(&(buffer->font_ctm), 1, 0, 0, 1, 0, 0);
     buffer->font_options = cairo_font_options_create();
 

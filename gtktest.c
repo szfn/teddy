@@ -142,11 +142,30 @@ static gboolean key_press_callback(GtkWidget *widget, GdkEventKey *event, gpoint
         break;
     }
 
-
     return TRUE;
 }
 
-gboolean expose_event_callback(GtkWidget *widget, GdkEventExpose *event, gpointer data) {
+static gboolean button_press_callback(GtkWidget *widget, GdkEventButton *event, gpointer data) {
+    double origin_x, origin_y;
+    GtkAllocation allocation;
+
+    redraw_cursor_line(FALSE, FALSE);
+
+    gtk_widget_get_allocation(widget, &allocation);
+    
+    origin_y = calculate_y_origin(&allocation);
+    origin_x = calculate_x_origin(&allocation);
+
+    cursor_visible = TRUE;
+    
+    buffer_move_cursor_to_position(buffer, origin_x, origin_y, event->x, event->y);
+
+    redraw_cursor_line(FALSE, FALSE);
+    
+    return TRUE;
+}
+
+static gboolean expose_event_callback(GtkWidget *widget, GdkEventExpose *event, gpointer data) {
     cairo_t *cr = gdk_cairo_create(widget->window);
     int i;
     double origin_y, origin_x, y;
@@ -154,7 +173,7 @@ gboolean expose_event_callback(GtkWidget *widget, GdkEventExpose *event, gpointe
 
     gtk_widget_get_allocation(widget, &allocation);
 
-    printf("%dx%d +%dx%d (%dx%d)\n", event->area.x, event->area.y, event->area.width, event->area.height, allocation.width, allocation.height);
+    /*printf("%dx%d +%dx%d (%dx%d)\n", event->area.x, event->area.y, event->area.width, event->area.height, allocation.width, allocation.height);*/
 
     cairo_set_source_rgb(cr, 0, 0, 1.0);
     cairo_rectangle(cr, 0, 0, allocation.width, allocation.height);
@@ -273,6 +292,9 @@ int main(int argc, char *argv[]) {
     g_signal_connect(G_OBJECT(drar), "key-press-event",
                      G_CALLBACK(key_press_callback), NULL);
 
+    g_signal_connect(G_OBJECT(drar), "button-press-event",
+                     G_CALLBACK(button_press_callback), NULL);
+
     {
         GtkWidget *drarscroll = gtk_vscrollbar_new((GtkAdjustment *)(adjustment = gtk_adjustment_new(0.0, 0.0, 1.0, 1.0, 1.0, 1.0)));
         drarhscroll = gtk_hscrollbar_new((GtkAdjustment *)(hadjustment = gtk_adjustment_new(0.0, 0.0, 1.0, 1.0, 1.0, 1.0)));
@@ -293,6 +315,7 @@ int main(int argc, char *argv[]) {
     gtk_widget_show_all(window);
 
     gtk_widget_grab_focus(GTK_WIDGET(drar));
+    gdk_window_set_events(gtk_widget_get_window(drar), gdk_window_get_events(gtk_widget_get_window(drar)) | GDK_BUTTON_PRESS_MASK);
 
     gtk_main();
 
