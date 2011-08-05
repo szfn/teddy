@@ -40,7 +40,7 @@ static uint8_t utf8_first_byte_processing(uint8_t ch) {
 }
 
 static void line_recalculate_glyphs(buffer_t *buffer, int line_idx) {
-    FT_Face scaledface = cairo_ft_scaled_font_lock_face(buffer->cairofont);
+    FT_Face scaledface = cairo_ft_scaled_font_lock_face(buffer->main_font.cairofont);
     FT_Bool use_kerning = FT_HAS_KERNING(scaledface);
     char *text = buffer->lines[line_idx].text;
     FT_UInt previous = 0;
@@ -104,7 +104,7 @@ static void line_recalculate_glyphs(buffer_t *buffer, int line_idx) {
         buffer->lines[line_idx].glyphs[dst].x = 0.0;
         buffer->lines[line_idx].glyphs[dst].y = 0.0;
 
-        cairo_scaled_font_glyph_extents(buffer->cairofont, buffer->lines[line_idx].glyphs + dst, 1, &extents);
+        cairo_scaled_font_glyph_extents(buffer->main_font.cairofont, buffer->lines[line_idx].glyphs + dst, 1, &extents);
         
         /* Fix x_advance accounting for special treatment of indentation and special treatment of tabs */
         if (initial_spaces) {
@@ -134,7 +134,7 @@ static void line_recalculate_glyphs(buffer_t *buffer, int line_idx) {
         buffer->rendered_width = width;
     }
 
-    cairo_ft_scaled_font_unlock_face(buffer->cairofont);
+    cairo_ft_scaled_font_unlock_face(buffer->main_font.cairofont);
 }
 
 void buffer_line_adjust_glyphs(buffer_t *buffer, int line_idx, double x, double y) {
@@ -289,31 +289,19 @@ void buffer_move_cursor_to_position(buffer_t *buffer, double origin_x, double or
 
 buffer_t *buffer_create(FT_Library *library) {
     buffer_t *buffer = malloc(sizeof(buffer_t));
-    int error;
-    int text_size = 24;
 
-    error = FT_New_Face(*library, "/usr/share/fonts/truetype/msttcorefonts/arial.ttf", 0, &(buffer->face));
-    if (error) {
-        printf("Error loading freetype font\n");
-        exit(EXIT_FAILURE);
-    }
-
-    buffer->cairoface = cairo_ft_font_face_create_for_ft_face(buffer->face, 0);
-
-    cairo_matrix_init(&(buffer->font_size_matrix), text_size, 0, 0, text_size, 0, 0);
-    cairo_matrix_init(&(buffer->font_ctm), 1, 0, 0, 1, 0, 0);
-    buffer->font_options = cairo_font_options_create();
-
-    buffer->cairofont = cairo_scaled_font_create(buffer->cairoface, &(buffer->font_size_matrix), &(buffer->font_ctm), buffer->font_options);
+    buffer->library = library;
+    
+    acmacs_font_init(&(buffer->main_font), library);
     
     {
         cairo_text_extents_t em_extents;
         cairo_font_extents_t font_extents;
         
-        cairo_scaled_font_text_extents(buffer->cairofont, "M", &em_extents);
+        cairo_scaled_font_text_extents(buffer->main_font.cairofont, "M", &em_extents);
         buffer->em_advance = em_extents.width;
 
-        cairo_scaled_font_extents(buffer->cairofont, &font_extents);
+        cairo_scaled_font_extents(buffer->main_font.cairofont, &font_extents);
         buffer->line_height = font_extents.height;
         buffer->ascent = font_extents.ascent;
         buffer->descent = font_extents.descent;
@@ -345,9 +333,5 @@ void buffer_free(buffer_t *buffer) {
 
     free(buffer->lines);
 
-    cairo_scaled_font_destroy(buffer->cairofont);
-    cairo_font_options_destroy(buffer->font_options);
-    cairo_font_face_destroy(buffer->cairoface);
-
-    FT_Done_Face(buffer->face);
+    acmacs_font_free(&(buffer->main_font));
 }

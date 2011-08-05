@@ -6,6 +6,8 @@
 #include <ft2build.h>
 #include FT_FREETYPE_H
 
+#include "font.h"
+
 typedef struct _my_glyph_info_t {
     double kerning_correction;
     double x_advance;
@@ -25,11 +27,7 @@ typedef struct _line_t {
 typedef struct _buffer_t {
     /* Font face stuff */
     FT_Library *library;
-    FT_Face face;
-    cairo_font_face_t *cairoface;
-    cairo_scaled_font_t *cairofont;
-    cairo_matrix_t font_size_matrix, font_ctm;
-    cairo_font_options_t *font_options;
+    acmacs_font_t main_font;
 
     /* Font secondary metrics */
     double em_advance;

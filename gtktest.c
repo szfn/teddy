@@ -22,7 +22,6 @@ GtkWidget *drarhscroll;
 gboolean cursor_visible = TRUE;
 
 /* TODO:
-   - cursor positioning
    - drawing modebox at bottom right (show line number, column number and percentage position)
    - editing
    - drawing header
@@ -180,7 +179,7 @@ static gboolean expose_event_callback(GtkWidget *widget, GdkEventExpose *event, 
     cairo_fill(cr);
 
     cairo_set_source_rgb(cr, 1.0, 1.0, 1.0);
-    cairo_set_scaled_font(cr, buffer->cairofont);
+    cairo_set_scaled_font(cr, buffer->main_font.cairofont);
 
     origin_y = calculate_y_origin(&allocation);
     origin_x = calculate_x_origin(&allocation);
@@ -206,7 +205,7 @@ static gboolean expose_event_callback(GtkWidget *widget, GdkEventExpose *event, 
 
         buffer_cursor_position(buffer, origin_x, origin_y, &cursor_x, &cursor_y);
 
-        cairo_set_source_rgb(cr, 119.0/255, 136.0/255, 153.0/255);
+        /*cairo_set_source_rgb(cr, 119.0/255, 136.0/255, 153.0/255);*/
         cairo_rectangle(cr, cursor_x, cursor_y-buffer->ascent, 2, buffer->ascent+buffer->descent);
         cairo_fill(cr);
     }
@@ -245,7 +244,9 @@ static gboolean hscrolled_callback(GtkWidget *widget, GdkEvent *event, gpointer 
 }
 
 static gboolean cursor_blinker(GtkWidget *widget) {
-    cursor_visible = !cursor_visible;
+    if (cursor_visible < 0) cursor_visible = 1;
+
+    cursor_visible = (cursor_visible + 1) % 3;
 
     redraw_cursor_line(FALSE, FALSE);
 
@@ -310,7 +311,7 @@ int main(int argc, char *argv[]) {
         g_signal_connect(G_OBJECT(drarhscroll), "value_changed", G_CALLBACK(hscrolled_callback), NULL);
     }
 
-    g_timeout_add(1000, (GSourceFunc)cursor_blinker, (gpointer)window);
+    g_timeout_add(500, (GSourceFunc)cursor_blinker, (gpointer)window);
 
     gtk_widget_show_all(window);
 
