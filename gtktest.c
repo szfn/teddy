@@ -23,8 +23,8 @@ GtkIMContext *drarim;
 gboolean cursor_visible = TRUE;
 
 /* TODO:
-   - editing
    - soft line wrap
+   - editing
    - key bindings
    - highlighting
 */
@@ -198,6 +198,8 @@ static gboolean expose_event_callback(GtkWidget *widget, GdkEventExpose *event, 
 
     gtk_widget_get_allocation(widget, &allocation);
 
+    buffer_reflow_softwrap(buffer, allocation.width);
+
     /*printf("%dx%d +%dx%d (%dx%d)\n", event->area.x, event->area.y, event->area.width, event->area.height, allocation.width, allocation.height);*/
 
     cairo_set_source_rgb(cr, 0, 0, 1.0);
@@ -215,14 +217,33 @@ static gboolean expose_event_callback(GtkWidget *widget, GdkEventExpose *event, 
     /*printf("DRAWING!\n");*/
 
     for (i = 0; i < buffer->lines_cap; ++i) {
+        double line_end_width;
+        
         if (y - buffer->line_height > event->area.y+event->area.height) break; /* if we passed the visible area the just stop displaying */
         if (y < event->area.y) { /* If the line is before the visible area, just increment y and move to the next line */
             y += buffer->line_height;
             continue;
         }
 
-        buffer_line_adjust_glyphs(buffer, i, origin_x, y);
+        line_end_width = buffer_line_adjust_glyphs(buffer, i, origin_x, y);
         cairo_show_glyphs(cr, buffer->lines[i].glyphs, buffer->lines[i].glyphs_cap);
+
+        if (!buffer->lines[i].hard_start) {
+            cairo_set_line_width(cr, 4.0);
+            cairo_move_to(cr, 0.0, y-(buffer->ex_height/2.0));
+            cairo_line_to(cr, buffer->left_margin, y-(buffer->ex_height/2.0));
+            cairo_stroke(cr);
+            cairo_set_line_width(cr, 2.0);
+        }
+
+        if (!buffer->lines[i].hard_end) {
+            cairo_set_line_width(cr, 4.0);
+            cairo_move_to(cr, line_end_width, y-(buffer->ex_height/2.0));
+            cairo_line_to(cr, allocation.width, y-(buffer->ex_height/2.0));
+            cairo_stroke(cr);
+            cairo_set_line_width(cr, 2.0);
+        }
+        
         y += buffer->line_height;
     }
 
@@ -268,7 +289,7 @@ static gboolean expose_event_callback(GtkWidget *widget, GdkEventExpose *event, 
     gtk_adjustment_set_page_increment(GTK_ADJUSTMENT(adjustment), allocation.height/2);
     gtk_adjustment_set_step_increment(GTK_ADJUSTMENT(adjustment), buffer->line_height);
 
-    if (buffer->rendered_width < allocation.width) {
+    if (buffer->rendered_width <= allocation.width) {
         gtk_widget_hide(GTK_WIDGET(drarhscroll));
     } else {
         gtk_widget_show(GTK_WIDGET(drarhscroll));

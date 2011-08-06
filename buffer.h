@@ -20,6 +20,7 @@ typedef struct _line_t {
     my_glyph_info_t *glyph_info;
     int allocated_glyphs;
     int glyphs_cap;
+    int hard_start, hard_end;
 } line_t;
 
 typedef struct _buffer_t {
@@ -30,6 +31,7 @@ typedef struct _buffer_t {
 
     /* Font secondary metrics of main font */
     double em_advance;
+    double ex_height;
     double line_height;
     double ascent, descent;
 
@@ -48,15 +50,17 @@ typedef struct _buffer_t {
     /* User options */
     int tab_width;
     double left_margin;
+    double right_margin;
 } buffer_t;
 
 buffer_t *buffer_create(FT_Library *library);
 void buffer_free(buffer_t *buffer);
 void load_text_file(buffer_t *buffer, const char *filename);
-void buffer_line_adjust_glyphs(buffer_t *buffer, int line_idx, double x, double y);
+double buffer_line_adjust_glyphs(buffer_t *buffer, int line_idx, double x, double y);
 void buffer_cursor_position(buffer_t *buffer, double origin_x, double origin_y, double *x, double *y);
 void buffer_cursor_line_rectangle(buffer_t *buffer, double origin_x, double origin_y, double *x, double *y, double *height, double *width);
 void buffer_move_cursor_to_position(buffer_t *buffer, double origin_x, double origin_y, double x, double y);
 void buffer_line_insert_utf8_text(buffer_t *buffer, int line_idx, char *text, int len, int insertion_point, int move_cursor);
+void buffer_reflow_softwrap(buffer_t *buffer, double softwrap_width);
 
 #endif
