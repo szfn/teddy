@@ -351,6 +351,8 @@ void buffer_free(buffer_t *buffer) {
         
         while (cursor != NULL) {
             real_line_t *next = cursor->next;
+            free(cursor->glyphs);
+            free(cursor->glyph_info);
             free(cursor);
             cursor = next;
         }
@@ -372,134 +374,92 @@ void buffer_free(buffer_t *buffer) {
     acmacs_font_free(&(buffer->posbox_font));
 }
 
-static void buffer_line_reflow_softwrap(buffer_t *buffer, int line_idx, double softwrap_width) {
-    /* TODO: reimplement */
-    /*   double width = 0.0; */
-    /* int j; */
-    /* line_t *line = buffer->lines + line_idx; */
+static void buffer_line_reflow_softwrap(buffer_t *buffer, display_line_t *display_line, double softwrap_width) {
+    double width = 0.0;
+    real_line_t *real_line = display_line->real_line;
+    int j;
     
-    /* /\* Scan current line until either: */
-    /*    - we ran out of space */
-    /*    - the line ends *\/ */
+    /* Scan current display line until either:
+       - we ran out of space
+       - the line ends */
+
+    for (j = 0; j < display_line->size; ++j) {
+        width += real_line->glyph_info[display_line->offset+j].kerning_correction;
+        width += real_line->glyph_info[display_line->offset+j].x_advance;
+        if (width > softwrap_width) {
+            break;
+        }
+    }
     
-    /* for (j = 0; j < line->glyphs_cap; ++j) { */
-    /*     width += line->glyph_info[j].kerning_correction; */
-    /*     width += line->glyph_info[j].x_advance; */
-    /*     if (width > softwrap_width) { */
-    /*         break; */
-    /*     } */
-    /* } */
-    
-    /* /\* the first character we can ever move to the next line is always the first one *\/ */
-    /* if (j == 0) j = 1; */
-    
-    /* if (j < line->glyphs_cap) { */
-    /*     /\* If this line used to have a hard end here then create a new line to push extra characters to *\/ */
+    /* the first character we can ever move to the next line is always the first one */
+    if (j == 0) j = 1;
+
+    if (j < display_line->size) {
+        /* Create a new display line and push characters to it */
+        display_line_t *saved_next = display_line->next;
+        display_line->next = new_display_line(display_line->real_line, display_line->offset + j, display_line->size - j);
+        display_line->next->hard_end = display_line->hard_end;
+        display_line->next->next = saved_next;
         
-    /*     line_t *next_line; */
-        
-    /*     if (line->hard_end) { */
-    /*         line->hard_end = 0; */
+        display_line->hard_end = 0;
+        display_line->size = j;
+    } else {
+        display_line_t *next_display_line = display_line->next;
+        if (display_line->hard_end) return;
 
-    /*         /\* We create a new line here *\/ */
+        /* Join the next line with this one */
 
-    /*         if (buffer->lines_cap >= buffer->allocated_lines) { */
-    /*             grow_lines(buffer); */
-    /*         } */
-    /*         /\* TODO: allocation space is also lost here (the line immediately after the cap) *\/ */
-    /*         memmove(buffer->lines + line_idx + 2, buffer->lines + line_idx + 1, sizeof(line_t) * (buffer->lines_cap - line_idx - 1)); */
+        display_line->hard_end = next_display_line->hard_end;
+        display_line->size += next_display_line->size;
 
-    /*         next_line = buffer->lines + line_idx + 1; */
+        display_line->next = next_display_line->next;
 
-    /*         init_line(next_line); */
+        free(next_display_line);
 
-    /*         next_line->hard_start = 0; */
-    /*         next_line->hard_end = 1; */
+        /* Recur, this is inefficient and potentially leads to stack overflow but must do for now */
 
-    /*         ++(buffer->lines_cap); */
-    /*     } else { */
-    /*         next_line = buffer->lines + line_idx + 1; */
-    /*     } */
+        buffer_line_reflow_softwrap(buffer, display_line, softwrap_width);
+    }
+}
 
-    /*     /\* Push characters on the next line*\/ */
+void debug_print_lines_state(buffer_t *buffer) {
+    display_line_t *display_line;
+    int i, cnt = 0;
 
-    /*     grow_line(next_line, 0, line->glyphs_cap-j); */
+    for (display_line = buffer->display_line; display_line != NULL; display_line = display_line->next) {
+        printf("%d offset:%d size:%d hard_end:%d [", cnt, display_line->offset, display_line->size, display_line->hard_end);
+        for (i = 0; i < display_line->size; ++i) {
+            printf("%c", (char)(display_line->real_line->glyph_info[display_line->offset + i].code));
+        }
+        printf("]\n");
+        ++cnt;
+    }
 
-    /*     memmove(next_line->glyphs, line->glyphs+j, sizeof(cairo_glyph_t) * (line->glyphs_cap-j)); */
-    /*     memmove(next_line->glyph_info, line->glyph_info+j, sizeof(my_glyph_info_t) * (line->glyphs_cap-j)); */
-
-    /*     if (next_line->glyphs_cap == 0) { */
-    /*         next_line->glyphs_cap = line->glyphs_cap-j; */
-    /*     } */
-
-    /*     line->glyphs_cap = j; */
-    /* } else { */
-    /*     if (line->hard_end) return; */
-        
-    /*     /\* If the line ended and (line->hard_end == false) copy glyphs from next line until the space is filled or we run into a line that is the hard_end *\/ */
-
-    /*     printf("starting to suck (line %d of %d)\n", line_idx, buffer->lines_cap); */
-
-    /*     while (width < softwrap_width) { */
-    /*         line_t *next_line = buffer->lines + line_idx + 1; */
-
-    /*         printf("    sucking %d into %d\n", line_idx+1, line_idx); */
-            
-    /*         for (j = 0; j < next_line->glyphs_cap; ++j) { */
-    /*             if (width + next_line->glyph_info[j].x_advance > softwrap_width) break; */
-    /*             width += next_line->glyph_info[j].x_advance; */
-    /*         } */
-            
-    /*         if (j == 0) return; */
-            
-    /*         grow_line(line, line->glyphs_cap, j); */
-            
-    /*         memmove(line->glyphs+line->glyphs_cap, next_line->glyphs, sizeof(cairo_glyph_t)*j); */
-    /*         memmove(line->glyph_info+line->glyphs_cap, next_line->glyph_info, sizeof(my_glyph_info_t)*j); */
-            
-    /*         line->glyphs_cap += j; */
-            
-    /*         if (j < next_line->glyphs_cap) { */
-    /*             memmove(next_line->glyphs, next_line->glyphs+j, sizeof(cairo_glyph_t)*(next_line->glyphs_cap - j)); */
-    /*             memmove(next_line->glyph_info, next_line->glyph_info+j, sizeof(my_glyph_info_t)*(next_line->glyphs_cap - j)); */
-                
-    /*             next_line->glyphs_cap -= j; */
-    /*         } else { */
-    /*             /\* next line was exhausted, remove it *\/ */
-    /*             line->hard_end = next_line->hard_end; */
-                
-    /*             printf("    nix line from hell called\n"); */
-    
-    /*             buffer_nix_line(buffer, line_idx+1); */
-
-    /*             printf("    number of physical lines: %d\n", buffer->lines_cap); */
-    /*         } */
-
-    /*         if (line->hard_end) break; */
-    /*     } */
-    /* } */
+    printf("----------------\n\n");
 }
 
 void buffer_reflow_softwrap(buffer_t *buffer, double softwrap_width) {
+    display_line_t *display_line;
     /* int i; */
 
-    /* if (fabs(buffer->rendered_width - softwrap_width) < 0.001) return; */
-    /* buffer->rendered_width = softwrap_width; */
+    if (fabs(buffer->rendered_width - softwrap_width) < 0.001) return;
+    buffer->rendered_width = softwrap_width;
     
-    /* softwrap_width -= buffer->right_margin + buffer->left_margin; */
+    softwrap_width -= buffer->right_margin + buffer->left_margin;
 
-    /* debug_print_lines_state(buffer); */
+    //debug_print_lines_state(buffer);
 
     /* printf("Reflow called\n"); */
 
-    /* /\* Get the real cursor position *\/ */
-    /* /\*TODO*\/ */
+    /* Get the real cursor position */
+    /*TODO*/
 
-    /* for (i = 0; i < buffer->lines_cap; ++i) { */
-    /*     buffer_line_reflow_softwrap(buffer, i, softwrap_width); */
-    /*     debug_print_lines_state(buffer); */
-    /* } */
+    for (display_line = buffer->display_line; display_line != NULL; display_line = display_line->next) {
+        buffer_line_reflow_softwrap(buffer, display_line, softwrap_width);
+        //debug_print_lines_state(buffer);
+    }
 
-    /* /\* Restore cursor position *\/ */
-    /* /\*TODO*\/ */
+
+    /* Restore cursor position */
+    /*TODO*/
 }
