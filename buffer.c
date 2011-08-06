@@ -204,8 +204,6 @@ void load_text_file(buffer_t *buffer, const char *filename) {
     char *text = malloc(sizeof(char) * text_allocation);
     real_line_t **real_line_pp = &(buffer->real_line);
 
-    buffer->rendered_height = 0;
-
     if (!fin) {
         perror("Couldn't open input file");
         exit(EXIT_FAILURE);
@@ -230,7 +228,6 @@ void load_text_file(buffer_t *buffer, const char *filename) {
             if (*real_line_pp == NULL) *real_line_pp = new_real_line();
             buffer_line_insert_utf8_text(buffer, *real_line_pp, text, strlen(text), (*real_line_pp)->cap, 0);
             real_line_pp = &((*real_line_pp)->next);
-            buffer->rendered_height += buffer->line_height;
             i = 0;
         } else {
             text[i++] = ch;
@@ -440,12 +437,13 @@ void debug_print_lines_state(buffer_t *buffer) {
 
 void buffer_reflow_softwrap(buffer_t *buffer, double softwrap_width) {
     display_line_t *display_line;
-    /* int i; */
 
     if (fabs(buffer->rendered_width - softwrap_width) < 0.001) return;
     buffer->rendered_width = softwrap_width;
     
     softwrap_width -= buffer->right_margin + buffer->left_margin;
+    buffer->display_lines_count = 0;
+    buffer->rendered_height = 0.0;
 
     //debug_print_lines_state(buffer);
 
@@ -456,9 +454,15 @@ void buffer_reflow_softwrap(buffer_t *buffer, double softwrap_width) {
 
     for (display_line = buffer->display_line; display_line != NULL; display_line = display_line->next) {
         buffer_line_reflow_softwrap(buffer, display_line, softwrap_width);
+        ++(buffer->display_lines_count);
+        buffer->rendered_height += buffer->line_height;
         //debug_print_lines_state(buffer);
     }
 
+    buffer->rendered_height += buffer->line_height;
+
+    debug_print_lines_state(buffer);
+    printf("Returned count: %d\n", buffer->display_lines_count);
 
     /* Restore cursor position */
     /*TODO*/
