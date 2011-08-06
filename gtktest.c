@@ -23,6 +23,7 @@ GtkIMContext *drarim;
 gboolean cursor_visible = TRUE;
 
 /* TODO:
+   - rimpiazzare array delle linee con una linked list (cosi` e` impossibile farlo funzionare)
    - soft line wrap
    - editing
    - key bindings
@@ -111,7 +112,7 @@ static void redraw_cursor_line(gboolean large, gboolean move_origin_when_outside
 
 static void move_cursor(int delta_line, int delta_char) {
     redraw_cursor_line(FALSE, FALSE);
-    
+    /* TODO: reimplement
     buffer->cursor_line += delta_line;
 
     if (buffer->cursor_line >= buffer->lines_cap) buffer->cursor_line = buffer->lines_cap-1;
@@ -119,10 +120,10 @@ static void move_cursor(int delta_line, int delta_char) {
 
     buffer->cursor_glyph += delta_char;
 
-    if (buffer->cursor_line >= buffer->lines_cap) buffer->cursor_glyph = 0; /* only happens when there are no lines */
+    if (buffer->cursor_line >= buffer->lines_cap) buffer->cursor_glyph = 0; // only happens when there are no lines
     if (buffer->cursor_glyph > buffer->lines[buffer->cursor_line].glyphs_cap) buffer->cursor_glyph = buffer->lines[buffer->cursor_line].glyphs_cap;
     if (buffer->cursor_glyph < 0) buffer->cursor_glyph = 0;
-
+    */
     cursor_visible = TRUE;
 
     redraw_cursor_line(FALSE, TRUE);
@@ -165,7 +166,9 @@ static gboolean key_press_callback(GtkWidget *widget, GdkEventKey *event, gpoint
 static void text_entry_callback(GtkIMContext *context, gchar *str, gpointer data) {
     printf("entered: %s\n", str);
 
+    /* TODO: reimplement
     buffer_line_insert_utf8_text(buffer, buffer->cursor_line, str, strlen(str), buffer->cursor_glyph, 1);
+    */
     
     redraw_cursor_line(FALSE, TRUE);
 }
@@ -192,9 +195,9 @@ static gboolean button_press_callback(GtkWidget *widget, GdkEventButton *event, 
 
 static gboolean expose_event_callback(GtkWidget *widget, GdkEventExpose *event, gpointer data) {
     cairo_t *cr = gdk_cairo_create(widget->window);
-    int i;
     double origin_y, origin_x, y;
     GtkAllocation allocation;
+    display_line_t *line;
 
     gtk_widget_get_allocation(widget, &allocation);
 
@@ -216,7 +219,7 @@ static gboolean expose_event_callback(GtkWidget *widget, GdkEventExpose *event, 
 
     /*printf("DRAWING!\n");*/
 
-    for (i = 0; i < buffer->lines_cap; ++i) {
+    for (line = buffer->display_line; line != NULL; line = line->next) {
         double line_end_width;
         
         if (y - buffer->line_height > event->area.y+event->area.height) break; /* if we passed the visible area the just stop displaying */
@@ -225,10 +228,10 @@ static gboolean expose_event_callback(GtkWidget *widget, GdkEventExpose *event, 
             continue;
         }
 
-        line_end_width = buffer_line_adjust_glyphs(buffer, i, origin_x, y);
-        cairo_show_glyphs(cr, buffer->lines[i].glyphs, buffer->lines[i].glyphs_cap);
+        line_end_width = buffer_line_adjust_glyphs(buffer, line, origin_x, y);
+        cairo_show_glyphs(cr, line->real_line->glyphs + line->offset, line->size);
 
-        if (!buffer->lines[i].hard_start) {
+        if (line->offset != 0) {
             cairo_set_line_width(cr, 4.0);
             cairo_move_to(cr, 0.0, y-(buffer->ex_height/2.0));
             cairo_line_to(cr, buffer->left_margin, y-(buffer->ex_height/2.0));
@@ -236,7 +239,7 @@ static gboolean expose_event_callback(GtkWidget *widget, GdkEventExpose *event, 
             cairo_set_line_width(cr, 2.0);
         }
 
-        if (!buffer->lines[i].hard_end) {
+        if (!line->hard_end) {
             cairo_set_line_width(cr, 4.0);
             cairo_move_to(cr, line_end_width, y-(buffer->ex_height/2.0));
             cairo_line_to(cr, allocation.width, y-(buffer->ex_height/2.0));
@@ -259,7 +262,7 @@ static gboolean expose_event_callback(GtkWidget *widget, GdkEventExpose *event, 
 
     {
         char *posbox_text;
-        asprintf(&posbox_text, " %d,%d %0.0f%%", buffer->cursor_line, buffer->cursor_glyph, (100.0 * buffer->cursor_line / buffer->lines_cap));
+        asprintf(&posbox_text, " %d,%d %0.0f%%", buffer->cursor_line, buffer->cursor_glyph, (100.0 * buffer->cursor_line / buffer->display_lines_count));
         cairo_text_extents_t posbox_ext;
         double x, y;
 

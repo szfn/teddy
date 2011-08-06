@@ -15,13 +15,21 @@ typedef struct _my_glyph_info_t {
     uint32_t code;
 } my_glyph_info_t;
 
-typedef struct _line_t {
+typedef struct _real_line_t {
     cairo_glyph_t *glyphs;
     my_glyph_info_t *glyph_info;
-    int allocated_glyphs;
-    int glyphs_cap;
-    int hard_start, hard_end;
-} line_t;
+    int allocated;
+    int cap;
+    struct _real_line_t *next;
+} real_line_t;
+
+typedef struct _display_line_t {
+    real_line_t *real_line;
+    int offset;
+    int size;
+    int hard_end;
+    struct _display_line_t *next;
+} display_line_t;
 
 typedef struct _buffer_t {
     /* Font face stuff */
@@ -36,9 +44,9 @@ typedef struct _buffer_t {
     double ascent, descent;
 
     /* Buffer's text and glyphs */
-    line_t *lines;
-    int allocated_lines;
-    int lines_cap;
+    real_line_t *real_line;
+    display_line_t *display_line;
+    int display_lines_count;
 
     /* Buffer's secondary properties (calculated) */
     double rendered_height;
@@ -56,11 +64,11 @@ typedef struct _buffer_t {
 buffer_t *buffer_create(FT_Library *library);
 void buffer_free(buffer_t *buffer);
 void load_text_file(buffer_t *buffer, const char *filename);
-double buffer_line_adjust_glyphs(buffer_t *buffer, int line_idx, double x, double y);
+double buffer_line_adjust_glyphs(buffer_t *buffer, display_line_t *display_line, double x, double y);
 void buffer_cursor_position(buffer_t *buffer, double origin_x, double origin_y, double *x, double *y);
 void buffer_cursor_line_rectangle(buffer_t *buffer, double origin_x, double origin_y, double *x, double *y, double *height, double *width);
 void buffer_move_cursor_to_position(buffer_t *buffer, double origin_x, double origin_y, double x, double y);
-void buffer_line_insert_utf8_text(buffer_t *buffer, int line_idx, char *text, int len, int insertion_point, int move_cursor);
+void buffer_line_insert_utf8_text(buffer_t *buffer, real_line_t *line, char *text, int len, int insertion_point, int move_cursor);
 void buffer_reflow_softwrap(buffer_t *buffer, double softwrap_width);
 
 #endif

@@ -4,21 +4,32 @@
 #include <stdlib.h>
 #include <math.h>
 
-static void init_line(line_t *line) {
-    line->allocated_glyphs = 10;
-    line->glyphs = malloc(sizeof(cairo_glyph_t) * line->allocated_glyphs);
+static real_line_t *new_real_line() {
+    real_line_t *line = malloc(sizeof(real_line_t));
+    line->allocated = 10;
+    line->glyphs = malloc(sizeof(cairo_glyph_t) * line->allocated);
     if (!(line->glyphs)) {
         perror("Couldn't allocate glyphs space");
         exit(EXIT_FAILURE);
     }
-    line->glyph_info = malloc(sizeof(my_glyph_info_t) * line->allocated_glyphs);
+    line->glyph_info = malloc(sizeof(my_glyph_info_t) * line->allocated);
     if (!(line->glyphs)) {
         perror("Couldn't allocate glyphs space");
         exit(EXIT_FAILURE);
     }
-    line->glyphs_cap = 0;
-    line->hard_start = 1;
-    line->hard_end = 1;
+    line->cap = 0;
+    line->next = NULL;
+    return line;
+}
+
+static display_line_t *new_display_line(real_line_t *real_line, int offset, int size) {
+    display_line_t *display_line = malloc(sizeof(display_line_t));
+    display_line->real_line = real_line;
+    display_line->offset = offset;
+    display_line->size = size;
+    display_line->next = NULL;
+    display_line->hard_end = 1;
+    return display_line;
 }
 
 static uint8_t utf8_first_byte_processing(uint8_t ch) {
@@ -38,40 +49,40 @@ static uint8_t utf8_first_byte_processing(uint8_t ch) {
     return ch;
 }
 
-static void grow_line(line_t *line, int insertion_point, int size) { 
+static void grow_line(real_line_t *line, int insertion_point, int size) { 
     /*printf("cap: %d allocated: %d\n", line->glyphs_cap, line->allocated_glyphs);*/
    
-    while (line->glyphs_cap + size >= line->allocated_glyphs) {
-        line->allocated_glyphs *= 2;
+    while (line->cap + size >= line->allocated) {
+        line->allocated *= 2;
+        if (line->allocated == 0) line->allocated = 10;
         /*printf("new size: %d\n", line->allocated_glyphs);*/
-        line->glyphs = realloc(line->glyphs, sizeof(cairo_glyph_t) * line->allocated_glyphs);
+        line->glyphs = realloc(line->glyphs, sizeof(cairo_glyph_t) * line->allocated);
         if (!(line->glyphs)) {
             perror("Couldn't allocate glyphs space");
             exit(EXIT_FAILURE);
         }
-        line->glyph_info = realloc(line->glyph_info, sizeof(my_glyph_info_t) * line->allocated_glyphs);
+        line->glyph_info = realloc(line->glyph_info, sizeof(my_glyph_info_t) * line->allocated);
         if (!(line->glyph_info)) {
             perror("Couldn't allocate glyphs space");
             exit(EXIT_FAILURE);
         }
     }
 
-    if (insertion_point < line->glyphs_cap) {
+    if (insertion_point < line->cap) {
         /*printf("memmove %x <- %x %d\n", line->glyphs+dst+1, line->glyphs+dst, line->glyphs_cap - dst); */
-        memmove(line->glyphs+insertion_point+size, line->glyphs+insertion_point, sizeof(cairo_glyph_t)*(line->glyphs_cap - insertion_point));
-        memmove(line->glyph_info+insertion_point+size, line->glyph_info+insertion_point, sizeof(my_glyph_info_t)*(line->glyphs_cap - insertion_point));
-        line->glyphs_cap += size;
+        memmove(line->glyphs+insertion_point+size, line->glyphs+insertion_point, sizeof(cairo_glyph_t)*(line->cap - insertion_point));
+        memmove(line->glyph_info+insertion_point+size, line->glyph_info+insertion_point, sizeof(my_glyph_info_t)*(line->cap - insertion_point));
+        line->cap += size;
     } 
 }
 
-void buffer_line_insert_utf8_text(buffer_t *buffer, int line_idx, char *text, int len, int insertion_point, int move_cursor) {
+void buffer_line_insert_utf8_text(buffer_t *buffer, real_line_t *line, char *text, int len, int insertion_point, int move_cursor) {
     FT_Face scaledface = cairo_ft_scaled_font_lock_face(buffer->main_font.cairofont);
     FT_Bool use_kerning = FT_HAS_KERNING(scaledface);
     FT_UInt previous = 0;
     int initial_spaces = 1;
     int src, dst;
     double width = 0.0;
-    line_t *line = buffer->lines + line_idx;
     
     for (src = 0, dst = insertion_point; src < len; ) {
         uint32_t code;
@@ -140,8 +151,10 @@ void buffer_line_insert_utf8_text(buffer_t *buffer, int line_idx, char *text, in
         
         line->glyph_info[dst].x_advance = extents.x_advance;
         width += extents.x_advance;
+        if (dst == line->cap) {
+            ++(line->cap);
+        }
         ++dst;
-        ++(line->glyphs_cap);
 
         if (move_cursor) {
             buffer->cursor_glyph++;
@@ -157,14 +170,14 @@ void buffer_line_insert_utf8_text(buffer_t *buffer, int line_idx, char *text, in
     cairo_ft_scaled_font_unlock_face(buffer->main_font.cairofont);
 }
 
-double buffer_line_adjust_glyphs(buffer_t *buffer, int line_idx, double x, double y) {
-    cairo_glyph_t *glyphs = buffer->lines[line_idx].glyphs;
-    my_glyph_info_t *glyph_info = buffer->lines[line_idx].glyph_info;
-    int glyphs_cap = buffer->lines[line_idx].glyphs_cap;
+double buffer_line_adjust_glyphs(buffer_t *buffer, display_line_t *display_line, double x, double y) {
+    real_line_t *line = display_line->real_line;
+    cairo_glyph_t *glyphs = line->glyphs + display_line->offset;
+    my_glyph_info_t *glyph_info = line->glyph_info + display_line->offset;
     int i;
 
-    for (i = 0; i < glyphs_cap; ++i) {
-        x += glyph_info[i].kerning_correction;
+    for (i = 0; i < display_line->size; ++i) {
+        if (i > 0) x += glyph_info[i].kerning_correction;
         glyphs[i].x = x;
         glyphs[i].y = y;
         x += glyph_info[i].x_advance;
@@ -173,41 +186,25 @@ double buffer_line_adjust_glyphs(buffer_t *buffer, int line_idx, double x, doubl
     return x;
 }
 
-static void init_lines(buffer_t *buffer) {
-    int i = 0;
-    buffer->allocated_lines = 10;
-    buffer->lines = malloc(buffer->allocated_lines * sizeof(line_t));
-    buffer->lines_cap = 0;
-    if (!(buffer->lines)) {
-        perror("lines allocation failed");
-        exit(EXIT_FAILURE);
-    }
-    for (i = 0; i < buffer->allocated_lines; ++i) {
-        init_line(buffer->lines+i);
-    }
-}
+static void buffer_create_display(buffer_t *buffer) {
+    real_line_t *line;
+    display_line_t **display_line_pp = &(buffer->display_line);
 
-static void grow_lines(buffer_t *buffer) {
-    int new_allocated_lines = buffer->allocated_lines * 2;
-    int i;
-    buffer->lines = realloc(buffer->lines, new_allocated_lines * sizeof(line_t));
-    if (!(buffer->lines)) {
-        perror("lines allocation failed");
-        exit(EXIT_FAILURE);
+    for (line = buffer->real_line; line != NULL; line = line->next) {
+        *display_line_pp = new_display_line(line, 0, line->cap);
+        display_line_pp = &((*display_line_pp)->next);
     }
-    for (i = buffer->allocated_lines; i < new_allocated_lines; ++i) {
-        init_line(buffer->lines+i);
-    }
-    buffer->allocated_lines = new_allocated_lines;
 }
 
 void load_text_file(buffer_t *buffer, const char *filename) {
     FILE *fin = fopen(filename, "r");
     char ch;
-    int last_was_newline = 0;
-    int i;
+    int i = 0;
     int text_allocation = 10;
     char *text = malloc(sizeof(char) * text_allocation);
+    real_line_t **real_line_pp = &(buffer->real_line);
+
+    buffer->rendered_height = 0;
 
     if (!fin) {
         perror("Couldn't open input file");
@@ -219,10 +216,6 @@ void load_text_file(buffer_t *buffer, const char *filename) {
         exit(EXIT_FAILURE);
     }
     
-    if (buffer->lines_cap >= buffer->allocated_lines) {
-        grow_lines(buffer);
-    }
-
     while ((ch = fgetc(fin)) != EOF) {
         if (i >= text_allocation) {
             text_allocation *= 2;
@@ -233,32 +226,27 @@ void load_text_file(buffer_t *buffer, const char *filename) {
             }
         }
         if (ch == '\n') {
-            last_was_newline = 1;
             text[i] = '\0';
-            buffer_line_insert_utf8_text(buffer, buffer->lines_cap, text, strlen(text), buffer->lines[buffer->lines_cap].glyphs_cap, 0);
-            ++(buffer->lines_cap);
-            if (buffer->lines_cap >= buffer->allocated_lines) {
-                grow_lines(buffer);
-            }
-
+            if (*real_line_pp == NULL) *real_line_pp = new_real_line();
+            buffer_line_insert_utf8_text(buffer, *real_line_pp, text, strlen(text), (*real_line_pp)->cap, 0);
+            real_line_pp = &((*real_line_pp)->next);
+            buffer->rendered_height += buffer->line_height;
             i = 0;
         } else {
-            last_was_newline = 0;
             text[i++] = ch;
         }
     }
 
-    if (!last_was_newline) {
-        ++(buffer->lines_cap);
-    }
+    free(text);
 
-    buffer->rendered_height = buffer->line_height * (1+buffer->lines_cap);
-
+    buffer_create_display(buffer);
+    
     fclose(fin);
 }
 
 void buffer_cursor_position(buffer_t *buffer, double origin_x, double origin_y, double *x, double *y) {
-    /*int i;*/
+    *x = 0; *y = 0;
+    /* TODO: rewrite
     line_t *line;
     
     *y = origin_y + (buffer->line_height * buffer->cursor_line);
@@ -272,10 +260,12 @@ void buffer_cursor_position(buffer_t *buffer, double origin_x, double origin_y, 
         *x = line->glyphs[buffer->cursor_glyph].x;
     } else if (line->glyphs_cap > 0) {
         *x = line->glyphs[line->glyphs_cap-1].x + line->glyph_info[line->glyphs_cap-1].x_advance;
-    }
+        }*/
 }
 
 void buffer_move_cursor_to_position(buffer_t *buffer, double origin_x, double origin_y, double x, double y) {
+    buffer->cursor_line = 0; buffer->cursor_glyph = 0;
+    /* TODO reimplement
     int i;
     line_t *line;
 
@@ -309,7 +299,7 @@ void buffer_move_cursor_to_position(buffer_t *buffer, double origin_x, double or
 
     if (i >= line->glyphs_cap) {
         buffer->cursor_glyph = line->glyphs_cap;
-    }
+        }*/
 }
 
 buffer_t *buffer_create(FT_Library *library) {
@@ -336,7 +326,9 @@ buffer_t *buffer_create(FT_Library *library) {
         buffer->descent = font_extents.descent;
     }
 
-    init_lines(buffer);
+    buffer->real_line = NULL;
+    buffer->display_line = NULL;
+    buffer->display_lines_count = 0;
 
     buffer->rendered_height = 0.0;
     buffer->rendered_width = 0.0;
@@ -352,97 +344,162 @@ buffer_t *buffer_create(FT_Library *library) {
 }
 
 void buffer_free(buffer_t *buffer) {
-    int i;
-    
-    for (i = 0; i < buffer->allocated_lines; ++i) {
-        line_t *curline = buffer->lines+i;
-        if (curline->glyphs != NULL) free(curline->glyphs);
-        if (curline->glyph_info != NULL) free(curline->glyph_info);
+    {
+        real_line_t *cursor;
+        
+        cursor = buffer->real_line;
+        
+        while (cursor != NULL) {
+            real_line_t *next = cursor->next;
+            free(cursor);
+            cursor = next;
+        }
     }
 
-    free(buffer->lines);
+    {
+        display_line_t *cursor;
+
+        cursor = buffer->display_line;
+
+        while (cursor != NULL) {
+            display_line_t *next = cursor->next;
+            free(cursor);
+            cursor = next;
+        }
+    }
 
     acmacs_font_free(&(buffer->main_font));
     acmacs_font_free(&(buffer->posbox_font));
 }
 
 static void buffer_line_reflow_softwrap(buffer_t *buffer, int line_idx, double softwrap_width) {
-    double width = 0.0;
-    int j;
-    line_t *line = buffer->lines + line_idx;
+    /* TODO: reimplement */
+    /*   double width = 0.0; */
+    /* int j; */
+    /* line_t *line = buffer->lines + line_idx; */
     
-    /* Scan current line until either:
-       - we ran out of space
-       - the line ends */
+    /* /\* Scan current line until either: */
+    /*    - we ran out of space */
+    /*    - the line ends *\/ */
     
-    for (j = 0; j < line->glyphs_cap; ++j) {
-        width += line->glyph_info[j].kerning_correction;
-        width += line->glyph_info[j].x_advance;
-        if (width > softwrap_width) {
-            break;
-        }
-    }
+    /* for (j = 0; j < line->glyphs_cap; ++j) { */
+    /*     width += line->glyph_info[j].kerning_correction; */
+    /*     width += line->glyph_info[j].x_advance; */
+    /*     if (width > softwrap_width) { */
+    /*         break; */
+    /*     } */
+    /* } */
     
-    /* the first character we can ever move to the next line is always the first one */
-    if (j == 0) j = 1;
+    /* /\* the first character we can ever move to the next line is always the first one *\/ */
+    /* if (j == 0) j = 1; */
     
-    if (j < line->glyphs_cap) {
-        /* If this line used to have a hard end here then create a new line to push extra characters to */
+    /* if (j < line->glyphs_cap) { */
+    /*     /\* If this line used to have a hard end here then create a new line to push extra characters to *\/ */
         
-        line_t *next_line;
+    /*     line_t *next_line; */
         
-        if (line->hard_end) {
-            line->hard_end = 0;
+    /*     if (line->hard_end) { */
+    /*         line->hard_end = 0; */
 
-            /* We create a new line here */
+    /*         /\* We create a new line here *\/ */
 
-            if (buffer->lines_cap >= buffer->allocated_lines) {
-                grow_lines(buffer);
-            }
-            memmove(buffer->lines + line_idx + 2, buffer->lines + line_idx + 1, sizeof(line_t) * (buffer->lines_cap - line_idx - 1));
+    /*         if (buffer->lines_cap >= buffer->allocated_lines) { */
+    /*             grow_lines(buffer); */
+    /*         } */
+    /*         /\* TODO: allocation space is also lost here (the line immediately after the cap) *\/ */
+    /*         memmove(buffer->lines + line_idx + 2, buffer->lines + line_idx + 1, sizeof(line_t) * (buffer->lines_cap - line_idx - 1)); */
 
-            next_line = buffer->lines + line_idx + 1;
+    /*         next_line = buffer->lines + line_idx + 1; */
 
-            init_line(next_line);
+    /*         init_line(next_line); */
 
-            next_line->hard_start = 0;
-            next_line->hard_end = 1;
-        } else {
-            next_line = buffer->lines + line_idx + 1;
-        }
+    /*         next_line->hard_start = 0; */
+    /*         next_line->hard_end = 1; */
 
-        /* Push characters on the next line*/
+    /*         ++(buffer->lines_cap); */
+    /*     } else { */
+    /*         next_line = buffer->lines + line_idx + 1; */
+    /*     } */
 
-        grow_line(next_line, 0, line->glyphs_cap-j);
+    /*     /\* Push characters on the next line*\/ */
 
-        memmove(next_line->glyphs, line->glyphs+j, sizeof(cairo_glyph_t) * (line->glyphs_cap-j));
-        memmove(next_line->glyph_info, line->glyph_info+j, sizeof(my_glyph_info_t) * (line->glyphs_cap-j));
+    /*     grow_line(next_line, 0, line->glyphs_cap-j); */
 
-        if (next_line->glyphs_cap == 0) {
-            next_line->glyphs_cap = line->glyphs_cap-j;
-        }
+    /*     memmove(next_line->glyphs, line->glyphs+j, sizeof(cairo_glyph_t) * (line->glyphs_cap-j)); */
+    /*     memmove(next_line->glyph_info, line->glyph_info+j, sizeof(my_glyph_info_t) * (line->glyphs_cap-j)); */
 
-        line->glyphs_cap = j;
-    } else {
-        if (line->hard_end) return;
+    /*     if (next_line->glyphs_cap == 0) { */
+    /*         next_line->glyphs_cap = line->glyphs_cap-j; */
+    /*     } */
+
+    /*     line->glyphs_cap = j; */
+    /* } else { */
+    /*     if (line->hard_end) return; */
         
-        /* If the line ended and (line->hard_end == false) copy glyphs from next line until the space is filled or we run into a line that is the hard_end */
-    }
+    /*     /\* If the line ended and (line->hard_end == false) copy glyphs from next line until the space is filled or we run into a line that is the hard_end *\/ */
+
+    /*     printf("starting to suck (line %d of %d)\n", line_idx, buffer->lines_cap); */
+
+    /*     while (width < softwrap_width) { */
+    /*         line_t *next_line = buffer->lines + line_idx + 1; */
+
+    /*         printf("    sucking %d into %d\n", line_idx+1, line_idx); */
+            
+    /*         for (j = 0; j < next_line->glyphs_cap; ++j) { */
+    /*             if (width + next_line->glyph_info[j].x_advance > softwrap_width) break; */
+    /*             width += next_line->glyph_info[j].x_advance; */
+    /*         } */
+            
+    /*         if (j == 0) return; */
+            
+    /*         grow_line(line, line->glyphs_cap, j); */
+            
+    /*         memmove(line->glyphs+line->glyphs_cap, next_line->glyphs, sizeof(cairo_glyph_t)*j); */
+    /*         memmove(line->glyph_info+line->glyphs_cap, next_line->glyph_info, sizeof(my_glyph_info_t)*j); */
+            
+    /*         line->glyphs_cap += j; */
+            
+    /*         if (j < next_line->glyphs_cap) { */
+    /*             memmove(next_line->glyphs, next_line->glyphs+j, sizeof(cairo_glyph_t)*(next_line->glyphs_cap - j)); */
+    /*             memmove(next_line->glyph_info, next_line->glyph_info+j, sizeof(my_glyph_info_t)*(next_line->glyphs_cap - j)); */
+                
+    /*             next_line->glyphs_cap -= j; */
+    /*         } else { */
+    /*             /\* next line was exhausted, remove it *\/ */
+    /*             line->hard_end = next_line->hard_end; */
+                
+    /*             printf("    nix line from hell called\n"); */
+    
+    /*             buffer_nix_line(buffer, line_idx+1); */
+
+    /*             printf("    number of physical lines: %d\n", buffer->lines_cap); */
+    /*         } */
+
+    /*         if (line->hard_end) break; */
+    /*     } */
+    /* } */
 }
 
 void buffer_reflow_softwrap(buffer_t *buffer, double softwrap_width) {
-    int i;
-    softwrap_width -= buffer->right_margin + buffer->left_margin;
+    /* int i; */
+
+    /* if (fabs(buffer->rendered_width - softwrap_width) < 0.001) return; */
+    /* buffer->rendered_width = softwrap_width; */
     
-    if (buffer->rendered_width <= softwrap_width) return;
+    /* softwrap_width -= buffer->right_margin + buffer->left_margin; */
 
-    /* Get the real cursor position */
+    /* debug_print_lines_state(buffer); */
 
-    for (i = 0; i < buffer->lines_cap; ++i) {
-        buffer_line_reflow_softwrap(buffer, i, softwrap_width);
-    }
+    /* printf("Reflow called\n"); */
 
-    buffer->rendered_width = softwrap_width + buffer->right_margin + buffer->left_margin;
+    /* /\* Get the real cursor position *\/ */
+    /* /\*TODO*\/ */
 
-    /* Restore cursor position */
+    /* for (i = 0; i < buffer->lines_cap; ++i) { */
+    /*     buffer_line_reflow_softwrap(buffer, i, softwrap_width); */
+    /*     debug_print_lines_state(buffer); */
+    /* } */
+
+    /* /\* Restore cursor position *\/ */
+    /* /\*TODO*\/ */
 }
