@@ -23,8 +23,8 @@ GtkIMContext *drarim;
 gboolean cursor_visible = TRUE;
 
 /* TODO:
-   - rimpiazzare array delle linee con una linked list (cosi` e` impossibile farlo funzionare)
    - soft line wrap
+   - if cursor is outside of current window replace cursor on first in-window line (at first glyph)
    - editing
    - key bindings
    - highlighting
@@ -113,8 +113,6 @@ static void redraw_cursor_line(gboolean large, gboolean move_origin_when_outside
 static void move_cursor(int delta_line, int delta_char) {
     int i = 0;
     redraw_cursor_line(FALSE, FALSE);
-
-    /*TODO: implement backward movement correctly*/
 
     if (delta_line > 0) {
         for (i = 0; i < delta_line; ++i) {
