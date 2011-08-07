@@ -183,11 +183,13 @@ static gboolean key_press_callback(GtkWidget *widget, GdkEventKey *event, gpoint
 static void text_entry_callback(GtkIMContext *context, gchar *str, gpointer data) {
     printf("entered: %s\n", str);
 
-    /* TODO: reimplement
-    buffer_line_insert_utf8_text(buffer, buffer->cursor_line, str, strlen(str), buffer->cursor_glyph, 1);
-    */
-    
-    redraw_cursor_line(FALSE, TRUE);
+    buffer_line_insert_utf8_text(buffer, buffer->cursor_display_line->real_line, str, strlen(str), buffer->cursor_display_line->offset+buffer->cursor_glyph);
+
+    if (buffer_reflow_softwrap_real_line(buffer, buffer->cursor_display_line->real_line)) {
+        gtk_widget_queue_draw(drar);
+    } else {
+        redraw_cursor_line(FALSE, TRUE);
+    }
 }
 
 static gboolean button_press_callback(GtkWidget *widget, GdkEventButton *event, gpointer data) {
