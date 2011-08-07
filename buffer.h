@@ -20,6 +20,8 @@ typedef struct _real_line_t {
     my_glyph_info_t *glyph_info;
     int allocated;
     int cap;
+    int lineno; // real line number
+    struct _display_line_t *first_display_line;
     struct _real_line_t *next;
 } real_line_t;
 
@@ -28,6 +30,8 @@ typedef struct _display_line_t {
     int offset;
     int size;
     int hard_end;
+    int lineno; // display line number
+    struct _display_line_t *prev;
     struct _display_line_t *next;
 } display_line_t;
 
@@ -53,7 +57,8 @@ typedef struct _buffer_t {
     double rendered_width;
 
     /* Cursor */
-    int cursor_line, cursor_glyph;
+    display_line_t *cursor_display_line;
+    int cursor_glyph;
 
     /* User options */
     int tab_width;
@@ -70,5 +75,9 @@ void buffer_cursor_line_rectangle(buffer_t *buffer, double origin_x, double orig
 void buffer_move_cursor_to_position(buffer_t *buffer, double origin_x, double origin_y, double x, double y);
 void buffer_line_insert_utf8_text(buffer_t *buffer, real_line_t *line, char *text, int len, int insertion_point, int move_cursor);
 void buffer_reflow_softwrap(buffer_t *buffer, double softwrap_width);
+
+void buffer_real_cursor(buffer_t *buffer, real_line_t **real_line, int *real_glyph);
+void buffer_set_to_real(buffer_t *buffer, real_line_t *real_line, int real_glyph);
+
 
 #endif

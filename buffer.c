@@ -4,7 +4,7 @@
 #include <stdlib.h>
 #include <math.h>
 
-static real_line_t *new_real_line() {
+static real_line_t *new_real_line(int lineno) {
     real_line_t *line = malloc(sizeof(real_line_t));
     line->allocated = 10;
     line->glyphs = malloc(sizeof(cairo_glyph_t) * line->allocated);
@@ -19,15 +19,18 @@ static real_line_t *new_real_line() {
     }
     line->cap = 0;
     line->next = NULL;
+    line->lineno = lineno;
     return line;
 }
 
 static display_line_t *new_display_line(real_line_t *real_line, int offset, int size) {
     display_line_t *display_line = malloc(sizeof(display_line_t));
+    if (offset == 0) real_line->first_display_line = display_line;
     display_line->real_line = real_line;
     display_line->offset = offset;
     display_line->size = size;
     display_line->next = NULL;
+    display_line->prev = NULL;
     display_line->hard_end = 1;
     return display_line;
 }
@@ -188,12 +191,17 @@ double buffer_line_adjust_glyphs(buffer_t *buffer, display_line_t *display_line,
 
 static void buffer_create_display(buffer_t *buffer) {
     real_line_t *line;
+    display_line_t *prev_display_line = NULL;
     display_line_t **display_line_pp = &(buffer->display_line);
 
     for (line = buffer->real_line; line != NULL; line = line->next) {
         *display_line_pp = new_display_line(line, 0, line->cap);
+        (*display_line_pp)->prev = prev_display_line;
+        prev_display_line = *display_line_pp;
         display_line_pp = &((*display_line_pp)->next);
     }
+
+    buffer->cursor_display_line = buffer->display_line;
 }
 
 void load_text_file(buffer_t *buffer, const char *filename) {
@@ -203,6 +211,7 @@ void load_text_file(buffer_t *buffer, const char *filename) {
     int text_allocation = 10;
     char *text = malloc(sizeof(char) * text_allocation);
     real_line_t **real_line_pp = &(buffer->real_line);
+    int lineno = 0;
 
     if (!fin) {
         perror("Couldn't open input file");
@@ -225,10 +234,11 @@ void load_text_file(buffer_t *buffer, const char *filename) {
         }
         if (ch == '\n') {
             text[i] = '\0';
-            if (*real_line_pp == NULL) *real_line_pp = new_real_line();
+            if (*real_line_pp == NULL) *real_line_pp = new_real_line(lineno);
             buffer_line_insert_utf8_text(buffer, *real_line_pp, text, strlen(text), (*real_line_pp)->cap, 0);
             real_line_pp = &((*real_line_pp)->next);
             i = 0;
+            ++lineno;
         } else {
             text[i++] = ch;
         }
@@ -241,27 +251,53 @@ void load_text_file(buffer_t *buffer, const char *filename) {
     fclose(fin);
 }
 
+void buffer_real_cursor(buffer_t *buffer, real_line_t **real_line, int *real_glyph) {
+    *real_line = buffer->cursor_display_line->real_line;
+    *real_glyph = buffer->cursor_glyph + buffer->cursor_display_line->offset;
+}
+
+void buffer_set_to_real(buffer_t *buffer, real_line_t *real_line, int real_glyph) {
+    display_line_t *display_line = real_line->first_display_line;
+
+    if (real_glyph < 0) real_glyph = 0;
+
+    //printf("Searching real_glyph: %d (display_line->offset == %d)\n", real_glyph, display_line->offset);
+
+    while ((display_line != NULL) && (display_line->offset <= real_glyph)) {
+        //printf("   settings\n");
+        buffer->cursor_display_line = display_line;
+        buffer->cursor_glyph = real_glyph - display_line->offset;
+        if (buffer->cursor_glyph > display_line->size) buffer->cursor_glyph = display_line->size;
+        if (display_line->hard_end) break;
+        display_line = display_line->next;
+        //printf("   display_line->offset == %d\n", display_line->offset);
+    }
+}
+
 void buffer_cursor_position(buffer_t *buffer, double origin_x, double origin_y, double *x, double *y) {
-    *x = 0; *y = 0;
-    /* TODO: rewrite
-    line_t *line;
+    display_line_t *cdl;
+    real_line_t *crl;
     
-    *y = origin_y + (buffer->line_height * buffer->cursor_line);
-
+    *y = origin_y + (buffer->line_height * (buffer->cursor_display_line ? buffer->cursor_display_line->lineno : 0));
     *x = origin_x;
-    if (buffer->cursor_line >= buffer->lines_cap) return;
 
-    line = buffer->lines + buffer->cursor_line;
+    if (buffer->cursor_display_line == NULL) return;
 
-    if (buffer->cursor_glyph < line->glyphs_cap) {
-        *x = line->glyphs[buffer->cursor_glyph].x;
-    } else if (line->glyphs_cap > 0) {
-        *x = line->glyphs[line->glyphs_cap-1].x + line->glyph_info[line->glyphs_cap-1].x_advance;
-        }*/
+    cdl = buffer->cursor_display_line;
+    crl = cdl->real_line;
+
+    if (crl->cap == 0) return;
+
+    if (buffer->cursor_glyph < cdl->size) {
+        *x = crl->glyphs[cdl->offset + buffer->cursor_glyph].x;
+    } else {
+        *x = crl->glyphs[cdl->offset + cdl->size - 1].x + crl->glyph_info[cdl->offset + cdl->size - 1].x_advance;
+    }
 }
 
 void buffer_move_cursor_to_position(buffer_t *buffer, double origin_x, double origin_y, double x, double y) {
-    buffer->cursor_line = 0; buffer->cursor_glyph = 0;
+    buffer->cursor_glyph = 0;
+    buffer->cursor_display_line = buffer->display_line;
     /* TODO reimplement
     int i;
     line_t *line;
@@ -330,7 +366,7 @@ buffer_t *buffer_create(FT_Library *library) {
     buffer->rendered_height = 0.0;
     buffer->rendered_width = 0.0;
 
-    buffer->cursor_line = 0;
+    buffer->cursor_display_line = NULL;
     buffer->cursor_glyph = 0;
 
     buffer->tab_width = 4;
@@ -395,8 +431,10 @@ static void buffer_line_reflow_softwrap(buffer_t *buffer, display_line_t *displa
         /* Create a new display line and push characters to it */
         display_line_t *saved_next = display_line->next;
         display_line->next = new_display_line(display_line->real_line, display_line->offset + j, display_line->size - j);
+        display_line->next->prev = display_line;
         display_line->next->hard_end = display_line->hard_end;
         display_line->next->next = saved_next;
+        saved_next->prev = display_line->next;
         
         display_line->hard_end = 0;
         display_line->size = j;
@@ -410,6 +448,7 @@ static void buffer_line_reflow_softwrap(buffer_t *buffer, display_line_t *displa
         display_line->size += next_display_line->size;
 
         display_line->next = next_display_line->next;
+        next_display_line->next->prev = display_line;
 
         free(next_display_line);
 
@@ -437,6 +476,8 @@ void debug_print_lines_state(buffer_t *buffer) {
 
 void buffer_reflow_softwrap(buffer_t *buffer, double softwrap_width) {
     display_line_t *display_line;
+    real_line_t *real_cursor_line;
+    int real_cursor_glyph;
 
     if (fabs(buffer->rendered_width - softwrap_width) < 0.001) return;
     buffer->rendered_width = softwrap_width;
@@ -450,10 +491,11 @@ void buffer_reflow_softwrap(buffer_t *buffer, double softwrap_width) {
     /* printf("Reflow called\n"); */
 
     /* Get the real cursor position */
-    /*TODO*/
+    buffer_real_cursor(buffer, &real_cursor_line, &real_cursor_glyph);
 
     for (display_line = buffer->display_line; display_line != NULL; display_line = display_line->next) {
         buffer_line_reflow_softwrap(buffer, display_line, softwrap_width);
+        display_line->lineno = buffer->display_lines_count;
         ++(buffer->display_lines_count);
         buffer->rendered_height += buffer->line_height;
         //debug_print_lines_state(buffer);
@@ -461,9 +503,9 @@ void buffer_reflow_softwrap(buffer_t *buffer, double softwrap_width) {
 
     buffer->rendered_height += buffer->line_height;
 
-    debug_print_lines_state(buffer);
-    printf("Returned count: %d\n", buffer->display_lines_count);
+    /*debug_print_lines_state(buffer);
+      printf("Returned count: %d\n", buffer->display_lines_count);*/
 
     /* Restore cursor position */
-    /*TODO*/
+    buffer_set_to_real(buffer, real_cursor_line, real_cursor_glyph);
 }

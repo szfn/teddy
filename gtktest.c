@@ -111,19 +111,40 @@ static void redraw_cursor_line(gboolean large, gboolean move_origin_when_outside
 }
 
 static void move_cursor(int delta_line, int delta_char) {
+    int i = 0;
     redraw_cursor_line(FALSE, FALSE);
-    /* TODO: reimplement
-    buffer->cursor_line += delta_line;
 
-    if (buffer->cursor_line >= buffer->lines_cap) buffer->cursor_line = buffer->lines_cap-1;
-    if (buffer->cursor_line < 0) buffer->cursor_line = 0;    
+    /*TODO: implement backward movement correctly*/
 
-    buffer->cursor_glyph += delta_char;
+    if (delta_line > 0) {
+        for (i = 0; i < delta_line; ++i) {
+            if (buffer->cursor_display_line->next == NULL) break;
+            buffer->cursor_display_line = buffer->cursor_display_line->next;
+            if (buffer->cursor_glyph > buffer->cursor_display_line->size)
+                buffer->cursor_glyph = buffer->cursor_display_line->size;
+        }
+    }
 
-    if (buffer->cursor_line >= buffer->lines_cap) buffer->cursor_glyph = 0; // only happens when there are no lines
-    if (buffer->cursor_glyph > buffer->lines[buffer->cursor_line].glyphs_cap) buffer->cursor_glyph = buffer->lines[buffer->cursor_line].glyphs_cap;
-    if (buffer->cursor_glyph < 0) buffer->cursor_glyph = 0;
-    */
+    if (delta_line < 0) {
+        for (i = 0; i < abs(delta_line); ++i) {
+            if (buffer->cursor_display_line->prev == NULL) break;
+            buffer->cursor_display_line = buffer->cursor_display_line->prev;
+            if (buffer->cursor_glyph > buffer->cursor_display_line->size)
+                buffer->cursor_glyph = buffer->cursor_display_line->size;
+        }
+    }
+
+    if (delta_char != 0) {
+        real_line_t *real_cursor_line;
+        int real_cursor_glyph;
+
+        buffer_real_cursor(buffer, &real_cursor_line, &real_cursor_glyph);
+
+        real_cursor_glyph += delta_char;
+
+        buffer_set_to_real(buffer, real_cursor_line, real_cursor_glyph);
+    }
+
     cursor_visible = TRUE;
 
     redraw_cursor_line(FALSE, TRUE);
@@ -262,7 +283,7 @@ static gboolean expose_event_callback(GtkWidget *widget, GdkEventExpose *event, 
 
     {
         char *posbox_text;
-        asprintf(&posbox_text, " %d,%d %0.0f%%", buffer->cursor_line, buffer->cursor_glyph, (100.0 * buffer->cursor_line / buffer->display_lines_count));
+        asprintf(&posbox_text, " %d,%d %0.0f%%", buffer->cursor_display_line->real_line->lineno, buffer->cursor_glyph + buffer->cursor_display_line->offset, (100.0 * buffer->cursor_display_line->lineno / buffer->display_lines_count));
         cairo_text_extents_t posbox_ext;
         double x, y;
 
@@ -391,12 +412,11 @@ int main(int argc, char *argv[]) {
         g_signal_connect(G_OBJECT(drarhscroll), "value_changed", G_CALLBACK(hscrolled_callback), NULL);
     }
 
-    g_timeout_add(500, (GSourceFunc)cursor_blinker, (gpointer)window);
-
     gtk_widget_show_all(window);
 
     gtk_widget_grab_focus(GTK_WIDGET(drar));
     gdk_window_set_events(gtk_widget_get_window(drar), gdk_window_get_events(gtk_widget_get_window(drar)) | GDK_BUTTON_PRESS_MASK);
+    g_timeout_add(500, (GSourceFunc)cursor_blinker, (gpointer)window);
 
     gtk_main();
 
