@@ -23,8 +23,6 @@ GtkIMContext *drarim;
 gboolean cursor_visible = TRUE;
 
 /* TODO:
-   - soft line wrap
-   - if cursor is outside of current window replace cursor on first in-window line (at first glyph)
    - editing
    - key bindings
    - highlighting
@@ -216,7 +214,7 @@ static gboolean expose_event_callback(GtkWidget *widget, GdkEventExpose *event, 
     cairo_t *cr = gdk_cairo_create(widget->window);
     double origin_y, origin_x, y;
     GtkAllocation allocation;
-    display_line_t *line;
+    display_line_t *line, *first_displayed_line = NULL;
 
     gtk_widget_get_allocation(widget, &allocation);
 
@@ -240,7 +238,11 @@ static gboolean expose_event_callback(GtkWidget *widget, GdkEventExpose *event, 
 
     for (line = buffer->display_line; line != NULL; line = line->next) {
         double line_end_width;
-        
+
+        if ((first_displayed_line == NULL) && (y - buffer->line_height > 0)) {
+            first_displayed_line = line;
+        }
+
         if (y - buffer->line_height > event->area.y+event->area.height) break; /* if we passed the visible area the just stop displaying */
         if (y < event->area.y) { /* If the line is before the visible area, just increment y and move to the next line */
             y += buffer->line_height;
@@ -274,9 +276,17 @@ static gboolean expose_event_callback(GtkWidget *widget, GdkEventExpose *event, 
 
         buffer_cursor_position(buffer, origin_x, origin_y, &cursor_x, &cursor_y);
 
-        /*cairo_set_source_rgb(cr, 119.0/255, 136.0/255, 153.0/255);*/
-        cairo_rectangle(cr, cursor_x, cursor_y-buffer->ascent, 2, buffer->ascent+buffer->descent);
-        cairo_fill(cr);
+        if ((cursor_y < 0) || (cursor_y > allocation.height)) {
+            if (first_displayed_line != NULL) {
+                buffer->cursor_display_line = first_displayed_line;
+                buffer->cursor_glyph = 0;
+                redraw_cursor_line(FALSE, FALSE);
+            }
+        } else {
+            /*cairo_set_source_rgb(cr, 119.0/255, 136.0/255, 153.0/255);*/
+            cairo_rectangle(cr, cursor_x, cursor_y-buffer->ascent, 2, buffer->ascent+buffer->descent);
+            cairo_fill(cr);
+        }
     }
 
     {
