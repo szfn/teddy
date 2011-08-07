@@ -182,6 +182,24 @@ int buffer_line_insert_utf8_text(buffer_t *buffer, real_line_t *line, char *text
     return inserted_glyphs;
 }
 
+void buffer_line_remove_glyph(buffer_t *buffer, real_line_t *line, int glyph_index) {
+    display_line_t *display_line;
+    
+    if (glyph_index < 0) return; /* TODO: join with previous line */
+    if (glyph_index >= line->cap) return; /* TODO: join with next line */
+
+    memmove(line->glyphs+glyph_index, line->glyphs+glyph_index+1, sizeof(cairo_glyph_t) * (line->cap - glyph_index - 1));
+    memmove(line->glyph_info+glyph_index, line->glyph_info+glyph_index+1, sizeof(my_glyph_info_t) * (line->cap - glyph_index - 1));
+    --(line->cap);
+
+    for (display_line = line->first_display_line; display_line != NULL; display_line = display_line->next) {
+        if (display_line->hard_end) {
+            --(display_line->size);
+            break;
+        }
+    }
+}
+
 double buffer_line_adjust_glyphs(buffer_t *buffer, display_line_t *display_line, double x, double y) {
     real_line_t *line = display_line->real_line;
     cairo_glyph_t *glyphs = line->glyphs + display_line->offset;

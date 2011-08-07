@@ -169,6 +169,23 @@ static void insert_text(gchar *str) {
     }
 }
 
+static void remove_text(int offset) {
+    real_line_t *real_cursor_line;
+    int real_cursor_glyph;
+    
+    buffer_line_remove_glyph(buffer, buffer->cursor_display_line->real_line, buffer->cursor_display_line->offset + buffer->cursor_glyph + offset);
+
+    buffer_real_cursor(buffer, &real_cursor_line, &real_cursor_glyph);
+    --real_cursor_glyph;
+    buffer_set_to_real(buffer, real_cursor_line, real_cursor_glyph);
+
+    if (buffer_reflow_softwrap_real_line(buffer, buffer->cursor_display_line->real_line, 0)) {
+        gtk_widget_queue_draw(drar);
+    } else {
+        redraw_cursor_line(FALSE, TRUE);
+    }
+}
+
 static void text_entry_callback(GtkIMContext *context, gchar *str, gpointer data) {
     printf("entered: %s\n", str);
 
@@ -196,6 +213,7 @@ static gboolean key_press_callback(GtkWidget *widget, GdkEventKey *event, gpoint
         case GDK_KEY_Left:
             move_cursor(0, -1, MOVE_NORMAL);
             return TRUE;
+            
         case GDK_KEY_Page_Up:
             gtk_adjustment_set_value(GTK_ADJUSTMENT(adjustment), gtk_adjustment_get_value(GTK_ADJUSTMENT(adjustment)) - gtk_adjustment_get_page_increment(GTK_ADJUSTMENT(adjustment)));
             return TRUE;
@@ -208,6 +226,7 @@ static gboolean key_press_callback(GtkWidget *widget, GdkEventKey *event, gpoint
                 
                 return TRUE;
             }
+            
         case GDK_KEY_Home:
             move_cursor(0, 0, MOVE_LINE_START);
             return TRUE;
@@ -217,6 +236,13 @@ static gboolean key_press_callback(GtkWidget *widget, GdkEventKey *event, gpoint
 
         case GDK_KEY_Tab:
             insert_text("\t");
+            return TRUE;
+
+        case GDK_KEY_Delete:
+            remove_text(0);
+            return TRUE;
+        case GDK_KEY_BackSpace:
+            remove_text(-1);
             return TRUE;
         }
     }
