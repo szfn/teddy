@@ -80,7 +80,7 @@ static void grow_line(real_line_t *line, int insertion_point, int size) {
     } 
 }
 
-void buffer_line_insert_utf8_text(buffer_t *buffer, real_line_t *line, char *text, int len, int insertion_point) {
+int buffer_line_insert_utf8_text(buffer_t *buffer, real_line_t *line, char *text, int len, int insertion_point) {
     FT_Face scaledface = cairo_ft_scaled_font_lock_face(buffer->main_font.cairofont);
     FT_Bool use_kerning = FT_HAS_KERNING(scaledface);
     FT_UInt previous = 0;
@@ -178,6 +178,8 @@ void buffer_line_insert_utf8_text(buffer_t *buffer, real_line_t *line, char *tex
             break;
         }
     }
+
+    return inserted_glyphs;
 }
 
 double buffer_line_adjust_glyphs(buffer_t *buffer, display_line_t *display_line, double x, double y) {
@@ -511,7 +513,7 @@ void buffer_reflow_softwrap(buffer_t *buffer, double softwrap_width) {
     buffer_set_to_real(buffer, real_cursor_line, real_cursor_glyph);
 }
 
-int buffer_reflow_softwrap_real_line(buffer_t *buffer, real_line_t *line) {
+int buffer_reflow_softwrap_real_line(buffer_t *buffer, real_line_t *line, int cursor_increment) {
     display_line_t *display_line;
     real_line_t *real_cursor_line;
     int real_cursor_glyph;
@@ -544,7 +546,7 @@ int buffer_reflow_softwrap_real_line(buffer_t *buffer, real_line_t *line) {
 
     buffer->display_lines_count = lineno;
 
-    ++real_cursor_glyph;
+    real_cursor_glyph += cursor_increment;
 
     /* Restore cursor position */
     buffer_set_to_real(buffer, real_cursor_line, real_cursor_glyph);

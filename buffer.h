@@ -73,9 +73,9 @@ double buffer_line_adjust_glyphs(buffer_t *buffer, display_line_t *display_line,
 void buffer_cursor_position(buffer_t *buffer, double origin_x, double origin_y, double *x, double *y);
 void buffer_cursor_line_rectangle(buffer_t *buffer, double origin_x, double origin_y, double *x, double *y, double *height, double *width);
 void buffer_move_cursor_to_position(buffer_t *buffer, double origin_x, double origin_y, double x, double y);
-void buffer_line_insert_utf8_text(buffer_t *buffer, real_line_t *line, char *text, int len, int insertion_point);
+int buffer_line_insert_utf8_text(buffer_t *buffer, real_line_t *line, char *text, int len, int insertion_point);
 void buffer_reflow_softwrap(buffer_t *buffer, double softwrap_width);
-int buffer_reflow_softwrap_real_line(buffer_t *buffer, real_line_t *line);
+int buffer_reflow_softwrap_real_line(buffer_t *buffer, real_line_t *line, int cursor_increment);
 
 void buffer_real_cursor(buffer_t *buffer, real_line_t **real_line, int *real_glyph);
 void buffer_set_to_real(buffer_t *buffer, real_line_t *real_line, int real_glyph);

@@ -24,8 +24,9 @@ gboolean cursor_visible = TRUE;
 
 /* TODO:
    - editing
-   - key bindings
    - highlighting
+   - key bindings
+   - reminder: use menu key to highlight command line
 */
 
 static double calculate_x_origin(GtkAllocation *allocation) {
@@ -108,7 +109,13 @@ static void redraw_cursor_line(gboolean large, gboolean move_origin_when_outside
     gtk_widget_queue_draw_area(drar, 0.0, allocation.height-buffer->line_height, allocation.width, buffer->line_height);
 }
 
-static void move_cursor(int delta_line, int delta_char) {
+enum MoveCursorSpecial {
+    MOVE_NORMAL = 1,
+    MOVE_LINE_START,
+    MOVE_LINE_END,
+};
+
+static void move_cursor(int delta_line, int delta_char, enum MoveCursorSpecial special) {
     int i = 0;
     redraw_cursor_line(FALSE, FALSE);
 
@@ -130,13 +137,19 @@ static void move_cursor(int delta_line, int delta_char) {
         }
     }
 
-    if (delta_char != 0) {
+    if ((delta_char != 0) || (special != MOVE_NORMAL)) {
         real_line_t *real_cursor_line;
         int real_cursor_glyph;
 
         buffer_real_cursor(buffer, &real_cursor_line, &real_cursor_glyph);
 
         real_cursor_glyph += delta_char;
+
+        if (special == MOVE_LINE_START) {
+            real_cursor_glyph = 0;
+        } else if (special == MOVE_LINE_END) {
+            real_cursor_glyph = real_cursor_line->cap;
+        }
 
         buffer_set_to_real(buffer, real_cursor_line, real_cursor_glyph);
     }
@@ -146,50 +159,82 @@ static void move_cursor(int delta_line, int delta_char) {
     redraw_cursor_line(FALSE, TRUE);
 }
 
-static gboolean key_press_callback(GtkWidget *widget, GdkEventKey *event, gpointer data) {
-    switch(event->keyval) {
-    case GDK_KEY_Up:
-        move_cursor(-1, 0);
-        return TRUE;
-    case GDK_KEY_Down:
-        move_cursor(1, 0);
-        return TRUE;
-    case GDK_KEY_Right:
-        move_cursor(0, 1);
-        return TRUE;
-    case GDK_KEY_Left:
-        move_cursor(0, -1);
-        return TRUE;
-    }
-
-    if (gtk_im_context_filter_keypress(drarim, event)) {
-        return TRUE;
-    }
+static void insert_text(gchar *str) {
+    int inc = buffer_line_insert_utf8_text(buffer, buffer->cursor_display_line->real_line, str, strlen(str), buffer->cursor_display_line->offset+buffer->cursor_glyph);
     
-    printf("Unknown key sequence: %d\n", event->keyval);
-
-    /* TODO:
-       - manage pageup / pagedown
-       - manage home/end
-       - manage DELETE key
-       - manage Enter key
-       - manage Tab key
-       - manage Backspace key
-     */
-    
-    return TRUE;
+    if (buffer_reflow_softwrap_real_line(buffer, buffer->cursor_display_line->real_line, inc)) {
+        gtk_widget_queue_draw(drar);
+    } else {
+        redraw_cursor_line(FALSE, TRUE);
+    }
 }
 
 static void text_entry_callback(GtkIMContext *context, gchar *str, gpointer data) {
     printf("entered: %s\n", str);
 
-    buffer_line_insert_utf8_text(buffer, buffer->cursor_display_line->real_line, str, strlen(str), buffer->cursor_display_line->offset+buffer->cursor_glyph);
+    insert_text(str);
+}
 
-    if (buffer_reflow_softwrap_real_line(buffer, buffer->cursor_display_line->real_line)) {
-        gtk_widget_queue_draw(drar);
-    } else {
-        redraw_cursor_line(FALSE, TRUE);
+static gboolean key_press_callback(GtkWidget *widget, GdkEventKey *event, gpointer data) {
+    int shift = event->state & GDK_SHIFT_MASK;
+    int ctrl = event->state & GDK_CONTROL_MASK;
+    int alt = event->state & GDK_MOD1_MASK;
+    int super = event->state & GDK_SUPER_MASK;
+
+    /* Default key bindings */
+    if (!shift && !ctrl && !alt && !super) {
+        switch(event->keyval) {
+        case GDK_KEY_Up:
+            move_cursor(-1, 0, MOVE_NORMAL);
+            return TRUE;
+        case GDK_KEY_Down:
+            move_cursor(1, 0, MOVE_NORMAL);
+            return TRUE;
+        case GDK_KEY_Right:
+            move_cursor(0, 1, MOVE_NORMAL);
+            return TRUE;
+        case GDK_KEY_Left:
+            move_cursor(0, -1, MOVE_NORMAL);
+            return TRUE;
+        case GDK_KEY_Page_Up:
+            gtk_adjustment_set_value(GTK_ADJUSTMENT(adjustment), gtk_adjustment_get_value(GTK_ADJUSTMENT(adjustment)) - gtk_adjustment_get_page_increment(GTK_ADJUSTMENT(adjustment)));
+            return TRUE;
+        case GDK_KEY_Page_Down:
+            {
+                double nv = gtk_adjustment_get_value(GTK_ADJUSTMENT(adjustment)) + gtk_adjustment_get_page_increment(GTK_ADJUSTMENT(adjustment));
+                double mv = gtk_adjustment_get_upper(GTK_ADJUSTMENT(adjustment)) - gtk_adjustment_get_page_size(GTK_ADJUSTMENT(adjustment));
+                if (nv > mv) nv = mv;
+                gtk_adjustment_set_value(GTK_ADJUSTMENT(adjustment), nv);
+                
+                return TRUE;
+            }
+        case GDK_KEY_Home:
+            move_cursor(0, 0, MOVE_LINE_START);
+            return TRUE;
+        case GDK_KEY_End:
+            move_cursor(0, 0, MOVE_LINE_END);
+            return TRUE;
+
+        case GDK_KEY_Tab:
+            insert_text("\t");
+            return TRUE;
+        }
     }
+
+    /* Normal text input processing */
+    if (gtk_im_context_filter_keypress(drarim, event)) {
+        return TRUE;
+    }
+    
+    printf("Unknown key sequence: %d (shift %d ctrl %d alt %d super %d)\n", event->keyval, shift, ctrl, alt, super);
+
+    /* TODO:
+       - manage DELETE key
+       - manage Backspace key
+       - manage Enter key
+     */
+    
+    return TRUE;
 }
 
 static gboolean button_press_callback(GtkWidget *widget, GdkEventButton *event, gpointer data) {
