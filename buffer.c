@@ -128,10 +128,11 @@ int buffer_line_insert_utf8_text(buffer_t *buffer, real_line_t *line, char *text
     FT_UInt previous = 0;
     int src, dst;
     int inserted_glyphs = 0;
-    double width = 0.0;
     display_line_t *display_line;
 
-    /* TODO: kerning_correction needs to be fixed for the character after the last one inserted */
+    if (insertion_point > 0) {
+        previous = line->glyphs[insertion_point-1].index;
+    }
 
     for (src = 0, dst = insertion_point; src < len; ) {
         uint32_t code;
@@ -175,8 +176,6 @@ int buffer_line_insert_utf8_text(buffer_t *buffer, real_line_t *line, char *text
             line->glyph_info[dst].kerning_correction = 0;
         }
 
-        width += line->glyph_info[dst].kerning_correction;
-        
         previous = line->glyphs[dst].index = glyph_index;
         line->glyphs[dst].x = 0.0;
         line->glyphs[dst].y = 0.0;
@@ -188,7 +187,6 @@ int buffer_line_insert_utf8_text(buffer_t *buffer, real_line_t *line, char *text
         }
         
         line->glyph_info[dst].x_advance = extents.x_advance;
-        width += extents.x_advance;
         if (dst == line->cap) {
             ++(line->cap);
         }
@@ -196,13 +194,20 @@ int buffer_line_insert_utf8_text(buffer_t *buffer, real_line_t *line, char *text
         ++inserted_glyphs;
     }
 
-    width += buffer_line_fix_spaces(buffer, line);
-    
-    width += buffer->em_advance;
+    if (dst < line->cap) {
+        if (use_kerning) {
+            FT_Vector delta;
+            
+            FT_Get_Kerning(scaledface, previous, line->glyphs[dst].index, FT_KERNING_DEFAULT, &delta);
 
-    if (width > buffer->rendered_width) {
-        buffer->rendered_width = width;
+            line->glyph_info[dst].kerning_correction = delta.x >> 6;
+        } else {
+            line->glyph_info[dst].kerning_correction = 0;
+        }
+        
     }
+
+    buffer_line_fix_spaces(buffer, line);
 
     cairo_ft_scaled_font_unlock_face(buffer->main_font.cairofont);
 
