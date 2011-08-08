@@ -24,8 +24,8 @@ GtkIMContext *drarim;
 gboolean cursor_visible = TRUE;
 
 /* TODO:
-   - copy/paste
-   - undo
+   - copy/paste (using system's clipboard)
+   - undo (without redo)
    - save
    - scripting (for keybindings)
    - highlighting

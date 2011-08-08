@@ -340,6 +340,11 @@ void load_text_file(buffer_t *buffer, const char *filename) {
         }
     }
 
+    text[i] = '\0';
+    if (*real_line_pp == NULL) *real_line_pp = new_real_line(lineno);
+    buffer_line_insert_utf8_text(buffer, *real_line_pp, text, strlen(text), (*real_line_pp)->cap);
+    (*real_line_pp)->prev = prev_line;
+
     free(text);
 
     buffer_create_display(buffer);
