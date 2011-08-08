@@ -37,6 +37,9 @@ typedef struct _display_line_t {
 } display_line_t;
 
 typedef struct _buffer_t {
+    char *name;
+    int has_filename;
+    
     /* Font face stuff */
     FT_Library *library;
     acmacs_font_t main_font;
@@ -44,6 +47,7 @@ typedef struct _buffer_t {
 
     /* Font secondary metrics of main font */
     double em_advance;
+    double space_advance;
     double ex_height;
     double line_height;
     double ascent, descent;

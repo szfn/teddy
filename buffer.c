@@ -82,16 +82,57 @@ static void grow_line(real_line_t *line, int insertion_point, int size) {
     } 
 }
 
+double buffer_line_fix_spaces(buffer_t *buffer, real_line_t *line) {
+    int i = 0;
+    int initial_spaces = 1;
+    double width_correction = 0.0;
+
+    //printf("fixing spaces\n");
+    
+    for (i = 0; i < line->cap; ++i) {
+        if (line->glyph_info[i].code == 0x20) {
+            double new_width;
+            if (initial_spaces) {
+                new_width = buffer->em_advance;
+            } else {
+                new_width = buffer->space_advance;
+            }
+
+            //printf("is: %d width: %g\n", initial_spaces, new_width);
+            
+            width_correction += new_width - line->glyph_info[i].x_advance;
+            line->glyph_info[i].x_advance = new_width;
+            
+        } else if (line->glyph_info[i].code == 0x09) {
+            double new_width;
+            if (initial_spaces) {
+                new_width = buffer->em_advance * buffer->tab_width;
+            } else {
+                new_width = buffer->space_advance * buffer->tab_width;
+            }
+
+            width_correction += new_width - line->glyph_info[i].x_advance;
+            line->glyph_info[i].x_advance = new_width;
+
+        } else {
+            initial_spaces = 0;
+        }
+    }
+
+    return width_correction;
+}
+
 int buffer_line_insert_utf8_text(buffer_t *buffer, real_line_t *line, char *text, int len, int insertion_point) {
     FT_Face scaledface = cairo_ft_scaled_font_lock_face(buffer->main_font.cairofont);
     FT_Bool use_kerning = FT_HAS_KERNING(scaledface);
     FT_UInt previous = 0;
-    int initial_spaces = 1;
     int src, dst;
     int inserted_glyphs = 0;
     double width = 0.0;
     display_line_t *display_line;
-    
+
+    /* TODO: kerning_correction needs to be fixed for the character after the last one inserted */
+
     for (src = 0, dst = insertion_point; src < len; ) {
         uint32_t code;
         FT_UInt glyph_index;
@@ -142,19 +183,8 @@ int buffer_line_insert_utf8_text(buffer_t *buffer, real_line_t *line, char *text
 
         cairo_scaled_font_glyph_extents(buffer->main_font.cairofont, line->glyphs + dst, 1, &extents);
         
-        /* Fix x_advance accounting for special treatment of indentation and special treatment of tabs */
-        if (initial_spaces) {
-            if (code == 0x20) {
-                extents.x_advance = buffer->em_advance;
-            } else if (code == 0x09) {
-                extents.x_advance = buffer->em_advance * buffer->tab_width;
-            } else {
-                initial_spaces = 0;
-            }
-        } else {
-            if (code == 0x09) {
-                extents.x_advance *= buffer->tab_width;
-            }
+        if (code == 0x09) {
+            extents.x_advance *= buffer->tab_width;
         }
         
         line->glyph_info[dst].x_advance = extents.x_advance;
@@ -165,6 +195,8 @@ int buffer_line_insert_utf8_text(buffer_t *buffer, real_line_t *line, char *text
         ++dst;
         ++inserted_glyphs;
     }
+
+    width += buffer_line_fix_spaces(buffer, line);
     
     width += buffer->em_advance;
 
@@ -258,6 +290,8 @@ void buffer_line_remove_glyph(buffer_t *buffer, real_line_t *line, int glyph_ind
     memmove(line->glyph_info+glyph_index, line->glyph_info+glyph_index+1, sizeof(my_glyph_info_t) * (line->cap - glyph_index - 1));
     --(line->cap);
 
+    buffer_line_fix_spaces(buffer, line);
+
     for (display_line = line->first_display_line; display_line != NULL; display_line = display_line->next) {
         if (display_line->hard_end) {
             --(display_line->size);
@@ -272,11 +306,13 @@ double buffer_line_adjust_glyphs(buffer_t *buffer, display_line_t *display_line,
     my_glyph_info_t *glyph_info = line->glyph_info + display_line->offset;
     int i;
 
+    //printf("setting type\n");
     for (i = 0; i < display_line->size; ++i) {
         if (i > 0) x += glyph_info[i].kerning_correction;
         glyphs[i].x = x;
         glyphs[i].y = y;
         x += glyph_info[i].x_advance;
+        //printf("x: %g (%g)\n", x, glyph_info[i].x_advance);
     }
 
     return x;
@@ -306,6 +342,10 @@ void load_text_file(buffer_t *buffer, const char *filename) {
     real_line_t *prev_line = NULL;
     real_line_t **real_line_pp = &(buffer->real_line);
     int lineno = 0;
+
+    buffer->has_filename = 1;
+    free(buffer->name);
+    asprintf(&(buffer->name), "%s", filename);
 
     if (!fin) {
         perror("Couldn't open input file");
@@ -434,6 +474,9 @@ buffer_t *buffer_create(FT_Library *library) {
     buffer_t *buffer = malloc(sizeof(buffer_t));
 
     buffer->library = library;
+
+    asprintf(&(buffer->name), "unnamed");
+    buffer->has_filename = 0;
     
     acmacs_font_init(&(buffer->main_font), library, "/usr/share/fonts/truetype/msttcorefonts/arial.ttf", 16);
     acmacs_font_init(&(buffer->posbox_font), library, "/usr/share/fonts/truetype/msttcorefonts/arial.ttf", 12);
@@ -447,6 +490,9 @@ buffer_t *buffer_create(FT_Library *library) {
 
         cairo_scaled_font_text_extents(buffer->main_font.cairofont, "x", &extents);
         buffer->ex_height = extents.height;
+
+        cairo_scaled_font_text_extents(buffer->main_font.cairofont, " ", &extents);
+        buffer->space_advance = extents.x_advance;
 
         cairo_scaled_font_extents(buffer->main_font.cairofont, &font_extents);
         buffer->line_height = font_extents.height;
@@ -500,6 +546,8 @@ void buffer_free(buffer_t *buffer) {
 
     acmacs_font_free(&(buffer->main_font));
     acmacs_font_free(&(buffer->posbox_font));
+
+    free(buffer->name);
 }
 
 static void buffer_line_reflow_softwrap(buffer_t *buffer, display_line_t *display_line, double softwrap_width) {

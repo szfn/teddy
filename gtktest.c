@@ -22,6 +22,7 @@ GtkWidget *drar;
 GtkWidget *drarhscroll;
 GtkIMContext *drarim;
 gboolean cursor_visible = TRUE;
+int initialization_ended = 0;
 
 /* TODO:
    - copy/paste (using system's clipboard)
@@ -47,7 +48,7 @@ static double calculate_x_origin(GtkAllocation *allocation) {
 
 static double calculate_y_origin(GtkAllocation *allocation) {
     double origin_y;
-    
+
     if (allocation->height > buffer->rendered_height) {
         /* if there is enough space to show everything then there is no need to use the scrollbar */
         origin_y = buffer->line_height;
@@ -229,7 +230,7 @@ static void split_line() {
 }
 
 static void text_entry_callback(GtkIMContext *context, gchar *str, gpointer data) {
-    printf("entered: %s\n", str);
+    //printf("entered: %s\n", str);
 
     insert_text(str);
 }
@@ -450,6 +451,8 @@ static gboolean expose_event_callback(GtkWidget *widget, GdkEventExpose *event, 
     }
 
     cairo_destroy(cr);
+
+    initialization_ended = 1;
   
     return TRUE;
 }
@@ -467,6 +470,7 @@ static gboolean hscrolled_callback(GtkWidget *widget, GdkEvent *event, gpointer 
 }
 
 static gboolean cursor_blinker(GtkWidget *widget) {
+    if (!initialization_ended) return TRUE;
     if (cursor_visible < 0) cursor_visible = 1;
 
     cursor_visible = (cursor_visible + 1) % 3;
@@ -545,6 +549,8 @@ int main(int argc, char *argv[]) {
     g_timeout_add(500, (GSourceFunc)cursor_blinker, (gpointer)window);
 
     gtk_main();
+
+    initialization_ended = 0;
 
     buffer_free(buffer);
 
