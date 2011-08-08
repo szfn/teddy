@@ -515,6 +515,9 @@ buffer_t *buffer_create(FT_Library *library) {
     buffer->cursor_display_line = NULL;
     buffer->cursor_glyph = 0;
 
+    buffer->mark_glyph = -1;
+    buffer->mark_lineno = -1;
+
     buffer->tab_width = 4;
     buffer->left_margin = 8.0;
     buffer->right_margin = 8.0;
@@ -708,6 +711,7 @@ int buffer_reflow_softwrap_real_line(buffer_t *buffer, real_line_t *line, int cu
     }
 
     buffer->display_lines_count = lineno;
+    buffer->rendered_height = buffer->display_lines_count * buffer->line_height;
 
     real_cursor_glyph += cursor_increment;
 

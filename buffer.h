@@ -65,6 +65,10 @@ typedef struct _buffer_t {
     display_line_t *cursor_display_line;
     int cursor_glyph;
 
+    /* Mark */
+    int mark_glyph;
+    int mark_lineno;
+
     /* User options */
     int tab_width;
     double left_margin;
