@@ -3,6 +3,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <math.h>
+#include <assert.h>
 
 static real_line_t *new_real_line(int lineno) {
     real_line_t *line = malloc(sizeof(real_line_t));
@@ -18,6 +19,7 @@ static real_line_t *new_real_line(int lineno) {
         exit(EXIT_FAILURE);
     }
     line->cap = 0;
+    line->prev = NULL;
     line->next = NULL;
     line->lineno = lineno;
     line->first_display_line = NULL;
@@ -182,11 +184,75 @@ int buffer_line_insert_utf8_text(buffer_t *buffer, real_line_t *line, char *text
     return inserted_glyphs;
 }
 
+static void join_lines(buffer_t *buffer, real_line_t *line1, real_line_t *line2) {
+    display_line_t *display_line;
+    display_line_t *last_line1_display_line;
+    real_line_t *line_cur;
+    int lineno;
+
+    if (line1 == NULL) return;
+    if (line2 == NULL) return;
+    
+    grow_line(line1, line1->cap, line2->cap);
+    memcpy(line1->glyphs+line1->cap, line2->glyphs, sizeof(cairo_glyph_t)*line2->cap);
+    memcpy(line1->glyph_info+line1->cap, line2->glyph_info, sizeof(my_glyph_info_t)*line2->cap);
+    line1->cap += line2->cap;
+
+    /* increases size of last display_line of line1 */
+    for (display_line = line1->first_display_line; display_line != NULL; display_line = display_line->next) {
+        if (display_line->hard_end) {
+            display_line->size += line2->cap;
+            break;
+        }
+    }
+
+    assert(display_line != NULL);
+
+    last_line1_display_line = display_line;
+    display_line = display_line->next;
+
+    /* NOTE: after this the display_line numbering will be fucked up, but it doesn't matter because a reflow operation is needed anyways and reflowing will also renumber display_lines */
+
+    /* removing all line2 display_lines */
+    while (display_line != NULL) {
+        display_line_t *next;
+        if (display_line->real_line != line2) break;
+        next = display_line->next;
+        free(display_line);
+        display_line = next;
+    }
+
+    last_line1_display_line->next = display_line;
+    if (display_line != NULL) display_line->prev = last_line1_display_line;
+
+    /* remove line2 from real_lines list */
+
+    line1->next = line2->next;
+    if (line2->next != NULL) line2->next->prev = line1;
+    
+    free(line2->glyphs);
+    free(line2->glyph_info);
+    free(line2);
+
+    lineno = line1->lineno + 1;
+
+    for (line_cur = line1->next; line_cur != NULL; line_cur = line_cur->next) {
+        line_cur->lineno = lineno;
+        ++lineno;
+    }
+}
+
 void buffer_line_remove_glyph(buffer_t *buffer, real_line_t *line, int glyph_index) {
     display_line_t *display_line;
     
-    if (glyph_index < 0) return; /* TODO: join with previous line */
-    if (glyph_index >= line->cap) return; /* TODO: join with next line */
+    if (glyph_index < 0) {
+        join_lines(buffer, line->prev, line);
+        return;
+    }
+    if (glyph_index >= line->cap) {
+        join_lines(buffer, line, line->next);
+        return;
+    }
 
     memmove(line->glyphs+glyph_index, line->glyphs+glyph_index+1, sizeof(cairo_glyph_t) * (line->cap - glyph_index - 1));
     memmove(line->glyph_info+glyph_index, line->glyph_info+glyph_index+1, sizeof(my_glyph_info_t) * (line->cap - glyph_index - 1));
@@ -237,6 +303,7 @@ void load_text_file(buffer_t *buffer, const char *filename) {
     int i = 0;
     int text_allocation = 10;
     char *text = malloc(sizeof(char) * text_allocation);
+    real_line_t *prev_line = NULL;
     real_line_t **real_line_pp = &(buffer->real_line);
     int lineno = 0;
 
@@ -263,6 +330,8 @@ void load_text_file(buffer_t *buffer, const char *filename) {
             text[i] = '\0';
             if (*real_line_pp == NULL) *real_line_pp = new_real_line(lineno);
             buffer_line_insert_utf8_text(buffer, *real_line_pp, text, strlen(text), (*real_line_pp)->cap);
+            (*real_line_pp)->prev = prev_line;
+            prev_line = *real_line_pp;
             real_line_pp = &((*real_line_pp)->next);
             i = 0;
             ++lineno;
@@ -452,10 +521,12 @@ static void buffer_line_reflow_softwrap(buffer_t *buffer, display_line_t *displa
         /* Create a new display line and push characters to it */
         display_line_t *saved_next = display_line->next;
         display_line->next = new_display_line(display_line->real_line, display_line->offset + j, display_line->size - j);
-        display_line->next->prev = display_line;
-        display_line->next->hard_end = display_line->hard_end;
-        display_line->next->next = saved_next;
-        saved_next->prev = display_line->next;
+        if (display_line->next != NULL) {
+            display_line->next->prev = display_line;
+            display_line->next->hard_end = display_line->hard_end;
+            display_line->next->next = saved_next;
+        }
+        if (saved_next != NULL) saved_next->prev = display_line->next;
         
         display_line->hard_end = 0;
         display_line->size = j;
@@ -469,7 +540,7 @@ static void buffer_line_reflow_softwrap(buffer_t *buffer, display_line_t *displa
         display_line->size += next_display_line->size;
 
         display_line->next = next_display_line->next;
-        next_display_line->next->prev = display_line;
+        if (next_display_line->next != NULL) next_display_line->next->prev = display_line;
 
         free(next_display_line);
 
@@ -479,7 +550,7 @@ static void buffer_line_reflow_softwrap(buffer_t *buffer, display_line_t *displa
     }
 }
 
-void debug_print_lines_state(buffer_t *buffer) {
+static void debug_print_lines_state(buffer_t *buffer) {
     display_line_t *display_line;
     int i, cnt = 0;
 
@@ -493,6 +564,22 @@ void debug_print_lines_state(buffer_t *buffer) {
     }
 
     printf("----------------\n\n");
+}
+
+static void debug_print_real_lines_state(buffer_t *buffer) {
+    real_line_t *real_line;
+    int i;
+
+    for (real_line = buffer->real_line; real_line != NULL; real_line = real_line->next) {
+        printf("%d [", real_line->lineno);
+        for (i = 0; i < real_line->cap; ++i) {
+            printf("%c", (char)(real_line->glyph_info[i].code));
+        }
+        printf("]\n");
+    }
+
+    printf("------------------------\n");
+    
 }
 
 void buffer_reflow_softwrap(buffer_t *buffer, double softwrap_width) {
@@ -570,4 +657,71 @@ int buffer_reflow_softwrap_real_line(buffer_t *buffer, real_line_t *line, int cu
     buffer_set_to_real(buffer, real_cursor_line, real_cursor_glyph);
 
     return (display_lines_before > 0) || (display_lines_after > 0);
+}
+
+real_line_t *buffer_copy_line(buffer_t *buffer, real_line_t *real_line, int start, int size) {
+    real_line_t *r = new_real_line(-1);
+    
+    grow_line(r, 0, size);
+
+    memcpy(r->glyphs, real_line->glyphs+start, size * sizeof(cairo_glyph_t));
+    memcpy(r->glyph_info, real_line->glyph_info+start, size * sizeof(my_glyph_info_t));
+
+    r->cap = size;
+
+    return r;
+}
+
+void buffer_line_delete_from(buffer_t *buffer, real_line_t *real_line, int start, int size) {
+    display_line_t *display_line;
+    
+    memmove(real_line->glyphs+start, real_line->glyphs+start+size, sizeof(cairo_glyph_t)*(real_line->cap-start-size));
+    memmove(real_line->glyph_info+start, real_line->glyph_info+start+size, sizeof(my_glyph_info_t)*(real_line->cap-start-size));
+    real_line->cap -= size;
+
+    for (display_line = real_line->first_display_line; display_line != NULL; display_line = display_line->next) {
+        if (display_line->offset > real_line->cap)
+            display_line->offset = real_line->cap;
+        if (display_line->size + display_line->offset > real_line->cap)
+            display_line->size = real_line->cap - display_line->offset;
+        if (display_line->hard_end) break;
+    }
+}
+
+void buffer_real_line_insert(buffer_t *buffer, real_line_t *insertion_line, real_line_t* real_line) {
+    real_line_t *cur;
+    display_line_t *display_line;
+    display_line_t *display_line_to_insert;
+    int lineno;
+
+    //debug_print_real_lines_state(buffer);
+    
+    real_line->next = insertion_line->next;
+    if (real_line->next != NULL) real_line->next->prev = real_line;
+    real_line->prev = insertion_line;
+    insertion_line->next = real_line;
+
+    lineno = insertion_line->lineno;
+
+    //printf("Renumbering from %d\n", lineno);
+
+    for (cur = insertion_line; cur != NULL; cur = cur->next) {
+        cur->lineno = lineno;
+        lineno++;
+        //debug_print_real_lines_state(buffer);
+    }
+
+    display_line_to_insert = new_display_line(real_line, 0, real_line->cap);
+
+    for (display_line = insertion_line->first_display_line; display_line != NULL; display_line = display_line->next) {
+        if (display_line->hard_end) {
+            display_line_to_insert->next = display_line->next;
+            if (display_line_to_insert->next != NULL) display_line_to_insert->next->prev = display_line_to_insert;
+            display_line_to_insert->prev = display_line;
+            display_line->next = display_line_to_insert;
+            break;
+        }
+    }
+
+    //debug_print_real_lines_state(buffer);
 }

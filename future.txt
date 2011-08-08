@@ -1,0 +1,16 @@
+BASIC SET (not an editor without this)
+- keyboard editing keys
+- copy/paste
+- save
+- undo (without redo)
+
+NORMAL SET (not an editor I would use without this)
+- word movement keys (ctrl-left, ctrl-right)
+- highlighting
+- multiple panels
+
+ADVANCED SET (actual goal)
+- hidden buffer
+- command line
+- autocompletion
+- undo tree

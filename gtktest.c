@@ -9,6 +9,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <gdk/gdkkeysyms.h>
+#include <assert.h>
 
 #include "buffer.h"
 
@@ -23,9 +24,11 @@ GtkIMContext *drarim;
 gboolean cursor_visible = TRUE;
 
 /* TODO:
-   - editing
+   - copy/paste
+   - undo
+   - save
+   - scripting (for keybindings)
    - highlighting
-   - key bindings
    - reminder: use menu key to highlight command line
 */
 
@@ -170,13 +173,30 @@ static void insert_text(gchar *str) {
 }
 
 static void remove_text(int offset) {
-    real_line_t *real_cursor_line;
+    real_line_t *real_cursor_line, *prev_cursor_line;
     int real_cursor_glyph;
-    
-    buffer_line_remove_glyph(buffer, buffer->cursor_display_line->real_line, buffer->cursor_display_line->offset + buffer->cursor_glyph + offset);
+    int prev_cursor_line_cap = 0;
 
     buffer_real_cursor(buffer, &real_cursor_line, &real_cursor_glyph);
-    --real_cursor_glyph;
+    prev_cursor_line = real_cursor_line->prev;
+    if (prev_cursor_line != NULL) {
+        prev_cursor_line_cap = prev_cursor_line->cap;
+    }
+
+    buffer_line_remove_glyph(buffer, buffer->cursor_display_line->real_line, buffer->cursor_display_line->offset + buffer->cursor_glyph + offset);
+
+    real_cursor_glyph += offset;
+    if (real_cursor_glyph < 0) {
+        /* real_cursor_line may have been deleted by a line join */
+        if (prev_cursor_line != NULL) {
+            real_cursor_line = prev_cursor_line;
+            real_cursor_glyph = prev_cursor_line_cap;
+        } else {
+            /* it wasn't deleted because this is the first line */
+            real_cursor_glyph = 0;
+        }
+    }
+    
     buffer_set_to_real(buffer, real_cursor_line, real_cursor_glyph);
 
     if (buffer_reflow_softwrap_real_line(buffer, buffer->cursor_display_line->real_line, 0)) {
@@ -184,6 +204,28 @@ static void remove_text(int offset) {
     } else {
         redraw_cursor_line(FALSE, TRUE);
     }
+}
+
+static void split_line() {
+    real_line_t *real_cursor_line;
+    int real_cursor_glyph;
+    real_line_t *copied_segment;
+
+    buffer_real_cursor(buffer, &real_cursor_line, &real_cursor_glyph);
+
+    copied_segment = buffer_copy_line(buffer, real_cursor_line, real_cursor_glyph, real_cursor_line->cap - real_cursor_glyph);
+    buffer_line_delete_from(buffer, real_cursor_line, real_cursor_glyph, real_cursor_line->cap - real_cursor_glyph);
+    buffer_real_line_insert(buffer, real_cursor_line, copied_segment);
+
+    assert(real_cursor_line->next != NULL);
+    buffer_set_to_real(buffer, real_cursor_line->next, 0);
+
+    buffer_reflow_softwrap_real_line(buffer, real_cursor_line, 0);
+    buffer_reflow_softwrap_real_line(buffer, real_cursor_line->next, 0);
+
+    redraw_cursor_line(FALSE, TRUE);
+
+    gtk_widget_queue_draw(drar);
 }
 
 static void text_entry_callback(GtkIMContext *context, gchar *str, gpointer data) {
@@ -243,6 +285,9 @@ static gboolean key_press_callback(GtkWidget *widget, GdkEventKey *event, gpoint
             return TRUE;
         case GDK_KEY_BackSpace:
             remove_text(-1);
+            return TRUE;
+        case GDK_KEY_Return:
+            split_line();
             return TRUE;
         }
     }
