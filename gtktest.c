@@ -18,6 +18,7 @@ FT_Library library;
 buffer_t *buffer;
 
 GtkClipboard *selection_clipboard;
+GtkClipboard *default_clipboard;
 GtkObject *adjustment, *hadjustment;
 GtkWidget *drar;
 GtkWidget *drarhscroll;
@@ -123,7 +124,7 @@ enum MoveCursorSpecial {
     MOVE_LINE_END,
 };
 
-static void copy_selection_to_clipboard(void) {
+static void copy_selection_to_clipboard(GtkClipboard *clipboard) {
     real_line_t *start_line, *end_line;
     int start_glyph, end_glyph;
     real_line_t *line;
@@ -234,7 +235,7 @@ static void copy_selection_to_clipboard(void) {
     }
     r[cap++] = '\0';
 
-    gtk_clipboard_set_text(selection_clipboard, r, -1);
+    gtk_clipboard_set_text(clipboard, r, -1);
 
     free(r);
 }
@@ -282,7 +283,7 @@ static void move_cursor(int delta_line, int delta_char, enum MoveCursorSpecial s
 
     redraw_cursor_line(FALSE, TRUE);
 
-    copy_selection_to_clipboard();
+    copy_selection_to_clipboard(selection_clipboard);
 }
 
 static void unset_mark(void) {
@@ -449,6 +450,11 @@ static gboolean key_press_callback(GtkWidget *widget, GdkEventKey *event, gpoint
                 unset_mark();
             }
             return TRUE;
+        case GDK_KEY_c:
+            if (buffer->mark_lineno != -1) {
+                copy_selection_to_clipboard(default_clipboard);
+                unset_mark();
+            }
         }
     }
 
@@ -480,7 +486,7 @@ static gboolean button_press_callback(GtkWidget *widget, GdkEventButton *event, 
     if (buffer->mark_lineno != -1) {
         gtk_widget_queue_draw(drar); /* must redraw everything to keep selection consistent */
         
-        copy_selection_to_clipboard();
+        copy_selection_to_clipboard(selection_clipboard);
     } else {
         redraw_cursor_line(FALSE, FALSE);
     }
@@ -733,6 +739,7 @@ int main(int argc, char *argv[]) {
     drar = gtk_drawing_area_new();
     drarim = gtk_im_multicontext_new();
     selection_clipboard = gtk_clipboard_get(GDK_SELECTION_PRIMARY);
+    default_clipboard = gtk_clipboard_get(GDK_SELECTION_CLIPBOARD);
 
     gtk_widget_set_can_focus(GTK_WIDGET(drar), TRUE);
 
