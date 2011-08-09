@@ -17,6 +17,7 @@ FT_Library library;
 
 buffer_t *buffer;
 
+GtkClipboard *selection_clipboard;
 GtkObject *adjustment, *hadjustment;
 GtkWidget *drar;
 GtkWidget *drarhscroll;
@@ -119,6 +120,125 @@ enum MoveCursorSpecial {
     MOVE_LINE_END,
 };
 
+static void copy_selection_to_clipboard(void) {
+    real_line_t *start_line, *end_line;
+    int start_glyph, end_glyph;
+    real_line_t *line;
+    
+    int allocated = 0;
+    int cap = 0;
+    char *r = NULL;
+
+    if (buffer->mark_lineno == -1) return;
+
+    if (buffer->mark_lineno == buffer->cursor_display_line->real_line->lineno) {
+        start_line = end_line = buffer->cursor_display_line->real_line;
+
+        if (buffer->mark_glyph == buffer->cursor_glyph+buffer->cursor_display_line->offset) {
+            return;
+        } else if (buffer->mark_glyph < buffer->cursor_glyph+buffer->cursor_display_line->offset) {
+            start_glyph = buffer->mark_glyph;
+            end_glyph = buffer->cursor_glyph + buffer->cursor_display_line->offset;
+        } else {
+            end_glyph = buffer->mark_glyph;
+            start_glyph = buffer->cursor_glyph + buffer->cursor_display_line->offset;
+        }
+        
+    } else if (buffer->mark_lineno < buffer->cursor_display_line->real_line->lineno) {
+        start_line = buffer_line_by_number(buffer, buffer->mark_lineno);
+        start_glyph = buffer->mark_glyph;
+
+        end_line = buffer->cursor_display_line->real_line;
+        end_glyph = buffer->cursor_glyph + buffer->cursor_display_line->offset;
+    } else {
+        start_line = buffer->cursor_display_line->real_line;
+        start_glyph = buffer->cursor_glyph + buffer->cursor_display_line->offset;;
+
+        end_line = buffer_line_by_number(buffer, buffer->mark_lineno);
+        end_glyph = buffer->mark_glyph;
+    }
+
+    if (start_line == NULL) return;
+    if (end_line == NULL) return;
+
+    allocated = 10;
+    r = malloc(sizeof(char) * allocated);
+
+    for (line = start_line; line != NULL; line = line->next) {
+        int start, end, i;
+        if (line == start_line) {
+            start = start_glyph;
+        } else {
+            start = 0;
+        }
+        
+        if (line == end_line) {
+            end = end_glyph;
+        } else {
+            end = line->cap;
+        }
+
+        for (i = start; i < end; ++i) {
+            uint32_t code = line->glyph_info[i].code;
+            int i, inc, first_byte_mask, first_byte_pad;
+
+            if (code <= 0x7f) {
+                inc = 0;
+                first_byte_pad = 0x00;
+                first_byte_mask = 0x7f;
+            } else if (code <= 0x7ff) {
+                inc = 1;
+                first_byte_pad = 0xc0;
+                first_byte_mask = 0x1f;
+            } else if (code <= 0xffff) {
+                inc = 2;
+                first_byte_pad = 0xe0;
+                first_byte_mask = 0x0f;
+            } else if (code <= 0x1fffff) {
+                inc = 3;
+                first_byte_pad = 0xf8;
+                first_byte_mask = 0x07;
+            }
+
+            if (cap+inc >= allocated) {
+                allocated *= 2;
+                printf("allocating: %d\n", allocated);
+                r = realloc(r, sizeof(char)*allocated);
+            }
+
+            for (i = inc; i > 0; --i) {
+                r[cap+i] = ((uint8_t)code & 0x2f) + 0x80;
+                code >>= 6;
+            }
+
+            r[cap] = ((uint8_t)code & first_byte_mask) + first_byte_pad;
+
+            cap += inc + 1;
+        }
+
+        if (line == end_line) break;
+        else {
+            if (cap >= allocated) {
+                allocated *= 2;
+                r = realloc(r, sizeof(char)*allocated);
+            }
+            r[cap++] = '\n';
+        }
+    }
+    
+    if (cap >= allocated) {
+        allocated *= 2;
+        r = realloc(r, sizeof(char)*allocated);
+    }
+    r[cap] = '\0';
+
+    printf("Copying: [[%s]]\n\n", r);
+
+    //TODO: copy to clipboard
+
+    free(r);
+}
+
 static void move_cursor(int delta_line, int delta_char, enum MoveCursorSpecial special) {
     int i = 0;
     redraw_cursor_line(FALSE, FALSE);
@@ -161,6 +281,8 @@ static void move_cursor(int delta_line, int delta_char, enum MoveCursorSpecial s
     cursor_visible = TRUE;
 
     redraw_cursor_line(FALSE, TRUE);
+
+    copy_selection_to_clipboard();
 }
 
 static void unset_mark(void) {
@@ -337,12 +459,6 @@ static gboolean key_press_callback(GtkWidget *widget, GdkEventKey *event, gpoint
     
     printf("Unknown key sequence: %d (shift %d ctrl %d alt %d super %d)\n", event->keyval, shift, ctrl, alt, super);
 
-    /* TODO:
-       - manage DELETE key
-       - manage Backspace key
-       - manage Enter key
-     */
-    
     return TRUE;
 }
 
@@ -437,9 +553,13 @@ static gboolean expose_event_callback(GtkWidget *widget, GdkEventExpose *event, 
 
             if (start_selection_at_glyph != -1) {
                 if (start_selection_at_glyph >= line->size) {
-                    selx = line->real_line->glyphs[line->size-1].x + line->real_line->glyph_info[line->size-1].x_advance;
+                    if (line->offset+line->size-1 > 0) {
+                        selx = line->real_line->glyphs[line->offset+line->size-1].x + line->real_line->glyph_info[line->offset+line->size-1].x_advance;
+                    } else {
+                        selx = 0.0;
+                    }
                 } else {
-                    selx = line->real_line->glyphs[start_selection_at_glyph].x;
+                    selx = line->real_line->glyphs[line->offset+start_selection_at_glyph].x;
                 }
             } else {
                 selx = 0.0;
@@ -447,9 +567,13 @@ static gboolean expose_event_callback(GtkWidget *widget, GdkEventExpose *event, 
             
             if (end_selection_at_glyph != -1) {
                 if (end_selection_at_glyph >= line->size) {
-                    selwidth = line->real_line->glyphs[line->size-1].x + line->real_line->glyph_info[line->size-1].x_advance - selx;
+                    if (line->offset+line->size-1 > 0) {
+                        selwidth = line->real_line->glyphs[line->offset+line->size-1].x + line->real_line->glyph_info[line->offset+line->size-1].x_advance - selx;
+                    } else {
+                        selwidth = buffer->left_margin - selx;
+                    }
                 } else {
-                    selwidth = line->real_line->glyphs[end_selection_at_glyph].x - selx;                    
+                    selwidth = line->real_line->glyphs[line->offset+end_selection_at_glyph].x - selx;                    
                 }
             } else {
                 selwidth = allocation.width;
@@ -602,6 +726,7 @@ int main(int argc, char *argv[]) {
 
     drar = gtk_drawing_area_new();
     drarim = gtk_im_multicontext_new();
+    selection_clipboard = gtk_clipboard_get(GDK_SELECTION_PRIMARY);
 
     gtk_widget_set_can_focus(GTK_WIDGET(drar), TRUE);
 

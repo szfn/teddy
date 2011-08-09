@@ -97,4 +97,6 @@ real_line_t *buffer_copy_line(buffer_t *buffer, real_line_t *real_line, int star
 void buffer_line_delete_from(buffer_t *buffer, real_line_t *real_line, int start, int size);
 void buffer_real_line_insert(buffer_t *buffer, real_line_t *insertion_line, real_line_t* real_line);
 
+real_line_t *buffer_line_by_number(buffer_t *buffer, int lineno);
+
 #endif

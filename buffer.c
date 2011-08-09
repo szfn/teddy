@@ -787,3 +787,11 @@ void buffer_real_line_insert(buffer_t *buffer, real_line_t *insertion_line, real
 
     //debug_print_real_lines_state(buffer);
 }
+
+real_line_t *buffer_line_by_number(buffer_t *buffer, int lineno) {
+    real_line_t *r;
+    for (r = buffer->real_line; r != NULL; r = r->next) {
+        if (r->lineno == lineno) return r;
+    }
+    return NULL;
+}
