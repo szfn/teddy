@@ -26,7 +26,10 @@ gboolean cursor_visible = TRUE;
 int initialization_ended = 0;
 
 /* TODO:
-   - copy/paste (using system's clipboard)
+   - copy
+   - paste
+   - delete/backspace removes selection
+   - cut
    - undo (without redo)
    - save
    - scripting (for keybindings)
@@ -202,7 +205,6 @@ static void copy_selection_to_clipboard(void) {
 
             if (cap+inc >= allocated) {
                 allocated *= 2;
-                printf("allocating: %d\n", allocated);
                 r = realloc(r, sizeof(char)*allocated);
             }
 
@@ -230,11 +232,9 @@ static void copy_selection_to_clipboard(void) {
         allocated *= 2;
         r = realloc(r, sizeof(char)*allocated);
     }
-    r[cap] = '\0';
+    r[cap++] = '\0';
 
-    printf("Copying: [[%s]]\n\n", r);
-
-    //TODO: copy to clipboard
+    gtk_clipboard_set_text(selection_clipboard, r, -1);
 
     free(r);
 }
@@ -477,7 +477,13 @@ static gboolean button_press_callback(GtkWidget *widget, GdkEventButton *event, 
     
     buffer_move_cursor_to_position(buffer, origin_x, origin_y, event->x, event->y);
 
-    redraw_cursor_line(FALSE, FALSE);
+    if (buffer->mark_lineno != -1) {
+        gtk_widget_queue_draw(drar); /* must redraw everything to keep selection consistent */
+        
+        copy_selection_to_clipboard();
+    } else {
+        redraw_cursor_line(FALSE, FALSE);
+    }
     
     return TRUE;
 }
