@@ -27,9 +27,8 @@ gboolean cursor_visible = TRUE;
 int initialization_ended = 0;
 
 /* TODO:
-   - copy
-   - paste
    - delete/backspace removes selection
+   - paste
    - cut
    - undo (without redo)
    - save
@@ -133,35 +132,8 @@ static void copy_selection_to_clipboard(GtkClipboard *clipboard) {
     int cap = 0;
     char *r = NULL;
 
-    if (buffer->mark_lineno == -1) return;
-
-    if (buffer->mark_lineno == buffer->cursor_display_line->real_line->lineno) {
-        start_line = end_line = buffer->cursor_display_line->real_line;
-
-        if (buffer->mark_glyph == buffer->cursor_glyph+buffer->cursor_display_line->offset) {
-            return;
-        } else if (buffer->mark_glyph < buffer->cursor_glyph+buffer->cursor_display_line->offset) {
-            start_glyph = buffer->mark_glyph;
-            end_glyph = buffer->cursor_glyph + buffer->cursor_display_line->offset;
-        } else {
-            end_glyph = buffer->mark_glyph;
-            start_glyph = buffer->cursor_glyph + buffer->cursor_display_line->offset;
-        }
-        
-    } else if (buffer->mark_lineno < buffer->cursor_display_line->real_line->lineno) {
-        start_line = buffer_line_by_number(buffer, buffer->mark_lineno);
-        start_glyph = buffer->mark_glyph;
-
-        end_line = buffer->cursor_display_line->real_line;
-        end_glyph = buffer->cursor_glyph + buffer->cursor_display_line->offset;
-    } else {
-        start_line = buffer->cursor_display_line->real_line;
-        start_glyph = buffer->cursor_glyph + buffer->cursor_display_line->offset;;
-
-        end_line = buffer_line_by_number(buffer, buffer->mark_lineno);
-        end_glyph = buffer->mark_glyph;
-    }
-
+    buffer_get_selection(buffer, &start_line, &start_glyph, &end_line, &end_glyph);
+ 
     if (start_line == NULL) return;
     if (end_line == NULL) return;
 
@@ -240,6 +212,100 @@ static void copy_selection_to_clipboard(GtkClipboard *clipboard) {
     free(r);
 }
 
+static void remove_selection() {
+    real_line_t *start_line, *end_line, *real_line;
+    display_line_t *last_start_display_line, *first_end_display_line, *display_line;
+    int start_glyph, end_glyph;
+    int lineno;
+
+    buffer_get_selection(buffer, &start_line, &start_glyph, &end_line, &end_glyph);
+ 
+    if (start_line == NULL) return;
+    if (end_line == NULL) return;
+
+    //printf("Deleting %d from %d (size: %d)\n", start_line->lineno, start_glyph, start_line->cap-start_glyph);
+
+    /* Special case when we are deleting a section of the same line */
+    if (start_line == end_line) {
+        buffer_line_delete_from(buffer, start_line, start_glyph, end_glyph-start_glyph);
+        buffer_reflow_softwrap_real_line(buffer, start_line, 0, 0);
+        buffer_set_to_real(buffer, start_line, start_glyph);
+        gtk_widget_queue_draw(drar);
+        return;
+    }
+    
+    /* Remove text from first and last real lines, and associated display_lines */
+    buffer_line_delete_from(buffer, start_line, start_glyph, start_line->cap-start_glyph);
+    buffer_line_delete_from(buffer, end_line, 0, end_glyph);
+
+    /* Remove real_lines between start and end */
+    for (real_line = start_line->next; (real_line != NULL) && (real_line != end_line); ) {
+        real_line_t *next = real_line->next;
+        free(real_line->glyphs);
+        free(real_line->glyph_info);
+        free(real_line);
+        real_line = next;
+    }
+
+    start_line->next = end_line;
+    end_line->prev = start_line;
+
+    /* Renumber real_lines */
+
+    lineno = start_line->lineno+1;
+    for (real_line = start_line->next; real_line != NULL; real_line = real_line->next) {
+        real_line->lineno = lineno;
+        ++lineno;
+    }
+
+    /*
+    printf("AFTER FIXING REAL LINES, BEFORE FIXING DISPLAY LINES:\n");
+    debug_print_real_lines_state(buffer);
+    debug_print_lines_state(buffer);
+    */
+
+    /* Removes display_lines in-between the first and last real_lines */
+    for (display_line = start_line->first_display_line; display_line != NULL; display_line = display_line->next) {
+        if (display_line->hard_end) break;
+    }
+
+    assert(display_line != NULL);
+    
+    last_start_display_line = display_line;
+
+    first_end_display_line = end_line->first_display_line;
+
+    //printf("last_start_display_line: %d first_end_display_line %d\n", last_start_display_line->lineno, first_end_display_line->lineno);
+
+    for (display_line = last_start_display_line->next; (display_line != NULL) && (display_line != first_end_display_line); ) {
+        display_line_t *next = display_line->next;
+        free(display_line);
+        display_line = next;
+    }
+
+    last_start_display_line->next = first_end_display_line;
+    first_end_display_line->prev = last_start_display_line;
+
+    /*buffer_join_lines(buffer, start_line, end_line);*/
+
+    /*
+    printf("AFTER REMOVING EXCESS DISPLAY LINES:\n");
+    debug_print_real_lines_state(buffer);
+    debug_print_lines_state(buffer);
+    */
+
+    buffer_reflow_softwrap_real_line(buffer, start_line, 0, 1);
+    buffer_reflow_softwrap_real_line(buffer, end_line, 0, 1);
+
+    buffer_set_to_real(buffer, start_line, start_glyph);
+
+    buffer_join_lines(buffer, start_line, end_line);
+
+    buffer_reflow_softwrap_real_line(buffer, start_line, 0, 1);
+
+    gtk_widget_queue_draw(drar);
+}
+
 static void move_cursor(int delta_line, int delta_char, enum MoveCursorSpecial special) {
     int i = 0;
     redraw_cursor_line(FALSE, FALSE);
@@ -300,7 +366,7 @@ static void insert_text(gchar *str) {
 
     unset_mark();
     
-    if (buffer_reflow_softwrap_real_line(buffer, buffer->cursor_display_line->real_line, inc)) {
+    if (buffer_reflow_softwrap_real_line(buffer, buffer->cursor_display_line->real_line, inc, 0)) {
         gtk_widget_queue_draw(drar);
     } else {
         redraw_cursor_line(FALSE, TRUE);
@@ -336,7 +402,7 @@ static void remove_text(int offset) {
     
     buffer_set_to_real(buffer, real_cursor_line, real_cursor_glyph);
 
-    if (buffer_reflow_softwrap_real_line(buffer, buffer->cursor_display_line->real_line, 0)) {
+    if (buffer_reflow_softwrap_real_line(buffer, buffer->cursor_display_line->real_line, 0, 0)) {
         gtk_widget_queue_draw(drar);
     } else {
         redraw_cursor_line(FALSE, TRUE);
@@ -359,8 +425,8 @@ static void split_line() {
     assert(real_cursor_line->next != NULL);
     buffer_set_to_real(buffer, real_cursor_line->next, 0);
 
-    buffer_reflow_softwrap_real_line(buffer, real_cursor_line, 0);
-    buffer_reflow_softwrap_real_line(buffer, real_cursor_line->next, 0);
+    buffer_reflow_softwrap_real_line(buffer, real_cursor_line, 0, 0);
+    buffer_reflow_softwrap_real_line(buffer, real_cursor_line->next, 0, 0);
 
     redraw_cursor_line(FALSE, TRUE);
 
@@ -429,10 +495,20 @@ static gboolean key_press_callback(GtkWidget *widget, GdkEventKey *event, gpoint
             return TRUE;
 
         case GDK_KEY_Delete:
-            remove_text(0);
+            if (buffer->mark_lineno == -1) {
+                remove_text(0);
+            } else {
+                remove_selection();
+                unset_mark();
+            }
             return TRUE;
         case GDK_KEY_BackSpace:
-            remove_text(-1);
+            if (buffer->mark_lineno == -1) {
+                remove_text(-1);
+            } else {
+                remove_selection();
+                unset_mark();
+            }
             return TRUE;
         case GDK_KEY_Return:
             split_line();
