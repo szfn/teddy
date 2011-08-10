@@ -25,17 +25,7 @@ GtkWidget *drarhscroll;
 GtkIMContext *drarim;
 gboolean cursor_visible = TRUE;
 int initialization_ended = 0;
-
-/* TODO:
-   - delete/backspace removes selection
-   - paste
-   - cut
-   - undo (without redo)
-   - save
-   - scripting (for keybindings)
-   - highlighting
-   - reminder: use menu key to highlight command line
-*/
+int mouse_marking = 0;
 
 static double calculate_x_origin(GtkAllocation *allocation) {
     double origin_x;
@@ -544,20 +534,24 @@ static gboolean key_press_callback(GtkWidget *widget, GdkEventKey *event, gpoint
     return TRUE;
 }
 
-static gboolean button_press_callback(GtkWidget *widget, GdkEventButton *event, gpointer data) {
+static void move_cursor_to_mouse(double x, double y) {
     double origin_x, origin_y;
     GtkAllocation allocation;
-
-    redraw_cursor_line(FALSE, FALSE);
-
-    gtk_widget_get_allocation(widget, &allocation);
+    
+    gtk_widget_get_allocation(drar, &allocation);
     
     origin_y = calculate_y_origin(&allocation);
     origin_x = calculate_x_origin(&allocation);
-
-    cursor_visible = TRUE;
     
-    buffer_move_cursor_to_position(buffer, origin_x, origin_y, event->x, event->y);
+    buffer_move_cursor_to_position(buffer, origin_x, origin_y, x, y);
+}
+
+static gboolean button_press_callback(GtkWidget *widget, GdkEventButton *event, gpointer data) {
+    redraw_cursor_line(FALSE, FALSE);
+
+    move_cursor_to_mouse(event->x, event->y);
+    
+    cursor_visible = TRUE;
 
     if (buffer->mark_lineno != -1) {
         gtk_widget_queue_draw(drar); /* must redraw everything to keep selection consistent */
@@ -566,7 +560,37 @@ static gboolean button_press_callback(GtkWidget *widget, GdkEventButton *event, 
     } else {
         redraw_cursor_line(FALSE, FALSE);
     }
+
+    mouse_marking = 1;
+    set_mark_at_cursor();
     
+    return TRUE;
+}
+
+static gboolean button_release_callback(GtkWidget *widget, GdkEventButton *event, gpointer data) {
+    real_line_t *cursor_real_line;
+    int cursor_real_glyph;
+
+    buffer_real_cursor(buffer, &cursor_real_line, &cursor_real_glyph);
+    
+    mouse_marking = 0;
+
+    if ((buffer->mark_lineno == cursor_real_line->lineno) && (buffer->mark_glyph == cursor_real_glyph)) {
+        buffer->mark_lineno = -1;
+        buffer->mark_glyph = -1;
+        redraw_cursor_line(FALSE, FALSE);
+    }
+
+    return TRUE;
+}
+
+static gboolean motion_callback(GtkWidget *widget, GdkEventMotion *event, gpointer data) {
+    if (mouse_marking) {
+        move_cursor_to_mouse(event->x, event->y);
+        copy_selection_to_clipboard(selection_clipboard);
+        gtk_widget_queue_draw(drar);
+    }
+
     return TRUE;
 }
 
@@ -828,6 +852,12 @@ int main(int argc, char *argv[]) {
     g_signal_connect(G_OBJECT(drar), "button-press-event",
                      G_CALLBACK(button_press_callback), NULL);
 
+    g_signal_connect(G_OBJECT(drar), "button-release-event",
+                     G_CALLBACK(button_release_callback), NULL);
+
+    g_signal_connect(G_OBJECT(drar), "motion-notify-event",
+                     G_CALLBACK(motion_callback), NULL);
+
     g_signal_connect(G_OBJECT(drarim), "commit",
                      G_CALLBACK(text_entry_callback), NULL);
 
@@ -849,7 +879,7 @@ int main(int argc, char *argv[]) {
     gtk_widget_show_all(window);
 
     gtk_widget_grab_focus(GTK_WIDGET(drar));
-    gdk_window_set_events(gtk_widget_get_window(drar), gdk_window_get_events(gtk_widget_get_window(drar)) | GDK_BUTTON_PRESS_MASK);
+    gdk_window_set_events(gtk_widget_get_window(drar), gdk_window_get_events(gtk_widget_get_window(drar)) | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK | GDK_POINTER_MOTION_MASK);
     g_timeout_add(500, (GSourceFunc)cursor_blinker, (gpointer)window);
 
     gtk_main();

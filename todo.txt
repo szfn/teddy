@@ -1,0 +1,9 @@
+- removal of display_lines (in separate branch)
+- bug: putting mark at the end of a line selects the entire rest of the buffer
+- paste
+- cut
+- undo (without redo)
+- save
+- scripting (for keybindings)
+- highlighting
+- reminder: use menu key to highlight command line
