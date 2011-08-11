@@ -571,14 +571,8 @@ static gboolean expose_event_callback(GtkWidget *widget, GdkEventExpose *event, 
     /*printf("DRAWING!\n");*/
 
     for (line = buffer->real_line; line != NULL; line = line->next) {
-        double line_end_width;
+        double line_end_width, y_increment;
         int start_selection_at_glyph = -1, end_selection_at_glyph = -1;
-
-        // TODO: current line height must be recalculated
-
-        if ((first_displayed_line == NULL) && (y - buffer->line_height > 0)) {
-            first_displayed_line = line;
-        }
 
         if (line->lineno == buffer->mark_lineno) {
             if (mark_mode) {
@@ -602,31 +596,39 @@ static gboolean expose_event_callback(GtkWidget *widget, GdkEventExpose *event, 
             }
         }
 
-        if (y - buffer->line_height > event->area.y+event->area.height) break; /* if we passed the visible area the just stop displaying */
-        if (y < event->area.y) { /* If the line is before the visible area, just increment y and move to the next line */
-            y += buffer->line_height;
-            continue;
-        }
-
-        line_end_width = buffer_line_adjust_glyphs(buffer, line, origin_x, y);
+        buffer_line_adjust_glyphs(buffer, line, origin_x, y, allocation.width, allocation.height, &y_increment, &line_end_width);
         cairo_show_glyphs(cr, line->glyphs, line->cap);
 
+        if ((first_displayed_line == NULL) && (y + y_increment - buffer->line_height > 0)) {
+            first_displayed_line = line;
+            /* TODO: this is the first line to be displayed BUT we also need to know the first displayed glyph (because this is a real_line which is different from what is a displayed line */
+        }
+
         if (mark_mode || (start_selection_at_glyph != -1) || (end_selection_at_glyph != -1)) {
+            double sely, selheight;
             double selx, selwidth;
+
+            /*TODO: this part must be retought, the selection on the current line may no longer be rectangular */
 
             if (start_selection_at_glyph != -1) {
                 if (start_selection_at_glyph >= line->cap) {
                     if (line->cap-1 > 0) {
+                        sely = line->glyphs[line->cap-1].y;
                         selx = line->glyphs[line->cap-1].x + line->glyph_info[line->cap-1].x_advance;
                     } else {
+                        sely = 0.0;
                         selx = 0.0;
                     }
                 } else {
+                    sely = line->glyphs[start_selection_at_glyph].y;
                     selx = line->glyphs[start_selection_at_glyph].x;
                 }
             } else {
+                sely = 0.0;
                 selx = 0.0;
             }
+
+            selheight = buffer->line_height;
             
             if (end_selection_at_glyph != -1) {
                 if (end_selection_at_glyph >= line->cap) {
@@ -665,8 +667,7 @@ static gboolean expose_event_callback(GtkWidget *widget, GdkEventExpose *event, 
             cairo_set_line_width(cr, 2.0);
             }*/
 
-        // TODO: increment here is variable
-        y += buffer->line_height;
+        y += y_increment;
     }
 
     if (cursor_visible) {

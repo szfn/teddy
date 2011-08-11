@@ -21,6 +21,7 @@ typedef struct _real_line_t {
     int allocated;
     int cap;
     int lineno; // real line number
+    double start_y;
     struct _real_line_t *prev;
     struct _real_line_t *next;
 } real_line_t;
@@ -66,7 +67,7 @@ buffer_t *buffer_create(FT_Library *library);
 void load_text_file(buffer_t *buffer, const char *filename);
 void buffer_free(buffer_t *buffer);
 
-double buffer_line_adjust_glyphs(buffer_t *buffer, real_line_t *line, double x, double y);
+void buffer_line_adjust_glyphs(buffer_t *buffer, real_line_t *line, double x, double y, double window_width, double window_height, double *y_increment, double *line_end_width);
 
 int buffer_line_insert_utf8_text(buffer_t *buffer, real_line_t *line, char *text, int len, int insertion_point);
 void buffer_line_remove_glyph(buffer_t *buffer, real_line_t *line, int glyph_index);

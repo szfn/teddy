@@ -246,21 +246,27 @@ void buffer_line_remove_glyph(buffer_t *buffer, real_line_t *line, int glyph_ind
     buffer_line_fix_spaces(buffer, line);
 }
 
-double buffer_line_adjust_glyphs(buffer_t *buffer, real_line_t *line, double x, double y) {
+void buffer_line_adjust_glyphs(buffer_t *buffer, real_line_t *line, double x, double y, double window_width, double window_height, double *y_increment, double *line_end_width) {
     int i;
 
-    /* TODO: wrap lines around here */
+    *y_increment = buffer->line_height;
+    line->start_y = y;
 
     //printf("setting type\n");
     for (i = 0; i < line->cap; ++i) {
-        if (i > 0) x += line->glyph_info[i].kerning_correction;
+        x += line->glyph_info[i].kerning_correction;
+        if (x+line->glyph_info[i].x_advance > window_width - buffer->left_margin - buffer->right_margin) {
+            y += buffer->line_height;
+            *y_increment += buffer->line_height;
+            x = buffer->right_margin;
+        }
         line->glyphs[i].x = x;
         line->glyphs[i].y = y;
         x += line->glyph_info[i].x_advance;
         //printf("x: %g (%g)\n", x, glyph_info[i].x_advance);
     }
 
-    return x;
+    *line_end_width = x;
 }
 
 void load_text_file(buffer_t *buffer, const char *filename) {
@@ -341,6 +347,9 @@ void buffer_cursor_position(buffer_t *buffer, double origin_x, double origin_y, 
     if (buffer->cursor_line == NULL) {
         *y = 0.0;
         *x = 0.0;
+    } else if (buffer->cursor_line->cap == 0) {
+        *y = buffer->cursor_line->start_y;
+        *x = buffer->left_margin;
     } else if (buffer->cursor_glyph >= buffer->cursor_line->cap) {
         *y = buffer->cursor_line->glyphs[buffer->cursor_line->cap-1].y;
         *x = buffer->cursor_line->glyphs[buffer->cursor_line->cap-1].x + buffer->cursor_line->glyph_info[buffer->cursor_line->cap-1].x_advance;
