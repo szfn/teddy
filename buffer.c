@@ -255,7 +255,7 @@ void buffer_line_adjust_glyphs(buffer_t *buffer, real_line_t *line, double x, do
     //printf("setting type\n");
     for (i = 0; i < line->cap; ++i) {
         x += line->glyph_info[i].kerning_correction;
-        if (x+line->glyph_info[i].x_advance > window_width - buffer->left_margin - buffer->right_margin) {
+        if (x+line->glyph_info[i].x_advance > window_width - buffer->right_margin) {
             y += buffer->line_height;
             *y_increment += buffer->line_height;
             x = buffer->right_margin;

@@ -635,11 +635,6 @@ static gboolean expose_event_callback(GtkWidget *widget, GdkEventExpose *event, 
             }
         }
 
-        if ((first_displayed_line == NULL) && (y + y_increment - buffer->line_height > 0)) {
-            first_displayed_line = line;
-            /* TODO: this is the first line to be displayed BUT we also need to know the first displayed glyph (because this is a real_line which is different from what is a displayed line */
-        }
-
         if (mark_mode || (start_selection_at_glyph != -1) || (end_selection_at_glyph != -1)) {
             double sely, selheight;
             double selx, selwidth;
@@ -697,7 +692,7 @@ static gboolean expose_event_callback(GtkWidget *widget, GdkEventExpose *event, 
         if ((cursor_y < 0) || (cursor_y > allocation.height)) {
             if (first_displayed_line != NULL) {
                 buffer->cursor_line = first_displayed_line;
-                buffer->cursor_glyph = 0;
+                buffer->cursor_glyph = first_displayed_glyph;
                 redraw_cursor_line(FALSE, FALSE);
             }
         } else {
@@ -733,6 +728,8 @@ static gboolean expose_event_callback(GtkWidget *widget, GdkEventExpose *event, 
         
         free(posbox_text);
     }
+
+    buffer->rendered_height = y - origin_y;
 
     gtk_adjustment_set_upper(GTK_ADJUSTMENT(adjustment), buffer->rendered_height);
     gtk_adjustment_set_page_size(GTK_ADJUSTMENT(adjustment), allocation.height);
