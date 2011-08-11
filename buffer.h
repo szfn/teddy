@@ -22,6 +22,7 @@ typedef struct _real_line_t {
     int cap;
     int lineno; // real line number
     double start_y;
+    double end_y;
     struct _real_line_t *prev;
     struct _real_line_t *next;
 } real_line_t;
@@ -77,7 +78,7 @@ int buffer_reflow_softwrap_real_line(buffer_t *buffer, real_line_t *line, int cu
 
 void buffer_real_cursor(buffer_t *buffer, real_line_t **real_line, int *real_glyph);
 void buffer_set_to_real(buffer_t *buffer, real_line_t *real_line, int real_glyph);
-void buffer_move_cursor_to_position(buffer_t *buffer, double origin_x, double origin_y, double x, double y);
+void buffer_move_cursor_to_position(buffer_t *buffer, double x, double y);
 void buffer_cursor_position(buffer_t *buffer, double origin_x, double origin_y, double *x, double *y);
 void buffer_cursor_line_rectangle(buffer_t *buffer, double origin_x, double origin_y, double *x, double *y, double *height, double *width);
 

@@ -108,7 +108,8 @@ static void redraw_cursor_line(gboolean large, gboolean move_origin_when_outside
 }
 
 static void copy_selection_to_clipboard(GtkClipboard *clipboard) {
-    real_line_t *start_line, *end_line;
+    /*TODO: occasionally causes segfault/jump on uninitialized value (check)
+      real_line_t *start_line, *end_line;
     int start_glyph, end_glyph;
     real_line_t *line;
     
@@ -193,7 +194,7 @@ static void copy_selection_to_clipboard(GtkClipboard *clipboard) {
 
     gtk_clipboard_set_text(clipboard, r, -1);
 
-    free(r);
+    free(r);*/
 }
 
 static void remove_selection() {
@@ -493,7 +494,7 @@ static void move_cursor_to_mouse(double x, double y) {
     origin_y = calculate_y_origin(&allocation);
     origin_x = calculate_x_origin(&allocation);
     
-    buffer_move_cursor_to_position(buffer, origin_x, origin_y, x, y);
+    buffer_move_cursor_to_position(buffer, x, y);
 }
 
 static gboolean button_press_callback(GtkWidget *widget, GdkEventButton *event, gpointer data) {
@@ -552,6 +553,7 @@ static gboolean expose_event_callback(GtkWidget *widget, GdkEventExpose *event, 
     int first_displayed_glyph = -1;
     int mark_mode = 0;
     int display_lines = 0;
+    int count = 0;
 
     gtk_widget_get_allocation(widget, &allocation);
 
@@ -682,7 +684,10 @@ static gboolean expose_event_callback(GtkWidget *widget, GdkEventExpose *event, 
         }
 
         y += y_increment;
+        ++count;
     }
+
+    printf("Expose event final y: %g, lines: %d\n", y, count);
 
     if (cursor_visible) {
         double cursor_x, cursor_y;

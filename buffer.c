@@ -251,12 +251,14 @@ void buffer_line_adjust_glyphs(buffer_t *buffer, real_line_t *line, double x, do
 
     *y_increment = buffer->line_height;
     line->start_y = y;
+    line->end_y = y;
 
     //printf("setting type\n");
     for (i = 0; i < line->cap; ++i) {
         x += line->glyph_info[i].kerning_correction;
         if (x+line->glyph_info[i].x_advance > window_width - buffer->right_margin) {
             y += buffer->line_height;
+            line->end_y = y;
             *y_increment += buffer->line_height;
             x = buffer->right_margin;
         }
@@ -325,6 +327,8 @@ void load_text_file(buffer_t *buffer, const char *filename) {
     buffer->cursor_glyph = 0;
 
     free(text);
+
+    printf("Loaded lines: %d\n", lineno);
     
     fclose(fin);
 }
@@ -359,39 +363,41 @@ void buffer_cursor_position(buffer_t *buffer, double origin_x, double origin_y, 
     }
 }
 
-void buffer_move_cursor_to_position(buffer_t *buffer, double origin_x, double origin_y, double x, double y) {
-    /* TODO: reimplement
-    int cursor_display_lineno = ceil((y - origin_y) / buffer->line_height);
-    display_line_t *cur;
-    real_line_t *real_cursor_line;
+void buffer_move_cursor_to_position(buffer_t *buffer, double x, double y) {
+    real_line_t *line, *prev = NULL;
     int i;
-    
-    buffer->cursor_glyph = 0;
 
-    for (cur = buffer->display_line; cur->next != NULL; cur = cur->next) {
-        if (cur->lineno == cursor_display_lineno) break;
+    for (line = buffer->real_line; line->next != NULL; line = line->next) {
+        printf("Cur y: %g (searching %g)\n", line->start_y, y);
+        if (line->end_y > y) break;
     }
 
-    buffer->cursor_display_line = cur;
-    real_cursor_line = cur->real_line;
+    printf("New position lineno: %d\n", line->lineno);
+    buffer->cursor_line = line;
 
-    for (i = 0; i < cur->size; ++i) {
-        double glyph_start = real_cursor_line->glyphs[cur->offset + i].x;
-        double glyph_end = glyph_start + real_cursor_line->glyph_info[cur->offset + i].x_advance;
+    if (line == NULL) line = prev;
 
-        if ((x >= glyph_start) && (x <= glyph_end)) {
-            double dist_start = x - glyph_start;
-            double dist_end = glyph_end - x;
-            if (dist_start < dist_end) {
-                buffer->cursor_glyph = i;
-            } else {
-                buffer->cursor_glyph = i+1;
+    assert(line != NULL);
+
+    for (i = 0; i < line->cap; ++i) {
+        if ((y >= line->glyphs[i].y - buffer->line_height) && (y <= line->glyphs[i].y)) {
+            double glyph_start = line->glyphs[i].x;
+            double glyph_end = glyph_start + line->glyph_info[i].x_advance;
+
+            if ((x >= glyph_start) && (x <= glyph_end)) {
+                double dist_start = x - glyph_start;
+                double dist_end = glyph_end - x;
+                if (dist_start < dist_end) {
+                    buffer->cursor_glyph = i;
+                } else {
+                    buffer->cursor_glyph = i+1;
+                }
+                break;
             }
-            break;
         }
     }
 
-    if (i >= cur->size) buffer->cursor_glyph = cur->size;*/
+    if (i >= line->cap) buffer->cursor_glyph = line->cap;
 }
 
 buffer_t *buffer_create(FT_Library *library) {
