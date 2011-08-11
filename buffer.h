@@ -79,7 +79,7 @@ int buffer_reflow_softwrap_real_line(buffer_t *buffer, real_line_t *line, int cu
 void buffer_real_cursor(buffer_t *buffer, real_line_t **real_line, int *real_glyph);
 void buffer_set_to_real(buffer_t *buffer, real_line_t *real_line, int real_glyph);
 void buffer_move_cursor_to_position(buffer_t *buffer, double x, double y);
-void buffer_cursor_position(buffer_t *buffer, double origin_x, double origin_y, double *x, double *y);
+void buffer_cursor_position(buffer_t *buffer, double *x, double *y);
 void buffer_cursor_line_rectangle(buffer_t *buffer, double origin_x, double origin_y, double *x, double *y, double *height, double *width);
 
 real_line_t *buffer_copy_line(buffer_t *buffer, real_line_t *real_line, int start, int size);
@@ -91,6 +91,8 @@ real_line_t *buffer_line_by_number(buffer_t *buffer, int lineno);
 void buffer_get_selection(buffer_t *buffer, real_line_t **start_line, int *start_glyph, real_line_t **end_line, int *end_glyph);
 
 void buffer_join_lines(buffer_t *buffer, real_line_t *line1, real_line_t *line2);
+
+void line_get_glyph_coordinates(buffer_t *buffer, real_line_t *line, int glyph, double *x, double *y);
 
 void debug_print_lines_state(buffer_t *buffer);
 void debug_print_real_lines_state(buffer_t *buffer);

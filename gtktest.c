@@ -1,3 +1,4 @@
+/* bla */
 /* reallly long line for testing purposes  reallly long line for testing purposes  reallly long line for testing purposes  reallly long line for testing purposes  reallly long line for testing purposes  reallly long line for testing purposes  reallly long line for testing purposes  reallly long line for testing purposes */
 #include <gtk/gtk.h>
 #include <cairo.h>
@@ -10,6 +11,7 @@
 #include <stdio.h>
 #include <gdk/gdkkeysyms.h>
 #include <assert.h>
+#include <math.h>
 
 #include "buffer.h"
 
@@ -63,7 +65,7 @@ static void redraw_cursor_line(gboolean large, gboolean move_origin_when_outside
     origin_x = calculate_x_origin(&allocation);
     origin_y = calculate_y_origin(&allocation);
 
-    buffer_cursor_position(buffer, origin_x, origin_y, &cursor_x, &y);
+    buffer_cursor_position(buffer, &cursor_x, &y);
 
     y -= buffer->ascent;
     x = 0.0;
@@ -102,9 +104,13 @@ static void redraw_cursor_line(gboolean large, gboolean move_origin_when_outside
             return;
         }
     }
-    
-    gtk_widget_queue_draw_area(drar, x, y, width, height);
-    gtk_widget_queue_draw_area(drar, 0.0, allocation.height-buffer->line_height, allocation.width, buffer->line_height);
+
+    if (buffer->mark_lineno != -1) {
+        gtk_widget_queue_draw(drar);
+    } else {
+        gtk_widget_queue_draw_area(drar, x, y, width, height);
+        gtk_widget_queue_draw_area(drar, 0.0, allocation.height-buffer->line_height, allocation.width, buffer->line_height);
+    }
 }
 
 static void copy_selection_to_clipboard(GtkClipboard *clipboard) {
@@ -263,6 +269,8 @@ enum MoveCursorSpecial {
 static void move_cursor(int delta_line, int delta_char, enum MoveCursorSpecial special) {
     int i = 0;
     redraw_cursor_line(FALSE, FALSE);
+
+    //TODO: if we are on a multiline line, "down" should move only one apparent line
 
     if (delta_line > 0) {
         for (i = 0; i < delta_line; ++i) {
@@ -545,6 +553,45 @@ static gboolean motion_callback(GtkWidget *widget, GdkEventMotion *event, gpoint
     return TRUE;
 }
 
+static void draw_selection(double width, cairo_t *cr) {
+    real_line_t *selstart_line, *selend_line;
+    int selstart_glyph, selend_glyph;
+    double selstart_y, selend_y;
+    double selstart_x, selend_x;
+    
+    if (buffer->mark_glyph == -1) return;
+    
+    buffer_get_selection(buffer, &selstart_line, &selstart_glyph, &selend_line, &selend_glyph);
+
+    if ((selstart_line == selend_line) && (selstart_glyph == selend_glyph)) return;
+
+    line_get_glyph_coordinates(buffer, selstart_line, selstart_glyph, &selstart_x, &selstart_y);
+    line_get_glyph_coordinates(buffer, selend_line, selend_glyph, &selend_x, &selend_y);
+
+    if (fabs(selstart_y - selend_y) < 0.001) {
+        cairo_set_operator(cr, CAIRO_OPERATOR_DIFFERENCE);
+        cairo_rectangle(cr, selstart_x, selstart_y-buffer->ascent, selend_x - selstart_x, buffer->ascent + buffer->descent);
+        cairo_fill(cr);
+        cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
+    } else {
+        cairo_set_operator(cr, CAIRO_OPERATOR_DIFFERENCE);
+
+        // start selection
+        cairo_rectangle(cr, selstart_x, selstart_y-buffer->ascent, width - selstart_x, buffer->ascent + buffer->descent);
+        cairo_fill(cr);
+
+        //TODO: midselection block
+        cairo_rectangle(cr, 0.0, selstart_y + buffer->descent, width, selend_y - buffer->ascent - buffer->descent - selstart_y);
+        cairo_fill(cr);
+
+        //end selection
+        cairo_rectangle(cr, 0.0, selend_y-buffer->ascent, selend_x, buffer->ascent + buffer->descent);
+        cairo_fill(cr);
+        
+        cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
+    }
+}
+
 static gboolean expose_event_callback(GtkWidget *widget, GdkEventExpose *event, gpointer data) {
     cairo_t *cr = gdk_cairo_create(widget->window);
     double origin_y, origin_x, y;
@@ -637,11 +684,10 @@ static gboolean expose_event_callback(GtkWidget *widget, GdkEventExpose *event, 
             }
         }
 
+        /*
         if (mark_mode || (start_selection_at_glyph != -1) || (end_selection_at_glyph != -1)) {
             double sely, selheight;
             double selx, selwidth;
-
-            /*TODO: this part must be retought, the selection on the current line may no longer be rectangular */
 
             if (start_selection_at_glyph != -1) {
                 if (start_selection_at_glyph >= line->cap) {
@@ -681,18 +727,20 @@ static gboolean expose_event_callback(GtkWidget *widget, GdkEventExpose *event, 
             cairo_rectangle(cr, selx, y-buffer->ascent, selwidth, buffer->ascent+buffer->descent);
             cairo_fill(cr);
             cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
-        }
+        }*/
 
         y += y_increment;
         ++count;
     }
+
+    draw_selection(allocation.width, cr);
 
     printf("Expose event final y: %g, lines: %d\n", y, count);
 
     if (cursor_visible) {
         double cursor_x, cursor_y;
 
-        buffer_cursor_position(buffer, origin_x, origin_y, &cursor_x, &cursor_y);
+        buffer_cursor_position(buffer, &cursor_x, &cursor_y);
 
         if ((cursor_y < 0) || (cursor_y > allocation.height)) {
             if (first_displayed_line != NULL) {

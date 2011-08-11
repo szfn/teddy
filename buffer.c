@@ -347,20 +347,8 @@ void buffer_set_to_real(buffer_t *buffer, real_line_t *real_line, int real_glyph
     if (buffer->cursor_glyph > buffer->cursor_line->cap) buffer->cursor_glyph = buffer->cursor_line->cap;
 }
 
-void buffer_cursor_position(buffer_t *buffer, double origin_x, double origin_y, double *x, double *y) {
-    if (buffer->cursor_line == NULL) {
-        *y = 0.0;
-        *x = 0.0;
-    } else if (buffer->cursor_line->cap == 0) {
-        *y = buffer->cursor_line->start_y;
-        *x = buffer->left_margin;
-    } else if (buffer->cursor_glyph >= buffer->cursor_line->cap) {
-        *y = buffer->cursor_line->glyphs[buffer->cursor_line->cap-1].y;
-        *x = buffer->cursor_line->glyphs[buffer->cursor_line->cap-1].x + buffer->cursor_line->glyph_info[buffer->cursor_line->cap-1].x_advance;
-    } else {
-        *y = buffer->cursor_line->glyphs[buffer->cursor_glyph].y;
-        *x = buffer->cursor_line->glyphs[buffer->cursor_glyph].x;
-    }
+void buffer_cursor_position(buffer_t *buffer, double *x, double *y) {
+    line_get_glyph_coordinates(buffer, buffer->cursor_line, buffer->cursor_glyph, x, y);
 }
 
 void buffer_move_cursor_to_position(buffer_t *buffer, double x, double y) {
@@ -548,6 +536,7 @@ void buffer_get_selection(buffer_t *buffer, real_line_t **start_line, int *start
         *start_line = *end_line = buffer->cursor_line;
         
         if (buffer->mark_glyph == buffer->cursor_glyph) {
+            *start_glyph = *end_glyph = buffer->mark_glyph;
             return;
         } else if (buffer->mark_glyph < buffer->cursor_glyph) {
             *start_glyph = buffer->mark_glyph;
@@ -572,4 +561,26 @@ void buffer_get_selection(buffer_t *buffer, real_line_t **start_line, int *start
     }
 
     return;
+}
+
+void line_get_glyph_coordinates(buffer_t *buffer, real_line_t *line, int glyph, double *x, double *y) {
+    if (line == NULL) {
+        *y = 0.0;
+        *x = 0.0;
+        return;
+    }
+
+    if (line->cap == 0) {
+        *x = buffer->left_margin;
+        *y = line->start_y;
+        return;
+    }
+    
+    if (glyph >= line->cap) {
+        *y = line->glyphs[line->cap-1].y;
+        *x = line->glyphs[line->cap-1].x + line->glyph_info[line->cap-1].x_advance;
+    } else {
+        *y = line->glyphs[glyph].y;
+        *x = line->glyphs[glyph].x;
+    }
 }
