@@ -684,51 +684,6 @@ static gboolean expose_event_callback(GtkWidget *widget, GdkEventExpose *event, 
             }
         }
 
-        /*
-        if (mark_mode || (start_selection_at_glyph != -1) || (end_selection_at_glyph != -1)) {
-            double sely, selheight;
-            double selx, selwidth;
-
-            if (start_selection_at_glyph != -1) {
-                if (start_selection_at_glyph >= line->cap) {
-                    if (line->cap-1 > 0) {
-                        sely = line->glyphs[line->cap-1].y;
-                        selx = line->glyphs[line->cap-1].x + line->glyph_info[line->cap-1].x_advance;
-                    } else {
-                        sely = 0.0;
-                        selx = 0.0;
-                    }
-                } else {
-                    sely = line->glyphs[start_selection_at_glyph].y;
-                    selx = line->glyphs[start_selection_at_glyph].x;
-                }
-            } else {
-                sely = 0.0;
-                selx = 0.0;
-            }
-
-            selheight = buffer->line_height;
-            
-            if (end_selection_at_glyph != -1) {
-                if (end_selection_at_glyph >= line->cap) {
-                    if (line->cap-1 > 0) {
-                        selwidth = line->glyphs[line->cap-1].x + line->glyph_info[line->cap-1].x_advance - selx;
-                    } else {
-                        selwidth = buffer->left_margin - selx;
-                    }
-                } else {
-                    selwidth = line->glyphs[end_selection_at_glyph].x - selx;                    
-                }
-            } else {
-                selwidth = allocation.width;
-            }
-            
-            cairo_set_operator(cr, CAIRO_OPERATOR_DIFFERENCE);
-            cairo_rectangle(cr, selx, y-buffer->ascent, selwidth, buffer->ascent+buffer->descent);
-            cairo_fill(cr);
-            cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
-        }*/
-
         y += y_increment;
         ++count;
     }
