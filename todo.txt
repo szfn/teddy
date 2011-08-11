@@ -1,5 +1,6 @@
 - removal of display_lines (in separate branch)
 - bug: putting mark at the end of a line selects the entire rest of the buffer
+- bug: reimplement movement on visible lines
 - paste
 - cut
 - undo (without redo)

@@ -22,20 +22,7 @@ static real_line_t *new_real_line(int lineno) {
     line->prev = NULL;
     line->next = NULL;
     line->lineno = lineno;
-    line->first_display_line = NULL;
     return line;
-}
-
-static display_line_t *new_display_line(real_line_t *real_line, int offset, int size) {
-    display_line_t *display_line = malloc(sizeof(display_line_t));
-    if (offset == 0) real_line->first_display_line = display_line;
-    display_line->real_line = real_line;
-    display_line->offset = offset;
-    display_line->size = size;
-    display_line->next = NULL;
-    display_line->prev = NULL;
-    display_line->hard_end = 1;
-    return display_line;
 }
 
 static uint8_t utf8_first_byte_processing(uint8_t ch) {
@@ -128,7 +115,6 @@ int buffer_line_insert_utf8_text(buffer_t *buffer, real_line_t *line, char *text
     FT_UInt previous = 0;
     int src, dst;
     int inserted_glyphs = 0;
-    display_line_t *display_line;
 
     if (insertion_point > 0) {
         previous = line->glyphs[insertion_point-1].index;
@@ -211,19 +197,10 @@ int buffer_line_insert_utf8_text(buffer_t *buffer, real_line_t *line, char *text
 
     cairo_ft_scaled_font_unlock_face(buffer->main_font.cairofont);
 
-    for (display_line = line->first_display_line; display_line != NULL; display_line = display_line->next) {
-        if (display_line->hard_end) {
-            display_line->size += inserted_glyphs;
-            break;
-        }
-    }
-
     return inserted_glyphs;
 }
 
 void buffer_join_lines(buffer_t *buffer, real_line_t *line1, real_line_t *line2) {
-    display_line_t *display_line;
-    display_line_t *last_line1_display_line;
     real_line_t *line_cur;
     int lineno;
 
@@ -234,33 +211,6 @@ void buffer_join_lines(buffer_t *buffer, real_line_t *line1, real_line_t *line2)
     memcpy(line1->glyphs+line1->cap, line2->glyphs, sizeof(cairo_glyph_t)*line2->cap);
     memcpy(line1->glyph_info+line1->cap, line2->glyph_info, sizeof(my_glyph_info_t)*line2->cap);
     line1->cap += line2->cap;
-
-    /* increases size of last display_line of line1 */
-    for (display_line = line1->first_display_line; display_line != NULL; display_line = display_line->next) {
-        if (display_line->hard_end) {
-            display_line->size += line2->cap;
-            break;
-        }
-    }
-
-    assert(display_line != NULL);
-
-    last_line1_display_line = display_line;
-    display_line = display_line->next;
-
-    /* NOTE: after this the display_line numbering will be fucked up, but it doesn't matter because a reflow operation is needed anyways and reflowing will also renumber display_lines */
-
-    /* removing all line2 display_lines */
-    while (display_line != NULL) {
-        display_line_t *next;
-        if (display_line->real_line != line2) break;
-        next = display_line->next;
-        free(display_line);
-        display_line = next;
-    }
-
-    last_line1_display_line->next = display_line;
-    if (display_line != NULL) display_line->prev = last_line1_display_line;
 
     /* remove line2 from real_lines list */
 
@@ -280,8 +230,6 @@ void buffer_join_lines(buffer_t *buffer, real_line_t *line1, real_line_t *line2)
 }
 
 void buffer_line_remove_glyph(buffer_t *buffer, real_line_t *line, int glyph_index) {
-    display_line_t *display_line;
-    
     if (glyph_index < 0) {
         buffer_join_lines(buffer, line->prev, line);
         return;
@@ -296,46 +244,23 @@ void buffer_line_remove_glyph(buffer_t *buffer, real_line_t *line, int glyph_ind
     --(line->cap);
 
     buffer_line_fix_spaces(buffer, line);
-
-    for (display_line = line->first_display_line; display_line != NULL; display_line = display_line->next) {
-        if (display_line->hard_end) {
-            --(display_line->size);
-            break;
-        }
-    }
 }
 
-double buffer_line_adjust_glyphs(buffer_t *buffer, display_line_t *display_line, double x, double y) {
-    real_line_t *line = display_line->real_line;
-    cairo_glyph_t *glyphs = line->glyphs + display_line->offset;
-    my_glyph_info_t *glyph_info = line->glyph_info + display_line->offset;
+double buffer_line_adjust_glyphs(buffer_t *buffer, real_line_t *line, double x, double y) {
     int i;
 
+    /* TODO: wrap lines around here */
+
     //printf("setting type\n");
-    for (i = 0; i < display_line->size; ++i) {
-        if (i > 0) x += glyph_info[i].kerning_correction;
-        glyphs[i].x = x;
-        glyphs[i].y = y;
-        x += glyph_info[i].x_advance;
+    for (i = 0; i < line->cap; ++i) {
+        if (i > 0) x += line->glyph_info[i].kerning_correction;
+        line->glyphs[i].x = x;
+        line->glyphs[i].y = y;
+        x += line->glyph_info[i].x_advance;
         //printf("x: %g (%g)\n", x, glyph_info[i].x_advance);
     }
 
     return x;
-}
-
-static void buffer_create_display(buffer_t *buffer) {
-    real_line_t *line;
-    display_line_t *prev_display_line = NULL;
-    display_line_t **display_line_pp = &(buffer->display_line);
-
-    for (line = buffer->real_line; line != NULL; line = line->next) {
-        *display_line_pp = new_display_line(line, 0, line->cap);
-        (*display_line_pp)->prev = prev_display_line;
-        prev_display_line = *display_line_pp;
-        display_line_pp = &((*display_line_pp)->next);
-    }
-
-    buffer->cursor_display_line = buffer->display_line;
 }
 
 void load_text_file(buffer_t *buffer, const char *filename) {
@@ -390,58 +315,43 @@ void load_text_file(buffer_t *buffer, const char *filename) {
     buffer_line_insert_utf8_text(buffer, *real_line_pp, text, strlen(text), (*real_line_pp)->cap);
     (*real_line_pp)->prev = prev_line;
 
-    free(text);
+    buffer->cursor_line = buffer->real_line;
+    buffer->cursor_glyph = 0;
 
-    buffer_create_display(buffer);
+    free(text);
     
     fclose(fin);
 }
 
 void buffer_real_cursor(buffer_t *buffer, real_line_t **real_line, int *real_glyph) {
-    *real_line = buffer->cursor_display_line->real_line;
-    *real_glyph = buffer->cursor_glyph + buffer->cursor_display_line->offset;
+    *real_line = buffer->cursor_line;
+    *real_glyph = buffer->cursor_glyph;
 }
 
 void buffer_set_to_real(buffer_t *buffer, real_line_t *real_line, int real_glyph) {
-    display_line_t *display_line = real_line->first_display_line;
 
-    if (real_glyph < 0) real_glyph = 0;
+    buffer->cursor_line = real_line;
+    buffer->cursor_glyph = real_glyph;
 
-    //printf("Searching real_glyph: %d (display_line->offset == %d)\n", real_glyph, display_line->offset);
-
-    while ((display_line != NULL) && (display_line->offset <= real_glyph)) {
-        //printf("   settings\n");
-        buffer->cursor_display_line = display_line;
-        buffer->cursor_glyph = real_glyph - display_line->offset;
-        if (buffer->cursor_glyph > display_line->size) buffer->cursor_glyph = display_line->size;
-        if (display_line->hard_end) break;
-        display_line = display_line->next;
-        //printf("   display_line->offset == %d\n", display_line->offset);
-    }
+    if (buffer->cursor_glyph < 0) buffer->cursor_glyph = 0;
+    if (buffer->cursor_glyph > buffer->cursor_line->cap) buffer->cursor_glyph = buffer->cursor_line->cap;
 }
 
 void buffer_cursor_position(buffer_t *buffer, double origin_x, double origin_y, double *x, double *y) {
-    display_line_t *cdl;
-    real_line_t *crl;
-    
-    *y = origin_y + (buffer->line_height * (buffer->cursor_display_line ? buffer->cursor_display_line->lineno : 0));
-    *x = origin_x;
-
-    if (buffer->cursor_display_line == NULL) return;
-
-    cdl = buffer->cursor_display_line;
-    crl = cdl->real_line;
-
-    if (crl->cap == 0) return;
-
-    if (buffer->cursor_glyph < cdl->size) {
-        *x = crl->glyphs[cdl->offset + buffer->cursor_glyph].x;
+    if (buffer->cursor_line == NULL) {
+        *y = 0.0;
+        *x = 0.0;
+    } else if (buffer->cursor_glyph >= buffer->cursor_line->cap) {
+        *y = buffer->cursor_line->glyphs[buffer->cursor_line->cap-1].y;
+        *x = buffer->cursor_line->glyphs[buffer->cursor_line->cap-1].x + buffer->cursor_line->glyph_info[buffer->cursor_line->cap-1].x_advance;
     } else {
-        *x = crl->glyphs[cdl->offset + cdl->size - 1].x + crl->glyph_info[cdl->offset + cdl->size - 1].x_advance;
+        *y = buffer->cursor_line->glyphs[buffer->cursor_glyph].y;
+        *x = buffer->cursor_line->glyphs[buffer->cursor_glyph].x;
     }
 }
 
 void buffer_move_cursor_to_position(buffer_t *buffer, double origin_x, double origin_y, double x, double y) {
+    /* TODO: reimplement
     int cursor_display_lineno = ceil((y - origin_y) / buffer->line_height);
     display_line_t *cur;
     real_line_t *real_cursor_line;
@@ -472,7 +382,7 @@ void buffer_move_cursor_to_position(buffer_t *buffer, double origin_x, double or
         }
     }
 
-    if (i >= cur->size) buffer->cursor_glyph = cur->size;
+    if (i >= cur->size) buffer->cursor_glyph = cur->size;*/
 }
 
 buffer_t *buffer_create(FT_Library *library) {
@@ -506,13 +416,11 @@ buffer_t *buffer_create(FT_Library *library) {
     }
 
     buffer->real_line = NULL;
-    buffer->display_line = NULL;
-    buffer->display_lines_count = 0;
 
     buffer->rendered_height = 0.0;
     buffer->rendered_width = 0.0;
 
-    buffer->cursor_display_line = NULL;
+    buffer->cursor_line = NULL;
     buffer->cursor_glyph = 0;
 
     buffer->mark_glyph = -1;
@@ -540,92 +448,10 @@ void buffer_free(buffer_t *buffer) {
         }
     }
 
-    {
-        display_line_t *cursor;
-
-        cursor = buffer->display_line;
-
-        while (cursor != NULL) {
-            display_line_t *next = cursor->next;
-            free(cursor);
-            cursor = next;
-        }
-    }
-
     acmacs_font_free(&(buffer->main_font));
     acmacs_font_free(&(buffer->posbox_font));
 
     free(buffer->name);
-}
-
-static void buffer_line_reflow_softwrap(buffer_t *buffer, display_line_t *display_line, double softwrap_width) {
-    double width = 0.0;
-    real_line_t *real_line = display_line->real_line;
-    int j;
-    
-    /* Scan current display line until either:
-       - we ran out of space
-       - the line ends */
-
-    for (j = 0; j < display_line->size; ++j) {
-        width += real_line->glyph_info[display_line->offset+j].kerning_correction;
-        width += real_line->glyph_info[display_line->offset+j].x_advance;
-        if (width > softwrap_width) {
-            break;
-        }
-    }
-    
-    /* the first character we can ever move to the next line is always the first one */
-    if (j == 0) j = 1;
-
-    if (j < display_line->size) {
-        /* Create a new display line and push characters to it */
-        display_line_t *saved_next = display_line->next;
-        display_line->next = new_display_line(display_line->real_line, display_line->offset + j, display_line->size - j);
-        if (display_line->next != NULL) {
-            display_line->next->prev = display_line;
-            display_line->next->hard_end = display_line->hard_end;
-            display_line->next->next = saved_next;
-        }
-        if (saved_next != NULL) saved_next->prev = display_line->next;
-        
-        display_line->hard_end = 0;
-        display_line->size = j;
-    } else {
-        display_line_t *next_display_line = display_line->next;
-        if (display_line->hard_end) return;
-
-        /* Join the next line with this one */
-
-        display_line->hard_end = next_display_line->hard_end;
-        display_line->size += next_display_line->size;
-
-        display_line->next = next_display_line->next;
-        if (next_display_line->next != NULL) next_display_line->next->prev = display_line;
-
-        free(next_display_line);
-
-        /* Recur, this is inefficient and potentially leads to stack overflow but must do for now */
-
-        buffer_line_reflow_softwrap(buffer, display_line, softwrap_width);
-    }
-}
-
-void debug_print_lines_state(buffer_t *buffer) __attribute__ ((unused));
-void debug_print_lines_state(buffer_t *buffer) {
-    display_line_t *display_line;
-    int i, cnt = 0;
-
-    for (display_line = buffer->display_line; display_line != NULL; display_line = display_line->next) {
-        printf("%d offset:%d size:%d hard_end:%d [", cnt, display_line->offset, display_line->size, display_line->hard_end);
-        for (i = 0; i < display_line->size; ++i) {
-            printf("%c", (char)(display_line->real_line->glyph_info[display_line->offset + i].code));
-        }
-        printf("]\n");
-        ++cnt;
-    }
-
-    printf("----------------\n\n");
 }
 
 void debug_print_real_lines_state(buffer_t *buffer) __attribute__ ((unused));
@@ -645,87 +471,6 @@ void debug_print_real_lines_state(buffer_t *buffer) {
     
 }
 
-void buffer_reflow_softwrap(buffer_t *buffer, double softwrap_width) {
-    display_line_t *display_line;
-    real_line_t *real_cursor_line;
-    int real_cursor_glyph;
-
-    if (fabs(buffer->rendered_width - softwrap_width) < 0.001) return;
-    buffer->rendered_width = softwrap_width;
-    
-    softwrap_width -= buffer->right_margin + buffer->left_margin;
-    buffer->display_lines_count = 0;
-    buffer->rendered_height = 0.0;
-
-    //debug_print_lines_state(buffer);
-
-    /* printf("Reflow called\n"); */
-
-    /* Get the real cursor position */
-    buffer_real_cursor(buffer, &real_cursor_line, &real_cursor_glyph);
-
-    for (display_line = buffer->display_line; display_line != NULL; display_line = display_line->next) {
-        buffer_line_reflow_softwrap(buffer, display_line, softwrap_width);
-        display_line->lineno = buffer->display_lines_count;
-        ++(buffer->display_lines_count);
-        buffer->rendered_height += buffer->line_height;
-        //debug_print_lines_state(buffer);
-    }
-
-    buffer->rendered_height += buffer->line_height;
-
-    /*debug_print_lines_state(buffer);
-      printf("Returned count: %d\n", buffer->display_lines_count);*/
-
-    /* Restore cursor position */
-    buffer_set_to_real(buffer, real_cursor_line, real_cursor_glyph);
-}
-
-int buffer_reflow_softwrap_real_line(buffer_t *buffer, real_line_t *line, int cursor_increment, int ignore_cursor) {
-    display_line_t *display_line;
-    real_line_t *real_cursor_line;
-    int real_cursor_glyph;
-    int display_lines_before = 0, display_lines_after = 0, lineno;
-    double softwrap_width = buffer->rendered_width - buffer->right_margin - buffer->left_margin;
-
-    /* Get the real cursor position */
-    if (!ignore_cursor)
-        buffer_real_cursor(buffer, &real_cursor_line, &real_cursor_glyph);
-
-    for (display_line = line->first_display_line; display_line != NULL; display_line = display_line->next) {
-        ++display_lines_before;
-    }
-
-    lineno = line->first_display_line->lineno;
-    
-    for (display_line = line->first_display_line; display_line != NULL; display_line = display_line->next) {
-        display_line->lineno = lineno;
-        ++display_lines_after;
-        ++lineno;
-        buffer_line_reflow_softwrap(buffer, display_line, softwrap_width);
-        if (display_line->hard_end) break;
-    }
-
-    if (display_line != NULL) {
-        for (display_line = display_line->next; display_line != NULL; display_line = display_line->next) {
-            display_line->lineno = lineno;
-            ++lineno;
-        }
-    }
-
-    buffer->display_lines_count = lineno;
-    buffer->rendered_height = buffer->display_lines_count * buffer->line_height;
-
-    if (!ignore_cursor) {
-        real_cursor_glyph += cursor_increment;
-        
-        /* Restore cursor position */
-        buffer_set_to_real(buffer, real_cursor_line, real_cursor_glyph);
-    }
-
-    return (display_lines_before > 0) || (display_lines_after > 0);
-}
-
 real_line_t *buffer_copy_line(buffer_t *buffer, real_line_t *real_line, int start, int size) {
     real_line_t *r = new_real_line(-1);
     
@@ -740,25 +485,13 @@ real_line_t *buffer_copy_line(buffer_t *buffer, real_line_t *real_line, int star
 }
 
 void buffer_line_delete_from(buffer_t *buffer, real_line_t *real_line, int start, int size) {
-    display_line_t *display_line;
-    
     memmove(real_line->glyphs+start, real_line->glyphs+start+size, sizeof(cairo_glyph_t)*(real_line->cap-start-size));
     memmove(real_line->glyph_info+start, real_line->glyph_info+start+size, sizeof(my_glyph_info_t)*(real_line->cap-start-size));
     real_line->cap -= size;
-
-    for (display_line = real_line->first_display_line; display_line != NULL; display_line = display_line->next) {
-        if (display_line->offset > real_line->cap)
-            display_line->offset = real_line->cap;
-        if (display_line->size + display_line->offset > real_line->cap)
-            display_line->size = real_line->cap - display_line->offset;
-        if (display_line->hard_end) break;
-    }
 }
 
 void buffer_real_line_insert(buffer_t *buffer, real_line_t *insertion_line, real_line_t* real_line) {
     real_line_t *cur;
-    display_line_t *display_line;
-    display_line_t *display_line_to_insert;
     int lineno;
 
     //debug_print_real_lines_state(buffer);
@@ -777,20 +510,6 @@ void buffer_real_line_insert(buffer_t *buffer, real_line_t *insertion_line, real
         lineno++;
         //debug_print_real_lines_state(buffer);
     }
-
-    display_line_to_insert = new_display_line(real_line, 0, real_line->cap);
-
-    for (display_line = insertion_line->first_display_line; display_line != NULL; display_line = display_line->next) {
-        if (display_line->hard_end) {
-            display_line_to_insert->next = display_line->next;
-            if (display_line_to_insert->next != NULL) display_line_to_insert->next->prev = display_line_to_insert;
-            display_line_to_insert->prev = display_line;
-            display_line->next = display_line_to_insert;
-            break;
-        }
-    }
-
-    //debug_print_real_lines_state(buffer);
 }
 
 real_line_t *buffer_line_by_number(buffer_t *buffer, int lineno) {
@@ -810,28 +529,28 @@ void buffer_get_selection(buffer_t *buffer, real_line_t **start_line, int *start
         return;
     }
 
-    if (buffer->mark_lineno == buffer->cursor_display_line->real_line->lineno) {
-        *start_line = *end_line = buffer->cursor_display_line->real_line;
+    if (buffer->mark_lineno == buffer->cursor_line->lineno) {
+        *start_line = *end_line = buffer->cursor_line;
         
-        if (buffer->mark_glyph == buffer->cursor_glyph+buffer->cursor_display_line->offset) {
+        if (buffer->mark_glyph == buffer->cursor_glyph) {
             return;
-        } else if (buffer->mark_glyph < buffer->cursor_glyph+buffer->cursor_display_line->offset) {
+        } else if (buffer->mark_glyph < buffer->cursor_glyph) {
             *start_glyph = buffer->mark_glyph;
-            *end_glyph = buffer->cursor_glyph + buffer->cursor_display_line->offset;
+            *end_glyph = buffer->cursor_glyph;
         } else {
             *end_glyph = buffer->mark_glyph;
-            *start_glyph = buffer->cursor_glyph + buffer->cursor_display_line->offset;
+            *start_glyph = buffer->cursor_glyph;
         }
         
-    } else if (buffer->mark_lineno < buffer->cursor_display_line->real_line->lineno) {
+    } else if (buffer->mark_lineno < buffer->cursor_line->lineno) {
         *start_line = buffer_line_by_number(buffer, buffer->mark_lineno);
         *start_glyph = buffer->mark_glyph;
 
-        *end_line = buffer->cursor_display_line->real_line;
-        *end_glyph = buffer->cursor_glyph + buffer->cursor_display_line->offset;
+        *end_line = buffer->cursor_line;
+        *end_glyph = buffer->cursor_glyph;
     } else {
-        *start_line = buffer->cursor_display_line->real_line;
-        *start_glyph = buffer->cursor_glyph + buffer->cursor_display_line->offset;;
+        *start_line = buffer->cursor_line;
+        *start_glyph = buffer->cursor_glyph;;
 
         *end_line = buffer_line_by_number(buffer, buffer->mark_lineno);
         *end_glyph = buffer->mark_glyph;

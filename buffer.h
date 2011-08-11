@@ -21,20 +21,9 @@ typedef struct _real_line_t {
     int allocated;
     int cap;
     int lineno; // real line number
-    struct _display_line_t *first_display_line;
     struct _real_line_t *prev;
     struct _real_line_t *next;
 } real_line_t;
-
-typedef struct _display_line_t {
-    real_line_t *real_line;
-    int offset;
-    int size;
-    int hard_end;
-    int lineno; // display line number
-    struct _display_line_t *prev;
-    struct _display_line_t *next;
-} display_line_t;
 
 typedef struct _buffer_t {
     char *name;
@@ -54,15 +43,13 @@ typedef struct _buffer_t {
 
     /* Buffer's text and glyphs */
     real_line_t *real_line;
-    display_line_t *display_line;
-    int display_lines_count;
 
     /* Buffer's secondary properties (calculated) */
     double rendered_height;
     double rendered_width;
 
     /* Cursor */
-    display_line_t *cursor_display_line;
+    real_line_t *cursor_line;
     int cursor_glyph;
 
     /* Mark */
@@ -79,7 +66,7 @@ buffer_t *buffer_create(FT_Library *library);
 void load_text_file(buffer_t *buffer, const char *filename);
 void buffer_free(buffer_t *buffer);
 
-double buffer_line_adjust_glyphs(buffer_t *buffer, display_line_t *display_line, double x, double y);
+double buffer_line_adjust_glyphs(buffer_t *buffer, real_line_t *line, double x, double y);
 
 int buffer_line_insert_utf8_text(buffer_t *buffer, real_line_t *line, char *text, int len, int insertion_point);
 void buffer_line_remove_glyph(buffer_t *buffer, real_line_t *line, int glyph_index);

@@ -107,12 +107,6 @@ static void redraw_cursor_line(gboolean large, gboolean move_origin_when_outside
     gtk_widget_queue_draw_area(drar, 0.0, allocation.height-buffer->line_height, allocation.width, buffer->line_height);
 }
 
-enum MoveCursorSpecial {
-    MOVE_NORMAL = 1,
-    MOVE_LINE_START,
-    MOVE_LINE_END,
-};
-
 static void copy_selection_to_clipboard(GtkClipboard *clipboard) {
     real_line_t *start_line, *end_line;
     int start_glyph, end_glyph;
@@ -204,7 +198,6 @@ static void copy_selection_to_clipboard(GtkClipboard *clipboard) {
 
 static void remove_selection() {
     real_line_t *start_line, *end_line, *real_line;
-    display_line_t *last_start_display_line, *first_end_display_line, *display_line;
     int start_glyph, end_glyph;
     int lineno;
 
@@ -218,13 +211,12 @@ static void remove_selection() {
     /* Special case when we are deleting a section of the same line */
     if (start_line == end_line) {
         buffer_line_delete_from(buffer, start_line, start_glyph, end_glyph-start_glyph);
-        buffer_reflow_softwrap_real_line(buffer, start_line, 0, 0);
         buffer_set_to_real(buffer, start_line, start_glyph);
         gtk_widget_queue_draw(drar);
         return;
     }
     
-    /* Remove text from first and last real lines, and associated display_lines */
+    /* Remove text from first and last real lines */
     buffer_line_delete_from(buffer, start_line, start_glyph, start_line->cap-start_glyph);
     buffer_line_delete_from(buffer, end_line, 0, end_glyph);
 
@@ -254,47 +246,18 @@ static void remove_selection() {
     debug_print_lines_state(buffer);
     */
 
-    /* Removes display_lines in-between the first and last real_lines */
-    for (display_line = start_line->first_display_line; display_line != NULL; display_line = display_line->next) {
-        if (display_line->hard_end) break;
-    }
-
-    assert(display_line != NULL);
-    
-    last_start_display_line = display_line;
-
-    first_end_display_line = end_line->first_display_line;
-
-    //printf("last_start_display_line: %d first_end_display_line %d\n", last_start_display_line->lineno, first_end_display_line->lineno);
-
-    for (display_line = last_start_display_line->next; (display_line != NULL) && (display_line != first_end_display_line); ) {
-        display_line_t *next = display_line->next;
-        free(display_line);
-        display_line = next;
-    }
-
-    last_start_display_line->next = first_end_display_line;
-    first_end_display_line->prev = last_start_display_line;
-
-    /*buffer_join_lines(buffer, start_line, end_line);*/
-
-    /*
-    printf("AFTER REMOVING EXCESS DISPLAY LINES:\n");
-    debug_print_real_lines_state(buffer);
-    debug_print_lines_state(buffer);
-    */
-
-    buffer_reflow_softwrap_real_line(buffer, start_line, 0, 1);
-    buffer_reflow_softwrap_real_line(buffer, end_line, 0, 1);
-
     buffer_set_to_real(buffer, start_line, start_glyph);
 
     buffer_join_lines(buffer, start_line, end_line);
 
-    buffer_reflow_softwrap_real_line(buffer, start_line, 0, 1);
-
     gtk_widget_queue_draw(drar);
 }
+
+enum MoveCursorSpecial {
+    MOVE_NORMAL = 1,
+    MOVE_LINE_START,
+    MOVE_LINE_END,
+};
 
 static void move_cursor(int delta_line, int delta_char, enum MoveCursorSpecial special) {
     int i = 0;
@@ -302,37 +265,33 @@ static void move_cursor(int delta_line, int delta_char, enum MoveCursorSpecial s
 
     if (delta_line > 0) {
         for (i = 0; i < delta_line; ++i) {
-            if (buffer->cursor_display_line->next == NULL) break;
-            buffer->cursor_display_line = buffer->cursor_display_line->next;
-            if (buffer->cursor_glyph > buffer->cursor_display_line->size)
-                buffer->cursor_glyph = buffer->cursor_display_line->size;
+            if (buffer->cursor_line->next == NULL) break;
+            buffer->cursor_line = buffer->cursor_line->next;
+            if (buffer->cursor_glyph > buffer->cursor_line->cap)
+                buffer->cursor_glyph = buffer->cursor_line->cap;
         }
     }
 
     if (delta_line < 0) {
         for (i = 0; i < abs(delta_line); ++i) {
-            if (buffer->cursor_display_line->prev == NULL) break;
-            buffer->cursor_display_line = buffer->cursor_display_line->prev;
-            if (buffer->cursor_glyph > buffer->cursor_display_line->size)
-                buffer->cursor_glyph = buffer->cursor_display_line->size;
+            if (buffer->cursor_line->prev == NULL) break;
+            buffer->cursor_line = buffer->cursor_line->prev;
+            if (buffer->cursor_glyph > buffer->cursor_line->cap)
+                buffer->cursor_glyph = buffer->cursor_line->cap;
         }
     }
 
     if ((delta_char != 0) || (special != MOVE_NORMAL)) {
-        real_line_t *real_cursor_line;
-        int real_cursor_glyph;
+        buffer->cursor_glyph += delta_char;
 
-        buffer_real_cursor(buffer, &real_cursor_line, &real_cursor_glyph);
-
-        real_cursor_glyph += delta_char;
+        if (buffer->cursor_glyph < 0) buffer->cursor_glyph = 0;
+        if (buffer->cursor_glyph > buffer->cursor_line->cap) buffer->cursor_glyph = buffer->cursor_line->cap;
 
         if (special == MOVE_LINE_START) {
-            real_cursor_glyph = 0;
+            buffer->cursor_glyph = 0;
         } else if (special == MOVE_LINE_END) {
-            real_cursor_glyph = real_cursor_line->cap;
+            buffer->cursor_glyph = buffer->cursor_line->cap;
         }
-
-        buffer_set_to_real(buffer, real_cursor_line, real_cursor_glyph);
     }
 
     cursor_visible = TRUE;
@@ -352,15 +311,13 @@ static void unset_mark(void) {
 }
 
 static void insert_text(gchar *str) {
-    int inc = buffer_line_insert_utf8_text(buffer, buffer->cursor_display_line->real_line, str, strlen(str), buffer->cursor_display_line->offset+buffer->cursor_glyph);
+    int inc = buffer_line_insert_utf8_text(buffer, buffer->cursor_line, str, strlen(str), buffer->cursor_glyph);
 
     unset_mark();
+
+    move_cursor(0, inc, MOVE_NORMAL);
     
-    if (buffer_reflow_softwrap_real_line(buffer, buffer->cursor_display_line->real_line, inc, 0)) {
-        gtk_widget_queue_draw(drar);
-    } else {
-        redraw_cursor_line(FALSE, TRUE);
-    }
+    redraw_cursor_line(FALSE, TRUE);
 }
 
 static void remove_text(int offset) {
@@ -376,7 +333,7 @@ static void remove_text(int offset) {
         prev_cursor_line_cap = prev_cursor_line->cap;
     }
 
-    buffer_line_remove_glyph(buffer, buffer->cursor_display_line->real_line, buffer->cursor_display_line->offset + buffer->cursor_glyph + offset);
+    buffer_line_remove_glyph(buffer, buffer->cursor_line, buffer->cursor_glyph + offset);
 
     real_cursor_glyph += offset;
     if (real_cursor_glyph < 0) {
@@ -392,11 +349,7 @@ static void remove_text(int offset) {
     
     buffer_set_to_real(buffer, real_cursor_line, real_cursor_glyph);
 
-    if (buffer_reflow_softwrap_real_line(buffer, buffer->cursor_display_line->real_line, 0, 0)) {
-        gtk_widget_queue_draw(drar);
-    } else {
-        redraw_cursor_line(FALSE, TRUE);
-    }
+    gtk_widget_queue_draw(drar);
 }
 
 static void split_line() {
@@ -414,9 +367,6 @@ static void split_line() {
 
     assert(real_cursor_line->next != NULL);
     buffer_set_to_real(buffer, real_cursor_line->next, 0);
-
-    buffer_reflow_softwrap_real_line(buffer, real_cursor_line, 0, 0);
-    buffer_reflow_softwrap_real_line(buffer, real_cursor_line->next, 0, 0);
 
     redraw_cursor_line(FALSE, TRUE);
 
@@ -598,12 +548,11 @@ static gboolean expose_event_callback(GtkWidget *widget, GdkEventExpose *event, 
     cairo_t *cr = gdk_cairo_create(widget->window);
     double origin_y, origin_x, y;
     GtkAllocation allocation;
-    display_line_t *line, *first_displayed_line = NULL;
+    real_line_t *line, *first_displayed_line = NULL;
     int mark_mode = 0;
+    int display_lines = 0;
 
     gtk_widget_get_allocation(widget, &allocation);
-
-    buffer_reflow_softwrap(buffer, allocation.width);
 
     /*printf("%dx%d +%dx%d (%dx%d)\n", event->area.x, event->area.y, event->area.width, event->area.height, allocation.width, allocation.height);*/
 
@@ -621,26 +570,28 @@ static gboolean expose_event_callback(GtkWidget *widget, GdkEventExpose *event, 
 
     /*printf("DRAWING!\n");*/
 
-    for (line = buffer->display_line; line != NULL; line = line->next) {
+    for (line = buffer->real_line; line != NULL; line = line->next) {
         double line_end_width;
         int start_selection_at_glyph = -1, end_selection_at_glyph = -1;
+
+        // TODO: current line height must be recalculated
 
         if ((first_displayed_line == NULL) && (y - buffer->line_height > 0)) {
             first_displayed_line = line;
         }
 
-        if ((line->real_line->lineno == buffer->mark_lineno) && (buffer->mark_glyph >= line->offset) && (buffer->mark_glyph < line->offset+line->size)) {
+        if (line->lineno == buffer->mark_lineno) {
             if (mark_mode) {
-                end_selection_at_glyph = buffer->mark_glyph - line->offset;
+                end_selection_at_glyph = buffer->mark_glyph;
                 mark_mode = 0;
             } else {
-                start_selection_at_glyph = buffer->mark_glyph - line->offset;
+                start_selection_at_glyph = buffer->mark_glyph;
                 mark_mode = 1;
             }
         }
 
         if (mark_mode || (buffer->mark_lineno != -1)) {
-            if (line == buffer->cursor_display_line) {
+            if (line == buffer->cursor_line) {
                 if (mark_mode) {
                     end_selection_at_glyph = buffer->cursor_glyph;
                     mark_mode = 0;
@@ -658,34 +609,34 @@ static gboolean expose_event_callback(GtkWidget *widget, GdkEventExpose *event, 
         }
 
         line_end_width = buffer_line_adjust_glyphs(buffer, line, origin_x, y);
-        cairo_show_glyphs(cr, line->real_line->glyphs + line->offset, line->size);
+        cairo_show_glyphs(cr, line->glyphs, line->cap);
 
         if (mark_mode || (start_selection_at_glyph != -1) || (end_selection_at_glyph != -1)) {
             double selx, selwidth;
 
             if (start_selection_at_glyph != -1) {
-                if (start_selection_at_glyph >= line->size) {
-                    if (line->offset+line->size-1 > 0) {
-                        selx = line->real_line->glyphs[line->offset+line->size-1].x + line->real_line->glyph_info[line->offset+line->size-1].x_advance;
+                if (start_selection_at_glyph >= line->cap) {
+                    if (line->cap-1 > 0) {
+                        selx = line->glyphs[line->cap-1].x + line->glyph_info[line->cap-1].x_advance;
                     } else {
                         selx = 0.0;
                     }
                 } else {
-                    selx = line->real_line->glyphs[line->offset+start_selection_at_glyph].x;
+                    selx = line->glyphs[start_selection_at_glyph].x;
                 }
             } else {
                 selx = 0.0;
             }
             
             if (end_selection_at_glyph != -1) {
-                if (end_selection_at_glyph >= line->size) {
-                    if (line->offset+line->size-1 > 0) {
-                        selwidth = line->real_line->glyphs[line->offset+line->size-1].x + line->real_line->glyph_info[line->offset+line->size-1].x_advance - selx;
+                if (end_selection_at_glyph >= line->cap) {
+                    if (line->cap-1 > 0) {
+                        selwidth = line->glyphs[line->cap-1].x + line->glyph_info[line->cap-1].x_advance - selx;
                     } else {
                         selwidth = buffer->left_margin - selx;
                     }
                 } else {
-                    selwidth = line->real_line->glyphs[line->offset+end_selection_at_glyph].x - selx;                    
+                    selwidth = line->glyphs[end_selection_at_glyph].x - selx;                    
                 }
             } else {
                 selwidth = allocation.width;
@@ -697,6 +648,7 @@ static gboolean expose_event_callback(GtkWidget *widget, GdkEventExpose *event, 
             cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
         }
 
+        /* TODO: Rewrite to draw all necessary lines
         if (line->offset != 0) {
             cairo_set_line_width(cr, 4.0);
             cairo_move_to(cr, 0.0, y-(buffer->ex_height/2.0));
@@ -711,8 +663,9 @@ static gboolean expose_event_callback(GtkWidget *widget, GdkEventExpose *event, 
             cairo_line_to(cr, allocation.width, y-(buffer->ex_height/2.0));
             cairo_stroke(cr);
             cairo_set_line_width(cr, 2.0);
-        }
-        
+            }*/
+
+        // TODO: increment here is variable
         y += buffer->line_height;
     }
 
@@ -723,7 +676,7 @@ static gboolean expose_event_callback(GtkWidget *widget, GdkEventExpose *event, 
 
         if ((cursor_y < 0) || (cursor_y > allocation.height)) {
             if (first_displayed_line != NULL) {
-                buffer->cursor_display_line = first_displayed_line;
+                buffer->cursor_line = first_displayed_line;
                 buffer->cursor_glyph = 0;
                 redraw_cursor_line(FALSE, FALSE);
             }
@@ -736,7 +689,7 @@ static gboolean expose_event_callback(GtkWidget *widget, GdkEventExpose *event, 
 
     {
         char *posbox_text;
-        asprintf(&posbox_text, " %d,%d %0.0f%%", buffer->cursor_display_line->real_line->lineno, buffer->cursor_glyph + buffer->cursor_display_line->offset, (100.0 * buffer->cursor_display_line->lineno / buffer->display_lines_count));
+        asprintf(&posbox_text, " %d,%d %0.0f%%", buffer->cursor_line->lineno, buffer->cursor_glyph, (100.0 * display_lines));
         cairo_text_extents_t posbox_ext;
         double x, y;
 
