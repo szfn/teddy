@@ -114,8 +114,7 @@ static void redraw_cursor_line(gboolean large, gboolean move_origin_when_outside
 }
 
 static void copy_selection_to_clipboard(GtkClipboard *clipboard) {
-    /*TODO: occasionally causes segfault/jump on uninitialized value (check)
-      real_line_t *start_line, *end_line;
+    real_line_t *start_line, *end_line;
     int start_glyph, end_glyph;
     real_line_t *line;
     
@@ -200,7 +199,7 @@ static void copy_selection_to_clipboard(GtkClipboard *clipboard) {
 
     gtk_clipboard_set_text(clipboard, r, -1);
 
-    free(r);*/
+    free(r);
 }
 
 static void remove_selection() {
