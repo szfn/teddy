@@ -66,6 +66,7 @@ typedef struct _buffer_t {
 
 buffer_t *buffer_create(FT_Library *library);
 void load_text_file(buffer_t *buffer, const char *filename);
+void save_to_text_file(buffer_t *buffer);
 void buffer_free(buffer_t *buffer);
 
 void buffer_line_adjust_glyphs(buffer_t *buffer, real_line_t *line, double x, double y, double window_width, double window_height, double *y_increment, double *line_end_width);
@@ -93,6 +94,8 @@ void buffer_get_selection(buffer_t *buffer, real_line_t **start_line, int *start
 void buffer_join_lines(buffer_t *buffer, real_line_t *line1, real_line_t *line2);
 
 void line_get_glyph_coordinates(buffer_t *buffer, real_line_t *line, int glyph, double *x, double *y);
+
+char *buffer_lines_to_text(buffer_t *buffer, real_line_t *start_line, real_line_t *end_line, int start_glyph, int end_glyph);
 
 void buffer_split_line(buffer_t *buffer, real_line_t *line, int glyph);
 void buffer_insert_multiline_text(buffer_t *buffer, real_line_t *line, int glyph, char *text);

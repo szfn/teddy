@@ -333,6 +333,127 @@ void load_text_file(buffer_t *buffer, const char *filename) {
     fclose(fin);
 }
 
+char *buffer_lines_to_text(buffer_t *buffer, real_line_t *start_line, real_line_t *end_line, int start_glyph, int end_glyph) {
+    real_line_t *line;
+    int allocated = 0;
+    int cap = 0;
+    char *r = NULL;
+
+    allocated = 10;
+    r = malloc(sizeof(char) * allocated);
+    
+    for (line = start_line; line != NULL; line = line->next) {
+        int start, end, i;
+        if (line == start_line) {
+            start = start_glyph;
+        } else {
+            start = 0;
+        }
+        
+        if (line == end_line) {
+            end = end_glyph;
+        } else {
+            end = line->cap;
+        }
+    
+        for (i = start; i < end; ++i) {
+            uint32_t code = line->glyph_info[i].code;
+            int i, inc, first_byte_mask, first_byte_pad;
+        
+            if (code <= 0x7f) {
+                inc = 0;
+                first_byte_pad = 0x00;
+                first_byte_mask = 0x7f;
+            } else if (code <= 0x7ff) {
+                inc = 1;
+                first_byte_pad = 0xc0;
+                first_byte_mask = 0x1f;
+            } else if (code <= 0xffff) {
+                inc = 2;
+                first_byte_pad = 0xe0;
+                first_byte_mask = 0x0f;
+            } else if (code <= 0x1fffff) {
+                inc = 3;
+                first_byte_pad = 0xf8;
+                first_byte_mask = 0x07;
+            }
+        
+            if (cap+inc >= allocated) {
+                allocated *= 2;
+                r = realloc(r, sizeof(char)* allocated);
+            }
+        
+            for (i = inc; i > 0; --i) {
+                r[cap+i] = ((uint8_t)code & 0x2f) + 0x80;
+                code >>= 6;
+            }
+        
+            r[cap] = ((uint8_t)code & first_byte_mask) + first_byte_pad;
+        
+            cap += inc + 1;
+        }
+    
+    
+        if (line == end_line) break;
+        else {
+            if (cap >= allocated) {
+                allocated *= 2;
+                r = realloc(r, sizeof(char)*allocated);
+            }
+            r[cap++] = '\n';
+        }
+    }
+
+    if (cap >= allocated) {
+        allocated *= 2;
+        r = realloc(r, sizeof(char)*allocated);
+    }
+    r[cap++] = '\0';
+
+    return r;
+}
+
+void save_to_text_file(buffer_t *buffer) {
+    char *cmd;
+    FILE *file;
+    char *r;
+    size_t towrite, write_start, written;
+    
+    asprintf(&cmd, "mv -f %s %s~", buffer->name, buffer->name);
+    system(cmd);
+    free(cmd);
+
+    file = fopen(buffer->name, "w");
+
+    if (!file) {
+        perror("Couldn't write to file");
+        return;
+    }
+
+    r = buffer_lines_to_text(buffer, buffer->real_line, NULL, 0, -1);
+
+    towrite = strlen(r);
+    write_start = 0;
+
+    while (towrite > 0) {
+        written = fwrite(r+write_start, sizeof(char), towrite, file);
+        if (written == 0) {
+            perror("Error writing to file");
+            break;
+        }
+        towrite -= written;
+        write_start += written;
+    }
+
+    fclose(file);
+
+    free(r);
+
+    asprintf(&cmd, "diff %s %s~", buffer->name, buffer->name);
+    system(cmd);
+    free(cmd);
+}
+
 void buffer_real_cursor(buffer_t *buffer, real_line_t **real_line, int *real_glyph) {
     *real_line = buffer->cursor_line;
     *real_glyph = buffer->cursor_glyph;
@@ -356,11 +477,11 @@ void buffer_move_cursor_to_position(buffer_t *buffer, double x, double y) {
     int i;
 
     for (line = buffer->real_line; line->next != NULL; line = line->next) {
-        printf("Cur y: %g (searching %g)\n", line->start_y, y);
+        //printf("Cur y: %g (searching %g)\n", line->start_y, y);
         if (line->end_y > y) break;
     }
 
-    printf("New position lineno: %d\n", line->lineno);
+    //printf("New position lineno: %d\n", line->lineno);
     buffer->cursor_line = line;
 
     if (line == NULL) line = prev;

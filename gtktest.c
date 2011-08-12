@@ -60,6 +60,8 @@ static void redraw_cursor_line(gboolean large, gboolean move_origin_when_outside
     double cursor_x, x, y, height, width;
     GtkAllocation allocation;
 
+    if (!initialization_ended) return;
+
     gtk_widget_get_allocation(drar, &allocation);
 
     origin_x = calculate_x_origin(&allocation);
@@ -116,86 +118,15 @@ static void redraw_cursor_line(gboolean large, gboolean move_origin_when_outside
 static void copy_selection_to_clipboard(GtkClipboard *clipboard) {
     real_line_t *start_line, *end_line;
     int start_glyph, end_glyph;
-    real_line_t *line;
-    
-    int allocated = 0;
-    int cap = 0;
     char *r = NULL;
+    
 
     buffer_get_selection(buffer, &start_line, &start_glyph, &end_line, &end_glyph);
  
     if (start_line == NULL) return;
     if (end_line == NULL) return;
 
-    allocated = 10;
-    r = malloc(sizeof(char) * allocated);
-
-    for (line = start_line; line != NULL; line = line->next) {
-        int start, end, i;
-        if (line == start_line) {
-            start = start_glyph;
-        } else {
-            start = 0;
-        }
-        
-        if (line == end_line) {
-            end = end_glyph;
-        } else {
-            end = line->cap;
-        }
-
-        for (i = start; i < end; ++i) {
-            uint32_t code = line->glyph_info[i].code;
-            int i, inc, first_byte_mask, first_byte_pad;
-
-            if (code <= 0x7f) {
-                inc = 0;
-                first_byte_pad = 0x00;
-                first_byte_mask = 0x7f;
-            } else if (code <= 0x7ff) {
-                inc = 1;
-                first_byte_pad = 0xc0;
-                first_byte_mask = 0x1f;
-            } else if (code <= 0xffff) {
-                inc = 2;
-                first_byte_pad = 0xe0;
-                first_byte_mask = 0x0f;
-            } else if (code <= 0x1fffff) {
-                inc = 3;
-                first_byte_pad = 0xf8;
-                first_byte_mask = 0x07;
-            }
-
-            if (cap+inc >= allocated) {
-                allocated *= 2;
-                r = realloc(r, sizeof(char)*allocated);
-            }
-
-            for (i = inc; i > 0; --i) {
-                r[cap+i] = ((uint8_t)code & 0x2f) + 0x80;
-                code >>= 6;
-            }
-
-            r[cap] = ((uint8_t)code & first_byte_mask) + first_byte_pad;
-
-            cap += inc + 1;
-        }
-
-        if (line == end_line) break;
-        else {
-            if (cap >= allocated) {
-                allocated *= 2;
-                r = realloc(r, sizeof(char)*allocated);
-            }
-            r[cap++] = '\n';
-        }
-    }
-    
-    if (cap >= allocated) {
-        allocated *= 2;
-        r = realloc(r, sizeof(char)*allocated);
-    }
-    r[cap++] = '\0';
+    r  = buffer_lines_to_text(buffer, start_line, end_line, start_glyph, end_glyph);    
 
     gtk_clipboard_set_text(clipboard, r, -1);
 
@@ -565,6 +496,9 @@ static gboolean key_press_callback(GtkWidget *widget, GdkEventKey *event, gpoint
                 unset_mark();
             }
             return TRUE;
+        case GDK_KEY_s:
+            save_to_text_file(buffer);
+            return TRUE;
         }
     }
 
@@ -775,7 +709,7 @@ static gboolean expose_event_callback(GtkWidget *widget, GdkEventExpose *event, 
 
     draw_selection(allocation.width, cr);
 
-    printf("Expose event final y: %g, lines: %d\n", y, count);
+    //printf("Expose event final y: %g, lines: %d\n", y, count);
 
     if (cursor_visible) {
         double cursor_x, cursor_y;
