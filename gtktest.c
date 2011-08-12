@@ -708,7 +708,7 @@ static gboolean expose_event_callback(GtkWidget *widget, GdkEventExpose *event, 
         ++count;
     }
 
-    buffer->rendered_height = y;
+    buffer->rendered_height = y - origin_y;
     draw_selection(allocation.width, cr);
 
     //printf("Expose event final y: %g, lines: %d\n", y, count);
@@ -758,12 +758,10 @@ static gboolean expose_event_callback(GtkWidget *widget, GdkEventExpose *event, 
         free(posbox_text);
     }
 
-    if (fabs(y - origin_y - buffer->rendered_height) > 0.001) {
-        gtk_adjustment_set_upper(GTK_ADJUSTMENT(adjustment), buffer->rendered_height);
-        gtk_adjustment_set_page_size(GTK_ADJUSTMENT(adjustment), allocation.height);
-        gtk_adjustment_set_page_increment(GTK_ADJUSTMENT(adjustment), allocation.height/2);
-        gtk_adjustment_set_step_increment(GTK_ADJUSTMENT(adjustment), buffer->line_height);
-    }
+    gtk_adjustment_set_upper(GTK_ADJUSTMENT(adjustment), buffer->rendered_height);
+    gtk_adjustment_set_page_size(GTK_ADJUSTMENT(adjustment), allocation.height);
+    gtk_adjustment_set_page_increment(GTK_ADJUSTMENT(adjustment), allocation.height/2);
+    gtk_adjustment_set_step_increment(GTK_ADJUSTMENT(adjustment), buffer->line_height);
 
     if (buffer->rendered_width <= allocation.width) {
         gtk_widget_hide(GTK_WIDGET(drarhscroll));
