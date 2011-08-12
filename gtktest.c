@@ -269,10 +269,41 @@ static void move_cursor(int delta_line, int delta_char, enum MoveCursorSpecial s
     int i = 0;
     redraw_cursor_line(FALSE, FALSE);
 
-    //TODO: if we are on a multiline line, "down" should move only one apparent line
-
     if (delta_line > 0) {
         for (i = 0; i < delta_line; ++i) {
+            if (buffer->cursor_glyph < buffer->cursor_line->cap) {
+                int j = 0;
+                int found = 0;
+                double cury = buffer->cursor_line->glyphs[buffer->cursor_glyph].y;
+                double wantedx = buffer->cursor_line->glyphs[buffer->cursor_glyph].x;
+                for (j = buffer->cursor_glyph; j < buffer->cursor_line->cap; ++j) {
+                    if (fabs(cury - buffer->cursor_line->glyphs[j].y) > 0.001) {
+                        printf("Actually found %g %g\n", cury, buffer->cursor_line->glyphs[j].y);
+                        buffer->cursor_glyph = j;
+                        cury = buffer->cursor_line->glyphs[j].y;
+                        found = 1;
+                        break;
+                    }
+                }
+                if (found) {
+                    for ( ; buffer->cursor_glyph < buffer->cursor_line->cap; ++(buffer->cursor_glyph)) {
+                        double diff = wantedx - buffer->cursor_line->glyphs[buffer->cursor_glyph].x;
+                        if (fabs(cury - buffer->cursor_line->glyphs[buffer->cursor_glyph].y) > 0.001) {
+                            --(buffer->cursor_glyph);
+                            break;
+                        }
+
+                        if (diff <= 0) {
+                            if (fabs(diff) > buffer->em_advance/2) {
+                                --(buffer->cursor_glyph);
+                            }
+                            break;
+                        }
+                    }
+                    continue;
+                }
+            }
+
             if (buffer->cursor_line->next == NULL) break;
             buffer->cursor_line = buffer->cursor_line->next;
             if (buffer->cursor_glyph > buffer->cursor_line->cap)
@@ -282,6 +313,37 @@ static void move_cursor(int delta_line, int delta_char, enum MoveCursorSpecial s
 
     if (delta_line < 0) {
         for (i = 0; i < abs(delta_line); ++i) {
+            int j = 0;
+            int found = 0;
+            double cury, wantedx;
+            line_get_glyph_coordinates(buffer, buffer->cursor_line, buffer->cursor_glyph, &wantedx, &cury);
+            for (j = buffer->cursor_glyph-1; j >= 0; --j) {
+                if (fabs(cury - buffer->cursor_line->glyphs[j].y) > 0.001) {
+                    buffer->cursor_glyph = j;
+                    cury = buffer->cursor_line->glyphs[j].y;
+                    found = 1;
+                    break;
+                }
+            }
+
+            if (found) {
+                for ( ; buffer->cursor_glyph > 0; --(buffer->cursor_glyph)) {
+                    double diff  = wantedx - buffer->cursor_line->glyphs[buffer->cursor_glyph].x;
+                    if (fabs(cury - buffer->cursor_line->glyphs[buffer->cursor_glyph].y) > 0.001) {
+                        ++(buffer->cursor_glyph);
+                        break;
+                    }
+                    if (diff >= 0) {
+                        if (fabs(diff) < buffer->em_advance/2) {
+                            ++(buffer->cursor_glyph);
+                        }
+                        break;
+                    }
+                }
+                continue;
+            }
+            
+
             if (buffer->cursor_line->prev == NULL) break;
             buffer->cursor_line = buffer->cursor_line->prev;
             if (buffer->cursor_glyph > buffer->cursor_line->cap)
@@ -575,15 +637,15 @@ static void draw_selection(double width, cairo_t *cr) {
     } else {
         cairo_set_operator(cr, CAIRO_OPERATOR_DIFFERENCE);
 
-        // start selection
+        // start of selection
         cairo_rectangle(cr, selstart_x, selstart_y-buffer->ascent, width - selstart_x, buffer->ascent + buffer->descent);
         cairo_fill(cr);
 
-        //TODO: midselection block
+        // middle of selection
         cairo_rectangle(cr, 0.0, selstart_y + buffer->descent, width, selend_y - buffer->ascent - buffer->descent - selstart_y);
         cairo_fill(cr);
 
-        //end selection
+        // end of selection
         cairo_rectangle(cr, 0.0, selend_y-buffer->ascent, selend_x, buffer->ascent + buffer->descent);
         cairo_fill(cr);
         
