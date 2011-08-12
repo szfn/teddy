@@ -584,3 +584,39 @@ void line_get_glyph_coordinates(buffer_t *buffer, real_line_t *line, int glyph, 
         *x = line->glyphs[glyph].x;
     }
 }
+
+void buffer_split_line(buffer_t *buffer, real_line_t *line, int glyph) {
+    real_line_t *copied_segment = buffer_copy_line(buffer, line, glyph, line->cap - glyph);
+    buffer_line_delete_from(buffer, line, glyph, line->cap - glyph);
+    buffer_real_line_insert(buffer, line, copied_segment);
+}
+
+void buffer_insert_multiline_text(buffer_t *buffer, real_line_t *line, int glyph, char *text) {
+    int start = 0;
+
+    printf("Inserting multiline text [[%s]]\n\n", text);
+    
+    while (start < strlen(text)) {
+        if (text[start] == '\n') {
+            printf("   Split line at %d\n", glyph);
+            /* this is the code that does the line renumbering, it's fine that this is the only thing doing it here */
+            buffer_split_line(buffer, line, glyph);
+            assert(line->next != NULL);
+            line = line->next;
+            glyph = 0;
+            ++start;
+        } else {
+            int end;
+            printf("   Inserting line: [");            
+            for (end = start; end < strlen(text); ++end) {
+                if (text[end] == '\n') break;
+                printf("%c", text[end]);
+            }
+            printf("]\n");
+            buffer_line_insert_utf8_text(buffer, line, text+start, end-start, glyph);
+            glyph += (end-start);
+            start = end;
+        }
+    }
+}
+

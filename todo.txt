@@ -1,9 +1,8 @@
-- removal of display_lines (in separate branch)
-- bug: reimplement movement on visible lines
-- paste
-- cut
-- undo (without redo)
 - save
+- incremental search
+- file opening / buffer switch
+- multi-editor (same column, then multicolumn)
+- undo (without redo)
 - scripting (for keybindings)
 - highlighting
 - reminder: use menu key to highlight command line

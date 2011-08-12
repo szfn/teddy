@@ -423,20 +423,12 @@ static void remove_text(int offset) {
 }
 
 static void split_line() {
-    real_line_t *real_cursor_line;
-    int real_cursor_glyph;
-    real_line_t *copied_segment;
-
     unset_mark();
 
-    buffer_real_cursor(buffer, &real_cursor_line, &real_cursor_glyph);
-
-    copied_segment = buffer_copy_line(buffer, real_cursor_line, real_cursor_glyph, real_cursor_line->cap - real_cursor_glyph);
-    buffer_line_delete_from(buffer, real_cursor_line, real_cursor_glyph, real_cursor_line->cap - real_cursor_glyph);
-    buffer_real_line_insert(buffer, real_cursor_line, copied_segment);
-
-    assert(real_cursor_line->next != NULL);
-    buffer_set_to_real(buffer, real_cursor_line->next, 0);
+    buffer_split_line(buffer, buffer->cursor_line, buffer->cursor_glyph);
+    assert(buffer->cursor_line->next != NULL);
+    buffer->cursor_line = buffer->cursor_line->next;
+    buffer->cursor_glyph = 0;
 
     redraw_cursor_line(FALSE, TRUE);
 
@@ -456,6 +448,16 @@ static void set_mark_at_cursor(void) {
     buffer->mark_lineno = cursor_real_line->lineno;
     buffer->mark_glyph = cursor_real_glyph;
     printf("Mark set @ %d,%d\n", buffer->mark_lineno, buffer->mark_glyph);
+}
+
+static void insert_paste(GtkClipboard *clipboard) {
+    gchar *text = gtk_clipboard_wait_for_text(clipboard);
+    if (text == NULL) return;
+
+    buffer_insert_multiline_text(buffer, buffer->cursor_line, buffer->cursor_glyph, text);
+    gtk_widget_queue_draw(drar);
+    
+    g_free(text);
 }
 
 static gboolean key_press_callback(GtkWidget *widget, GdkEventKey *event, gpointer data) {
@@ -541,6 +543,28 @@ static gboolean key_press_callback(GtkWidget *widget, GdkEventKey *event, gpoint
                 copy_selection_to_clipboard(default_clipboard);
                 unset_mark();
             }
+            return TRUE;
+        case GDK_KEY_v:
+            if (buffer->mark_lineno != -1) {
+                remove_selection();
+                unset_mark();
+            }
+            insert_paste(default_clipboard);
+            return TRUE;
+        case GDK_KEY_y:
+            if (buffer->mark_lineno != -1) {
+                remove_selection();
+                unset_mark();
+            }
+            insert_paste(selection_clipboard);
+            return TRUE;
+        case GDK_KEY_x:
+            if (buffer->mark_lineno != -1) {
+                copy_selection_to_clipboard(default_clipboard);
+                remove_selection();
+                unset_mark();
+            }
+            return TRUE;
         }
     }
 

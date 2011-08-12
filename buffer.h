@@ -94,6 +94,9 @@ void buffer_join_lines(buffer_t *buffer, real_line_t *line1, real_line_t *line2)
 
 void line_get_glyph_coordinates(buffer_t *buffer, real_line_t *line, int glyph, double *x, double *y);
 
+void buffer_split_line(buffer_t *buffer, real_line_t *line, int glyph);
+void buffer_insert_multiline_text(buffer_t *buffer, real_line_t *line, int glyph, char *text);
+
 void debug_print_lines_state(buffer_t *buffer);
 void debug_print_real_lines_state(buffer_t *buffer);
 
