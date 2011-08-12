@@ -196,8 +196,9 @@ enum MoveCursorSpecial {
     MOVE_LINE_END,
 };
 
-static void move_cursor(int delta_line, int delta_char, enum MoveCursorSpecial special) {
+static void move_cursor(int delta_line, int delta_char, enum MoveCursorSpecial special, gboolean should_move_origin) {
     int i = 0;
+
     redraw_cursor_line(FALSE, FALSE);
 
     if (delta_line > 0) {
@@ -297,7 +298,7 @@ static void move_cursor(int delta_line, int delta_char, enum MoveCursorSpecial s
 
     cursor_visible = TRUE;
 
-    redraw_cursor_line(FALSE, TRUE);
+    redraw_cursor_line(FALSE, should_move_origin);
 
     copy_selection_to_clipboard(selection_clipboard);
 }
@@ -312,13 +313,15 @@ static void unset_mark(void) {
 }
 
 static void insert_text(gchar *str) {
-    int inc = buffer_line_insert_utf8_text(buffer, buffer->cursor_line, str, strlen(str), buffer->cursor_glyph);
-
+    int inc;
+    
     unset_mark();
 
-    move_cursor(0, inc, MOVE_NORMAL);
-    
-    redraw_cursor_line(FALSE, TRUE);
+    inc = buffer_line_insert_utf8_text(buffer, buffer->cursor_line, str, strlen(str), buffer->cursor_glyph);
+
+    move_cursor(0, inc, MOVE_NORMAL, FALSE);
+
+    /* TODO: find a way to move the origin so the cursor remains visible here */
 }
 
 static void remove_text(int offset) {
@@ -361,8 +364,6 @@ static void split_line() {
     buffer->cursor_line = buffer->cursor_line->next;
     buffer->cursor_glyph = 0;
 
-    redraw_cursor_line(FALSE, TRUE);
-
     gtk_widget_queue_draw(drar);
 }
 
@@ -401,16 +402,16 @@ static gboolean key_press_callback(GtkWidget *widget, GdkEventKey *event, gpoint
     if (!shift && !ctrl && !alt && !super) {
         switch(event->keyval) {
         case GDK_KEY_Up:
-            move_cursor(-1, 0, MOVE_NORMAL);
+            move_cursor(-1, 0, MOVE_NORMAL, TRUE);
             return TRUE;
         case GDK_KEY_Down:
-            move_cursor(1, 0, MOVE_NORMAL);
+            move_cursor(1, 0, MOVE_NORMAL, TRUE);
             return TRUE;
         case GDK_KEY_Right:
-            move_cursor(0, 1, MOVE_NORMAL);
+            move_cursor(0, 1, MOVE_NORMAL, TRUE);
             return TRUE;
         case GDK_KEY_Left:
-            move_cursor(0, -1, MOVE_NORMAL);
+            move_cursor(0, -1, MOVE_NORMAL, TRUE);
             return TRUE;
             
         case GDK_KEY_Page_Up:
@@ -427,10 +428,10 @@ static gboolean key_press_callback(GtkWidget *widget, GdkEventKey *event, gpoint
             }
             
         case GDK_KEY_Home:
-            move_cursor(0, 0, MOVE_LINE_START);
+            move_cursor(0, 0, MOVE_LINE_START, TRUE);
             return TRUE;
         case GDK_KEY_End:
-            move_cursor(0, 0, MOVE_LINE_END);
+            move_cursor(0, 0, MOVE_LINE_END, TRUE);
             return TRUE;
 
         case GDK_KEY_Tab:
@@ -707,6 +708,7 @@ static gboolean expose_event_callback(GtkWidget *widget, GdkEventExpose *event, 
         ++count;
     }
 
+    buffer->rendered_height = y;
     draw_selection(allocation.width, cr);
 
     //printf("Expose event final y: %g, lines: %d\n", y, count);
@@ -756,12 +758,12 @@ static gboolean expose_event_callback(GtkWidget *widget, GdkEventExpose *event, 
         free(posbox_text);
     }
 
-    buffer->rendered_height = y - origin_y;
-
-    gtk_adjustment_set_upper(GTK_ADJUSTMENT(adjustment), buffer->rendered_height);
-    gtk_adjustment_set_page_size(GTK_ADJUSTMENT(adjustment), allocation.height);
-    gtk_adjustment_set_page_increment(GTK_ADJUSTMENT(adjustment), allocation.height/2);
-    gtk_adjustment_set_step_increment(GTK_ADJUSTMENT(adjustment), buffer->line_height);
+    if (fabs(y - origin_y - buffer->rendered_height) > 0.001) {
+        gtk_adjustment_set_upper(GTK_ADJUSTMENT(adjustment), buffer->rendered_height);
+        gtk_adjustment_set_page_size(GTK_ADJUSTMENT(adjustment), allocation.height);
+        gtk_adjustment_set_page_increment(GTK_ADJUSTMENT(adjustment), allocation.height/2);
+        gtk_adjustment_set_step_increment(GTK_ADJUSTMENT(adjustment), buffer->line_height);
+    }
 
     if (buffer->rendered_width <= allocation.width) {
         gtk_widget_hide(GTK_WIDGET(drarhscroll));
@@ -781,7 +783,7 @@ static gboolean expose_event_callback(GtkWidget *widget, GdkEventExpose *event, 
 }
 
 static gboolean scrolled_callback(GtkWidget *widget, GdkEvent *event, gpointer data) {
-    /*printf("Scrolled to: %g\n", gtk_adjustment_get_value(GTK_ADJUSTMENT(adjustment)));*/
+    printf("Scrolled to: %g\n", gtk_adjustment_get_value(GTK_ADJUSTMENT(adjustment)));
     gtk_widget_queue_draw(drar);
     return TRUE;
 }
