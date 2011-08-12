@@ -1,4 +1,4 @@
-- save
+- bug: quando scrivo la posizione del buffer scorre in giro (ma deve essere un buffer lungo)
 - incremental search
 - file opening / buffer switch
 - multi-editor (same column, then multicolumn)

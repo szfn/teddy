@@ -209,7 +209,7 @@ static void move_cursor(int delta_line, int delta_char, enum MoveCursorSpecial s
                 double wantedx = buffer->cursor_line->glyphs[buffer->cursor_glyph].x;
                 for (j = buffer->cursor_glyph; j < buffer->cursor_line->cap; ++j) {
                     if (fabs(cury - buffer->cursor_line->glyphs[j].y) > 0.001) {
-                        printf("Actually found %g %g\n", cury, buffer->cursor_line->glyphs[j].y);
+                        //printf("Actually found %g %g\n", cury, buffer->cursor_line->glyphs[j].y);
                         buffer->cursor_glyph = j;
                         cury = buffer->cursor_line->glyphs[j].y;
                         found = 1;
