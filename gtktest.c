@@ -408,12 +408,18 @@ static void insert_paste(GtkClipboard *clipboard) {
 }
 
 static gboolean entry_search_insert_callback(GtkWidget *widget, GdkEventKey *event, gpointer data) {
+    int shift = event->state & GDK_SHIFT_MASK;
+    int ctrl = event->state & GDK_CONTROL_MASK;
+    int alt = event->state & GDK_MOD1_MASK;
+    int super = event->state & GDK_SUPER_MASK;
+
     const gchar *text = gtk_entry_get_text(GTK_ENTRY(entry));
     int len = strlen(text);    
     uint32_t *needle = malloc(len*sizeof(uint32_t));
     int i, dst;
     real_line_t *search_line;
     int search_glyph;
+    gboolean ctrl_g_invoked = FALSE;
 
     if ((event->keyval == GDK_KEY_Escape) || (event->keyval == GDK_KEY_Return)) {
         unset_mark();
@@ -421,6 +427,11 @@ static gboolean entry_search_insert_callback(GtkWidget *widget, GdkEventKey *eve
         return TRUE;
     }
 
+    if (!shift && ctrl && !alt && !super) {
+        if ((event->keyval == GDK_KEY_g) || (event->keyval == GDK_KEY_f)) {
+            ctrl_g_invoked = TRUE;
+        }
+    }
     //TODO: implement ctrl-g
 
     for (i = 0, dst = 0; i < len; ) {
@@ -437,6 +448,9 @@ static gboolean entry_search_insert_callback(GtkWidget *widget, GdkEventKey *eve
     if ((buffer->mark_lineno == -1) || search_failed) {
         search_line = buffer->real_line;
         search_glyph = 0;
+    } else if (ctrl_g_invoked) {
+        search_line = buffer->cursor_line;
+        search_glyph = buffer->cursor_glyph;
     } else {
         search_line = buffer_line_by_number(buffer, buffer->mark_lineno);
         search_glyph = buffer->mark_glyph;
@@ -473,8 +487,12 @@ static gboolean entry_search_insert_callback(GtkWidget *widget, GdkEventKey *eve
     free(needle);
 
     redraw_cursor_line(TRUE);
-    
-    return FALSE;
+
+    if (ctrl_g_invoked) {
+        return TRUE;
+    } else {
+        return FALSE;
+    }
 }
 
 static void start_search() {
@@ -896,7 +914,7 @@ static gboolean expose_event_callback(GtkWidget *widget, GdkEventExpose *event, 
 }
 
 static gboolean scrolled_callback(GtkWidget *widget, GdkEvent *event, gpointer data) {
-    printf("Scrolled to: %g\n", gtk_adjustment_get_value(GTK_ADJUSTMENT(adjustment)));
+    //printf("Scrolled to: %g\n", gtk_adjustment_get_value(GTK_ADJUSTMENT(adjustment)));
     gtk_widget_queue_draw(drar);
     return TRUE;
 }

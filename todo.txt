@@ -1,5 +1,7 @@
+- bugfix: percentage seen doesn't work
 - file opening / buffer switch
 - history for search prompt
+- Ctrl-backspace to remove one word
 - bugfix: an empty line is added to files during save (last empty line should be ignored during save)
 - autocompletion for file opening
 - multi-editor (same column, then multicolumn)
@@ -8,8 +10,9 @@
 - scripting (for keybindings)
 - highlighting
 - reminder: use menu key to highlight command line
+- note: left button click does search/open, middle click does primary paste
 - left+middle -> cut
-- left+right -> paste
 - double click -> select word (and movement will also select words)
 - triple click -> select lines (and movement will also select lines)
 - investigate sam's command language
+- mouse scrollwheel
