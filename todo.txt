@@ -1,5 +1,4 @@
 - incremental search
-- change indicator
 - file opening / buffer switch
 - autocompletion for file opening
 - multi-editor (same column, then multicolumn)
@@ -10,4 +9,6 @@
 - reminder: use menu key to highlight command line
 - left+middle -> cut
 - left+right -> paste
+- double click -> select word (and movement will also select words)
+- triple click -> select lines (and movement will also select lines)
 - investigate sam's command language

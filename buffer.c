@@ -109,6 +109,28 @@ double buffer_line_fix_spaces(buffer_t *buffer, real_line_t *line) {
     return width_correction;
 }
 
+uint32_t utf8_to_utf32(const char *text, int *src, int len) {
+    uint32_t code;
+    
+    /* get next unicode codepoint in code, advance src */
+    if ((uint8_t)text[*src] > 127) {
+        code = utf8_first_byte_processing(text[*src]);
+        ++(*src);
+
+        /*printf("   Next char: %02x (%02x)\n", (uint8_t)text[src], (uint8_t)text[src] & 0xC0);*/
+            
+        for (; (((uint8_t)text[*src] & 0xC0) == 0x80) && (*src < len); ++(*src)) {
+            code <<= 6;
+            code += (text[*src] & 0x3F);
+        }
+    } else {
+        code = text[*src];
+        ++(*src);
+    }
+
+    return code;
+}
+
 int buffer_line_insert_utf8_text(buffer_t *buffer, real_line_t *line, char *text, int len, int insertion_point) {
     FT_Face scaledface = cairo_ft_scaled_font_lock_face(buffer->main_font.cairofont);
     FT_Bool use_kerning = FT_HAS_KERNING(scaledface);
@@ -121,26 +143,11 @@ int buffer_line_insert_utf8_text(buffer_t *buffer, real_line_t *line, char *text
     }
 
     for (src = 0, dst = insertion_point; src < len; ) {
-        uint32_t code;
+        uint32_t code = utf8_to_utf32(text, &src, len);
         FT_UInt glyph_index;
         cairo_text_extents_t extents;
         /*printf("First char: %02x\n", (uint8_t)text[src]);*/
 
-        /* get next unicode codepoint in code, advance src */
-        if ((uint8_t)text[src] > 127) {
-            code = utf8_first_byte_processing(text[src]);
-            ++src;
-
-            /*printf("   Next char: %02x (%02x)\n", (uint8_t)text[src], (uint8_t)text[src] & 0xC0);*/
-            
-            for (; (((uint8_t)text[src] & 0xC0) == 0x80) && (src < len); ++src) {
-                code <<= 6;
-                code += (text[src] & 0x3F);
-            }
-        } else {
-            code = text[src];
-            ++src;
-        }
         if (code != 0x09) {
             glyph_index = FT_Get_Char_Index(scaledface, code);
         } else {

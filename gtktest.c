@@ -33,6 +33,7 @@ int modified = 0;
 const char *label_state;
 gulong current_entry_handler_id = -1;
 gboolean current_entry_handler_id_set = FALSE;
+gboolean search_failed = FALSE;
 
 static double calculate_x_origin(GtkAllocation *allocation) {
     double origin_x;
@@ -429,15 +430,35 @@ static void insert_paste(GtkClipboard *clipboard) {
 }
 
 static gboolean entry_search_insert_callback(GtkWidget *widget, GdkEventKey *event, gpointer data) {
-    printf("BlAKKK!!!!!!!\n");
+    const gchar *text = gtk_entry_get_text(GTK_ENTRY(entry));
+    int len = strlen(text);    
+    uint32_t *needle = malloc(len*sizeof(uint32_t));
+    int i, dst;
 
     if ((event->keyval == GDK_KEY_Escape) || (event->keyval == GDK_KEY_Return)) {
         unset_mark();
         gtk_widget_grab_focus(drar);
         return TRUE;
     }
+
+    for (i = 0, dst = 0; i < len; ) {
+        needle[dst++] = utf8_to_utf32(text, &i, len);
+    }
+
+    printf("Searching [");
+    for (i = 0; i < dst; ++i) {
+        printf("%d ", needle[i]);
+    }
+    printf("]\n");
     
-    //TODO: search
+    /*TODO:
+      - search for codepoints starting at mark or first line if search_failed is set
+      - if search is successful set mark, cursor, ask for redraw, unset search_failed
+      - if search fails set search_failed, unset mark, leave cursor unmoved
+     */
+
+    free(needle);
+    
     return FALSE;
 }
 
@@ -446,8 +467,9 @@ static void start_search() {
     label_state = "search";
     set_label_text();
     gtk_widget_grab_focus(entry);
-    current_entry_handler_id = g_signal_connect(entry, "key-press-event", G_CALLBACK(entry_search_insert_callback), NULL);
+    current_entry_handler_id = g_signal_connect(entry, "key-release-event", G_CALLBACK(entry_search_insert_callback), NULL);
     current_entry_handler_id_set = TRUE;
+    search_failed = FALSE;
 }
 
 static gboolean entry_focusout_callback(GtkWidget *widget, GdkEventFocus *event, gpointer data) {
