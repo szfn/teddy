@@ -31,6 +31,8 @@ GtkWidget *label;
 GtkWidget *entry;
 int modified = 0;
 const char *label_state;
+gulong current_entry_handler_id = -1;
+gboolean current_entry_handler_id_set = FALSE;
 
 static double calculate_x_origin(GtkAllocation *allocation) {
     double origin_x;
@@ -426,12 +428,42 @@ static void insert_paste(GtkClipboard *clipboard) {
     g_free(text);
 }
 
+static gboolean entry_search_insert_callback(GtkWidget *widget, GdkEventKey *event, gpointer data) {
+    printf("BlAKKK!!!!!!!\n");
+
+    if ((event->keyval == GDK_KEY_Escape) || (event->keyval == GDK_KEY_Return)) {
+        unset_mark();
+        gtk_widget_grab_focus(drar);
+        return TRUE;
+    }
+    
+    //TODO: search
+    return FALSE;
+}
+
 static void start_search() {
     set_mark_at_cursor();
-    gtk_editable_set_editable(GTK_EDITABLE(entry), TRUE);
     label_state = "search";
     set_label_text();
     gtk_widget_grab_focus(entry);
+    current_entry_handler_id = g_signal_connect(entry, "key-press-event", G_CALLBACK(entry_search_insert_callback), NULL);
+    current_entry_handler_id_set = TRUE;
+}
+
+static gboolean entry_focusout_callback(GtkWidget *widget, GdkEventFocus *event, gpointer data) {
+    label_state = "cmd";
+    set_label_text();
+    gtk_entry_set_text(GTK_ENTRY(entry), "");
+    if (current_entry_handler_id_set) {
+        current_entry_handler_id_set = FALSE;
+        g_signal_handler_disconnect(entry, current_entry_handler_id);
+    }
+    return TRUE;
+}
+
+static gboolean entry_focusin_callback(GtkWidget *widget, GdkEventFocus *event, gpointer data) {
+    gtk_entry_set_text(GTK_ENTRY(entry), "");
+    return TRUE;
 }
 
 static gboolean key_press_callback(GtkWidget *widget, GdkEventKey *event, gpointer data) {
@@ -921,13 +953,14 @@ int main(int argc, char *argv[]) {
         label_state = "cmd";
         set_label_text();
 
+        g_signal_connect(entry, "focus-out-event", G_CALLBACK(entry_focusout_callback), NULL);
+        g_signal_connect(entry, "focus-in-event", G_CALLBACK(entry_focusin_callback), NULL);
+
         gtk_container_add(GTK_CONTAINER(tag), label);
         gtk_container_add(GTK_CONTAINER(tag), entry);
 
         gtk_box_set_child_packing(GTK_BOX(tag), label, FALSE, FALSE, 2, GTK_PACK_START);
         gtk_box_set_child_packing(GTK_BOX(tag), entry, TRUE, TRUE, 2, GTK_PACK_END);
-
-        gtk_editable_set_editable(GTK_EDITABLE(entry), FALSE);
 
         gtk_table_attach(GTK_TABLE(table), tag, 0, 2, 0, 1, GTK_EXPAND | GTK_FILL, 0, 1, 1);
         gtk_table_attach(GTK_TABLE(table), drar, 0, 1, 1, 2, GTK_EXPAND | GTK_FILL, GTK_EXPAND | GTK_FILL, 1, 1);
@@ -954,4 +987,5 @@ int main(int argc, char *argv[]) {
 
     return 0;
 }
+
 
