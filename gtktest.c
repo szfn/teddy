@@ -28,6 +28,7 @@ int initialization_ended = 0;
 int mouse_marking = 0;
 
 GtkWidget *label;
+GtkWidget *entry;
 int modified = 0;
 const char *label_state;
 
@@ -425,6 +426,14 @@ static void insert_paste(GtkClipboard *clipboard) {
     g_free(text);
 }
 
+static void start_search() {
+    set_mark_at_cursor();
+    gtk_editable_set_editable(GTK_EDITABLE(entry), TRUE);
+    label_state = "search";
+    set_label_text();
+    gtk_widget_grab_focus(entry);
+}
+
 static gboolean key_press_callback(GtkWidget *widget, GdkEventKey *event, gpointer data) {
     int shift = event->state & GDK_SHIFT_MASK;
     int ctrl = event->state & GDK_CONTROL_MASK;
@@ -535,6 +544,9 @@ static gboolean key_press_callback(GtkWidget *widget, GdkEventKey *event, gpoint
             modified = 0;
             set_label_text();
             return TRUE;
+        case GDK_KEY_f:
+            start_search();
+            return TRUE;
         }
     }
 
@@ -562,6 +574,7 @@ static void move_cursor_to_mouse(double x, double y) {
 
 static gboolean button_press_callback(GtkWidget *widget, GdkEventButton *event, gpointer data) {
     redraw_cursor_line(FALSE, FALSE);
+    gtk_widget_grab_focus(drar);
 
     move_cursor_to_mouse(event->x, event->y);
     
@@ -831,10 +844,14 @@ static gboolean cursor_blinker(GtkWidget *widget) {
     if (!initialization_ended) return TRUE;
     if (cursor_visible < 0) cursor_visible = 1;
 
-    cursor_visible = (cursor_visible + 1) % 3;
-
+    if (!gtk_widget_is_focus(drar)) {
+        if (!cursor_visible) cursor_visible = 1;
+    } else {
+        cursor_visible = (cursor_visible + 1) % 3;
+    }
+    
     redraw_cursor_line(FALSE, FALSE);
-
+    
     return TRUE;
 }
 
@@ -899,7 +916,7 @@ int main(int argc, char *argv[]) {
         GtkWidget *table = gtk_table_new(2, 2, FALSE);
         GtkWidget *tag = gtk_hbox_new(FALSE, 2);
         label = gtk_label_new("");
-        GtkWidget *entry = gtk_entry_new();
+        entry = gtk_entry_new();
 
         label_state = "cmd";
         set_label_text();
