@@ -1,5 +1,3 @@
-/* bla */
-/* reallly long line for testing purposes  reallly long line for testing purposes  reallly long line for testing purposes  reallly long line for testing purposes  reallly long line for testing purposes  reallly long line for testing purposes  reallly long line for testing purposes  reallly long line for testing purposes */
 #include <gtk/gtk.h>
 #include <cairo.h>
 #include <cairo-ft.h>
@@ -29,6 +27,10 @@ gboolean cursor_visible = TRUE;
 int initialization_ended = 0;
 int mouse_marking = 0;
 
+GtkWidget *label;
+int modified = 0;
+const char *label_state;
+
 static double calculate_x_origin(GtkAllocation *allocation) {
     double origin_x;
 
@@ -53,6 +55,17 @@ static double calculate_y_origin(GtkAllocation *allocation) {
     }
 
     return origin_y;
+}
+
+static void set_label_text(void) {
+    char *labeltxt;
+
+    asprintf(&labeltxt, "%s %s  |  %s>", (modified ? "**" : "  "), buffer->name, label_state);
+
+    gtk_label_set_text(GTK_LABEL(label), labeltxt);
+    gtk_widget_queue_draw(label);
+
+    free(labeltxt); 
 }
 
 static void redraw_cursor_line(gboolean large, gboolean move_origin_when_outside) {
@@ -127,7 +140,6 @@ static void copy_selection_to_clipboard(GtkClipboard *clipboard) {
     int start_glyph, end_glyph;
     char *r = NULL;
     
-
     buffer_get_selection(buffer, &start_line, &start_glyph, &end_line, &end_glyph);
  
     if (start_line == NULL) return;
@@ -149,6 +161,9 @@ static void remove_selection() {
  
     if (start_line == NULL) return;
     if (end_line == NULL) return;
+
+    modified = 1;
+    set_label_text();
 
     //printf("Deleting %d from %d (size: %d)\n", start_line->lineno, start_glyph, start_line->cap-start_glyph);
 
@@ -324,6 +339,9 @@ static void insert_text(gchar *str) {
     
     unset_mark();
 
+    modified = 1;
+    set_label_text();
+
     inc = buffer_line_insert_utf8_text(buffer, buffer->cursor_line, str, strlen(str), buffer->cursor_glyph);
 
     move_cursor(0, inc, MOVE_NORMAL, FALSE);
@@ -337,6 +355,9 @@ static void remove_text(int offset) {
     int prev_cursor_line_cap = 0;
 
     unset_mark();
+
+    modified = 1;
+    set_label_text();
 
     buffer_real_cursor(buffer, &real_cursor_line, &real_cursor_glyph);
     prev_cursor_line = real_cursor_line->prev;
@@ -366,6 +387,9 @@ static void remove_text(int offset) {
 static void split_line() {
     unset_mark();
 
+    modified = 1;
+    set_label_text();
+
     buffer_split_line(buffer, buffer->cursor_line, buffer->cursor_glyph);
     assert(buffer->cursor_line->next != NULL);
     buffer->cursor_line = buffer->cursor_line->next;
@@ -393,6 +417,8 @@ static void insert_paste(GtkClipboard *clipboard) {
     gchar *text = gtk_clipboard_wait_for_text(clipboard);
     if (text == NULL) return;
 
+    modified = 1;
+    set_label_text();
     buffer_insert_multiline_text(buffer, buffer->cursor_line, buffer->cursor_glyph, text);
     gtk_widget_queue_draw(drar);
     
@@ -506,6 +532,8 @@ static gboolean key_press_callback(GtkWidget *widget, GdkEventKey *event, gpoint
             return TRUE;
         case GDK_KEY_s:
             save_to_text_file(buffer);
+            modified = 0;
+            set_label_text();
             return TRUE;
         }
     }
@@ -870,16 +898,11 @@ int main(int argc, char *argv[]) {
         drarhscroll = gtk_hscrollbar_new((GtkAdjustment *)(hadjustment = gtk_adjustment_new(0.0, 0.0, 1.0, 1.0, 1.0, 1.0)));
         GtkWidget *table = gtk_table_new(2, 2, FALSE);
         GtkWidget *tag = gtk_hbox_new(FALSE, 2);
-        GtkWidget *label = gtk_label_new("");
+        label = gtk_label_new("");
         GtkWidget *entry = gtk_entry_new();
 
-        char *labeltxt;
-
-        asprintf(&labeltxt, "%s  |  cmd>", buffer->name);
-
-        gtk_label_set_text(GTK_LABEL(label), labeltxt);
-
-        free(labeltxt);
+        label_state = "cmd";
+        set_label_text();
 
         gtk_container_add(GTK_CONTAINER(tag), label);
         gtk_container_add(GTK_CONTAINER(tag), entry);
@@ -914,3 +937,4 @@ int main(int argc, char *argv[]) {
 
     return 0;
 }
+
