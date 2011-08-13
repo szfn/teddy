@@ -1,5 +1,6 @@
-- incremental search
 - file opening / buffer switch
+- history for search prompt
+- bugfix: an empty line is added to files during save (last empty line should be ignored during save)
 - autocompletion for file opening
 - multi-editor (same column, then multicolumn)
 - recalculation optimization (origin point is applyed through cairo with a translation matrix, call to buffer_line_adjust_glyphs is removed and buffer_adjust_glyphs is implemented that only readjusts lines that changed (this function is called once at the start of expose event)

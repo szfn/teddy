@@ -31,6 +31,7 @@ GtkWidget *label;
 GtkWidget *entry;
 int modified = 0;
 const char *label_state;
+gboolean search_mode = FALSE;
 gulong current_entry_handler_id = -1;
 gboolean current_entry_handler_id_set = FALSE;
 gboolean search_failed = FALSE;
@@ -72,29 +73,18 @@ static void set_label_text(void) {
     free(labeltxt); 
 }
 
-static void redraw_cursor_line(gboolean large, gboolean move_origin_when_outside) {
-    double origin_x, origin_y;
-    double cursor_x, x, y, height, width;
+static void redraw_cursor_line(gboolean move_origin_when_outside) {
+    double cursor_x, y, height;
     GtkAllocation allocation;
 
     if (!initialization_ended) return;
 
     gtk_widget_get_allocation(drar, &allocation);
 
-    origin_x = calculate_x_origin(&allocation);
-    origin_y = calculate_y_origin(&allocation);
-
     buffer_cursor_position(buffer, &cursor_x, &y);
 
     y -= buffer->ascent;
-    x = 0.0;
     height = buffer->ascent + buffer->descent;
-    width = allocation.width;
-
-    if (large) {
-        y -= buffer->line_height;
-        height += 2*buffer->line_height;
-    }
 
     if (move_origin_when_outside) {
         if (y+height > allocation.height) {
@@ -125,18 +115,6 @@ static void redraw_cursor_line(gboolean large, gboolean move_origin_when_outside
     }
 
     gtk_widget_queue_draw(drar);
-
-    /*
-    if (buffer->mark_lineno != -1) {
-        gtk_widget_queue_draw(drar);
-    } else {
-        if (fabs(buffer->cursor_line->start_y - buffer->cursor_line->end_y) < 0.001) {
-            gtk_widget_queue_draw_area(drar, x, y, width, height);
-            gtk_widget_queue_draw_area(drar, 0.0, allocation.height-buffer->line_height, allocation.width, buffer->line_height);
-        } else {
-            gtk_widget_queue_draw(drar);
-        }
-        }*/
 }
 
 static void copy_selection_to_clipboard(GtkClipboard *clipboard) {
@@ -225,7 +203,7 @@ enum MoveCursorSpecial {
 static void move_cursor(int delta_line, int delta_char, enum MoveCursorSpecial special, gboolean should_move_origin) {
     int i = 0;
 
-    redraw_cursor_line(FALSE, FALSE);
+    redraw_cursor_line(FALSE);
 
     if (delta_line > 0) {
         for (i = 0; i < delta_line; ++i) {
@@ -324,7 +302,7 @@ static void move_cursor(int delta_line, int delta_char, enum MoveCursorSpecial s
 
     cursor_visible = TRUE;
 
-    redraw_cursor_line(FALSE, should_move_origin);
+    redraw_cursor_line(should_move_origin);
 
     copy_selection_to_clipboard(selection_clipboard);
 }
@@ -434,6 +412,8 @@ static gboolean entry_search_insert_callback(GtkWidget *widget, GdkEventKey *eve
     int len = strlen(text);    
     uint32_t *needle = malloc(len*sizeof(uint32_t));
     int i, dst;
+    real_line_t *search_line;
+    int search_glyph;
 
     if ((event->keyval == GDK_KEY_Escape) || (event->keyval == GDK_KEY_Return)) {
         unset_mark();
@@ -441,23 +421,58 @@ static gboolean entry_search_insert_callback(GtkWidget *widget, GdkEventKey *eve
         return TRUE;
     }
 
+    //TODO: implement ctrl-g
+
     for (i = 0, dst = 0; i < len; ) {
         needle[dst++] = utf8_to_utf32(text, &i, len);
     }
 
+    /*
     printf("Searching [");
     for (i = 0; i < dst; ++i) {
         printf("%d ", needle[i]);
     }
-    printf("]\n");
-    
-    /*TODO:
-      - search for codepoints starting at mark or first line if search_failed is set
-      - if search is successful set mark, cursor, ask for redraw, unset search_failed
-      - if search fails set search_failed, unset mark, leave cursor unmoved
-     */
+    printf("]\n");*/
 
+    if ((buffer->mark_lineno == -1) || search_failed) {
+        search_line = buffer->real_line;
+        search_glyph = 0;
+    } else {
+        search_line = buffer_line_by_number(buffer, buffer->mark_lineno);
+        search_glyph = buffer->mark_glyph;
+    }
+
+    for ( ; search_line != NULL; search_line = search_line->next) {
+        int i = search_glyph, j = 0;
+        search_glyph = 0; // every line searched after the first line will start from the beginning
+
+        for ( ; i < search_line->cap; ++i) {
+            if (j >= dst) break;
+            if (search_line->glyph_info[i].code == needle[j]) {
+                ++j;
+            } else {
+                i -= j;
+                j = 0;
+            }
+        }
+
+        if (j >= dst) {
+            // search was successful            
+            buffer->mark_lineno = search_line->lineno;
+            buffer->mark_glyph = i - j;
+            buffer_set_to_real(buffer, search_line, i);
+            break;
+        }
+    }
+
+    if (search_line == NULL) {
+        search_failed = 0;
+        unset_mark();
+    }
+    
     free(needle);
+
+    redraw_cursor_line(TRUE);
     
     return FALSE;
 }
@@ -470,12 +485,14 @@ static void start_search() {
     current_entry_handler_id = g_signal_connect(entry, "key-release-event", G_CALLBACK(entry_search_insert_callback), NULL);
     current_entry_handler_id_set = TRUE;
     search_failed = FALSE;
+    search_mode = TRUE;
 }
 
 static gboolean entry_focusout_callback(GtkWidget *widget, GdkEventFocus *event, gpointer data) {
     label_state = "cmd";
     set_label_text();
     gtk_entry_set_text(GTK_ENTRY(entry), "");
+    search_mode = FALSE;
     if (current_entry_handler_id_set) {
         current_entry_handler_id_set = FALSE;
         g_signal_handler_disconnect(entry, current_entry_handler_id);
@@ -627,20 +644,16 @@ static void move_cursor_to_mouse(double x, double y) {
 }
 
 static gboolean button_press_callback(GtkWidget *widget, GdkEventButton *event, gpointer data) {
-    redraw_cursor_line(FALSE, FALSE);
+    redraw_cursor_line(FALSE);
     gtk_widget_grab_focus(drar);
 
     move_cursor_to_mouse(event->x, event->y);
     
     cursor_visible = TRUE;
 
-    if (buffer->mark_lineno != -1) {
-        gtk_widget_queue_draw(drar); /* must redraw everything to keep selection consistent */
-        
-        copy_selection_to_clipboard(selection_clipboard);
-    } else {
-        redraw_cursor_line(FALSE, FALSE);
-    }
+    if (buffer->mark_lineno != -1) copy_selection_to_clipboard(selection_clipboard);
+
+    redraw_cursor_line(TRUE);
 
     mouse_marking = 1;
     set_mark_at_cursor();
@@ -659,7 +672,7 @@ static gboolean button_release_callback(GtkWidget *widget, GdkEventButton *event
     if ((buffer->mark_lineno == cursor_real_line->lineno) && (buffer->mark_glyph == cursor_real_glyph)) {
         buffer->mark_lineno = -1;
         buffer->mark_glyph = -1;
-        redraw_cursor_line(FALSE, FALSE);
+        redraw_cursor_line(FALSE);
     }
 
     return TRUE;
@@ -669,7 +682,7 @@ static gboolean motion_callback(GtkWidget *widget, GdkEventMotion *event, gpoint
     if (mouse_marking) {
         move_cursor_to_mouse(event->x, event->y);
         copy_selection_to_clipboard(selection_clipboard);
-        gtk_widget_queue_draw(drar);
+        redraw_cursor_line(TRUE);
     }
 
     return TRUE;
@@ -815,7 +828,7 @@ static gboolean expose_event_callback(GtkWidget *widget, GdkEventExpose *event, 
 
     //printf("Expose event final y: %g, lines: %d\n", y, count);
 
-    if (cursor_visible) {
+    if (cursor_visible && !search_mode) {
         double cursor_x, cursor_y;
 
         buffer_cursor_position(buffer, &cursor_x, &cursor_y);
@@ -824,7 +837,7 @@ static gboolean expose_event_callback(GtkWidget *widget, GdkEventExpose *event, 
             if (first_displayed_line != NULL) {
                 buffer->cursor_line = first_displayed_line;
                 buffer->cursor_glyph = first_displayed_glyph;
-                redraw_cursor_line(FALSE, FALSE);
+                redraw_cursor_line(FALSE);
             }
         } else {
             /*cairo_set_source_rgb(cr, 119.0/255, 136.0/255, 153.0/255);*/
@@ -904,7 +917,7 @@ static gboolean cursor_blinker(GtkWidget *widget) {
         cursor_visible = (cursor_visible + 1) % 3;
     }
     
-    redraw_cursor_line(FALSE, FALSE);
+    redraw_cursor_line(FALSE);
     
     return TRUE;
 }
