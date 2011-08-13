@@ -107,12 +107,19 @@ static void redraw_cursor_line(gboolean large, gboolean move_origin_when_outside
         }
     }
 
+    gtk_widget_queue_draw(drar);
+
+    /*
     if (buffer->mark_lineno != -1) {
         gtk_widget_queue_draw(drar);
     } else {
-        gtk_widget_queue_draw_area(drar, x, y, width, height);
-        gtk_widget_queue_draw_area(drar, 0.0, allocation.height-buffer->line_height, allocation.width, buffer->line_height);
-    }
+        if (fabs(buffer->cursor_line->start_y - buffer->cursor_line->end_y) < 0.001) {
+            gtk_widget_queue_draw_area(drar, x, y, width, height);
+            gtk_widget_queue_draw_area(drar, 0.0, allocation.height-buffer->line_height, allocation.width, buffer->line_height);
+        } else {
+            gtk_widget_queue_draw(drar);
+        }
+        }*/
 }
 
 static void copy_selection_to_clipboard(GtkClipboard *clipboard) {
@@ -862,10 +869,30 @@ int main(int argc, char *argv[]) {
         GtkWidget *drarscroll = gtk_vscrollbar_new((GtkAdjustment *)(adjustment = gtk_adjustment_new(0.0, 0.0, 1.0, 1.0, 1.0, 1.0)));
         drarhscroll = gtk_hscrollbar_new((GtkAdjustment *)(hadjustment = gtk_adjustment_new(0.0, 0.0, 1.0, 1.0, 1.0, 1.0)));
         GtkWidget *table = gtk_table_new(2, 2, FALSE);
+        GtkWidget *tag = gtk_hbox_new(FALSE, 2);
+        GtkWidget *label = gtk_label_new("");
+        GtkWidget *entry = gtk_entry_new();
 
-        gtk_table_attach(GTK_TABLE(table), drar, 0, 1, 0, 1, GTK_EXPAND | GTK_FILL, GTK_EXPAND | GTK_FILL, 1, 1);
-        gtk_table_attach(GTK_TABLE(table), drarscroll, 1, 2, 0, 1, 0, GTK_EXPAND|GTK_FILL, 1, 1);
-        gtk_table_attach(GTK_TABLE(table), drarhscroll, 0, 1, 1, 2, GTK_EXPAND|GTK_FILL, 0, 1, 1);
+        char *labeltxt;
+
+        asprintf(&labeltxt, "%s  |  cmd>", buffer->name);
+
+        gtk_label_set_text(GTK_LABEL(label), labeltxt);
+
+        free(labeltxt);
+
+        gtk_container_add(GTK_CONTAINER(tag), label);
+        gtk_container_add(GTK_CONTAINER(tag), entry);
+
+        gtk_box_set_child_packing(GTK_BOX(tag), label, FALSE, FALSE, 2, GTK_PACK_START);
+        gtk_box_set_child_packing(GTK_BOX(tag), entry, TRUE, TRUE, 2, GTK_PACK_END);
+
+        gtk_editable_set_editable(GTK_EDITABLE(entry), FALSE);
+
+        gtk_table_attach(GTK_TABLE(table), tag, 0, 2, 0, 1, GTK_EXPAND | GTK_FILL, 0, 1, 1);
+        gtk_table_attach(GTK_TABLE(table), drar, 0, 1, 1, 2, GTK_EXPAND | GTK_FILL, GTK_EXPAND | GTK_FILL, 1, 1);
+        gtk_table_attach(GTK_TABLE(table), drarscroll, 1, 2, 1, 2, 0, GTK_EXPAND|GTK_FILL, 1, 1);
+        gtk_table_attach(GTK_TABLE(table), drarhscroll, 0, 1, 2, 3, GTK_EXPAND|GTK_FILL, 0, 1, 1);
 
         gtk_container_add(GTK_CONTAINER(window), table);
 

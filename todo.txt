@@ -1,7 +1,13 @@
 - incremental search
+- change indicator
 - file opening / buffer switch
+- autocompletion for file opening
 - multi-editor (same column, then multicolumn)
+- recalculation optimization (origin point is applyed through cairo with a translation matrix, call to buffer_line_adjust_glyphs is removed and buffer_adjust_glyphs is implemented that only readjusts lines that changed (this function is called once at the start of expose event)
 - undo (without redo)
 - scripting (for keybindings)
 - highlighting
 - reminder: use menu key to highlight command line
+- left+middle -> cut
+- left+right -> paste
+- investigate sam's command language
