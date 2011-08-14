@@ -439,6 +439,8 @@ void save_to_text_file(buffer_t *buffer) {
 
     r = buffer_lines_to_text(buffer, buffer->real_line, NULL, 0, -1);
 
+    if (r[strlen(r)-1] == '\n') r[strlen(r)-1] = '\0'; // removing spurious final newline added by loading function
+
     towrite = strlen(r);
     write_start = 0;
 
