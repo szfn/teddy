@@ -752,7 +752,6 @@ static gboolean expose_event_callback(GtkWidget *widget, GdkEventExpose *event, 
     real_line_t *line, *first_displayed_line = NULL;
     int first_displayed_glyph = -1;
     int mark_mode = 0;
-    int display_lines = 0;
     int count = 0;
 
     gtk_widget_get_allocation(widget, &allocation);
@@ -848,9 +847,9 @@ static gboolean expose_event_callback(GtkWidget *widget, GdkEventExpose *event, 
 
     if (cursor_visible && !search_mode) {
         double cursor_x, cursor_y;
-
+        
         buffer_cursor_position(buffer, &cursor_x, &cursor_y);
-
+        
         if ((cursor_y < 0) || (cursor_y > allocation.height)) {
             if (first_displayed_line != NULL) {
                 buffer->cursor_line = first_displayed_line;
@@ -866,7 +865,7 @@ static gboolean expose_event_callback(GtkWidget *widget, GdkEventExpose *event, 
 
     {
         char *posbox_text;
-        asprintf(&posbox_text, " %d,%d %0.0f%%", buffer->cursor_line->lineno, buffer->cursor_glyph, (100.0 * display_lines));
+        asprintf(&posbox_text, " %d,%d %0.0f%%", buffer->cursor_line->lineno, buffer->cursor_glyph, (100.0 * buffer->cursor_line->lineno / count));
         cairo_text_extents_t posbox_ext;
         double x, y;
 
@@ -920,7 +919,7 @@ static gboolean scrolled_callback(GtkWidget *widget, GdkEvent *event, gpointer d
 }
 
 static gboolean hscrolled_callback(GtkWidget *widget, GdkEvent *event, gpointer data) {
-    /* printf("HScrolled to: %g\n", gtk_adjustment_get_value(GTK_ADJUSTMENT(hadjustment)));*/
+    //printf("HScrolled to: %g\n", gtk_adjustment_get_value(GTK_ADJUSTMENT(hadjustment)));
     gtk_widget_queue_draw(drar);
     return TRUE;
 }
