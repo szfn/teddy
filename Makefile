@@ -6,5 +6,5 @@ all: gtktest
 clean:
 	rm *.o gtktest
 
-gtktest: gtktest.o buffer.o font.o
+gtktest: gtktest.o buffer.o font.o editor.o
 	$(CC) -o $@ $^ $(LIBS) 

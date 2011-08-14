@@ -1,6 +1,8 @@
+- architecture fix: modified is a property of the buffer, not of the editor
 - file opening / buffer switch
 - history for search prompt
 - Ctrl-backspace to remove one word
+- modify origin repositioning to show cursor so that the cursor is put in the middle of the window
 - autocompletion for file opening
 - multi-editor (same column, then multicolumn)
 - recalculation optimization (origin point is applyed through cairo with a translation matrix, call to buffer_line_adjust_glyphs is removed and buffer_adjust_glyphs is implemented that only readjusts lines that changed (this function is called once at the start of expose event)
