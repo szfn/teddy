@@ -10,9 +10,10 @@
 #include <assert.h>
 #include <math.h>
 
+#include "global.h"
+#include "buffers.h"
 #include "buffer.h"
 #include "editor.h"
-#include "global.h"
 
 FT_Library library;
 
@@ -40,11 +41,15 @@ int main(int argc, char *argv[]) {
     selection_clipboard = gtk_clipboard_get(GDK_SELECTION_PRIMARY);
     default_clipboard = gtk_clipboard_get(GDK_SELECTION_CLIPBOARD);
 
+    buffers_init();
+
     printf("Will show: %s\n", argv[1]);
 
     buffer = buffer_create(&library);
 
     load_text_file(buffer, argv[1]);
+
+    buffers_add(buffer);
 
     window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
 

@@ -522,6 +522,7 @@ buffer_t *buffer_create(FT_Library *library) {
     buffer_t *buffer = malloc(sizeof(buffer_t));
 
     buffer->library = library;
+    buffer->modified = 0;
 
     asprintf(&(buffer->name), "unnamed");
     buffer->has_filename = 0;

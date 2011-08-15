@@ -6,6 +6,7 @@
 #include <gdk/gdkkeysyms.h>
 
 #include "global.h"
+#include "buffers.h"
 
 static double calculate_x_origin(editor_t *editor, GtkAllocation *allocation) {
     double origin_x;
@@ -476,6 +477,41 @@ static void start_search(editor_t *editor) {
     editor->search_mode = TRUE;
 }
 
+static gboolean entry_open_insert_callback(GtkWidget *widget, GdkEventKey *event, gpointer data) {
+    editor_t *editor = (editor_t*)data;
+
+    if (event->keyval == GDK_KEY_Escape) {
+        gtk_widget_grab_focus(editor->drar);
+        return TRUE;
+    }
+
+    if (event->keyval == GDK_KEY_Return) {
+        buffer_t *b = buffer_create(editor->buffer->library);
+        load_text_file(b, gtk_entry_get_text(GTK_ENTRY(editor->entry)));
+        //TODO: if load fails show message box
+        //TODO: resolve ~ at the beginning of the specification
+        //TODO: if file doesn't exist create it
+        buffers_add(b);
+        editor->buffer = b;
+        set_label_text(editor);
+        gtk_widget_queue_draw(editor->drar);
+        gtk_widget_grab_focus(editor->drar);
+        return TRUE;
+    }
+
+    //TODO: autocompletion on TAB
+    
+    return FALSE;
+}
+
+static void start_open(editor_t *editor) {
+    editor->label_state = "open";
+    set_label_text(editor);
+    gtk_widget_grab_focus(editor->entry);
+    editor->current_entry_handler_id = g_signal_connect(editor->entry, "key-release-event", G_CALLBACK(entry_open_insert_callback), editor);
+    editor->current_entry_handler_id_set = TRUE;
+}
+
 static gboolean entry_focusout_callback(GtkWidget *widget, GdkEventFocus *event, gpointer data) {
     editor_t *editor = (editor_t*)data;
     editor->label_state = "cmd";
@@ -608,6 +644,9 @@ static gboolean key_press_callback(GtkWidget *widget, GdkEventKey *event, gpoint
             return TRUE;
         case GDK_KEY_f:
             start_search(editor);
+            return TRUE;
+        case GDK_KEY_o:
+            start_open(editor);
             return TRUE;
         }
     }
