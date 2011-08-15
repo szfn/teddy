@@ -30,6 +30,7 @@ typedef struct _real_line_t {
 typedef struct _buffer_t {
     char *name;
     int has_filename;
+    int modified;
     
     /* Font face stuff */
     FT_Library *library;

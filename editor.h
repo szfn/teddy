@@ -19,7 +19,6 @@ typedef struct _editor_t {
     GtkWidget *table;
     GtkWidget *label;
     GtkWidget *entry;
-    int modified;
     const char *label_state;
     gboolean search_mode;
     gulong current_entry_handler_id;

@@ -36,7 +36,7 @@ static double calculate_y_origin(editor_t *editor, GtkAllocation *allocation) {
 static void set_label_text(editor_t *editor) {
     char *labeltxt;
 
-    asprintf(&labeltxt, "%s %s  |  %s>", (editor->modified ? "**" : "  "), editor->buffer->name, editor->label_state);
+    asprintf(&labeltxt, "%s %s  |  %s>", (editor->buffer->modified ? "**" : "  "), editor->buffer->name, editor->label_state);
 
     gtk_label_set_text(GTK_LABEL(editor->label), labeltxt);
     gtk_widget_queue_draw(editor->label);
@@ -115,7 +115,7 @@ static void remove_selection(editor_t *editor) {
     if (start_line == NULL) return;
     if (end_line == NULL) return;
 
-    editor->modified = 1;
+    editor->buffer->modified = 1;
     set_label_text(editor);
 
     //printf("Deleting %d from %d (size: %d)\n", start_line->lineno, start_glyph, start_line->cap-start_glyph);
@@ -292,7 +292,7 @@ static void insert_text(editor_t *editor, gchar *str) {
     
     unset_mark(editor);
 
-    editor->modified = 1;
+    editor->buffer->modified = 1;
     set_label_text(editor);
 
     inc = buffer_line_insert_utf8_text(editor->buffer, editor->buffer->cursor_line, str, strlen(str), editor->buffer->cursor_glyph);
@@ -307,7 +307,7 @@ static void remove_text(editor_t *editor, int offset) {
 
     unset_mark(editor);
 
-    editor->modified = 1;
+    editor->buffer->modified = 1;
     set_label_text(editor);
 
     buffer_real_cursor(editor->buffer, &real_cursor_line, &real_cursor_glyph);
@@ -338,7 +338,7 @@ static void remove_text(editor_t *editor, int offset) {
 static void split_line(editor_t *editor) {
     unset_mark(editor);
 
-    editor->modified = 1;
+    editor->buffer->modified = 1;
     set_label_text(editor);
 
     buffer_split_line(editor->buffer, editor->buffer->cursor_line, editor->buffer->cursor_glyph);
@@ -369,7 +369,7 @@ static void insert_paste(editor_t *editor, GtkClipboard *clipboard) {
     gchar *text = gtk_clipboard_wait_for_text(clipboard);
     if (text == NULL) return;
 
-    editor->modified = 1;
+    editor->buffer->modified = 1;
     set_label_text(editor);
     buffer_insert_multiline_text(editor->buffer, editor->buffer->cursor_line, editor->buffer->cursor_glyph, text);
     gtk_widget_queue_draw(editor->drar);
@@ -603,7 +603,7 @@ static gboolean key_press_callback(GtkWidget *widget, GdkEventKey *event, gpoint
             return TRUE;
         case GDK_KEY_s:
             save_to_text_file(editor->buffer);
-            editor->modified = 0;
+            editor->buffer->modified = 0;
             set_label_text(editor);
             return TRUE;
         case GDK_KEY_f:
@@ -931,7 +931,7 @@ editor_t *new_editor(buffer_t *buffer) {
     r->initialization_ended = 0;
     r->mouse_marking = 0;
 
-    r->modified = 0;
+    r->buffer->modified = 0;
     
     r->search_mode = FALSE;
     r->current_entry_handler_id = -1;
