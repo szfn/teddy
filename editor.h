@@ -7,6 +7,7 @@
 
 typedef struct _editor_t {
     buffer_t *buffer;
+    GtkWidget *window;
 
     GtkObject *adjustment, *hadjustment;
     GtkWidget *drar;
@@ -26,7 +27,7 @@ typedef struct _editor_t {
     gboolean search_failed;
 } editor_t;
 
-editor_t *new_editor(buffer_t *buffer);
+editor_t *new_editor(GtkWidget *window, buffer_t *buffer);
 void editor_free(editor_t *editor);
 void editor_post_show_setup(editor_t *editor);
 

@@ -477,6 +477,19 @@ static void start_search(editor_t *editor) {
     editor->search_mode = TRUE;
 }
 
+static void quick_message(editor_t *editor, const char *title, const char *msg) {
+    GtkWidget *dialog = gtk_dialog_new_with_buttons(title, GTK_WINDOW(editor->window), GTK_DIALOG_MODAL|GTK_DIALOG_DESTROY_WITH_PARENT, GTK_STOCK_OK, GTK_RESPONSE_ACCEPT, NULL);
+    GtkWidget *content_area = gtk_dialog_get_content_area(GTK_DIALOG(dialog));
+    GtkWidget *label = gtk_label_new(msg);
+
+    g_signal_connect_swapped(dialog, "response",
+                             G_CALLBACK(gtk_widget_destroy), dialog);
+    
+    gtk_container_add(GTK_CONTAINER(content_area), label);
+    gtk_widget_show_all(dialog);
+    gtk_dialog_run(GTK_DIALOG(dialog));
+}
+
 static gboolean entry_open_insert_callback(GtkWidget *widget, GdkEventKey *event, gpointer data) {
     editor_t *editor = (editor_t*)data;
 
@@ -487,10 +500,34 @@ static gboolean entry_open_insert_callback(GtkWidget *widget, GdkEventKey *event
 
     if (event->keyval == GDK_KEY_Return) {
         buffer_t *b = buffer_create(editor->buffer->library);
-        load_text_file(b, gtk_entry_get_text(GTK_ENTRY(editor->entry)));
-        //TODO: if load fails show message box
-        //TODO: resolve ~ at the beginning of the specification
-        //TODO: if file doesn't exist create it
+        //TODO: resolve ~ at the beginning of the specification        
+        if (load_text_file(b, gtk_entry_get_text(GTK_ENTRY(editor->entry))) != 0) {
+            // file may not exist, attempt to create it
+            FILE *f = fopen(gtk_entry_get_text(GTK_ENTRY(editor->entry)), "w");
+            
+            if (!f) {
+                char *msg;
+                asprintf(&msg, "Couldn't create or open: [%s]", gtk_entry_get_text(GTK_ENTRY(editor->entry)));
+                quick_message(editor, "Error", msg);
+                free(msg);
+                buffer_free(b);
+                gtk_widget_grab_focus(editor->drar);
+                return TRUE;
+            }
+            
+            fclose(f);
+            if (load_text_file(b, gtk_entry_get_text(GTK_ENTRY(editor->entry))) != 0) {
+                char *msg;
+                asprintf(&msg, "Couldn't create or open: [%s]", gtk_entry_get_text(GTK_ENTRY(editor->entry)));
+                quick_message(editor, "Error", msg);
+                free(msg);
+                buffer_free(b);
+                gtk_widget_grab_focus(editor->drar);
+                return TRUE;
+            }
+        }
+        
+        // file loaded or created successfully
         buffers_add(b);
         editor->buffer = b;
         set_label_text(editor);
@@ -962,9 +999,10 @@ void editor_post_show_setup(editor_t *editor) {
     g_timeout_add(500, (GSourceFunc)cursor_blinker, (gpointer)editor);
 }
 
-editor_t *new_editor(buffer_t *buffer) {
+editor_t *new_editor(GtkWidget *window, buffer_t *buffer) {
     editor_t *r = malloc(sizeof(editor_t));
 
+    r->window = window;
     r->buffer = buffer;
     r->cursor_visible = TRUE;
     r->initialization_ended = 0;

@@ -47,7 +47,10 @@ int main(int argc, char *argv[]) {
 
     buffer = buffer_create(&library);
 
-    load_text_file(buffer, argv[1]);
+    if (load_text_file(buffer, argv[1]) != 0) {
+        perror("Load failed\n");
+        exit(EXIT_FAILURE);
+    }
 
     buffers_add(buffer);
 
@@ -58,7 +61,7 @@ int main(int argc, char *argv[]) {
 
     g_signal_connect_swapped(G_OBJECT(window), "destroy", G_CALLBACK(gtk_main_quit), NULL);
 
-    editor = new_editor(buffer);
+    editor = new_editor(window, buffer);
 
     gtk_container_add(GTK_CONTAINER(window), editor->table);
 

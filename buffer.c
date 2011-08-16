@@ -278,7 +278,7 @@ void buffer_line_adjust_glyphs(buffer_t *buffer, real_line_t *line, double x, do
     *line_end_width = x;
 }
 
-void load_text_file(buffer_t *buffer, const char *filename) {
+int load_text_file(buffer_t *buffer, const char *filename) {
     FILE *fin = fopen(filename, "r");
     char ch;
     int i = 0;
@@ -288,14 +288,13 @@ void load_text_file(buffer_t *buffer, const char *filename) {
     real_line_t **real_line_pp = &(buffer->real_line);
     int lineno = 0;
 
+    if (!fin) {
+        return -1;
+    }
+
     buffer->has_filename = 1;
     free(buffer->name);
     asprintf(&(buffer->name), "%s", filename);
-
-    if (!fin) {
-        perror("Couldn't open input file");
-        exit(EXIT_FAILURE);
-    }
 
     if (text == NULL) {
         perror("Couldn't allocate memory");
@@ -338,6 +337,8 @@ void load_text_file(buffer_t *buffer, const char *filename) {
     printf("Loaded lines: %d\n", lineno);
     
     fclose(fin);
+
+    return 0;
 }
 
 char *buffer_lines_to_text(buffer_t *buffer, real_line_t *start_line, real_line_t *end_line, int start_glyph, int end_glyph) {

@@ -4,7 +4,7 @@ LIBS=`pkg-config --libs gtk+-2.0`
 all: gtktest
 
 clean:
-	rm $(OBJS) gtktest
+	rm $(OBJS) *.d gtktest
 
 OBJS := gtktest.o buffer.o font.o editor.o buffers.o
 

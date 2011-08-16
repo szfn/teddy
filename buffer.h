@@ -68,7 +68,7 @@ typedef struct _buffer_t {
 uint32_t utf8_to_utf32(const char *text, int *src, int len);
 
 buffer_t *buffer_create(FT_Library *library);
-void load_text_file(buffer_t *buffer, const char *filename);
+int load_text_file(buffer_t *buffer, const char *filename);
 void save_to_text_file(buffer_t *buffer);
 void buffer_free(buffer_t *buffer);
 
