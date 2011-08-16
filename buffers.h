@@ -5,5 +5,6 @@
 
 void buffers_init(void);
 void buffers_add(buffer_t *buffer);
+void buffers_free(void);
 
 #endif

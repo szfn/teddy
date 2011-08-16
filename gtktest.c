@@ -74,7 +74,7 @@ int main(int argc, char *argv[]) {
 
     editor_free(editor);
 
-    buffer_free(buffer);
+    buffers_free();
 
     return 0;
 }

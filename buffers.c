@@ -49,3 +49,13 @@ void buffers_add(buffer_t *b) {
         buffers_add(b);
     }
 }
+
+void buffers_free(void) {
+    int i;
+    for (i = 0; i < buffers_allocated; ++i) {
+        if (buffers[i] != NULL) {
+            buffer_free(buffers[i]);
+            buffers[i] = NULL;
+        }
+    }
+}
