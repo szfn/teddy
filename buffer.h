@@ -29,6 +29,7 @@ typedef struct _real_line_t {
 
 typedef struct _buffer_t {
     char *name;
+    char *path;
     int has_filename;
     int modified;
     

@@ -292,9 +292,21 @@ int load_text_file(buffer_t *buffer, const char *filename) {
         return -1;
     }
 
+    if (buffer->has_filename) {
+        return -1;
+    }
+
     buffer->has_filename = 1;
     free(buffer->name);
-    asprintf(&(buffer->name), "%s", filename);
+    buffer->path = realpath(filename, NULL);
+    {
+        char *name = strrchr(buffer->path, '/');
+        if (name == NULL) {
+            asprintf(&(buffer->name), "%s", buffer->path);
+        } else {
+            asprintf(&(buffer->name), "%s", name+1);
+        }
+    }
 
     if (text == NULL) {
         perror("Couldn't allocate memory");
@@ -334,7 +346,7 @@ int load_text_file(buffer_t *buffer, const char *filename) {
 
     free(text);
 
-    printf("Loaded lines: %d\n", lineno);
+    printf("Loaded lines: %d (name: %s) (path: %s)\n", lineno, buffer->name, buffer->path);
     
     fclose(fin);
 
@@ -427,11 +439,11 @@ void save_to_text_file(buffer_t *buffer) {
     char *r;
     size_t towrite, write_start, written;
     
-    asprintf(&cmd, "mv -f %s %s~", buffer->name, buffer->name);
+    asprintf(&cmd, "mv -f %s %s~", buffer->path, buffer->path);
     system(cmd);
     free(cmd);
 
-    file = fopen(buffer->name, "w");
+    file = fopen(buffer->path, "w");
 
     if (!file) {
         perror("Couldn't write to file");
@@ -526,6 +538,7 @@ buffer_t *buffer_create(FT_Library *library) {
     buffer->modified = 0;
 
     asprintf(&(buffer->name), "unnamed");
+    buffer->path = NULL;
     buffer->has_filename = 0;
     
     acmacs_font_init(&(buffer->main_font), library, "/usr/share/fonts/truetype/msttcorefonts/arial.ttf", 16);
@@ -587,6 +600,7 @@ void buffer_free(buffer_t *buffer) {
     acmacs_font_free(&(buffer->posbox_font));
 
     free(buffer->name);
+    free(buffer->path);
 }
 
 void debug_print_real_lines_state(buffer_t *buffer) __attribute__ ((unused));

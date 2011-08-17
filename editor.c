@@ -490,6 +490,50 @@ static void quick_message(editor_t *editor, const char *title, const char *msg) 
     gtk_dialog_run(GTK_DIALOG(dialog));
 }
 
+static char *unrealpath(char *absolute_path, const char *relative_path) {
+    if (strlen(relative_path) == 0) goto return_relative_path;
+    if (relative_path[0] == '/') goto return_relative_path;
+
+    if (relative_path[0] == '~') {
+        const char *home = getenv("HOME");
+        char *r;
+        
+        if (home == NULL) goto return_relative_path;
+
+        r = malloc(sizeof(char) * (strlen(relative_path) + strlen(home) + 1));
+        strcpy(r, home);
+        strcpy(r + strlen(r), relative_path+1);
+        return r;
+    } else {
+        if (absolute_path == NULL) {
+            char *cwd = get_current_dir_name();
+            char *r = malloc(sizeof(char) * (strlen(relative_path) + strlen(cwd) + 1));
+
+            strcpy(r, cwd);
+            strcpy(r + strlen(r), relative_path);
+
+            free(cwd);
+            return r;
+        } else {
+            char *end = strrchr(absolute_path, '/');
+            char *r = malloc(sizeof(char) * (strlen(relative_path) + (end - absolute_path) + 2));
+
+            strncpy(r, absolute_path, end-absolute_path+1);
+            strcpy(r+(end-absolute_path+1), relative_path);
+
+            return r;
+        }
+    }
+
+    return NULL;
+    
+    return_relative_path: {
+        char *r = malloc(sizeof(char) * (strlen(relative_path)+1));
+        strcpy(r, relative_path);
+        return r;
+    }
+}
+
 static gboolean entry_open_insert_callback(GtkWidget *widget, GdkEventKey *event, gpointer data) {
     editor_t *editor = (editor_t*)data;
 
@@ -499,29 +543,44 @@ static gboolean entry_open_insert_callback(GtkWidget *widget, GdkEventKey *event
     }
 
     if (event->keyval == GDK_KEY_Return) {
-        buffer_t *b = buffer_create(editor->buffer->library);
-        //TODO: resolve ~ at the beginning of the specification        
-        if (load_text_file(b, gtk_entry_get_text(GTK_ENTRY(editor->entry))) != 0) {
+        buffer_t *b;
+        char *rp = unrealpath(editor->buffer->path, gtk_entry_get_text(GTK_ENTRY(editor->entry)));
+
+        printf("Attempting to open [%s]\n", rp);
+
+        if (rp == NULL) {
+            char *msg;
+            perror("Real path error");
+            asprintf(&msg, "Coudln't resolve path: [%s]", gtk_entry_get_text(GTK_ENTRY(editor->entry)));
+            quick_message(editor, "Error", msg);
+            gtk_widget_grab_focus(editor->drar);
+            return TRUE;
+        }
+
+        b = buffer_create(editor->buffer->library);
+        if (load_text_file(b, rp) != 0) {
             // file may not exist, attempt to create it
-            FILE *f = fopen(gtk_entry_get_text(GTK_ENTRY(editor->entry)), "w");
+            FILE *f = fopen(rp, "w");
             
             if (!f) {
                 char *msg;
-                asprintf(&msg, "Couldn't create or open: [%s]", gtk_entry_get_text(GTK_ENTRY(editor->entry)));
+                asprintf(&msg, "Couldn't create or open: [%s]", rp);
                 quick_message(editor, "Error", msg);
                 free(msg);
                 buffer_free(b);
+                free(rp);
                 gtk_widget_grab_focus(editor->drar);
                 return TRUE;
             }
             
             fclose(f);
-            if (load_text_file(b, gtk_entry_get_text(GTK_ENTRY(editor->entry))) != 0) {
+            if (load_text_file(b, rp) != 0) {
                 char *msg;
-                asprintf(&msg, "Couldn't create or open: [%s]", gtk_entry_get_text(GTK_ENTRY(editor->entry)));
+                asprintf(&msg, "Couldn't create or open: [%s]", rp);
                 quick_message(editor, "Error", msg);
                 free(msg);
                 buffer_free(b);
+                free(rp);
                 gtk_widget_grab_focus(editor->drar);
                 return TRUE;
             }
@@ -531,6 +590,7 @@ static gboolean entry_open_insert_callback(GtkWidget *widget, GdkEventKey *event
         buffers_add(b);
         editor->buffer = b;
         set_label_text(editor);
+        free(rp);
         gtk_widget_queue_draw(editor->drar);
         gtk_widget_grab_focus(editor->drar);
         return TRUE;
@@ -559,13 +619,13 @@ static gboolean entry_focusout_callback(GtkWidget *widget, GdkEventFocus *event,
         editor->current_entry_handler_id_set = FALSE;
         g_signal_handler_disconnect(editor->entry, editor->current_entry_handler_id);
     }
-    return TRUE;
+    return FALSE;
 }
 
 static gboolean entry_focusin_callback(GtkWidget *widget, GdkEventFocus *event, gpointer data) {
     editor_t *editor = (editor_t*)data;
     gtk_entry_set_text(GTK_ENTRY(editor->entry), "");
-    return TRUE;
+    return FALSE;
 }
 
 static gboolean key_press_callback(GtkWidget *widget, GdkEventKey *event, gpointer data) {
