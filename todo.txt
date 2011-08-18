@@ -1,4 +1,5 @@
-- buffer switch
+- properly open files from command line at startup
+- properly close buffers on window delete request
 - history for search prompt
 - Ctrl-backspace to remove one word
 - modify origin repositioning to show cursor so that the cursor is put in the middle of the window

@@ -11,6 +11,8 @@ void buffers_init(void);
 void buffers_add(buffer_t *buffer);
 void buffers_free(void);
 
+buffer_t *buffers_open(const char *filename, char **rp);
+
 // returns non-zero if close was successful, zero if the user cancelled the action
 int buffers_close(buffer_t *buffer);
 

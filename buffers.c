@@ -285,3 +285,80 @@ void buffers_show_window(editor_t *editor) {
     gtk_widget_show_all(buffers_window);
     gtk_widget_grab_focus(buffers_tree);
 }
+
+static char *unrealpath(char *absolute_path, const char *relative_path) {
+    if (strlen(relative_path) == 0) goto return_relative_path;
+    if (relative_path[0] == '/') goto return_relative_path;
+
+    if (relative_path[0] == '~') {
+        const char *home = getenv("HOME");
+        char *r;
+        
+        if (home == NULL) goto return_relative_path;
+
+        r = malloc(sizeof(char) * (strlen(relative_path) + strlen(home) + 1));
+        strcpy(r, home);
+        strcpy(r + strlen(r), relative_path+1);
+        return r;
+    } else {
+        if (absolute_path == NULL) {
+            char *cwd = get_current_dir_name();
+            char *r = malloc(sizeof(char) * (strlen(relative_path) + strlen(cwd) + 1));
+
+            strcpy(r, cwd);
+            strcpy(r + strlen(r), relative_path);
+
+            free(cwd);
+            return r;
+        } else {
+            char *end = strrchr(absolute_path, '/');
+            char *r = malloc(sizeof(char) * (strlen(relative_path) + (end - absolute_path) + 2));
+
+            strncpy(r, absolute_path, end-absolute_path+1);
+            strcpy(r+(end-absolute_path+1), relative_path);
+
+            return r;
+        }
+    }
+
+    return NULL;
+    
+    return_relative_path: {
+        char *r = malloc(sizeof(char) * (strlen(relative_path)+1));
+        strcpy(r, relative_path);
+        return r;
+    }
+}
+
+buffer_t *buffers_open(const char *filename, char **rp) {
+    buffer_t *b;
+    *rp = unrealpath(editor->buffer->path, gtk_entry_get_text(GTK_ENTRY(editor->entry)));
+
+    printf("Attempting to open [%s]\n", *rp);
+
+    if (rp == NULL) {
+        perror("Error resolving pathname");
+        return NULL;
+    }
+
+    b = buffer_create(editor->buffer->library);
+    if (load_text_file(b, *rp) != 0) {
+        // file may not exist, attempt to create it
+        FILE *f = fopen(*rp, "w");
+            
+        if (!f) {
+            buffer_free(b);
+            return NULL;
+        }
+            
+        fclose(f);
+        if (load_text_file(b, *rp) != 0) {
+            buffer_free(b);
+            return NULL;
+        }
+    }
+        
+    // file loaded or created successfully
+    buffers_add(b);
+    return b;
+}
