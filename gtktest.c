@@ -25,7 +25,6 @@ int main(int argc, char *argv[]) {
     GtkWidget *window;
     int error;
     buffer_t *buffer;
-    editor_t *editor;
 
     gtk_init(&argc, &argv);
 

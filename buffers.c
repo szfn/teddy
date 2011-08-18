@@ -140,7 +140,6 @@ int buffers_close(buffer_t *buffer) {
             if (buffers[i] == buffer) break;
         }
 
-
         if (i < buffers_allocated) {
             GtkTreeIter mah;
 

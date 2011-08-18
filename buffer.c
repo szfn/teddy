@@ -549,7 +549,7 @@ buffer_t *buffer_create(FT_Library *library) {
     buffer->library = library;
     buffer->modified = 0;
 
-    asprintf(&(buffer->name), "unnamed");
+    asprintf(&(buffer->name), "+unnamed");
     buffer->path = NULL;
     buffer->has_filename = 0;
     
@@ -613,6 +613,7 @@ void buffer_free(buffer_t *buffer) {
 
     free(buffer->name);
     free(buffer->path);
+    free(buffer);
 }
 
 void debug_print_real_lines_state(buffer_t *buffer) __attribute__ ((unused));
