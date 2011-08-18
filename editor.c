@@ -588,10 +588,8 @@ static gboolean entry_open_insert_callback(GtkWidget *widget, GdkEventKey *event
         
         // file loaded or created successfully
         buffers_add(b);
-        editor->buffer = b;
-        set_label_text(editor);
+        editor_switch_buffer(editor, b);
         free(rp);
-        gtk_widget_queue_draw(editor->drar);
         gtk_widget_grab_focus(editor->drar);
         return TRUE;
     }
@@ -600,6 +598,13 @@ static gboolean entry_open_insert_callback(GtkWidget *widget, GdkEventKey *event
     
     return FALSE;
 }
+
+void editor_switch_buffer(editor_t *editor, buffer_t *buffer) {
+    editor->buffer = buffer;
+    set_label_text(editor);
+    gtk_widget_queue_draw(editor->drar);
+}
+
 
 static void start_open(editor_t *editor) {
     editor->label_state = "open";
@@ -744,6 +749,9 @@ static gboolean key_press_callback(GtkWidget *widget, GdkEventKey *event, gpoint
             return TRUE;
         case GDK_KEY_o:
             start_open(editor);
+            return TRUE;
+        case GDK_KEY_b:
+            buffers_show_window(editor);
             return TRUE;
         }
     }

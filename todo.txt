@@ -1,4 +1,3 @@
-- file opening
 - buffer switch
 - history for search prompt
 - Ctrl-backspace to remove one word

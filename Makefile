@@ -1,12 +1,11 @@
 CFLAGS=`pkg-config --cflags gtk+-2.0` -Wall -D_FORTIFY_SOURCE=2 -g -D_GNU_SOURCE
 LIBS=`pkg-config --libs gtk+-2.0`
+OBJS := gtktest.o buffer.o font.o editor.o buffers.o
 
 all: gtktest
 
 clean:
 	rm $(OBJS) *.d gtktest
-
-OBJS := gtktest.o buffer.o font.o editor.o buffers.o
 
 gtktest: $(OBJS)
 	$(CC) -o $@ $^ $(LIBS) 
