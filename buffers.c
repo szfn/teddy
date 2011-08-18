@@ -114,9 +114,12 @@ int buffers_close(buffer_t *buffer) {
         label = gtk_label_new(msg);
         free(msg);
 
-        g_signal_connect_swapped(dialog, "response", G_CALLBACK(gtk_widget_destroy), dialog);
+        //g_signal_connect_swapped(dialog, "response", G_CALLBACK(gtk_widget_destroy), dialog);
         gtk_widget_show_all(dialog);
         result = gtk_dialog_run(GTK_DIALOG(dialog));
+        gtk_widget_destroy(dialog);
+
+        //printf("Response is: %d (%d %d %d)\n", result, SAVE_AND_CLOSE_RESPONSE, DISCARD_CHANGES_RESPONSE, CANCEL_ACTION_RESPONSE);
 
         switch(result) {
         case SAVE_AND_CLOSE_RESPONSE:
