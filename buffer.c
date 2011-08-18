@@ -278,6 +278,18 @@ void buffer_line_adjust_glyphs(buffer_t *buffer, real_line_t *line, double x, do
     *line_end_width = x;
 }
 
+void load_empty(buffer_t *buffer) {
+    if (buffer->has_filename) {
+        return;
+    }
+
+    buffer->has_filename = 0;
+    buffer->path = NULL;
+
+    buffer->cursor_line = buffer->real_line = new_real_line(0);
+    buffer->cursor_glyph = 0;
+}
+
 int load_text_file(buffer_t *buffer, const char *filename) {
     FILE *fin = fopen(filename, "r");
     char ch;

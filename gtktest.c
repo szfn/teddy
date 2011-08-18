@@ -17,6 +17,8 @@
 
 FT_Library library;
 
+GtkClipboard *selection_clipboard;
+GtkClipboard *default_clipboard;
 editor_t *editor;
 
 int main(int argc, char *argv[]) {

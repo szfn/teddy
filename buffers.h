@@ -10,7 +10,11 @@
 void buffers_init(void);
 void buffers_add(buffer_t *buffer);
 void buffers_free(void);
-void buffers_close(buffer_t *buffer);
+
+// returns non-zero if close was successful, zero if the user cancelled the action
+int buffers_close(buffer_t *buffer);
+
+buffer_t *buffers_get_replacement_buffer(buffer_t *buffer);
 
 void buffers_show_window(editor_t *editor);
 

@@ -1,5 +1,6 @@
 #include "buffers.h"
 
+#include "global.h"
 #include "editor.h"
 
 #include <gdk/gdkkeysyms.h>
@@ -72,12 +73,103 @@ static gboolean buffers_key_press_callback(GtkWidget *widget, GdkEventKey *event
     return FALSE;
 }
 
-void buffers_close(buffer_t *buffer) {
-    if (buffer->modified) {
-        //TODO: ask for permission to close
+buffer_t *buffers_get_replacement_buffer(buffer_t *buffer) {
+    int i;
+    for (i = 0; i < buffers_allocated; ++i) {
+        if (buffers[i] == NULL) continue;
+        if (buffers[i] == buffer) continue;
+        break;
     }
 
-    //TODO: actually close
+    if (i < buffers_allocated) {
+        return buffers[i];
+    } else {
+        buffer_t *replacement = buffer_create(&library);
+        load_empty(replacement);
+        buffers_add(replacement);
+        return replacement;
+    }
+}
+
+#define SAVE_AND_CLOSE_RESPONSE 1
+#define DISCARD_CHANGES_RESPONSE 2
+#define CANCEL_ACTION_RESPONSE 3
+
+int buffers_close(buffer_t *buffer) {
+    if (buffer->modified) {
+        GtkWidget *dialog;
+        GtkWidget *content_area;
+        GtkWidget *label;
+        char *msg;
+        gint result;
+
+        if (buffer->has_filename) {
+            dialog = gtk_dialog_new_with_buttons("Close Buffer", GTK_WINDOW(buffers_selector_focus_editor->window), GTK_DIALOG_MODAL|GTK_DIALOG_DESTROY_WITH_PARENT, "Save and close", SAVE_AND_CLOSE_RESPONSE, "Discard changes", DISCARD_CHANGES_RESPONSE, "Cancel", CANCEL_ACTION_RESPONSE, NULL);
+        } else {
+            dialog = gtk_dialog_new_with_buttons("Close Buffer", GTK_WINDOW(buffers_selector_focus_editor->window), GTK_DIALOG_MODAL|GTK_DIALOG_DESTROY_WITH_PARENT, "Discard changes", DISCARD_CHANGES_RESPONSE, "Cancel", CANCEL_ACTION_RESPONSE, NULL);
+        }
+
+        content_area = gtk_dialog_get_content_area(GTK_DIALOG(dialog));
+        asprintf(&msg, "Buffer [%s] is modified", buffer->name);
+        label = gtk_label_new(msg);
+        free(msg);
+
+        g_signal_connect_swapped(dialog, "response", G_CALLBACK(gtk_widget_destroy), dialog);
+        gtk_widget_show_all(dialog);
+        result = gtk_dialog_run(GTK_DIALOG(dialog));
+
+        switch(result) {
+        case SAVE_AND_CLOSE_RESPONSE:
+            save_to_text_file(buffer);
+            break;
+        case DISCARD_CHANGES_RESPONSE:
+            printf("Discarding changes to: [%s]\n", buffer->name);
+            break;
+        case CANCEL_ACTION_RESPONSE: return 0;
+        default: return 0; /* This shouldn't happen */
+        }
+    }
+
+    if (editor->buffer == buffer) {
+        editor_switch_buffer(editor, buffers_get_replacement_buffer(buffer));
+    }
+
+    {
+        int i;
+        for(i = 0; i < buffers_allocated; ++i) {
+            if (buffers[i] == buffer) break;
+        }
+
+
+        if (i < buffers_allocated) {
+            GtkTreeIter mah;
+
+            if (gtk_tree_model_get_iter_first(GTK_TREE_MODEL(buffers_list), &mah)) {
+                do {
+                    GValue value = {0};
+
+                    gtk_tree_model_get_value(GTK_TREE_MODEL(buffers_list), &mah, 0, &value);
+                    if (g_value_get_int(&value) == i) {
+                        g_value_unset(&value);
+                        gtk_list_store_remove(buffers_list, &mah);
+                        break;
+                    } else {
+                        g_value_unset(&value);
+                    }
+                } while (gtk_tree_model_iter_next(GTK_TREE_MODEL(buffers_list), &mah));
+            }
+            
+            buffers[i] = NULL;
+
+            gtk_widget_queue_draw(buffers_tree);
+        } else {
+            printf("Attempted to remove buffer not present in list\n");
+        }
+        
+        buffer_free(buffer);
+    }
+
+    return 1;
 }
 
 void buffers_init(void) {
