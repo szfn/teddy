@@ -779,3 +779,11 @@ void buffer_insert_multiline_text(buffer_t *buffer, real_line_t *line, int glyph
     }
 }
 
+int buffer_real_line_count(buffer_t *buffer) {
+    real_line_t *cur;
+    int count = 0;
+    for (cur = buffer->real_line; cur != NULL; cur = cur->next) {
+        ++count;
+    }
+    return count;
+}

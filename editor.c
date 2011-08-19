@@ -985,6 +985,7 @@ static gboolean cursor_blinker(editor_t *editor) {
 
 void editor_post_show_setup(editor_t *editor) {
     gdk_window_set_events(gtk_widget_get_window(editor->drar), gdk_window_get_events(gtk_widget_get_window(editor->drar)) | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK | GDK_POINTER_MOTION_MASK);
+    gdk_window_set_cursor(gtk_widget_get_window(editor->drar), gdk_cursor_new(GDK_XTERM));
     g_timeout_add(500, (GSourceFunc)cursor_blinker, (gpointer)editor);
 }
 
@@ -1058,11 +1059,21 @@ editor_t *new_editor(GtkWidget *window, buffer_t *buffer) {
         g_signal_connect(G_OBJECT(drarscroll), "value_changed", G_CALLBACK(scrolled_callback), (gpointer)r);
         g_signal_connect(G_OBJECT(r->drarhscroll), "value_changed", G_CALLBACK(hscrolled_callback), (gpointer)r);
     }
-    
+
+    r->allocated_vertical_space = 0;
+
     return r;
+}
+
+gint editor_get_height_request(editor_t *editor) {
+    int lines = buffer_real_line_count(editor->buffer);
+    if (lines > MAX_LINES_HEIGHT_REQUEST) lines = MAX_LINES_HEIGHT_REQUEST;
+    if (lines < MIN_LINES_HEIGHT_REQUEST) lines = MIN_LINES_HEIGHT_REQUEST;
+    return (lines+2) * editor->buffer->line_height;
 }
 
 void editor_free(editor_t *editor) {
     editor->initialization_ended = 0;
     free(editor);
 }
+

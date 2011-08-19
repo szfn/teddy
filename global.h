@@ -8,5 +8,7 @@ extern GtkClipboard *default_clipboard;
 
 extern FT_Library library;
 
+#define MAX_LINES_HEIGHT_REQUEST 25
+#define MIN_LINES_HEIGHT_REQUEST 3
 
 #endif

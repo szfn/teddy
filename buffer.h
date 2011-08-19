@@ -105,6 +105,8 @@ char *buffer_lines_to_text(buffer_t *buffer, real_line_t *start_line, real_line_
 void buffer_split_line(buffer_t *buffer, real_line_t *line, int glyph);
 void buffer_insert_multiline_text(buffer_t *buffer, real_line_t *line, int glyph, char *text);
 
+int buffer_real_line_count(buffer_t *buffer);
+
 void debug_print_lines_state(buffer_t *buffer);
 void debug_print_real_lines_state(buffer_t *buffer);
 
