@@ -19,12 +19,11 @@ FT_Library library;
 
 GtkClipboard *selection_clipboard;
 GtkClipboard *default_clipboard;
-editor_t *editor;
+editor_t *editor = NULL;
 
 int main(int argc, char *argv[]) {
     GtkWidget *window;
-    int error;
-    buffer_t *buffer;
+    int error, i;
 
     gtk_init(&argc, &argv);
 
@@ -44,16 +43,14 @@ int main(int argc, char *argv[]) {
 
     buffers_init();
 
-    printf("Will show: %s\n", argv[1]);
-
-    buffer = buffer_create(&library);
-
-    if (load_text_file(buffer, argv[1]) != 0) {
-        perror("Load failed\n");
-        exit(EXIT_FAILURE);
+    for (i = 1; i < argc; ++i) {
+        char *rp;
+        printf("Will show: %s\n", argv[i]);
+        if (buffers_open(NULL, argv[i], &rp) == NULL) {
+            printf("Load of [%s] failed\n", (rp == NULL) ? argv[i] : rp);
+            free(rp);
+        }
     }
-
-    buffers_add(buffer);
 
     window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
 
@@ -62,7 +59,7 @@ int main(int argc, char *argv[]) {
 
     g_signal_connect_swapped(G_OBJECT(window), "destroy", G_CALLBACK(gtk_main_quit), NULL);
 
-    editor = new_editor(window, buffer);
+    editor = new_editor(window, buffers_get_replacement_buffer(NULL));
 
     gtk_container_add(GTK_CONTAINER(window), editor->table);
 
