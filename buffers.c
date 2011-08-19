@@ -331,6 +331,22 @@ static char *unrealpath(char *absolute_path, const char *relative_path) {
     }
 }
 
+int buffers_close_all(void) {
+    int i;
+    for (i = 0; i < buffers_allocated; ++i) {
+        if (buffers[i] != NULL) {
+            if (!buffers_close(buffers[i])) return 0;
+        }
+    }
+    for (i = 0; i < buffers_allocated; ++i) {
+        if (buffers[i] != NULL) {
+            if (buffers[i]->modified) return 0;
+        }
+    }
+    return 1;
+}
+
+
 buffer_t *buffers_open(buffer_t *base_buffer, const char *filename, char **rp) {
     buffer_t *b;
     *rp = unrealpath((base_buffer != NULL) ? base_buffer->path : NULL, filename);

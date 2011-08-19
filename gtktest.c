@@ -21,6 +21,11 @@ GtkClipboard *selection_clipboard;
 GtkClipboard *default_clipboard;
 editor_t *editor = NULL;
 
+static gboolean delete_callback(GtkWidget *widget, GdkEvent *event, gpointer data) {
+    if (buffers_close_all()) return FALSE;
+    return TRUE;
+}
+
 int main(int argc, char *argv[]) {
     GtkWidget *window;
     int error, i;
@@ -57,6 +62,7 @@ int main(int argc, char *argv[]) {
     gtk_window_set_title(GTK_WINDOW(window), "Acmacs");
     gtk_window_set_default_size(GTK_WINDOW(window), 500, 600);
 
+    g_signal_connect(G_OBJECT(window), "delete-event", G_CALLBACK(delete_callback), NULL);
     g_signal_connect_swapped(G_OBJECT(window), "destroy", G_CALLBACK(gtk_main_quit), NULL);
 
     editor = new_editor(window, buffers_get_replacement_buffer(NULL));
