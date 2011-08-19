@@ -303,10 +303,11 @@ static char *unrealpath(char *absolute_path, const char *relative_path) {
     } else {
         if (absolute_path == NULL) {
             char *cwd = get_current_dir_name();
-            char *r = malloc(sizeof(char) * (strlen(relative_path) + strlen(cwd) + 1));
+            char *r = malloc(sizeof(char) * (strlen(relative_path) + strlen(cwd) + 2));
 
             strcpy(r, cwd);
-            strcpy(r + strlen(r), relative_path);
+            r[strlen(r)] = '/';
+            strcpy(r + strlen(cwd) + 1, relative_path);
 
             free(cwd);
             return r;
@@ -330,9 +331,9 @@ static char *unrealpath(char *absolute_path, const char *relative_path) {
     }
 }
 
-buffer_t *buffers_open(const char *filename, char **rp) {
+buffer_t *buffers_open(buffer_t *base_buffer, const char *filename, char **rp) {
     buffer_t *b;
-    *rp = unrealpath(editor->buffer->path, gtk_entry_get_text(GTK_ENTRY(editor->entry)));
+    *rp = unrealpath((base_buffer != NULL) ? base_buffer->path : NULL, filename);
 
     printf("Attempting to open [%s]\n", *rp);
 
@@ -341,7 +342,7 @@ buffer_t *buffers_open(const char *filename, char **rp) {
         return NULL;
     }
 
-    b = buffer_create(editor->buffer->library);
+    b = buffer_create(&library);
     if (load_text_file(b, *rp) != 0) {
         // file may not exist, attempt to create it
         FILE *f = fopen(*rp, "w");

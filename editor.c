@@ -500,7 +500,7 @@ static gboolean entry_open_insert_callback(GtkWidget *widget, GdkEventKey *event
 
     if (event->keyval == GDK_KEY_Return) {
         char *rp;
-        buffer_t *buffer = buffers_open(gtk_entry_get_text(GTK_ENTRY(editor->entry)), &rp);
+        buffer_t *buffer = buffers_open(editor->buffer, gtk_entry_get_text(GTK_ENTRY(editor->entry)), &rp);
         if (buffer == NULL) {
             char *msg;
             asprintf(&msg, "Couldn't create or open [%s]", (rp == NULL) ? gtk_entry_get_text(GTK_ENTRY(editor->entry)) : rp);
