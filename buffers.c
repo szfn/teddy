@@ -64,7 +64,7 @@ static gboolean buffers_key_press_callback(GtkWidget *widget, GdkEventKey *event
         case GDK_KEY_Delete: {
             int idx = get_selected_idx();
             if (idx < 0) return TRUE;
-            buffers_close(buffers[idx]);
+            buffers_close(buffers[idx], NULL);
             gtk_widget_queue_draw(buffers_tree);
             return TRUE;
         }
@@ -96,7 +96,7 @@ buffer_t *buffers_get_replacement_buffer(buffer_t *buffer) {
 #define DISCARD_CHANGES_RESPONSE 2
 #define CANCEL_ACTION_RESPONSE 3
 
-int buffers_close(buffer_t *buffer) {
+int buffers_close(buffer_t *buffer, GtkWidget *window) {
     if (buffer->modified) {
         GtkWidget *dialog;
         GtkWidget *content_area;
@@ -105,9 +105,9 @@ int buffers_close(buffer_t *buffer) {
         gint result;
 
         if (buffer->has_filename) {
-            dialog = gtk_dialog_new_with_buttons("Close Buffer", GTK_WINDOW(buffers_selector_focus_editor->window), GTK_DIALOG_MODAL|GTK_DIALOG_DESTROY_WITH_PARENT, "Save and close", SAVE_AND_CLOSE_RESPONSE, "Discard changes", DISCARD_CHANGES_RESPONSE, "Cancel", CANCEL_ACTION_RESPONSE, NULL);
+            dialog = gtk_dialog_new_with_buttons("Close Buffer", (window != NULL) ? GTK_WINDOW(window) : GTK_WINDOW(buffers_selector_focus_editor->window), GTK_DIALOG_MODAL|GTK_DIALOG_DESTROY_WITH_PARENT, "Save and close", SAVE_AND_CLOSE_RESPONSE, "Discard changes", DISCARD_CHANGES_RESPONSE, "Cancel", CANCEL_ACTION_RESPONSE, NULL);
         } else {
-            dialog = gtk_dialog_new_with_buttons("Close Buffer", GTK_WINDOW(buffers_selector_focus_editor->window), GTK_DIALOG_MODAL|GTK_DIALOG_DESTROY_WITH_PARENT, "Discard changes", DISCARD_CHANGES_RESPONSE, "Cancel", CANCEL_ACTION_RESPONSE, NULL);
+            dialog = gtk_dialog_new_with_buttons("Close Buffer", (window != NULL) ? GTK_WINDOW(window) : GTK_WINDOW(buffers_selector_focus_editor->window), GTK_DIALOG_MODAL|GTK_DIALOG_DESTROY_WITH_PARENT, "Discard changes", DISCARD_CHANGES_RESPONSE, "Cancel", CANCEL_ACTION_RESPONSE, NULL);
         }
 
         content_area = gtk_dialog_get_content_area(GTK_DIALOG(dialog));
@@ -335,11 +335,11 @@ static char *unrealpath(char *absolute_path, const char *relative_path) {
     }
 }
 
-int buffers_close_all(void) {
+int buffers_close_all(GtkWidget *window) {
     int i;
     for (i = 0; i < buffers_allocated; ++i) {
         if (buffers[i] != NULL) {
-            if (!buffers_close(buffers[i])) return 0;
+            if (!buffers_close(buffers[i], window)) return 0;
         }
     }
     for (i = 0; i < buffers_allocated; ++i) {

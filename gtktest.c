@@ -22,7 +22,7 @@ GtkClipboard *selection_clipboard;
 GtkClipboard *default_clipboard;
 
 static gboolean delete_callback(GtkWidget *widget, GdkEvent *event, gpointer data) {
-    if (buffers_close_all()) return FALSE;
+    if (buffers_close_all(widget)) return FALSE;
     return TRUE;
 }
 
