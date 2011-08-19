@@ -12,6 +12,7 @@
 
 #include "global.h"
 #include "buffers.h"
+#include "editors.h"
 #include "buffer.h"
 #include "editor.h"
 
@@ -19,7 +20,6 @@ FT_Library library;
 
 GtkClipboard *selection_clipboard;
 GtkClipboard *default_clipboard;
-editor_t *editor = NULL;
 
 static gboolean delete_callback(GtkWidget *widget, GdkEvent *event, gpointer data) {
     if (buffers_close_all()) return FALSE;
@@ -28,6 +28,7 @@ static gboolean delete_callback(GtkWidget *widget, GdkEvent *event, gpointer dat
 
 int main(int argc, char *argv[]) {
     GtkWidget *window;
+    editor_t *editor;
     int error, i;
 
     gtk_init(&argc, &argv);
@@ -65,19 +66,19 @@ int main(int argc, char *argv[]) {
     g_signal_connect(G_OBJECT(window), "delete-event", G_CALLBACK(delete_callback), NULL);
     g_signal_connect_swapped(G_OBJECT(window), "destroy", G_CALLBACK(gtk_main_quit), NULL);
 
-    editor = new_editor(window, buffers_get_replacement_buffer(NULL));
+    editors_init(window);
 
-    gtk_container_add(GTK_CONTAINER(window), editor->table);
+    editor = editors_new(buffers_get_replacement_buffer(NULL));
+    editors_new(buffers_get_replacement_buffer(editor->buffer));
 
     gtk_widget_show_all(window);
 
     gtk_widget_grab_focus(GTK_WIDGET(editor->drar));
-    editor_post_show_setup(editor);
+    editors_post_show_setup();
 
     gtk_main();
 
-    editor_free(editor);
-
+    editors_free();
     buffers_free();
 
     return 0;

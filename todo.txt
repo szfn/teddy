@@ -1,9 +1,5 @@
-- properly close buffers on window delete request
-- history for search prompt
-- Ctrl-backspace to remove one word
-- modify origin repositioning to show cursor so that the cursor is put in the middle of the window
-- autocompletion for file opening
 - multi-editor (same column, then multicolumn)
+- Ctrl-backspace to remove one word
 - recalculation optimization (origin point is applyed through cairo with a translation matrix, call to buffer_line_adjust_glyphs is removed and buffer_adjust_glyphs is implemented that only readjusts lines that changed (this function is called once at the start of expose event)
 - undo (without redo)
 - scripting (for keybindings)
@@ -13,5 +9,8 @@
 - left+middle -> cut
 - double click -> select word (and movement will also select words)
 - triple click -> select lines (and movement will also select lines)
+- modify origin repositioning to show cursor so that the cursor is put in the middle of the window
+- autocompletion for file opening
+- history for prompts
 - investigate sam's command language
 - mouse scrollwheel
