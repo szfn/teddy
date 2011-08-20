@@ -43,7 +43,7 @@ int main(int argc, char *argv[]) {
         printf("Nothing to show\n");
         exit(EXIT_SUCCESS);
     }
-    
+
     selection_clipboard = gtk_clipboard_get(GDK_SELECTION_PRIMARY);
     default_clipboard = gtk_clipboard_get(GDK_SELECTION_CLIPBOARD);
 

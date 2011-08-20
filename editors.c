@@ -1,5 +1,7 @@
 #include "editors.h"
 
+#include "global.h"
+
 #include <math.h>
 
 static editor_t **editors;
@@ -9,6 +11,8 @@ static GtkWidget *editors_window;
 static GtkWidget *editors_vbox;
 static int after_show = 0;
 static int empty = 1;
+
+static double frame_resize_origin;
 
 void editors_init(GtkWidget *window) {
     int i;
@@ -96,7 +100,75 @@ static void editors_adjust_size(void) {
         gtk_widget_set_size_request(editors[i]->table, 10, editors[i]->allocated_vertical_space);
     }
 }
- 
+
+static gboolean resize_button_press_callback(GtkWidget *widget, GdkEventButton *event, gpointer data) {
+    printf("Starting resize\n");
+    frame_resize_origin = event->y;
+    return TRUE;
+}
+
+static editor_t *editors_editor_from_table(GtkWidget *table) {
+    int i;
+    for (i = 0; i < editors_allocated; ++i) {
+        if (editors[i] == NULL) continue;
+        if (editors[i]->table == table) return editors[i];
+    }
+    return NULL;
+}
+
+static gboolean resize_button_release_callback(GtkWidget *widget, GdkEventButton *event, gpointer data) {
+    double change = event->y - frame_resize_origin;
+    GList *prev = NULL;
+    GList *list = gtk_container_get_children(GTK_CONTAINER(editors_vbox));
+
+    for ( ; list != NULL; list = list->next) {
+        if (list->data == widget) {
+            break;
+        }
+        prev = list;
+    }
+
+    if (list == NULL) {
+        printf("Resize targets not found\n");
+        return TRUE;
+    } 
+
+    {
+        editor_t *preved = editors_editor_from_table((GtkWidget *)(prev->data));
+        editor_t *nexted = editors_editor_from_table((GtkWidget *)(list->next->data));
+        GtkAllocation allocation;
+
+        if (preved == NULL) {
+            printf("Resize previous editor target not found\n");
+            return TRUE;
+        }
+
+        if (nexted == NULL) {
+            printf("Resize next editor target not found\n");
+            return TRUE;
+        }
+
+        nexted->allocated_vertical_space -= change;
+        if (nexted->allocated_vertical_space < 50) nexted->allocated_vertical_space = 50;
+
+        gtk_widget_get_allocation(preved->table, &allocation);
+
+        if (allocation.height > preved->allocated_vertical_space) {
+            double new_height = allocation.height += change;
+            if (new_height < preved->allocated_vertical_space) {
+                preved->allocated_vertical_space = new_height;
+            }
+        } else {
+            preved->allocated_vertical_space += change;
+        }
+        
+        editors_adjust_size();
+        gtk_widget_queue_draw(editors_vbox);
+    }
+    
+    return TRUE;
+}
+
 void editors_add(editor_t *editor) {
     int i;
     
@@ -113,6 +185,8 @@ void editors_add(editor_t *editor) {
             resize_elements[i] = resize_element;
             gtk_container_add(GTK_CONTAINER(editors_vbox), resize_element);
             gtk_box_set_child_packing(GTK_BOX(editors_vbox), resize_element, FALSE, FALSE, 0, GTK_PACK_START);
+            g_signal_connect(G_OBJECT(resize_element), "button-press-event", G_CALLBACK(resize_button_press_callback), NULL);
+            g_signal_connect(G_OBJECT(resize_element), "button-release-event", G_CALLBACK(resize_button_release_callback), NULL);
         } else {
             resize_elements[i] = NULL;
         }
@@ -129,6 +203,7 @@ void editors_add(editor_t *editor) {
             editor_post_show_setup(editor);
             if (resize_elements[i] != NULL) {
                 gdk_window_set_cursor(gtk_widget_get_window(resize_elements[i]), gdk_cursor_new(GDK_DOUBLE_ARROW));
+                gdk_window_set_events(gtk_widget_get_window(resize_elements[i]), gdk_window_get_events(gtk_widget_get_window(resize_elements[i])) | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK);
             }
         }
     } else {
@@ -161,6 +236,7 @@ void editors_post_show_setup(void) {
     for (i = 0; i < editors_allocated; ++i) {
         if (resize_elements[i] != NULL) {
             gdk_window_set_cursor(gtk_widget_get_window(resize_elements[i]), gdk_cursor_new(GDK_DOUBLE_ARROW));
+            gdk_window_set_events(gtk_widget_get_window(resize_elements[i]), gdk_window_get_events(gtk_widget_get_window(resize_elements[i])) | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK);
         }
         if (editors[i] == NULL) continue;
         editor_post_show_setup(editors[i]);
