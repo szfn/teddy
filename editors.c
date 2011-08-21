@@ -267,3 +267,15 @@ editor_t *editors_find_buffer_editor(buffer_t *buffer) {
     return NULL;
 }
 
+editor_t *editors_remove(editor_t *editor) {
+    //TODO:
+    // - if this is the last editor in the column show error message and exit
+    // - otherwise remove this editor from the vbox
+    // - remove the resizing element from the vbox
+    // - remove the editor from the editors array
+    // - remove the resizing element from the resizing elements array (if exists)
+    // - destroy resizing element (if exists)
+    // - call editor_free
+    // - if this was the first editor in the vbox remove the resizing element of the next editor and make the next editor the first editor (extend + fill properties)
+    // - return the very next editor in the vbox 
+}

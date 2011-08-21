@@ -9,7 +9,8 @@ Tcl_Interp *interp;
 editor_t *context_editor;
 
 static int acmacs_exit_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
-    //TODO: implement
+    context_editor = editors_remove(context_editor);
+    //TODO: switch to (new) buffer directory 
     return TCL_OK;
 }
 

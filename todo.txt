@@ -1,18 +1,16 @@
-- command to open extra frames (and modify open file to ask what frame (new, select, current))
 - removal of an editor frame
-
 
 - multiple columns
 - ability to resize columns
 - heuristics to autocreate new frames (and size them)
 - drag and drop to rearrange frames
 
+- undo (without redo)
 - if a buffer is shared by two editors, refreshed should be sent to both
 
 - Ctrl-backspace to remove one word
 - click on file name (inside tag) shows full path
 - recalculation optimization (origin point is applyed through cairo with a translation matrix, call to buffer_line_adjust_glyphs is removed and buffer_adjust_glyphs is implemented that only readjusts lines that changed (this function is called once at the start of expose event)
-- undo (without redo)
 - scripting (for keybindings)
 - highlighting
 - reminder: use menu key to highlight command line
