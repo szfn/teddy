@@ -31,7 +31,6 @@ typedef struct _editor_t {
 
 editor_t *new_editor(GtkWidget *window, buffer_t *buffer);
 void editor_free(editor_t *editor);
-void editor_post_show_setup(editor_t *editor);
 void editor_switch_buffer(editor_t *editor, buffer_t *buffer);
 gint editor_get_height_request(editor_t *editor);
 

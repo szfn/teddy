@@ -8,6 +8,7 @@
 
 #include "global.h"
 #include "buffers.h"
+#include "interp.h"
 
 static double calculate_x_origin(editor_t *editor, GtkAllocation *allocation) {
     double origin_x;
@@ -478,7 +479,7 @@ static void start_search(editor_t *editor) {
     editor->search_mode = TRUE;
 }
 
-static void quick_message(editor_t *editor, const char *title, const char *msg) {
+void quick_message(editor_t *editor, const char *title, const char *msg) {
     GtkWidget *dialog = gtk_dialog_new_with_buttons(title, GTK_WINDOW(editor->window), GTK_DIALOG_MODAL|GTK_DIALOG_DESTROY_WITH_PARENT, GTK_STOCK_OK, GTK_RESPONSE_ACCEPT, NULL);
     GtkWidget *content_area = gtk_dialog_get_content_area(GTK_DIALOG(dialog));
     GtkWidget *label = gtk_label_new(msg);
@@ -531,7 +532,7 @@ static gboolean entry_default_insert_callback(GtkWidget *widget, GdkEventKey *ev
     }
 
     if (event->keyval == GDK_KEY_Return) {
-        Tcl_Eval(interp, gtk_entry_get_text(GTK_ENTRY(editor->entry)));
+        interp_eval(editor, gtk_entry_get_text(GTK_ENTRY(editor->entry)));
         gtk_widget_grab_focus(editor->drar);
     }
     
@@ -814,6 +815,21 @@ static void draw_selection(editor_t *editor, double width, cairo_t *cr) {
     }
 }
 
+static gboolean cursor_blinker(editor_t *editor) {
+    if (!(editor->initialization_ended)) return TRUE;
+    if (editor->cursor_visible < 0) editor->cursor_visible = 1;
+
+    if (!gtk_widget_is_focus(editor->drar)) {
+        if (!(editor->cursor_visible)) editor->cursor_visible = 1;
+    } else {
+        editor->cursor_visible = (editor->cursor_visible + 1) % 3;
+    }
+    
+    redraw_cursor_line(editor, FALSE);
+    
+    return TRUE;
+}
+
 static gboolean expose_event_callback(GtkWidget *widget, GdkEventExpose *event, gpointer data) {
     editor_t *editor = (editor_t*)data;
     cairo_t *cr = gdk_cairo_create(widget->window);
@@ -825,6 +841,12 @@ static gboolean expose_event_callback(GtkWidget *widget, GdkEventExpose *event, 
     int count = 0;
 
     gtk_widget_get_allocation(widget, &allocation);
+
+    if (!(editor->initialization_ended)) {
+        gdk_window_set_cursor(gtk_widget_get_window(editor->drar), gdk_cursor_new(GDK_XTERM));
+        g_timeout_add(500, (GSourceFunc)cursor_blinker, (gpointer)editor);
+        editor->initialization_ended = 1;
+    }
 
     /*printf("%dx%d +%dx%d (%dx%d)\n", event->area.x, event->area.y, event->area.width, event->area.height, allocation.width, allocation.height);*/
 
@@ -996,27 +1018,6 @@ static gboolean hscrolled_callback(GtkAdjustment *adj, gpointer data) {
     return TRUE;
 }
 
-static gboolean cursor_blinker(editor_t *editor) {
-    if (!(editor->initialization_ended)) return TRUE;
-    if (editor->cursor_visible < 0) editor->cursor_visible = 1;
-
-    if (!gtk_widget_is_focus(editor->drar)) {
-        if (!(editor->cursor_visible)) editor->cursor_visible = 1;
-    } else {
-        editor->cursor_visible = (editor->cursor_visible + 1) % 3;
-    }
-    
-    redraw_cursor_line(editor, FALSE);
-    
-    return TRUE;
-}
-
-void editor_post_show_setup(editor_t *editor) {
-    gdk_window_set_events(gtk_widget_get_window(editor->drar), gdk_window_get_events(gtk_widget_get_window(editor->drar)) | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK | GDK_POINTER_MOTION_MASK);
-    gdk_window_set_cursor(gtk_widget_get_window(editor->drar), gdk_cursor_new(GDK_XTERM));
-    g_timeout_add(500, (GSourceFunc)cursor_blinker, (gpointer)editor);
-}
-
 editor_t *new_editor(GtkWidget *window, buffer_t *buffer) {
     editor_t *r = malloc(sizeof(editor_t));
 
@@ -1033,6 +1034,8 @@ editor_t *new_editor(GtkWidget *window, buffer_t *buffer) {
 
     r->drar = gtk_drawing_area_new();
     r->drarim = gtk_im_multicontext_new();
+
+    gtk_widget_add_events(r->drar, GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK | GDK_POINTER_MOTION_MASK);
 
     gtk_widget_set_can_focus(GTK_WIDGET(r->drar), TRUE);
 

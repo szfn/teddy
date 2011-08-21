@@ -1,13 +1,13 @@
-- minimal tcl integration
-
-- removal of an editor frame
 - command to open extra frames (and modify open file to ask what frame (new, select, current))
+- removal of an editor frame
+
 
 - multiple columns
 - ability to resize columns
 - heuristics to autocreate new frames (and size them)
 - drag and drop to rearrange frames
 
+- if a buffer is shared by two editors, refreshed should be sent to both
 
 - Ctrl-backspace to remove one word
 - click on file name (inside tag) shows full path
@@ -25,3 +25,13 @@
 - history for prompts
 - investigate sam's command language
 - mouse scrollwheel
+
+- tcl commands to disable:
+  - exit <- close editor
+  - pwd <- show working directory for current buffer
+  - unknown <- if it's a command in the path execute it as if it was specified in exec (but also expand all the words containing a * or a ?)
+  
+- tcl commands to add:
+  - putm -> write into a message box
+  - pwf -> print current buffer's file
+  - kill -> kill's current process (if one is active in the buffer), otherwise kills current buffer. If an argument is specified does the same thing as the kill command

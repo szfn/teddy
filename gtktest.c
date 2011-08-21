@@ -17,6 +17,7 @@
 #include "editors.h"
 #include "buffer.h"
 #include "editor.h"
+#include "interp.h"
 
 FT_Library library;
 
@@ -36,11 +37,6 @@ int main(int argc, char *argv[]) {
 
     gtk_init(&argc, &argv);
 
-    interp = Tcl_CreateInterp();
-    if (interp == NULL) {
-        printf("Couldn't create TCL interpreter\n");
-        exit(EXIT_FAILURE);
-    }
 
     error = FT_Init_FreeType(&library);
     if (error) {
@@ -56,6 +52,7 @@ int main(int argc, char *argv[]) {
     selection_clipboard = gtk_clipboard_get(GDK_SELECTION_PRIMARY);
     default_clipboard = gtk_clipboard_get(GDK_SELECTION_CLIPBOARD);
 
+    interp_init();
     buffers_init();
 
     for (i = 1; i < argc; ++i) {
@@ -83,7 +80,6 @@ int main(int argc, char *argv[]) {
     gtk_widget_show_all(window);
 
     gtk_widget_grab_focus(GTK_WIDGET(editor->drar));
-    editors_post_show_setup();
 
     gtk_main();
 

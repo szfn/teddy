@@ -9,10 +9,73 @@ static GtkWidget **resize_elements;
 static int editors_allocated;
 static GtkWidget *editors_window;
 static GtkWidget *editors_vbox;
-static int after_show = 0;
 static int empty = 1;
+static int exposed = 0;
 
 static double frame_resize_origin;
+
+#define MAGIC_NUMBER 18
+
+static void editors_adjust_size(void) {
+    int total_allocated_height = 0;
+    GtkAllocation allocation;
+    int i, count;
+    int coefficient;
+
+    if (!exposed) return;
+
+    for (i = 0; i < editors_allocated; ++i) {
+        if (editors[i] == NULL) continue;
+        total_allocated_height += (editors[i]->allocated_vertical_space + MAGIC_NUMBER);
+    }
+
+    gtk_widget_get_allocation(editors_vbox, &allocation);
+
+    printf("Total space needed for editors %d, allocated space %d\n", total_allocated_height, allocation.height);
+
+    coefficient = total_allocated_height;
+
+    for (count = 0; (count < 4) && (total_allocated_height > allocation.height); ++count) {
+        int difference = total_allocated_height - allocation.height;
+        int new_coefficient = 0;
+        int new_total_allocated_height = 0;
+
+        printf("Removing: %d\n", difference);
+
+        for (i = 0; i < editors_allocated; ++i) {
+            if (editors[i] == NULL) continue;
+            if (editors[i]->allocated_vertical_space > 50) {
+                int cut = (int)ceil(difference * ((double)(editors[i]->allocated_vertical_space+MAGIC_NUMBER) / coefficient));
+                printf("   cutting: %d\n", cut);
+                editors[i]->allocated_vertical_space -= cut;
+                if (editors[i]->allocated_vertical_space < 50) {
+                    editors[i]->allocated_vertical_space = 50;
+                }
+
+                new_coefficient += editors[i]->allocated_vertical_space + MAGIC_NUMBER;
+            }
+            new_total_allocated_height += editors[i]->allocated_vertical_space + MAGIC_NUMBER;
+        }
+
+        total_allocated_height = new_total_allocated_height;
+        coefficient = new_coefficient;
+    }
+
+    printf("Height requests:\n");
+    for (i = 0; i < editors_allocated; ++i) {
+        if (editors[i] == NULL) continue;
+        printf("   vspace: %d\n", editors[i]->allocated_vertical_space);
+        gtk_widget_set_size_request(editors[i]->table, 10, editors[i]->allocated_vertical_space);
+    }
+}
+
+static gboolean editors_expose_event_callback(GtkWidget *widget, GdkEventExpose *event, gpointer data) {
+    if (!exposed) {
+        exposed = 1;
+        editors_adjust_size();
+    } 
+    return FALSE;
+}
 
 void editors_init(GtkWidget *window) {
     int i;
@@ -34,6 +97,7 @@ void editors_init(GtkWidget *window) {
     }
 
     editors_vbox = gtk_vbox_new(FALSE, 0);
+    g_signal_connect(G_OBJECT(editors_vbox), "expose-event", G_CALLBACK(editors_expose_event_callback), NULL);
     gtk_container_add(GTK_CONTAINER(window), editors_vbox);
 
     editors_window = window;
@@ -65,40 +129,6 @@ static void editors_grow(void) {
         resize_elements[i] = NULL;
     }
     editors_allocated *= 2;
-}
-
-static void editors_adjust_size(void) {
-    int total_allocated_height = 0;
-    GtkAllocation allocation;
-    int i;
-
-    for (i = 0; i < editors_allocated; ++i) {
-        if (editors[i] == NULL) continue;
-        total_allocated_height += (editors[i]->allocated_vertical_space + 10);
-    }
-
-    gtk_widget_get_allocation(editors_vbox, &allocation);
-
-    printf("Total space needed for editors %d, allocated space %d\n", total_allocated_height, allocation.height);
-
-    if (total_allocated_height > allocation.height) {
-        int difference = total_allocated_height - allocation.height;
-
-        for (i = 0; i < editors_allocated; ++i) {
-            if (editors[i] == NULL) continue;
-            editors[i]->allocated_vertical_space -= (int)ceil(difference * (double)(editors[i]->allocated_vertical_space / total_allocated_height));
-            if (editors[i]->allocated_vertical_space < 50) {
-                editors[i]->allocated_vertical_space = 50;
-            }
-        }
-    }
-
-    printf("Height requests:\n");
-    for (i = 0; i < editors_allocated; ++i) {
-        if (editors[i] == NULL) continue;
-        printf("   vspace: %d\n", editors[i]->allocated_vertical_space);
-        gtk_widget_set_size_request(editors[i]->table, 10, editors[i]->allocated_vertical_space);
-    }
 }
 
 static gboolean resize_button_press_callback(GtkWidget *widget, GdkEventButton *event, gpointer data) {
@@ -169,6 +199,12 @@ static gboolean resize_button_release_callback(GtkWidget *widget, GdkEventButton
     return TRUE;
 }
 
+static gboolean resize_expose_event_callback(GtkWidget *widget, GdkEventExpose *event, gpointer data) {
+    gdk_window_set_cursor(gtk_widget_get_window(widget), gdk_cursor_new(GDK_DOUBLE_ARROW));
+    return TRUE;
+}
+
+
 void editors_add(editor_t *editor) {
     int i;
     
@@ -187,6 +223,8 @@ void editors_add(editor_t *editor) {
             gtk_box_set_child_packing(GTK_BOX(editors_vbox), resize_element, FALSE, FALSE, 0, GTK_PACK_START);
             g_signal_connect(G_OBJECT(resize_element), "button-press-event", G_CALLBACK(resize_button_press_callback), NULL);
             g_signal_connect(G_OBJECT(resize_element), "button-release-event", G_CALLBACK(resize_button_release_callback), NULL);
+            g_signal_connect(G_OBJECT(resize_element), "expose-event", G_CALLBACK(resize_expose_event_callback), NULL);
+            gtk_widget_add_events(resize_elements[i], GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK);
         } else {
             resize_elements[i] = NULL;
         }
@@ -198,14 +236,10 @@ void editors_add(editor_t *editor) {
 
         editor->allocated_vertical_space = editor_get_height_request(editor);
 
-        if (after_show) {
-            editors_adjust_size();
-            editor_post_show_setup(editor);
-            if (resize_elements[i] != NULL) {
-                gdk_window_set_cursor(gtk_widget_get_window(resize_elements[i]), gdk_cursor_new(GDK_DOUBLE_ARROW));
-                gdk_window_set_events(gtk_widget_get_window(resize_elements[i]), gdk_window_get_events(gtk_widget_get_window(resize_elements[i])) | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK);
-            }
-        }
+        editors_adjust_size();
+
+        gtk_widget_show_all(editors_vbox);
+        gtk_widget_queue_draw(editors_vbox);
     } else {
         editors_grow();
         editors_add(editor);
@@ -214,7 +248,9 @@ void editors_add(editor_t *editor) {
 }
 
 editor_t *editors_new(buffer_t *buffer) {
-    editor_t *e = new_editor(editors_window, buffer);
+    editor_t *e;
+
+    e = new_editor(editors_window, buffer);
 
     editors_add(e);
 
@@ -231,16 +267,3 @@ editor_t *editors_find_buffer_editor(buffer_t *buffer) {
     return NULL;
 }
 
-void editors_post_show_setup(void) {
-    int i = 0;
-    for (i = 0; i < editors_allocated; ++i) {
-        if (resize_elements[i] != NULL) {
-            gdk_window_set_cursor(gtk_widget_get_window(resize_elements[i]), gdk_cursor_new(GDK_DOUBLE_ARROW));
-            gdk_window_set_events(gtk_widget_get_window(resize_elements[i]), gdk_window_get_events(gtk_widget_get_window(resize_elements[i])) | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK);
-        }
-        if (editors[i] == NULL) continue;
-        editor_post_show_setup(editors[i]);
-    }
-    editors_adjust_size();
-    after_show = 1;
-}
