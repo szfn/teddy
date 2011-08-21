@@ -10,6 +10,8 @@
 #include <assert.h>
 #include <math.h>
 
+#include <tcl.h>
+
 #include "global.h"
 #include "buffers.h"
 #include "editors.h"
@@ -20,6 +22,7 @@ FT_Library library;
 
 GtkClipboard *selection_clipboard;
 GtkClipboard *default_clipboard;
+Tcl_Interp *interp;
 
 static gboolean delete_callback(GtkWidget *widget, GdkEvent *event, gpointer data) {
     if (buffers_close_all(widget)) return FALSE;
@@ -32,6 +35,12 @@ int main(int argc, char *argv[]) {
     int error, i;
 
     gtk_init(&argc, &argv);
+
+    interp = Tcl_CreateInterp();
+    if (interp == NULL) {
+        printf("Couldn't create TCL interpreter\n");
+        exit(EXIT_FAILURE);
+    }
 
     error = FT_Init_FreeType(&library);
     if (error) {
@@ -81,5 +90,7 @@ int main(int argc, char *argv[]) {
     editors_free();
     buffers_free();
 
+    Tcl_DeleteInterp(interp);
+    
     return 0;
 }

@@ -1,7 +1,7 @@
-- editor resizer inside a column
-- command to open extra frames (and modify open file to ask what frame (new, select, current))
-- automatic sizing of editor frames inside a column
+- minimal tcl integration
+
 - removal of an editor frame
+- command to open extra frames (and modify open file to ask what frame (new, select, current))
 
 - multiple columns
 - ability to resize columns

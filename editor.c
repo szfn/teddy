@@ -3,6 +3,7 @@
 #include <math.h>
 #include <assert.h>
 
+#include <tcl.h>
 #include <gdk/gdkkeysyms.h>
 
 #include "global.h"
@@ -471,8 +472,8 @@ static void start_search(editor_t *editor) {
     editor->label_state = "search";
     set_label_text(editor);
     gtk_widget_grab_focus(editor->entry);
-    editor->current_entry_handler_id = g_signal_connect(editor->entry, "key-release-event", G_CALLBACK(entry_search_insert_callback), editor);
-    editor->current_entry_handler_id_set = TRUE;
+    g_signal_handler_disconnect(editor->entry, editor->current_entry_handler_id);
+    editor->current_entry_handler_id = g_signal_connect(G_OBJECT(editor->entry), "key-release-event", G_CALLBACK(entry_search_insert_callback), editor);
     editor->search_failed = FALSE;
     editor->search_mode = TRUE;
 }
@@ -520,6 +521,27 @@ static gboolean entry_open_insert_callback(GtkWidget *widget, GdkEventKey *event
     return FALSE;
 }
 
+
+static gboolean entry_default_insert_callback(GtkWidget *widget, GdkEventKey *event, gpointer data) {
+    editor_t *editor = (editor_t*)data;
+
+    if (event->keyval == GDK_KEY_Escape) {
+        gtk_widget_grab_focus(editor->drar);
+        return TRUE;
+    }
+
+    if (event->keyval == GDK_KEY_Return) {
+        Tcl_Eval(interp, gtk_entry_get_text(GTK_ENTRY(editor->entry)));
+        gtk_widget_grab_focus(editor->drar);
+    }
+    
+    //TODO: autocompletion on TAB (here it's complex)
+    //TODO: history search on Ctrl-R
+    //TODO: history scan with up, down - arrow keys
+
+    return FALSE;
+}
+
 void editor_switch_buffer(editor_t *editor, buffer_t *buffer) {
     editor->buffer = buffer;
     set_label_text(editor);
@@ -531,8 +553,8 @@ static void start_open(editor_t *editor) {
     editor->label_state = "open";
     set_label_text(editor);
     gtk_widget_grab_focus(editor->entry);
+    g_signal_handler_disconnect(editor->entry, editor->current_entry_handler_id);
     editor->current_entry_handler_id = g_signal_connect(editor->entry, "key-release-event", G_CALLBACK(entry_open_insert_callback), editor);
-    editor->current_entry_handler_id_set = TRUE;
 }
 
 static gboolean entry_focusout_callback(GtkWidget *widget, GdkEventFocus *event, gpointer data) {
@@ -541,10 +563,8 @@ static gboolean entry_focusout_callback(GtkWidget *widget, GdkEventFocus *event,
     set_label_text(editor);
     gtk_entry_set_text(GTK_ENTRY(editor->entry), "");
     editor->search_mode = FALSE;
-    if (editor->current_entry_handler_id_set) {
-        editor->current_entry_handler_id_set = FALSE;
-        g_signal_handler_disconnect(editor->entry, editor->current_entry_handler_id);
-    }
+    g_signal_handler_disconnect(editor->entry, editor->current_entry_handler_id);
+    editor->current_entry_handler_id = g_signal_connect(editor->entry, "key-release-event", G_CALLBACK(entry_default_insert_callback), editor);
     return FALSE;
 }
 
@@ -624,7 +644,7 @@ static gboolean key_press_callback(GtkWidget *widget, GdkEventKey *event, gpoint
     }
 
     /* Temporary default actions */
-    if (!shift && ctrl && !alt) {
+    if (!shift && ctrl && !alt && !super) {
         switch (event->keyval) {
         case GDK_KEY_space:
             if (editor->buffer->mark_lineno == -1) {
@@ -673,6 +693,14 @@ static gboolean key_press_callback(GtkWidget *widget, GdkEventKey *event, gpoint
             return TRUE;
         case GDK_KEY_b:
             buffers_show_window(editor);
+            return TRUE;
+        }
+    }
+
+    if (!ctrl && !shift && alt && !super) {
+        switch(event->keyval) {
+        case GDK_KEY_x:
+            gtk_widget_grab_focus(editor->entry);
             return TRUE;
         }
     }
@@ -1001,8 +1029,6 @@ editor_t *new_editor(GtkWidget *window, buffer_t *buffer) {
     r->buffer->modified = 0;
     
     r->search_mode = FALSE;
-    r->current_entry_handler_id = -1;
-    r->current_entry_handler_id_set = FALSE;
     r->search_failed = FALSE;
 
     r->drar = gtk_drawing_area_new();
@@ -1037,6 +1063,8 @@ editor_t *new_editor(GtkWidget *window, buffer_t *buffer) {
         
         r->label = gtk_label_new("");
         r->entry = gtk_entry_new();
+
+        r->current_entry_handler_id = g_signal_connect(r->entry, "key-release-event", G_CALLBACK(entry_default_insert_callback), r);
 
         r->label_state = "cmd";
         set_label_text(r);

@@ -23,7 +23,6 @@ typedef struct _editor_t {
     const char *label_state;
     gboolean search_mode;
     gulong current_entry_handler_id;
-    gboolean current_entry_handler_id_set;
     gboolean search_failed;
 
     // stuff used to calculate space requirements
