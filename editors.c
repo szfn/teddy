@@ -3,6 +3,7 @@
 #include "global.h"
 
 #include <math.h>
+#include <assert.h>
 
 static editor_t **editors;
 static GtkWidget **resize_elements;
@@ -137,19 +138,24 @@ static gboolean resize_button_press_callback(GtkWidget *widget, GdkEventButton *
     return TRUE;
 }
 
-static editor_t *editors_editor_from_table(GtkWidget *table) {
+static int editors_editor_from_table(GtkWidget *table) {
     int i;
     for (i = 0; i < editors_allocated; ++i) {
         if (editors[i] == NULL) continue;
-        if (editors[i]->table == table) return editors[i];
+        if (editors[i]->table == table) return i;
     }
-    return NULL;
+    return -1;
+}
+
+static editor_t *editors_index_to_editor(int idx) {
+    return (idx != -1) ? editors[idx] : NULL;
 }
 
 static gboolean resize_button_release_callback(GtkWidget *widget, GdkEventButton *event, gpointer data) {
     double change = event->y - frame_resize_origin;
     GList *prev = NULL;
     GList *list = gtk_container_get_children(GTK_CONTAINER(editors_vbox));
+    GList *list_head = list;
 
     for ( ; list != NULL; list = list->next) {
         if (list->data == widget) {
@@ -164,8 +170,8 @@ static gboolean resize_button_release_callback(GtkWidget *widget, GdkEventButton
     } 
 
     {
-        editor_t *preved = editors_editor_from_table((GtkWidget *)(prev->data));
-        editor_t *nexted = editors_editor_from_table((GtkWidget *)(list->next->data));
+        editor_t *preved = editors_index_to_editor(editors_editor_from_table((GtkWidget *)(prev->data)));
+        editor_t *nexted = editors_index_to_editor(editors_editor_from_table((GtkWidget *)(list->next->data)));
         GtkAllocation allocation;
 
         if (preved == NULL) {
@@ -195,6 +201,8 @@ static gboolean resize_button_release_callback(GtkWidget *widget, GdkEventButton
         editors_adjust_size();
         gtk_widget_queue_draw(editors_vbox);
     }
+
+    g_list_free(list_head);
     
     return TRUE;
 }
@@ -267,15 +275,70 @@ editor_t *editors_find_buffer_editor(buffer_t *buffer) {
     return NULL;
 }
 
+static int editors_count(void) {
+    int i, count = 0;;
+    for (i = 0; i < editors_allocated; ++i) {
+        if (editors[i] != NULL) ++count;
+    }
+    return count;
+}
+
+static int editors_find_editor(editor_t *editor) {
+    int i;
+    for (i = 0; i < editors_allocated; ++i) {
+        if (editors[i] == editor) return i;
+    }
+    return -1;
+}
+
 editor_t *editors_remove(editor_t *editor) {
-    //TODO:
-    // - if this is the last editor in the column show error message and exit
-    // - otherwise remove this editor from the vbox
-    // - remove the resizing element from the vbox
-    // - remove the editor from the editors array
-    // - remove the resizing element from the resizing elements array (if exists)
-    // - destroy resizing element (if exists)
-    // - call editor_free
-    // - if this was the first editor in the vbox remove the resizing element of the next editor and make the next editor the first editor (extend + fill properties)
-    // - return the very next editor in the vbox 
+    int idx = editors_find_editor(editor);
+    
+    if (editors_count() == 1) {
+        quick_message(editor, "Error", "Can not remove last editor of the window");
+        return editor;
+    }
+
+    editor->initialization_ended = 0;
+
+    if (idx != -1) {
+        gtk_container_remove(GTK_CONTAINER(editors_vbox), editor->table);
+        if (resize_elements[idx] != NULL) {
+            gtk_container_remove(GTK_CONTAINER(editors_vbox), resize_elements[idx]);
+        } else {
+            GList *list, *cur;
+            int new_first_idx;
+            list = gtk_container_get_children(GTK_CONTAINER(editors_vbox));
+            cur = list;
+
+            // Remove the first resize element from the vbox
+            gtk_container_remove(GTK_CONTAINER(editors_vbox), cur->data);
+            cur = cur->next;
+            assert(cur != NULL);
+
+            gtk_box_set_child_packing(GTK_BOX(editors_vbox), cur->data, TRUE, TRUE, 0, GTK_PACK_START);
+
+            new_first_idx = editors_editor_from_table(cur->data);
+            assert(new_first_idx != -1);
+
+            //gtk_widget_destroy(resize_elements[new_first_idx]);
+            resize_elements[new_first_idx] = NULL;
+
+            g_list_free(list);
+        }
+
+        editors[idx] = NULL;
+        //gtk_widget_destroy(resize_elements[idx]);
+        resize_elements[idx] = NULL;
+    }
+
+    editor_free(editor);
+
+    {
+        GList *list = gtk_container_get_children(GTK_CONTAINER(editors_vbox));
+        int new_idx = editors_editor_from_table(list->data);
+        editor_t *r = (new_idx != -1) ? editors[new_idx] : NULL;
+        g_list_free(list);
+        return r;
+    }
 }

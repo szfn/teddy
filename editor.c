@@ -9,6 +9,7 @@
 #include "global.h"
 #include "buffers.h"
 #include "interp.h"
+#include "editors.h"
 
 static double calculate_x_origin(editor_t *editor, GtkAllocation *allocation) {
     double origin_x;
@@ -525,6 +526,7 @@ static gboolean entry_open_insert_callback(GtkWidget *widget, GdkEventKey *event
 
 static gboolean entry_default_insert_callback(GtkWidget *widget, GdkEventKey *event, gpointer data) {
     editor_t *editor = (editor_t*)data;
+    enum deferred_action da;
 
     if (event->keyval == GDK_KEY_Escape) {
         gtk_widget_grab_focus(editor->drar);
@@ -532,8 +534,15 @@ static gboolean entry_default_insert_callback(GtkWidget *widget, GdkEventKey *ev
     }
 
     if (event->keyval == GDK_KEY_Return) {
-        interp_eval(editor, gtk_entry_get_text(GTK_ENTRY(editor->entry)));
-        gtk_widget_grab_focus(editor->drar);
+        da = interp_eval(editor, gtk_entry_get_text(GTK_ENTRY(editor->entry)));
+        switch(da) {
+        case CLOSE_EDITOR:
+            editor = editors_remove(editor);
+            gtk_widget_grab_focus(editor->drar);
+            break;
+        default:
+            gtk_widget_grab_focus(editor->drar);
+        } 
     }
     
     //TODO: autocompletion on TAB (here it's complex)
@@ -844,7 +853,7 @@ static gboolean expose_event_callback(GtkWidget *widget, GdkEventExpose *event, 
 
     if (!(editor->initialization_ended)) {
         gdk_window_set_cursor(gtk_widget_get_window(editor->drar), gdk_cursor_new(GDK_XTERM));
-        g_timeout_add(500, (GSourceFunc)cursor_blinker, (gpointer)editor);
+        editor->timeout_id = g_timeout_add(500, (GSourceFunc)cursor_blinker, (gpointer)editor);
         editor->initialization_ended = 1;
     }
 
@@ -1035,6 +1044,8 @@ editor_t *new_editor(GtkWidget *window, buffer_t *buffer) {
     r->drar = gtk_drawing_area_new();
     r->drarim = gtk_im_multicontext_new();
 
+    r->timeout_id = -1;
+
     gtk_widget_add_events(r->drar, GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK | GDK_POINTER_MOTION_MASK);
 
     gtk_widget_set_can_focus(GTK_WIDGET(r->drar), TRUE);
@@ -1105,6 +1116,10 @@ gint editor_get_height_request(editor_t *editor) {
 
 void editor_free(editor_t *editor) {
     editor->initialization_ended = 0;
+    if (editor->timeout_id != -1) {
+        g_source_remove(editor->timeout_id);
+    }
+    //gtk_widget_destroy(editor->table);
     free(editor);
 }
 

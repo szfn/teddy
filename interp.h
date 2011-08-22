@@ -3,7 +3,12 @@
 
 #include "editor.h"
 
+enum deferred_action {
+    NOTHING,
+    CLOSE_EDITOR
+};
+
 void interp_init(void);
-void interp_eval(editor_t *editor, const char *command);
+enum deferred_action interp_eval(editor_t *editor, const char *command);
 
 #endif

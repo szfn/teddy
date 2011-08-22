@@ -7,10 +7,10 @@
 
 Tcl_Interp *interp;
 editor_t *context_editor;
+enum deferred_action deferred_action_to_return;
 
 static int acmacs_exit_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
-    context_editor = editors_remove(context_editor);
-    //TODO: switch to (new) buffer directory 
+    deferred_action_to_return = CLOSE_EDITOR;
     return TCL_OK;
 }
 
@@ -40,9 +40,10 @@ void interp_init(void) {
     Tcl_CreateCommand(interp, "new", &acmacs_new_command, (ClientData)NULL, NULL);
 }
 
-void interp_eval(editor_t *editor, const char *command) {
+enum deferred_action interp_eval(editor_t *editor, const char *command) {
     int code;
     context_editor = editor;
+    deferred_action_to_return = NOTHING;
     
     //TODO: switch to buffer directory before executing command
     
@@ -61,4 +62,6 @@ void interp_eval(editor_t *editor, const char *command) {
     }
 
     Tcl_ResetResult(interp);
+
+    return deferred_action_to_return;
 }
