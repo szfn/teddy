@@ -1,12 +1,11 @@
-- removal of an editor frame
+- undo (without redo)
+- if a buffer is shared by two editors, refreshed should be sent to both
 
 - multiple columns
 - ability to resize columns
 - heuristics to autocreate new frames (and size them)
 - drag and drop to rearrange frames
 
-- undo (without redo)
-- if a buffer is shared by two editors, refreshed should be sent to both
 
 - Ctrl-backspace to remove one word
 - click on file name (inside tag) shows full path

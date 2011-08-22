@@ -3,6 +3,10 @@
 
 #include "editor.h"
 
+#include <gtk/gtk.h>
+#include <ft2build.h>
+#include FT_FREETYPE_H
+
 extern GtkClipboard *selection_clipboard;
 extern GtkClipboard *default_clipboard;
 
@@ -12,5 +16,7 @@ extern void quick_message(editor_t *editor, const char *title, const char *msg);
 
 #define MAX_LINES_HEIGHT_REQUEST 25
 #define MIN_LINES_HEIGHT_REQUEST 3
+
+void global_init();
 
 #endif

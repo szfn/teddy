@@ -1,29 +1,10 @@
-#include <gtk/gtk.h>
-#include <cairo.h>
-#include <cairo-ft.h>
 #include <stdio.h>
-#include <ft2build.h>
-#include FT_FREETYPE_H
 #include <stdlib.h>
-#include <stdint.h>
-#include <stdio.h>
-#include <assert.h>
-#include <math.h>
-
-#include <tcl.h>
 
 #include "global.h"
 #include "buffers.h"
 #include "editors.h"
-#include "buffer.h"
-#include "editor.h"
 #include "interp.h"
-
-FT_Library library;
-
-GtkClipboard *selection_clipboard;
-GtkClipboard *default_clipboard;
-Tcl_Interp *interp;
 
 static gboolean delete_callback(GtkWidget *widget, GdkEvent *event, gpointer data) {
     if (buffers_close_all(widget)) return FALSE;
@@ -33,25 +14,12 @@ static gboolean delete_callback(GtkWidget *widget, GdkEvent *event, gpointer dat
 int main(int argc, char *argv[]) {
     GtkWidget *window;
     editor_t *editor;
-    int error, i;
+    int i;
 
     gtk_init(&argc, &argv);
 
-
-    error = FT_Init_FreeType(&library);
-    if (error) {
-        printf("Freetype initialization error\n");
-        exit(EXIT_FAILURE);
-    }
-
-    if (argc <= 1) {
-        printf("Nothing to show\n");
-        exit(EXIT_SUCCESS);
-    }
-
-    selection_clipboard = gtk_clipboard_get(GDK_SELECTION_PRIMARY);
-    default_clipboard = gtk_clipboard_get(GDK_SELECTION_CLIPBOARD);
-
+    global_init();
+    
     interp_init();
     buffers_init();
 
@@ -75,7 +43,6 @@ int main(int argc, char *argv[]) {
     editors_init(window);
 
     editor = editors_new(buffers_get_replacement_buffer(NULL));
-    editors_new(buffers_get_replacement_buffer(editor->buffer));
 
     gtk_widget_show_all(window);
 
@@ -85,8 +52,7 @@ int main(int argc, char *argv[]) {
 
     editors_free();
     buffers_free();
-
-    Tcl_DeleteInterp(interp);
+    interp_free();
     
     return 0;
 }

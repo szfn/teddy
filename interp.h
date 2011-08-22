@@ -9,6 +9,7 @@ enum deferred_action {
 };
 
 void interp_init(void);
+void interp_free(void);
 enum deferred_action interp_eval(editor_t *editor, const char *command);
 
 #endif

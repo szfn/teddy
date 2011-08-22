@@ -40,6 +40,10 @@ void interp_init(void) {
     Tcl_CreateCommand(interp, "new", &acmacs_new_command, (ClientData)NULL, NULL);
 }
 
+void interp_free(void) {
+    Tcl_DeleteInterp(interp);
+}
+
 enum deferred_action interp_eval(editor_t *editor, const char *command) {
     int code;
     context_editor = editor;
