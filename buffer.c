@@ -10,14 +10,14 @@
 void buffer_set_mark_at_cursor(buffer_t *buffer) {
     buffer->mark_line = buffer->cursor_line;
     buffer->mark_glyph = buffer->cursor_glyph;
-    printf("Mark set @ %d,%d\n", buffer->mark_line->lineno, buffer->mark_glyph);
+    //printf("Mark set @ %d,%d\n", buffer->mark_line->lineno, buffer->mark_glyph);
 }
 
 void buffer_unset_mark(buffer_t *buffer) {
     if (buffer->mark_line != NULL) {
         buffer->mark_line = NULL;
         buffer->mark_glyph = -1;
-        printf("Mark unset\n");
+        //printf("Mark unset\n");
     }
 }
 
@@ -328,7 +328,7 @@ static int buffer_line_insert_utf8_text(buffer_t *buffer, real_line_t *line, con
 static void buffer_insert_multiline_text(buffer_t *buffer, real_line_t *line, int glyph, const char *text) {
     int start = 0;
 
-    printf("Inserting multiline text [[%s]]\n\n", text);
+    //printf("Inserting multiline text [[%s]]\n\n", text);
     
     while (start < strlen(text)) {
         if (text[start] == '\n') {
@@ -341,17 +341,20 @@ static void buffer_insert_multiline_text(buffer_t *buffer, real_line_t *line, in
             ++start;
         } else {
             int end;
-            printf("   Inserting line: [");            
+            //printf("   Inserting line: [");            
             for (end = start; end < strlen(text); ++end) {
                 if (text[end] == '\n') break;
-                printf("%c", text[end]);
+                //printf("%c", text[end]);
             }
-            printf("]\n");
+            //printf("]\n");
             buffer_line_insert_utf8_text(buffer, line, text+start, end-start, glyph);
             glyph += (end-start);
             start = end;
         }
     }
+
+    buffer->cursor_line = line;
+    buffer->cursor_glyph = glyph;
 }
 
 void buffer_replace_selection(buffer_t *buffer, const char *new_text) {
@@ -834,4 +837,24 @@ int buffer_real_line_count(buffer_t *buffer) {
         ++count;
     }
     return count;
+}
+
+void buffer_move_cursor(buffer_t *buffer, int direction) {
+    buffer->cursor_glyph += direction;
+    if (buffer->cursor_glyph < 0) {
+        if (buffer->cursor_line->prev != NULL) {
+            buffer->cursor_line = buffer->cursor_line->prev;
+            buffer->cursor_glyph = buffer->cursor_line->cap;
+        } else {
+            buffer->cursor_glyph = 0;
+        }
+    }
+    if (buffer->cursor_glyph > buffer->cursor_line->cap) {
+        if (buffer->cursor_line->next != NULL) {
+            buffer->cursor_glyph = 0;
+            buffer->cursor_line = buffer->cursor_line->next;
+        } else {
+            buffer->cursor_glyph = buffer->cursor_line->cap;
+        }
+    }
 }

@@ -100,6 +100,8 @@ void buffer_get_selection(buffer_t *buffer, real_line_t **start_line, int *start
 // converts a selection of line from this buffer into text
 char *buffer_lines_to_text(buffer_t *buffer, real_line_t *start_line, real_line_t *end_line, int start_glyph, int end_glyph);
 
+// moves cursor by one glyph
+void buffer_move_cursor(buffer_t *buffer, int direction);
 
 // functions to get screen coordinates of things (yes, I have no idea anymore what the hell they do or are used for)
 void buffer_cursor_position(buffer_t *buffer, double *x, double *y);

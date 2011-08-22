@@ -115,6 +115,8 @@ int buffers_close(buffer_t *buffer, GtkWidget *window) {
         label = gtk_label_new(msg);
         free(msg);
 
+        gtk_container_add(GTK_CONTAINER(gtk_dialog_get_content_area(GTK_DIALOG(dialog))), label);
+
         //g_signal_connect_swapped(dialog, "response", G_CALLBACK(gtk_widget_destroy), dialog);
         gtk_widget_show_all(dialog);
         result = gtk_dialog_run(GTK_DIALOG(dialog));
