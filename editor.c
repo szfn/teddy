@@ -810,11 +810,11 @@ static gboolean expose_event_callback(GtkWidget *widget, GdkEventExpose *event, 
         buffer_cursor_position(editor->buffer, &cursor_x, &cursor_y);
         
         if ((cursor_y < 0) || (cursor_y > allocation.height)) {
-            if (first_displayed_line != NULL) {
+            /*if (first_displayed_line != NULL) {
                 editor->buffer->cursor_line = first_displayed_line;
                 editor->buffer->cursor_glyph = first_displayed_glyph;
                 redraw_cursor_line(editor, FALSE);
-            }
+                }*/
         } else {
             /*cairo_set_source_rgb(cr, 119.0/255, 136.0/255, 153.0/255);*/
             cairo_rectangle(cr, cursor_x, cursor_y-editor->buffer->ascent, 2, editor->buffer->ascent+editor->buffer->descent);

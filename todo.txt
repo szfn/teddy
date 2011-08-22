@@ -1,11 +1,12 @@
 - undo (without redo)
 
+- remove origin-dependent positioning of glyphs, glyph position should be absolute and scrolling should be done through the transformation matrix
+
 - multiple columns
 - ability to resize columns
 - heuristics to autocreate new frames (and size them)
 - drag and drop to rearrange frames
-
-- when two editors show the same buffer the cursor gets repositioned on the first line if you try to scroll only one buffer (remove the constraint that the buffer should be repositioned if it has been scrolled outside the window?)
+- note that the same buffer shall never appear in two different columns (otherwise the glyph positioning can not be unique)
 
 - Ctrl-backspace to remove one word
 - click on file name (inside tag) shows full path
