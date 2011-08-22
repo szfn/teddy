@@ -48,6 +48,13 @@ static void set_label_text(editor_t *editor) {
     free(labeltxt); 
 }
 
+static void editor_replace_selection(editor_t *editor, const char *new_text) {
+    buffer_replace_selection(editor->buffer, new_text);
+    editor->buffer->modified = 1;
+    set_label_text(editor);
+    gtk_widget_queue_draw(editor->drar);
+}
+
 static void redraw_cursor_line(editor_t *editor, gboolean move_origin_when_outside) {
     double cursor_x, y, height;
     GtkAllocation allocation;
@@ -107,66 +114,6 @@ static void copy_selection_to_clipboard(editor_t *editor, GtkClipboard *clipboar
     gtk_clipboard_set_text(clipboard, r, -1);
 
     free(r);
-}
-
-static void remove_selection(editor_t *editor) {
-    real_line_t *start_line, *end_line, *real_line;
-    int start_glyph, end_glyph;
-    int lineno;
-
-    buffer_get_selection(editor->buffer, &start_line, &start_glyph, &end_line, &end_glyph);
- 
-    if (start_line == NULL) return;
-    if (end_line == NULL) return;
-
-    editor->buffer->modified = 1;
-    set_label_text(editor);
-
-    //printf("Deleting %d from %d (size: %d)\n", start_line->lineno, start_glyph, start_line->cap-start_glyph);
-
-    /* Special case when we are deleting a section of the same line */
-    if (start_line == end_line) {
-        buffer_line_delete_from(editor->buffer, start_line, start_glyph, end_glyph-start_glyph);
-        buffer_set_to_real(editor->buffer, start_line, start_glyph);
-        gtk_widget_queue_draw(editor->drar);
-        return;
-    }
-    
-    /* Remove text from first and last real lines */
-    buffer_line_delete_from(editor->buffer, start_line, start_glyph, start_line->cap-start_glyph);
-    buffer_line_delete_from(editor->buffer, end_line, 0, end_glyph);
-
-    /* Remove real_lines between start and end */
-    for (real_line = start_line->next; (real_line != NULL) && (real_line != end_line); ) {
-        real_line_t *next = real_line->next;
-        free(real_line->glyphs);
-        free(real_line->glyph_info);
-        free(real_line);
-        real_line = next;
-    }
-
-    start_line->next = end_line;
-    end_line->prev = start_line;
-
-    /* Renumber real_lines */
-
-    lineno = start_line->lineno+1;
-    for (real_line = start_line->next; real_line != NULL; real_line = real_line->next) {
-        real_line->lineno = lineno;
-        ++lineno;
-    }
-
-    /*
-    printf("AFTER FIXING REAL LINES, BEFORE FIXING DISPLAY LINES:\n");
-    debug_print_real_lines_state(buffer);
-    debug_print_lines_state(buffer);
-    */
-
-    buffer_set_to_real(editor->buffer, start_line, start_glyph);
-
-    buffer_join_lines(editor->buffer, start_line, end_line);
-
-    gtk_widget_queue_draw(editor->drar);
 }
 
 enum MoveCursorSpecial {
@@ -282,102 +229,19 @@ static void move_cursor(editor_t *editor, int delta_line, int delta_char, enum M
     copy_selection_to_clipboard(editor, selection_clipboard);
 }
 
-static void unset_mark(editor_t *editor) {
-    if (editor->buffer->mark_lineno != -1) {
-        editor->buffer->mark_lineno = -1;
-        editor->buffer->mark_glyph = -1;
-        printf("Mark unset\n");
-        gtk_widget_queue_draw(editor->drar);
-    }
-}
-
-static void insert_text(editor_t *editor, gchar *str) {
-    int inc;
-    
-    unset_mark(editor);
-
-    editor->buffer->modified = 1;
-    set_label_text(editor);
-
-    inc = buffer_line_insert_utf8_text(editor->buffer, editor->buffer->cursor_line, str, strlen(str), editor->buffer->cursor_glyph);
-
-    move_cursor(editor, 0, inc, MOVE_NORMAL, FALSE);
-}
-
-static void remove_text(editor_t *editor, int offset) {
-    real_line_t *real_cursor_line, *prev_cursor_line;
-    int real_cursor_glyph;
-    int prev_cursor_line_cap = 0;
-
-    unset_mark(editor);
-
-    editor->buffer->modified = 1;
-    set_label_text(editor);
-
-    buffer_real_cursor(editor->buffer, &real_cursor_line, &real_cursor_glyph);
-    prev_cursor_line = real_cursor_line->prev;
-    if (prev_cursor_line != NULL) {
-        prev_cursor_line_cap = prev_cursor_line->cap;
-    }
-
-    buffer_line_remove_glyph(editor->buffer, editor->buffer->cursor_line, editor->buffer->cursor_glyph + offset);
-
-    real_cursor_glyph += offset;
-    if (real_cursor_glyph < 0) {
-        /* real_cursor_line may have been deleted by a line join */
-        if (prev_cursor_line != NULL) {
-            real_cursor_line = prev_cursor_line;
-            real_cursor_glyph = prev_cursor_line_cap;
-        } else {
-            /* it wasn't deleted because this is the first line */
-            real_cursor_glyph = 0;
-        }
-    }
-    
-    buffer_set_to_real(editor->buffer, real_cursor_line, real_cursor_glyph);
-
-    gtk_widget_queue_draw(editor->drar);
-}
-
-static void split_line(editor_t *editor) {
-    unset_mark(editor);
-
-    editor->buffer->modified = 1;
-    set_label_text(editor);
-
-    buffer_split_line(editor->buffer, editor->buffer->cursor_line, editor->buffer->cursor_glyph);
-    assert(editor->buffer->cursor_line->next != NULL);
-    editor->buffer->cursor_line = editor->buffer->cursor_line->next;
-    editor->buffer->cursor_glyph = 0;
-
-    gtk_widget_queue_draw(editor->drar);
-}
-
 static void text_entry_callback(GtkIMContext *context, gchar *str, gpointer data) {
     editor_t *editor = (editor_t *)data;
     //printf("entered: %s\n", str);
 
-    insert_text(editor, str);
-}
-
-static void set_mark_at_cursor(editor_t *editor) {
-    real_line_t *cursor_real_line;
-    int cursor_real_glyph;
-    buffer_real_cursor(editor->buffer, &cursor_real_line, &cursor_real_glyph);
-    editor->buffer->mark_lineno = cursor_real_line->lineno;
-    editor->buffer->mark_glyph = cursor_real_glyph;
-    printf("Mark set @ %d,%d\n", editor->buffer->mark_lineno, editor->buffer->mark_glyph);
+    editor_replace_selection(editor, str);
 }
 
 static void insert_paste(editor_t *editor, GtkClipboard *clipboard) {
     gchar *text = gtk_clipboard_wait_for_text(clipboard);
     if (text == NULL) return;
 
-    editor->buffer->modified = 1;
-    set_label_text(editor);
-    buffer_insert_multiline_text(editor->buffer, editor->buffer->cursor_line, editor->buffer->cursor_glyph, text);
-    gtk_widget_queue_draw(editor->drar);
-    
+    editor_replace_selection(editor, text);
+
     g_free(text);
 }
 
@@ -397,7 +261,8 @@ static gboolean entry_search_insert_callback(GtkWidget *widget, GdkEventKey *eve
     gboolean ctrl_g_invoked = FALSE;
 
     if ((event->keyval == GDK_KEY_Escape) || (event->keyval == GDK_KEY_Return)) {
-        unset_mark(editor);
+        buffer_unset_mark(editor->buffer);
+        gtk_widget_queue_draw(editor->drar);
         gtk_widget_grab_focus(editor->drar);
         return TRUE;
     }
@@ -419,14 +284,14 @@ static gboolean entry_search_insert_callback(GtkWidget *widget, GdkEventKey *eve
     }
     printf("]\n");*/
 
-    if ((editor->buffer->mark_lineno == -1) || editor->search_failed) {
+    if ((editor->buffer->mark_line == NULL) || editor->search_failed) {
         search_line = editor->buffer->real_line;
         search_glyph = 0;
     } else if (ctrl_g_invoked) {
         search_line = editor->buffer->cursor_line;
         search_glyph = editor->buffer->cursor_glyph;
     } else {
-        search_line = buffer_line_by_number(editor->buffer, editor->buffer->mark_lineno);
+        search_line = editor->buffer->mark_line;
         search_glyph = editor->buffer->mark_glyph;
     }
 
@@ -446,16 +311,17 @@ static gboolean entry_search_insert_callback(GtkWidget *widget, GdkEventKey *eve
 
         if (j >= dst) {
             // search was successful            
-            editor->buffer->mark_lineno = search_line->lineno;
+            editor->buffer->mark_line = search_line;
             editor->buffer->mark_glyph = i - j;
-            buffer_set_to_real(editor->buffer, search_line, i);
+            editor->buffer->cursor_line = search_line;
+            editor->buffer->cursor_glyph = i;
             break;
         }
     }
 
     if (search_line == NULL) {
         editor->search_failed = 0;
-        unset_mark(editor);
+        buffer_unset_mark(editor->buffer);
     }
     
     free(needle);
@@ -470,7 +336,7 @@ static gboolean entry_search_insert_callback(GtkWidget *widget, GdkEventKey *eve
 }
 
 static void start_search(editor_t *editor) {
-    set_mark_at_cursor(editor);
+    buffer_set_mark_at_cursor(editor->buffer);
     editor->label_state = "search";
     set_label_text(editor);
     gtk_widget_grab_focus(editor->entry);
@@ -628,27 +494,29 @@ static gboolean key_press_callback(GtkWidget *widget, GdkEventKey *event, gpoint
             return TRUE;
 
         case GDK_KEY_Tab:
-            insert_text(editor, "\t");
+            editor_replace_selection(editor, "\t");
             return TRUE;
 
         case GDK_KEY_Delete:
-            if (editor->buffer->mark_lineno == -1) {
-                remove_text(editor, 0);
+            if (editor->buffer->mark_line == NULL) {
+                buffer_set_mark_at_cursor(editor->buffer);
+                buffer_move_cursor(editor->buffer, +1);
+                editor_replace_selection(editor, "");
             } else {
-                remove_selection(editor);
-                unset_mark(editor);
+                editor_replace_selection(editor, "");
             }
             return TRUE;
         case GDK_KEY_BackSpace:
-            if (editor->buffer->mark_lineno == -1) {
-                remove_text(editor, -1);
+            if (editor->buffer->mark_line == NULL) {
+                buffer_set_mark_at_cursor(editor->buffer);
+                buffer_move_cursor(editor->buffer, -1);
+                editor_replace_selection(editor, "");
             } else {
-                remove_selection(editor);
-                unset_mark(editor);
+                editor_replace_selection(editor, "");
             }
             return TRUE;
         case GDK_KEY_Return:
-            split_line(editor);
+            editor_replace_selection(editor, "\n");
             return TRUE;
         }
     }
@@ -657,37 +525,30 @@ static gboolean key_press_callback(GtkWidget *widget, GdkEventKey *event, gpoint
     if (!shift && ctrl && !alt && !super) {
         switch (event->keyval) {
         case GDK_KEY_space:
-            if (editor->buffer->mark_lineno == -1) {
-                set_mark_at_cursor(editor);
+            if (editor->buffer->mark_line == NULL) {
+                buffer_set_mark_at_cursor(editor->buffer);
             } else {
-                unset_mark(editor);
+                buffer_unset_mark(editor->buffer);
+                gtk_widget_queue_draw(editor->drar);
             }
             return TRUE;
         case GDK_KEY_c:
-            if (editor->buffer->mark_lineno != -1) {
-                copy_selection_to_clipboard(editor,default_clipboard);
-                unset_mark(editor);
+            if (editor->buffer->mark_line != NULL) {
+                copy_selection_to_clipboard(editor, default_clipboard);
+                buffer_unset_mark(editor->buffer);
+                gtk_widget_queue_draw(editor->drar);
             }
             return TRUE;
         case GDK_KEY_v:
-            if (editor->buffer->mark_lineno != -1) {
-                remove_selection(editor);
-                unset_mark(editor);
-            }
             insert_paste(editor, default_clipboard);
             return TRUE;
         case GDK_KEY_y:
-            if (editor->buffer->mark_lineno != -1) {
-                remove_selection(editor);
-                unset_mark(editor);
-            }
             insert_paste(editor, selection_clipboard);
             return TRUE;
         case GDK_KEY_x:
-            if (editor->buffer->mark_lineno != -1) {
+            if (editor->buffer->mark_line == NULL) {
                 copy_selection_to_clipboard(editor, default_clipboard);
-                remove_selection(editor);
-                unset_mark(editor);
+                editor_replace_selection(editor, "");
             }
             return TRUE;
         case GDK_KEY_s:
@@ -746,27 +607,24 @@ static gboolean button_press_callback(GtkWidget *widget, GdkEventButton *event, 
     
     editor->cursor_visible = TRUE;
 
-    if (editor->buffer->mark_lineno != -1) copy_selection_to_clipboard(editor, selection_clipboard);
+    if (editor->buffer->mark_line != NULL) copy_selection_to_clipboard(editor, selection_clipboard);
 
     redraw_cursor_line(editor, TRUE);
 
     editor->mouse_marking = 1;
-    set_mark_at_cursor(editor);
+    buffer_set_mark_at_cursor(editor->buffer);
+    gtk_widget_queue_draw(editor->drar);
     
     return TRUE;
 }
 
 static gboolean button_release_callback(GtkWidget *widget, GdkEventButton *event, gpointer data) {
     editor_t *editor = (editor_t*)data;
-    real_line_t *cursor_real_line;
-    int cursor_real_glyph;
 
-    buffer_real_cursor(editor->buffer, &cursor_real_line, &cursor_real_glyph);
-    
     editor->mouse_marking = 0;
 
-    if ((editor->buffer->mark_lineno == cursor_real_line->lineno) && (editor->buffer->mark_glyph == cursor_real_glyph)) {
-        editor->buffer->mark_lineno = -1;
+    if ((editor->buffer->mark_line == editor->buffer->cursor_line) && (editor->buffer->mark_glyph == editor->buffer->cursor_glyph)) {
+        editor->buffer->mark_line = NULL;
         editor->buffer->mark_glyph = -1;
         redraw_cursor_line(editor, FALSE);
     }
@@ -879,7 +737,7 @@ static gboolean expose_event_callback(GtkWidget *widget, GdkEventExpose *event, 
         int i;
         double cury;
 
-        if (line->lineno == editor->buffer->mark_lineno) {
+        if (line == editor->buffer->mark_line) {
             if (mark_mode) {
                 end_selection_at_glyph = editor->buffer->mark_glyph;
                 mark_mode = 0;
@@ -889,7 +747,7 @@ static gboolean expose_event_callback(GtkWidget *widget, GdkEventExpose *event, 
             }
         }
 
-        if (mark_mode || (editor->buffer->mark_lineno != -1)) {
+        if (mark_mode || (editor->buffer->mark_line != NULL)) {
             if (line == editor->buffer->cursor_line) {
                 if (mark_mode) {
                     end_selection_at_glyph = editor->buffer->cursor_glyph;

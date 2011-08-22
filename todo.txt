@@ -24,7 +24,6 @@
 - mouse scrollwheel
 
 - tcl commands to disable:
-  - exit <- close editor
   - pwd <- show working directory for current buffer
   - unknown <- if it's a command in the path execute it as if it was specified in exec (but also expand all the words containing a * or a ?)
   

@@ -57,8 +57,8 @@ typedef struct _buffer_t {
     int cursor_glyph;
 
     /* Mark */
+    real_line_t *mark_line;
     int mark_glyph;
-    int mark_lineno;
 
     /* User options */
     int tab_width;
@@ -66,15 +66,52 @@ typedef struct _buffer_t {
     double right_margin;
 } buffer_t;
 
+// utility function to convert first codepoint in utf8 stream into an utf32 codepoint
 uint32_t utf8_to_utf32(const char *text, int *src, int len);
 
 buffer_t *buffer_create(FT_Library *library);
-int load_text_file(buffer_t *buffer, const char *filename);
-void load_empty(buffer_t *buffer);
-void save_to_text_file(buffer_t *buffer);
 void buffer_free(buffer_t *buffer);
 
+/* Initialization completion function (at least one of these two must be called after buffer_create, before the buffer is used in any way)
+   - load_text_file: loads a text file
+   - load_empyt: finalize the buffer initialization as empty
+ */
+int load_text_file(buffer_t *buffer, const char *filename);
+void load_empty(buffer_t *buffer);
+
+// save the buffer to its file (if exists, otherwise fails)
+void save_to_text_file(buffer_t *buffer);
+
+
+/*
+  Mark management
+  buffer_set_mark_at_cursor: copies cursor point into mark point
+  buffer_unset_mark: sets mark to null
+ */
+void buffer_set_mark_at_cursor(buffer_t *buffer);
+void buffer_unset_mark(buffer_t *buffer);
+
+// replace current selection with new_text (main editing function)
+void buffer_replace_selection(buffer_t *buffer, const char *new_text);
+
+// returns current selection
+void buffer_get_selection(buffer_t *buffer, real_line_t **start_line, int *start_glyph, real_line_t **end_line, int *end_glyph);
+
+// converts a selection of line from this buffer into text
+char *buffer_lines_to_text(buffer_t *buffer, real_line_t *start_line, real_line_t *end_line, int start_glyph, int end_glyph);
+
+
+// functions to get screen coordinates of things (yes, I have no idea anymore what the hell they do or are used for)
+void buffer_cursor_position(buffer_t *buffer, double *x, double *y);
+void line_get_glyph_coordinates(buffer_t *buffer, real_line_t *line, int glyph, double *x, double *y);
+void buffer_move_cursor_to_position(buffer_t *buffer, double x, double y);
+
+// correctly sets all the glyph coordinates (to call before printing line
 void buffer_line_adjust_glyphs(buffer_t *buffer, real_line_t *line, double x, double y, double window_width, double window_height, double *y_increment, double *line_end_width);
+
+int buffer_real_line_count(buffer_t *buffer);
+
+/*
 
 int buffer_line_insert_utf8_text(buffer_t *buffer, real_line_t *line, char *text, int len, int insertion_point);
 void buffer_line_remove_glyph(buffer_t *buffer, real_line_t *line, int glyph_index);
@@ -82,10 +119,8 @@ void buffer_line_remove_glyph(buffer_t *buffer, real_line_t *line, int glyph_ind
 void buffer_reflow_softwrap(buffer_t *buffer, double softwrap_width);
 int buffer_reflow_softwrap_real_line(buffer_t *buffer, real_line_t *line, int cursor_increment, int ignore_cursor);
 
-void buffer_real_cursor(buffer_t *buffer, real_line_t **real_line, int *real_glyph);
 void buffer_set_to_real(buffer_t *buffer, real_line_t *real_line, int real_glyph);
-void buffer_move_cursor_to_position(buffer_t *buffer, double x, double y);
-void buffer_cursor_position(buffer_t *buffer, double *x, double *y);
+
 void buffer_cursor_line_rectangle(buffer_t *buffer, double origin_x, double origin_y, double *x, double *y, double *height, double *width);
 
 real_line_t *buffer_copy_line(buffer_t *buffer, real_line_t *real_line, int start, int size);
@@ -94,20 +129,16 @@ void buffer_real_line_insert(buffer_t *buffer, real_line_t *insertion_line, real
 
 real_line_t *buffer_line_by_number(buffer_t *buffer, int lineno);
 
-void buffer_get_selection(buffer_t *buffer, real_line_t **start_line, int *start_glyph, real_line_t **end_line, int *end_glyph);
 
 void buffer_join_lines(buffer_t *buffer, real_line_t *line1, real_line_t *line2);
 
-void line_get_glyph_coordinates(buffer_t *buffer, real_line_t *line, int glyph, double *x, double *y);
 
-char *buffer_lines_to_text(buffer_t *buffer, real_line_t *start_line, real_line_t *end_line, int start_glyph, int end_glyph);
 
 void buffer_split_line(buffer_t *buffer, real_line_t *line, int glyph);
 void buffer_insert_multiline_text(buffer_t *buffer, real_line_t *line, int glyph, char *text);
 
-int buffer_real_line_count(buffer_t *buffer);
 
 void debug_print_lines_state(buffer_t *buffer);
-void debug_print_real_lines_state(buffer_t *buffer);
+void debug_print_real_lines_state(buffer_t *buffer);*/
 
 #endif
