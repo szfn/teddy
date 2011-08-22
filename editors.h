@@ -13,5 +13,6 @@ editor_t *editors_find_buffer_editor(buffer_t *buffer);
 void editors_post_show_setup(void);
 editor_t *editors_remove(editor_t *editor);
 void editors_replace_buffer(buffer_t *buffer);
+void editors_queue_draw_for_buffer(buffer_t *buffer);
 
 #endif

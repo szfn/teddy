@@ -348,3 +348,11 @@ editor_t *editors_remove(editor_t *editor) {
         return r;
     }
 }
+
+void editors_queue_draw_for_buffer(buffer_t *buffer) {
+    int i;
+    for (i = 0; i < editors_allocated; ++i) {
+        if (editors[i] == NULL) continue;
+        if (editors[i]->buffer == buffer) gtk_widget_queue_draw(editors[i]->drar);
+    }
+}

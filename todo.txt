@@ -1,11 +1,11 @@
 - undo (without redo)
-- if a buffer is shared by two editors, refreshed should be sent to both
 
 - multiple columns
 - ability to resize columns
 - heuristics to autocreate new frames (and size them)
 - drag and drop to rearrange frames
 
+- when two editors show the same buffer the cursor gets repositioned on the first line if you try to scroll only one buffer (remove the constraint that the buffer should be repositioned if it has been scrolled outside the window?)
 
 - Ctrl-backspace to remove one word
 - click on file name (inside tag) shows full path
@@ -24,10 +24,10 @@
 - mouse scrollwheel
 
 - tcl commands to disable:
-  - pwd <- show working directory for current buffer
+  - pwd <- return working directory for current buffer
   - unknown <- if it's a command in the path execute it as if it was specified in exec (but also expand all the words containing a * or a ?)
   
 - tcl commands to add:
   - putm -> write into a message box
-  - pwf -> print current buffer's file
+  - pwf -> return current buffer's file
   - kill -> kill's current process (if one is active in the buffer), otherwise kills current buffer. If an argument is specified does the same thing as the kill command

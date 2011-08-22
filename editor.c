@@ -52,7 +52,7 @@ static void editor_replace_selection(editor_t *editor, const char *new_text) {
     buffer_replace_selection(editor->buffer, new_text);
     editor->buffer->modified = 1;
     set_label_text(editor);
-    gtk_widget_queue_draw(editor->drar);
+    editors_queue_draw_for_buffer(editor->buffer);
 }
 
 static void redraw_cursor_line(editor_t *editor, gboolean move_origin_when_outside) {
