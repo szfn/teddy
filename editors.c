@@ -1,6 +1,7 @@
 #include "editors.h"
 
 #include "global.h"
+#include "buffers.h"
 
 #include <math.h>
 #include <assert.h>
@@ -265,14 +266,19 @@ editor_t *editors_new(buffer_t *buffer) {
     return e;
 }
 
-editor_t *editors_find_buffer_editor(buffer_t *buffer) {
+
+void editors_replace_buffer(buffer_t *buffer) {
     int i;
-    
+    buffer_t *replacement_buffer = NULL;
+
     for (i = 0; i < editors_allocated; ++i) {
         if (editors[i] == NULL) continue;
-        if (editors[i]->buffer == buffer) return editors[i];
+        if (editors[i]->buffer == buffer) {
+            if (replacement_buffer == NULL) replacement_buffer = buffers_get_replacement_buffer(buffer);
+            editor_switch_buffer(editors[i], replacement_buffer);
+        }
     }
-    return NULL;
+    
 }
 
 static int editors_count(void) {

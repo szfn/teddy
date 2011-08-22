@@ -136,12 +136,7 @@ int buffers_close(buffer_t *buffer, GtkWidget *window) {
         }
     }
 
-    {
-        editor_t *editor = editors_find_buffer_editor(buffer);
-        if (editor != NULL) {
-            editor_switch_buffer(editor, buffers_get_replacement_buffer(buffer));
-        }
-    }
+    editors_replace_buffer(buffer);
 
     {
         int i;
