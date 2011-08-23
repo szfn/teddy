@@ -8,6 +8,7 @@
 #include <stdint.h>
 
 #include "font.h"
+#include "undo.h"
 
 typedef struct _my_glyph_info_t {
     double kerning_correction;
@@ -59,6 +60,9 @@ typedef struct _buffer_t {
     /* Mark */
     real_line_t *mark_line;
     int mark_glyph;
+
+    /* Undo information */
+    undo_t undo;
 
     /* User options */
     int tab_width;

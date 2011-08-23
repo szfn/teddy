@@ -709,6 +709,8 @@ buffer_t *buffer_create(FT_Library *library) {
     asprintf(&(buffer->name), "+unnamed");
     buffer->path = NULL;
     buffer->has_filename = 0;
+
+    undo_init(&(buffer->undo));
     
     acmacs_font_init(&(buffer->main_font), library, "/usr/share/fonts/truetype/msttcorefonts/arial.ttf", 16);
     acmacs_font_init(&(buffer->posbox_font), library, "/usr/share/fonts/truetype/msttcorefonts/arial.ttf", 12);
@@ -767,6 +769,8 @@ void buffer_free(buffer_t *buffer) {
 
     acmacs_font_free(&(buffer->main_font));
     acmacs_font_free(&(buffer->posbox_font));
+
+    undo_free(&(buffer->undo));
 
     free(buffer->name);
     free(buffer->path);

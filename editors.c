@@ -278,7 +278,6 @@ void editors_replace_buffer(buffer_t *buffer) {
             editor_switch_buffer(editors[i], replacement_buffer);
         }
     }
-    
 }
 
 static int editors_count(void) {

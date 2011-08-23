@@ -7,6 +7,7 @@
 - heuristics to autocreate new frames (and size them)
 - drag and drop to rearrange frames
 - note that the same buffer shall never appear in two different columns (otherwise the glyph positioning can not be unique)
+  - other possibility: never show the same buffer twice: needs to change code to 'new', code to buffer manager and buffers_close (which calls editors_replace_buffer, which could cause two editors to have the same buffer)
 
 - Ctrl-backspace to remove one word
 - click on file name (inside tag) shows full path

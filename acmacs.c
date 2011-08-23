@@ -2,6 +2,7 @@
 #include <stdlib.h>
 
 #include "global.h"
+#include "undo.h"
 #include "buffers.h"
 #include "editors.h"
 #include "interp.h"
