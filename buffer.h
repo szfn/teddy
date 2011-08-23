@@ -98,6 +98,9 @@ void buffer_unset_mark(buffer_t *buffer);
 // replace current selection with new_text (main editing function)
 void buffer_replace_selection(buffer_t *buffer, const char *new_text);
 
+// undo
+void buffer_undo(buffer_t *buffer);
+
 // returns current selection
 void buffer_get_selection(buffer_t *buffer, real_line_t **start_line, int *start_glyph, real_line_t **end_line, int *end_glyph);
 

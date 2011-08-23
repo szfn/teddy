@@ -405,6 +405,38 @@ void buffer_replace_selection(buffer_t *buffer, const char *new_text) {
     buffer_unset_mark(buffer);
 }
 
+static real_line_t *buffer_search_line(buffer_t *buffer, int lineno) {
+    real_line_t *real_line;
+    for (real_line = buffer->real_line; real_line != NULL; real_line = real_line->next) {
+        if (real_line->lineno == lineno) return real_line;
+    }
+    return real_line;
+}
+
+static void buffer_thaw_selection(buffer_t *buffer, selection_t *selection, real_line_t **start_line, int *start_glyph, real_line_t **end_line, int *end_glyph) {
+    *start_line = buffer_search_line(buffer, selection->start.lineno);
+    *start_glyph = selection->start.glyph;
+
+    *end_line = buffer_search_line(buffer, selection->end.lineno);
+    *end_glyph = selection->end.glyph;
+}
+
+void buffer_undo(buffer_t *buffer) {
+    real_line_t *start_line, *end_line;
+    int start_glyph, end_glyph;
+    undo_node_t *undo_node = undo_pop(&(buffer->undo));
+
+    buffer_unset_mark(buffer);
+
+    buffer_thaw_selection(buffer, &(undo_node->after_selection), &start_line, &start_glyph, &end_line, &end_glyph);
+
+    buffer_remove_selection(buffer, start_line, start_glyph, end_line, end_glyph);
+
+    buffer_insert_multiline_text(buffer, buffer->cursor_line, buffer->cursor_glyph, undo_node->before_selection.text);
+
+    undo_node_free(undo_node);
+}
+
 static uint8_t utf8_first_byte_processing(uint8_t ch) {
     if (ch <= 127) return ch;
 

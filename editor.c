@@ -565,6 +565,9 @@ static gboolean key_press_callback(GtkWidget *widget, GdkEventKey *event, gpoint
         case GDK_KEY_b:
             buffers_show_window(editor);
             return TRUE;
+        case GDK_KEY_u:
+            buffer_undo(editor->buffer);
+            return TRUE;
         }
     }
 
