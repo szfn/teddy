@@ -335,14 +335,12 @@ static char *unrealpath(char *absolute_path, const char *relative_path) {
 int buffers_close_all(GtkWidget *window) {
     int i;
     for (i = 0; i < buffers_allocated; ++i) {
-        if (buffers[i] != NULL) {
-            if (!buffers_close(buffers[i], window)) return 0;
-        }
+        if (buffers[i] == NULL) continue;
+        if (!buffers_close(buffers[i], window)) return 0;
     }
     for (i = 0; i < buffers_allocated; ++i) {
-        if (buffers[i] != NULL) {
-            if (buffers[i]->modified) return 0;
-        }
+        if (buffers[i] == NULL) continue;
+        if (buffers[i]->modified) return 0;
     }
     return 1;
 }

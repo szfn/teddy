@@ -92,12 +92,9 @@ static void buffer_line_delete_from(buffer_t *buffer, real_line_t *real_line, in
     real_line->cap -= size;
 }
 
-static void buffer_remove_selection(buffer_t *buffer) {
-    real_line_t *start_line, *end_line, *real_line;
-    int start_glyph, end_glyph;
+static void buffer_remove_selection(buffer_t *buffer, real_line_t *start_line, int start_glyph, real_line_t *end_line, int end_glyph) {
+    real_line_t *real_line;
     int lineno;
-
-    buffer_get_selection(buffer, &start_line, &start_glyph, &end_line, &end_glyph);
  
     if (start_line == NULL) return;
     if (end_line == NULL) return;
@@ -357,9 +354,54 @@ static void buffer_insert_multiline_text(buffer_t *buffer, real_line_t *line, in
     buffer->cursor_glyph = glyph;
 }
 
+static void freeze_selection(buffer_t *buffer, selection_t *selection, real_line_t *start_line, int start_glyph, real_line_t *end_line, int end_glyph) {
+    if ((start_line == NULL) || (end_line == NULL)) {
+        selection->start.lineno = buffer->cursor_line->lineno;
+        selection->start.glyph = buffer->cursor_glyph;
+        selection->end.lineno = buffer->cursor_line->lineno;
+        selection->end.glyph = buffer->cursor_glyph;
+        selection->text = malloc(sizeof(char));
+        
+        if (selection->text == NULL) {
+            perror("Out of memory");
+            exit(EXIT_FAILURE);
+        }
+
+        selection->text[0] = '\0';
+    } else {
+        selection->start.lineno = start_line->lineno;
+        selection->start.glyph = start_glyph;
+
+        selection->end.lineno = end_line->lineno;
+        selection->end.glyph = end_glyph;
+
+        selection->text = buffer_lines_to_text(buffer, start_line, end_line, start_glyph, end_glyph);
+    }
+}
+
 void buffer_replace_selection(buffer_t *buffer, const char *new_text) {
-    buffer_remove_selection(buffer);
+    real_line_t *start_line, *end_line;
+    int start_glyph, end_glyph;
+    undo_node_t *undo_node = malloc(sizeof(undo_node_t));
+
+    buffer_get_selection(buffer, &start_line, &start_glyph, &end_line, &end_glyph);
+
+    freeze_selection(buffer, &(undo_node->before_selection), start_line, start_glyph, end_line, end_glyph);
+    
+    buffer_remove_selection(buffer, start_line, start_glyph, end_line, end_glyph);
+
+    start_line = buffer->cursor_line;
+    start_glyph = buffer->cursor_glyph;
+    
     buffer_insert_multiline_text(buffer, buffer->cursor_line, buffer->cursor_glyph, new_text);
+
+    end_line = buffer->cursor_line;
+    end_glyph = buffer->cursor_glyph;
+
+    freeze_selection(buffer, &(undo_node->after_selection), start_line, start_glyph, end_line, end_glyph);
+
+    undo_push(&(buffer->undo), undo_node);
+    
     buffer_unset_mark(buffer);
 }
 
