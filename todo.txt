@@ -1,5 +1,7 @@
 - remove origin-dependent positioning of glyphs, glyph position should be absolute and scrolling should be done through the transformation matrix
 
+- fix save diff command
+
 - multiple columns
 - ability to resize columns
 - heuristics to autocreate new frames (and size them)

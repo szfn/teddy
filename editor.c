@@ -696,6 +696,8 @@ static gboolean expose_event_callback(GtkWidget *widget, GdkEventExpose *event, 
     cairo_set_source_rgb(cr, 1.0, 1.0, 1.0);
     cairo_set_scaled_font(cr, editor->buffer->main_font.cairofont);
 
+    cairo_translate(cr, -gtk_adjustment_get_value(GTK_ADJUSTMENT(editor->hadjustment)), -gtk_adjustment_get_value(GTK_ADJUSTMENT(editor->adjustment)));
+
     /*printf("DRAWING!\n");*/
 
     buffer_typeset_maybe(editor->buffer, allocation.width);
@@ -778,6 +780,8 @@ static gboolean expose_event_callback(GtkWidget *widget, GdkEventExpose *event, 
         asprintf(&posbox_text, " %d,%d %0.0f%%", editor->buffer->cursor_line->lineno, editor->buffer->cursor_glyph, (100.0 * editor->buffer->cursor_line->lineno / count));
         cairo_text_extents_t posbox_ext;
         double x, y;
+
+        cairo_translate(cr, gtk_adjustment_get_value(GTK_ADJUSTMENT(editor->hadjustment)), gtk_adjustment_get_value(GTK_ADJUSTMENT(editor->adjustment)));
 
         cairo_set_scaled_font(cr, editor->buffer->posbox_font.cairofont);
 
