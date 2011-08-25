@@ -8,15 +8,16 @@
 - Ctrl-backspace to remove one word
 - Ctrl-end to go to end of buffer
 - click on file name (inside tag) shows full path
-- recalculation optimization (origin point is applyed through cairo with a translation matrix, call to buffer_line_adjust_glyphs is removed and buffer_adjust_glyphs is implemented that only readjusts lines that changed (this function is called once at the start of expose event)
+- auto-indent
 - scripting (for keybindings)
 - highlighting
 - reminder: use menu key to highlight command line
 - note: left button click does search/open, middle click does primary paste
 - left+middle -> cut
+- middle click -> paste
 - double click -> select word (and movement will also select words)
 - triple click -> select lines (and movement will also select lines)
-- modify origin repositioning to show cursor so that the cursor is put in the middle of the window
+- right click -> search/open file
 - autocompletion for file opening
 - history for prompts
 - investigate sam's command language
