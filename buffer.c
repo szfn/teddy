@@ -724,7 +724,7 @@ void save_to_text_file(buffer_t *buffer) {
 
     free(r);
 
-    asprintf(&cmd, "diff %s %s~", buffer->name, buffer->name);
+    asprintf(&cmd, "diff %s %s~", buffer->path, buffer->path);
     system(cmd);
     free(cmd);
 }
