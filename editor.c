@@ -30,6 +30,12 @@ static void editor_replace_selection(editor_t *editor, const char *new_text) {
     editors_queue_draw_for_buffer(editor->buffer);
 }
 
+static void editor_center_on_cursor(editor_t *editor) {
+    //TODO: implement
+    return;
+}
+
+#ifdef COMMENTED
 static void redraw_cursor_line(editor_t *editor, gboolean move_origin_when_outside) {
     double cursor_x, y, height;
     GtkAllocation allocation;
@@ -74,6 +80,9 @@ static void redraw_cursor_line(editor_t *editor, gboolean move_origin_when_outsi
     gtk_widget_queue_draw(editor->drar);
 }
 
+#endif
+
+
 static void copy_selection_to_clipboard(editor_t *editor, GtkClipboard *clipboard) {
     real_line_t *start_line, *end_line;
     int start_glyph, end_glyph;
@@ -100,7 +109,7 @@ enum MoveCursorSpecial {
 static void move_cursor(editor_t *editor, int delta_line, int delta_char, enum MoveCursorSpecial special, gboolean should_move_origin) {
     int i = 0;
 
-    redraw_cursor_line(editor, FALSE);
+    gtk_widget_queue_draw(editor->drar);
 
     if (delta_line > 0) {
         for (i = 0; i < delta_line; ++i) {
@@ -199,7 +208,11 @@ static void move_cursor(editor_t *editor, int delta_line, int delta_char, enum M
 
     editor->cursor_visible = TRUE;
 
-    redraw_cursor_line(editor, should_move_origin);
+    if (should_move_origin) {
+        editor_center_on_cursor(editor);
+    } else {
+        gtk_widget_queue_draw(editor->drar);
+    }
 
     copy_selection_to_clipboard(editor, selection_clipboard);
 }
@@ -301,7 +314,7 @@ static gboolean entry_search_insert_callback(GtkWidget *widget, GdkEventKey *eve
     
     free(needle);
 
-    redraw_cursor_line(editor, TRUE);
+    editor_center_on_cursor(editor);
 
     if (ctrl_g_invoked) {
         return TRUE;
@@ -568,13 +581,16 @@ static void move_cursor_to_mouse(editor_t *editor, double x, double y) {
     GtkAllocation allocation;
     
     gtk_widget_get_allocation(editor->drar, &allocation);
+
+    x += gtk_adjustment_get_value(GTK_ADJUSTMENT(editor->hadjustment));
+    y += gtk_adjustment_get_value(GTK_ADJUSTMENT(editor->adjustment));
     
     buffer_move_cursor_to_position(editor->buffer, x, y);
 }
 
 static gboolean button_press_callback(GtkWidget *widget, GdkEventButton *event, gpointer data) {
     editor_t *editor = (editor_t *)data;
-    redraw_cursor_line(editor, FALSE);
+    gtk_widget_queue_draw(editor->drar);
     gtk_widget_grab_focus(editor->drar);
 
     move_cursor_to_mouse(editor, event->x, event->y);
@@ -583,11 +599,11 @@ static gboolean button_press_callback(GtkWidget *widget, GdkEventButton *event, 
 
     if (editor->buffer->mark_line != NULL) copy_selection_to_clipboard(editor, selection_clipboard);
 
-    redraw_cursor_line(editor, TRUE);
 
     editor->mouse_marking = 1;
     buffer_set_mark_at_cursor(editor->buffer);
-    gtk_widget_queue_draw(editor->drar);
+
+    editor_center_on_cursor(editor);
     
     return TRUE;
 }
@@ -600,7 +616,7 @@ static gboolean button_release_callback(GtkWidget *widget, GdkEventButton *event
     if ((editor->buffer->mark_line == editor->buffer->cursor_line) && (editor->buffer->mark_glyph == editor->buffer->cursor_glyph)) {
         editor->buffer->mark_line = NULL;
         editor->buffer->mark_glyph = -1;
-        redraw_cursor_line(editor, FALSE);
+        gtk_widget_queue_draw(editor->drar);
     }
 
     return TRUE;
@@ -611,7 +627,7 @@ static gboolean motion_callback(GtkWidget *widget, GdkEventMotion *event, gpoint
     if (editor->mouse_marking) {
         move_cursor_to_mouse(editor, event->x, event->y);
         copy_selection_to_clipboard(editor, selection_clipboard);
-        redraw_cursor_line(editor, TRUE);
+        editor_center_on_cursor(editor);
     }
 
     return TRUE;
@@ -665,8 +681,8 @@ static gboolean cursor_blinker(editor_t *editor) {
     } else {
         editor->cursor_visible = (editor->cursor_visible + 1) % 3;
     }
-    
-    redraw_cursor_line(editor, FALSE);
+
+    gtk_widget_queue_draw(editor->drar);
     
     return TRUE;
 }
@@ -775,13 +791,15 @@ static gboolean expose_event_callback(GtkWidget *widget, GdkEventExpose *event, 
         cairo_fill(cr);
     }
 
+    /********** NOTHING IS TRANSLATED BEYOND THIS ***************************/
+    cairo_translate(cr, gtk_adjustment_get_value(GTK_ADJUSTMENT(editor->hadjustment)), gtk_adjustment_get_value(GTK_ADJUSTMENT(editor->adjustment)));
+    
+
     {
         char *posbox_text;
         asprintf(&posbox_text, " %d,%d %0.0f%%", editor->buffer->cursor_line->lineno, editor->buffer->cursor_glyph, (100.0 * editor->buffer->cursor_line->lineno / count));
         cairo_text_extents_t posbox_ext;
         double x, y;
-
-        cairo_translate(cr, gtk_adjustment_get_value(GTK_ADJUSTMENT(editor->hadjustment)), gtk_adjustment_get_value(GTK_ADJUSTMENT(editor->adjustment)));
 
         cairo_set_scaled_font(cr, editor->buffer->posbox_font.cairofont);
 
