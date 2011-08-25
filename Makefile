@@ -1,6 +1,6 @@
 CFLAGS=`pkg-config --cflags gtk+-2.0` -Wall -D_FORTIFY_SOURCE=2 -g -D_GNU_SOURCE -I/usr/include/tcl8.5
 LIBS=`pkg-config --libs gtk+-2.0` -ltcl8.5
-OBJS := acmacs.o buffer.o font.o editor.o buffers.o column.o interp.o global.o undo.o
+OBJS := acmacs.o buffer.o font.o editor.o buffers.o columns.o column.o interp.o global.o undo.o
 
 all: acmacs
 

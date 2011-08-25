@@ -1,9 +1,16 @@
 - multiple columns
 - ability to resize columns
+
+MONODISPLAY ====================================================================
+- change buffer-manager default action to be "focus buffer" (or "switch buffers" if the buffer is not visible currently)
+- add Shift-Enter to buffer manager to always use the "switch buffers" action
+- add Ctrl-Enter to buffer manager to use the action "focus buffer" when the buffer is visible and "buffer on new frame" when it's not
+- the "new" command should use a predefined default "+null+" buffer (that is set to be empty, not editable and can not be killed)
+- closing a buffer will switch the editor displaying it to "+null+" always
+=================================================================================
+
+- drag and drop to switch buffers
 - heuristics to autocreate new frames (and size them)
-- drag and drop to rearrange frames
-- note that the same buffer shall never appear in two different columns (otherwise the glyph positioning can not be unique)
-  - other possibility: never show the same buffer twice: needs to change code to 'new', code to buffer manager and buffers_close (which calls editors_replace_buffer, which could cause two editors to have the same buffer)
 
 - Ctrl-backspace to remove one word
 - Ctrl-end to go to end of buffer

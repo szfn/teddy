@@ -1,7 +1,7 @@
 #include "buffers.h"
 
 #include "global.h"
-#include "column.h"
+#include "columns.h"
 #include "editor.h"
 
 #include <gdk/gdkkeysyms.h>
@@ -136,7 +136,7 @@ int buffers_close(buffer_t *buffer, GtkWidget *window) {
         }
     }
 
-    column_replace_buffer(column, buffer);
+    columns_replace_buffer(buffer);
 
     {
         int i;

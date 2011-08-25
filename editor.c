@@ -27,7 +27,7 @@ static void editor_replace_selection(editor_t *editor, const char *new_text) {
     buffer_replace_selection(editor->buffer, new_text);
     editor->buffer->modified = 1;
     set_label_text(editor);
-    column_queue_draw_for_buffer(column, editor->buffer);
+    gtk_widget_queue_draw(editor->drar);
 }
 
 static void editor_center_on_cursor(editor_t *editor) {
@@ -355,7 +355,7 @@ static gboolean entry_default_insert_callback(GtkWidget *widget, GdkEventKey *ev
         da = interp_eval(editor, gtk_entry_get_text(GTK_ENTRY(editor->entry)));
         switch(da) {
         case CLOSE_EDITOR:
-            editor = column_remove(column, editor);
+            editor = column_remove(editor->column, editor);
             gtk_widget_grab_focus(editor->drar);
             break;
         default:
@@ -592,6 +592,7 @@ static gboolean motion_callback(GtkWidget *widget, GdkEventMotion *event, gpoint
         move_cursor_to_mouse(editor, event->x, event->y);
         copy_selection_to_clipboard(editor, selection_clipboard);
         editor_center_on_cursor(editor);
+        gtk_widget_queue_draw(editor->drar);
     }
 
     return TRUE;
@@ -832,9 +833,10 @@ static gboolean hscrolled_callback(GtkAdjustment *adj, gpointer data) {
     return TRUE;
 }
 
-editor_t *new_editor(GtkWidget *window, buffer_t *buffer) {
+editor_t *new_editor(GtkWidget *window, column_t *column, buffer_t *buffer) {
     editor_t *r = malloc(sizeof(editor_t));
 
+    r->column = column;
     r->window = window;
     r->buffer = buffer;
     r->cursor_visible = TRUE;

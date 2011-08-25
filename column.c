@@ -115,7 +115,7 @@ void column_free(column_t *column) {
     free(column);
 }
 
-static void editors_grow(void) {
+static void editors_grow(column_t *column) {
     int i;
     
     column->editors = realloc(column->editors, sizeof(editor_t *) * column->editors_allocated * 2);
@@ -136,12 +136,13 @@ static void editors_grow(void) {
 }
 
 static gboolean resize_button_press_callback(GtkWidget *widget, GdkEventButton *event, gpointer data) {
+    column_t *column = (column_t *)data;
     printf("Starting resize\n");
     column->frame_resize_origin = event->y;
     return TRUE;
 }
 
-static int editors_editor_from_table(GtkWidget *table) {
+static int editors_editor_from_table(column_t *column, GtkWidget *table) {
     int i;
     for (i = 0; i < column->editors_allocated; ++i) {
         if (column->editors[i] == NULL) continue;
@@ -150,11 +151,12 @@ static int editors_editor_from_table(GtkWidget *table) {
     return -1;
 }
 
-static editor_t *editors_index_to_editor(int idx) {
+static editor_t *editors_index_to_editor(column_t *column, int idx) {
     return (idx != -1) ? column->editors[idx] : NULL;
 }
 
 static gboolean resize_button_release_callback(GtkWidget *widget, GdkEventButton *event, gpointer data) {
+    column_t *column = (column_t *)data;
     double change = event->y - column->frame_resize_origin;
     GList *prev = NULL;
     GList *list = gtk_container_get_children(GTK_CONTAINER(column->editors_vbox));
@@ -173,8 +175,8 @@ static gboolean resize_button_release_callback(GtkWidget *widget, GdkEventButton
     } 
 
     {
-        editor_t *preved = editors_index_to_editor(editors_editor_from_table((GtkWidget *)(prev->data)));
-        editor_t *nexted = editors_index_to_editor(editors_editor_from_table((GtkWidget *)(list->next->data)));
+        editor_t *preved = editors_index_to_editor(column, editors_editor_from_table(column, (GtkWidget *)(prev->data)));
+        editor_t *nexted = editors_index_to_editor(column, editors_editor_from_table(column, (GtkWidget *)(list->next->data)));
         GtkAllocation allocation;
 
         if (preved == NULL) {
@@ -216,7 +218,7 @@ static gboolean resize_expose_event_callback(GtkWidget *widget, GdkEventExpose *
 }
 
 
-void column_add(editor_t *editor) {
+void column_add(column_t *column, editor_t *editor) {
     int i;
     
     for (i = 0; i < column->editors_allocated; ++i) {
@@ -252,8 +254,8 @@ void column_add(editor_t *editor) {
         gtk_widget_show_all(column->editors_vbox);
         gtk_widget_queue_draw(column->editors_vbox);
     } else {
-        editors_grow();
-        column_add(editor);
+        editors_grow(column);
+        column_add(column, editor);
         return;
     }
 }
@@ -261,9 +263,9 @@ void column_add(editor_t *editor) {
 editor_t *column_new_editor(column_t *column, buffer_t *buffer) {
     editor_t *e;
 
-    e = new_editor(column->editors_window, buffer);
+    e = new_editor(column->editors_window, column, buffer);
 
-    column_add(e);
+    column_add(column, e);
 
     return e;
 }
@@ -282,7 +284,7 @@ void column_replace_buffer(column_t *column, buffer_t *buffer) {
     }
 }
 
-static int editors_count(void) {
+static int editors_count(column_t *column) {
     int i, count = 0;;
     for (i = 0; i < column->editors_allocated; ++i) {
         if (column->editors[i] != NULL) ++count;
@@ -290,7 +292,7 @@ static int editors_count(void) {
     return count;
 }
 
-static int editors_find_editor(editor_t *editor) {
+static int editors_find_editor(column_t *column, editor_t *editor) {
     int i;
     for (i = 0; i < column->editors_allocated; ++i) {
         if (column->editors[i] == editor) return i;
@@ -299,9 +301,9 @@ static int editors_find_editor(editor_t *editor) {
 }
 
 editor_t *column_remove(column_t *column, editor_t *editor) {
-    int idx = editors_find_editor(editor);
+    int idx = editors_find_editor(column, editor);
     
-    if (editors_count() == 1) {
+    if (editors_count(column) == 1) {
         quick_message(editor, "Error", "Can not remove last editor of the window");
         return editor;
     }
@@ -325,7 +327,7 @@ editor_t *column_remove(column_t *column, editor_t *editor) {
 
             gtk_box_set_child_packing(GTK_BOX(column->editors_vbox), cur->data, TRUE, TRUE, 0, GTK_PACK_START);
 
-            new_first_idx = editors_editor_from_table(cur->data);
+            new_first_idx = editors_editor_from_table(column, cur->data);
             assert(new_first_idx != -1);
 
             //gtk_widget_destroy(column->resize_elements[new_first_idx]);
@@ -343,17 +345,10 @@ editor_t *column_remove(column_t *column, editor_t *editor) {
 
     {
         GList *list = gtk_container_get_children(GTK_CONTAINER(column->editors_vbox));
-        int new_idx = editors_editor_from_table(list->data);
+        int new_idx = editors_editor_from_table(column, list->data);
         editor_t *r = (new_idx != -1) ? column->editors[new_idx] : NULL;
         g_list_free(list);
         return r;
     }
 }
 
-void column_queue_draw_for_buffer(column_t *column, buffer_t *buffer) {
-    int i;
-    for (i = 0; i < column->editors_allocated; ++i) {
-        if (column->editors[i] == NULL) continue;
-        if (column->editors[i]->buffer == buffer) gtk_widget_queue_draw(column->editors[i]->drar);
-    }
-}

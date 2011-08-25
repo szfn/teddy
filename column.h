@@ -25,6 +25,5 @@ editor_t *column_find_buffer_editor(column_t *column, buffer_t *buffer);
 void column_post_show_setup(column_t *column);
 editor_t *column_remove(column_t *column, editor_t *editor);
 void column_replace_buffer(column_t *column, buffer_t *buffer);
-void column_queue_draw_for_buffer(column_t *column, buffer_t *buffer);
 
 #endif

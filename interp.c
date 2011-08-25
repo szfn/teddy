@@ -15,7 +15,7 @@ static int acmacs_exit_command(ClientData client_data, Tcl_Interp *interp, int a
 }
 
 static int acmacs_new_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
-    column_new_editor(column, context_editor->buffer);
+    column_new_editor(context_editor->column, context_editor->buffer);
     /* TODO:
        - reassign current implementation to "new row"
        - implement "new col"

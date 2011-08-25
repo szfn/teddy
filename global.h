@@ -13,8 +13,6 @@ extern GtkClipboard *default_clipboard;
 
 extern FT_Library library;
 
-extern column_t *column;
-
 extern void quick_message(editor_t *editor, const char *title, const char *msg);
 
 #define MAX_LINES_HEIGHT_REQUEST 25
