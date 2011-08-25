@@ -6,6 +6,7 @@
   - other possibility: never show the same buffer twice: needs to change code to 'new', code to buffer manager and buffers_close (which calls editors_replace_buffer, which could cause two editors to have the same buffer)
 
 - Ctrl-backspace to remove one word
+- Ctrl-end to go to end of buffer
 - click on file name (inside tag) shows full path
 - recalculation optimization (origin point is applyed through cairo with a translation matrix, call to buffer_line_adjust_glyphs is removed and buffer_adjust_glyphs is implemented that only readjusts lines that changed (this function is called once at the start of expose event)
 - scripting (for keybindings)

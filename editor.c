@@ -655,9 +655,11 @@ static gboolean expose_event_callback(GtkWidget *widget, GdkEventExpose *event, 
     editor_t *editor = (editor_t*)data;
     cairo_t *cr = gdk_cairo_create(widget->window);
     GtkAllocation allocation;
+    double originy;
     real_line_t *line;
     int mark_mode = 0;
     int count = 0;
+    int drawn_lines = 0;
 
     gtk_widget_get_allocation(widget, &allocation);
 
@@ -683,6 +685,8 @@ static gboolean expose_event_callback(GtkWidget *widget, GdkEventExpose *event, 
     buffer_typeset_maybe(editor->buffer, allocation.width);
 
     editor->buffer->rendered_height = 0.0;
+
+    originy = gtk_adjustment_get_value(GTK_ADJUSTMENT(editor->adjustment));
 
     for (line = editor->buffer->real_line; line != NULL; line = line->next) {
         int start_selection_at_glyph = -1, end_selection_at_glyph = -1;
@@ -712,28 +716,32 @@ static gboolean expose_event_callback(GtkWidget *widget, GdkEventExpose *event, 
         }
 
         //buffer_line_adjust_glyphs(editor->buffer, line, origin_x, y, allocation.width, allocation.height, &y_increment, &line_end_width);
-        cairo_show_glyphs(cr, line->glyphs, line->cap);
 
-        cury = line->start_y;
+        if (((line->start_y + line->y_increment - originy) > 0) && ((line->start_y - originy) < allocation.height)) {
+            cairo_show_glyphs(cr, line->glyphs, line->cap);
 
-        for (i = 0; i < line->cap; ++i) {
-            if (line->glyphs[i].y - cury > 0.001) {
-                /* draw ending tract */
-                cairo_set_line_width(cr, 4.0);
-                cairo_move_to(cr, line->glyphs[i-1].x + line->glyph_info[i-1].x_advance, cury-(editor->buffer->ex_height/2.0));
-                cairo_line_to(cr, allocation.width, cury-(editor->buffer->ex_height/2.0));
-                cairo_stroke(cr);
-                cairo_set_line_width(cr, 2.0);
+            cury = line->start_y;
 
-                cury = line->glyphs[i].y;
+            for (i = 0; i < line->cap; ++i) {
+                if (line->glyphs[i].y - cury > 0.001) {
+                    /* draw ending tract */
+                    cairo_set_line_width(cr, 4.0);
+                    cairo_move_to(cr, line->glyphs[i-1].x + line->glyph_info[i-1].x_advance, cury-(editor->buffer->ex_height/2.0));
+                    cairo_line_to(cr, allocation.width, cury-(editor->buffer->ex_height/2.0));
+                    cairo_stroke(cr);
+                    cairo_set_line_width(cr, 2.0);
 
-                /* draw initial tract */
-                cairo_set_line_width(cr, 4.0);
-                cairo_move_to(cr, 0.0, cury-(editor->buffer->ex_height/2.0));
-                cairo_line_to(cr, editor->buffer->left_margin, cury-(editor->buffer->ex_height/2.0));
-                cairo_stroke(cr);
-                cairo_set_line_width(cr, 2.0);
+                    cury = line->glyphs[i].y;
+
+                    /* draw initial tract */
+                    cairo_set_line_width(cr, 4.0);
+                    cairo_move_to(cr, 0.0, cury-(editor->buffer->ex_height/2.0));
+                    cairo_line_to(cr, editor->buffer->left_margin, cury-(editor->buffer->ex_height/2.0));
+                    cairo_stroke(cr);
+                    cairo_set_line_width(cr, 2.0);
+                }
             }
+            ++drawn_lines;
         }
 
         editor->buffer->rendered_height += line->y_increment;
@@ -742,6 +750,8 @@ static gboolean expose_event_callback(GtkWidget *widget, GdkEventExpose *event, 
     }
 
     draw_selection(editor, allocation.width, cr);
+
+    //printf("Drawn lines: %d\n", drawn_lines);
 
     //printf("Expose event final y: %g, lines: %d\n", y, count);
 

@@ -42,9 +42,10 @@ void undo_push(undo_t *undo, undo_node_t *new_node) {
     new_node->prev = undo->head;
     new_node->next = NULL;
     undo->head = new_node;
-    
+
+    /*
     printf("PUSHING\n");
-    debug_print_undo(new_node);
+    debug_print_undo(new_node);*/
 }
 
 undo_node_t *undo_pop(undo_t *undo) {
@@ -57,8 +58,9 @@ undo_node_t *undo_pop(undo_t *undo) {
         }
     }
 
+    /*
     printf("POPPING\n");
-    debug_print_undo(r);
+    debug_print_undo(r);*/
 
     return r;
 }
