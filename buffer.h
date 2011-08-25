@@ -87,7 +87,6 @@ void load_empty(buffer_t *buffer);
 // save the buffer to its file (if exists, otherwise fails)
 void save_to_text_file(buffer_t *buffer);
 
-
 /*
   Mark management
   buffer_set_mark_at_cursor: copies cursor point into mark point
@@ -120,35 +119,5 @@ void line_get_glyph_coordinates(buffer_t *buffer, real_line_t *line, int glyph, 
 void buffer_move_cursor_to_position(buffer_t *buffer, double x, double y);
 
 int buffer_real_line_count(buffer_t *buffer);
-
-/*
-
-int buffer_line_insert_utf8_text(buffer_t *buffer, real_line_t *line, char *text, int len, int insertion_point);
-void buffer_line_remove_glyph(buffer_t *buffer, real_line_t *line, int glyph_index);
-
-void buffer_reflow_softwrap(buffer_t *buffer, double softwrap_width);
-int buffer_reflow_softwrap_real_line(buffer_t *buffer, real_line_t *line, int cursor_increment, int ignore_cursor);
-
-void buffer_set_to_real(buffer_t *buffer, real_line_t *real_line, int real_glyph);
-
-void buffer_cursor_line_rectangle(buffer_t *buffer, double origin_x, double origin_y, double *x, double *y, double *height, double *width);
-
-real_line_t *buffer_copy_line(buffer_t *buffer, real_line_t *real_line, int start, int size);
-void buffer_line_delete_from(buffer_t *buffer, real_line_t *real_line, int start, int size);
-void buffer_real_line_insert(buffer_t *buffer, real_line_t *insertion_line, real_line_t* real_line);
-
-real_line_t *buffer_line_by_number(buffer_t *buffer, int lineno);
-
-
-void buffer_join_lines(buffer_t *buffer, real_line_t *line1, real_line_t *line2);
-
-
-
-void buffer_split_line(buffer_t *buffer, real_line_t *line, int glyph);
-void buffer_insert_multiline_text(buffer_t *buffer, real_line_t *line, int glyph, char *text);
-
-
-void debug_print_lines_state(buffer_t *buffer);
-void debug_print_real_lines_state(buffer_t *buffer);*/
 
 #endif

@@ -31,57 +31,21 @@ static void editor_replace_selection(editor_t *editor, const char *new_text) {
 }
 
 static void editor_center_on_cursor(editor_t *editor) {
-    //TODO: implement
-    return;
-}
-
-#ifdef COMMENTED
-static void redraw_cursor_line(editor_t *editor, gboolean move_origin_when_outside) {
-    double cursor_x, y, height;
+    double x, y;
+    double translated_y;
     GtkAllocation allocation;
 
-    if (!editor->initialization_ended) return;
-
     gtk_widget_get_allocation(editor->drar, &allocation);
+    buffer_cursor_position(editor->buffer, &x, &y);
 
-    buffer_cursor_position(editor->buffer, &cursor_x, &y);
+    translated_y = y - gtk_adjustment_get_value(GTK_ADJUSTMENT(editor->adjustment));
 
-    y -= editor->buffer->ascent;
-    height = editor->buffer->ascent + editor->buffer->descent;
-
-    if (move_origin_when_outside) {
-        if (y+height > allocation.height) {
-            double diff = y+height - allocation.height;
-            gtk_adjustment_set_value(GTK_ADJUSTMENT(editor->adjustment), gtk_adjustment_get_value(GTK_ADJUSTMENT(editor->adjustment)) + diff);
-            gtk_widget_queue_draw(editor->drar);
-            return;
-        }
-
-        if (y < 0.0) {
-            gtk_adjustment_set_value(GTK_ADJUSTMENT(editor->adjustment), gtk_adjustment_get_value(GTK_ADJUSTMENT(editor->adjustment)) + y);
-            gtk_widget_queue_draw(editor->drar);
-            return;
-        }
-
-        if (cursor_x + editor->buffer->em_advance > allocation.width) {
-            double diff = cursor_x + editor->buffer->em_advance - allocation.width;
-            gtk_adjustment_set_value(GTK_ADJUSTMENT(editor->hadjustment), gtk_adjustment_get_value(GTK_ADJUSTMENT(editor->hadjustment)) + diff);
-            gtk_widget_queue_draw(editor->drar);
-            return;
-        }
-
-        if (cursor_x - editor->buffer->left_margin < 0.0) {
-            gtk_adjustment_set_value(GTK_ADJUSTMENT(editor->hadjustment), gtk_adjustment_get_value(GTK_ADJUSTMENT(editor->hadjustment)) + cursor_x - editor->buffer->left_margin);
-            gtk_widget_queue_draw(editor->drar);
-            return;
-        }
+    if ((translated_y < 0) || (translated_y > allocation.height)) {
+        gtk_adjustment_set_value(GTK_ADJUSTMENT(editor->adjustment), y - allocation.height / 2);
     }
 
-    gtk_widget_queue_draw(editor->drar);
+    return;
 }
-
-#endif
-
 
 static void copy_selection_to_clipboard(editor_t *editor, GtkClipboard *clipboard) {
     real_line_t *start_line, *end_line;
