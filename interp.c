@@ -3,7 +3,7 @@
 #include <tcl.h>
 
 #include "global.h"
-#include "editors.h"
+#include "column.h"
 
 Tcl_Interp *interp;
 editor_t *context_editor;
@@ -15,7 +15,7 @@ static int acmacs_exit_command(ClientData client_data, Tcl_Interp *interp, int a
 }
 
 static int acmacs_new_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
-    editors_new(context_editor->buffer);
+    column_new_editor(column, context_editor->buffer);
     /* TODO:
        - reassign current implementation to "new row"
        - implement "new col"

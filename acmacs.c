@@ -4,13 +4,15 @@
 #include "global.h"
 #include "undo.h"
 #include "buffers.h"
-#include "editors.h"
+#include "column.h"
 #include "interp.h"
 
 static gboolean delete_callback(GtkWidget *widget, GdkEvent *event, gpointer data) {
     if (buffers_close_all(widget)) return FALSE;
     return TRUE;
 }
+
+column_t *column;
 
 int main(int argc, char *argv[]) {
     GtkWidget *window;
@@ -41,9 +43,9 @@ int main(int argc, char *argv[]) {
     g_signal_connect(G_OBJECT(window), "delete-event", G_CALLBACK(delete_callback), NULL);
     g_signal_connect_swapped(G_OBJECT(window), "destroy", G_CALLBACK(gtk_main_quit), NULL);
 
-    editors_init(window);
+    column = column_new(window);
 
-    editor = editors_new(buffers_get_replacement_buffer(NULL));
+    editor = column_new_editor(column, buffers_get_replacement_buffer(NULL));
 
     gtk_widget_show_all(window);
 
@@ -51,7 +53,7 @@ int main(int argc, char *argv[]) {
 
     gtk_main();
 
-    editors_free();
+    column_free(column);
     buffers_free();
     interp_free();
     

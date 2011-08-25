@@ -10,7 +10,7 @@
 #include "global.h"
 #include "buffers.h"
 #include "interp.h"
-#include "editors.h"
+#include "column.h"
 
 static void set_label_text(editor_t *editor) {
     char *labeltxt;
@@ -27,7 +27,7 @@ static void editor_replace_selection(editor_t *editor, const char *new_text) {
     buffer_replace_selection(editor->buffer, new_text);
     editor->buffer->modified = 1;
     set_label_text(editor);
-    editors_queue_draw_for_buffer(editor->buffer);
+    column_queue_draw_for_buffer(column, editor->buffer);
 }
 
 static void editor_center_on_cursor(editor_t *editor) {
@@ -355,7 +355,7 @@ static gboolean entry_default_insert_callback(GtkWidget *widget, GdkEventKey *ev
         da = interp_eval(editor, gtk_entry_get_text(GTK_ENTRY(editor->entry)));
         switch(da) {
         case CLOSE_EDITOR:
-            editor = editors_remove(editor);
+            editor = column_remove(column, editor);
             gtk_widget_grab_focus(editor->drar);
             break;
         default:

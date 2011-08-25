@@ -2,6 +2,7 @@
 #define __ACMACS_GLOBAL_H__
 
 #include "editor.h"
+#include "column.h"
 
 #include <gtk/gtk.h>
 #include <ft2build.h>
@@ -11,6 +12,8 @@ extern GtkClipboard *selection_clipboard;
 extern GtkClipboard *default_clipboard;
 
 extern FT_Library library;
+
+extern column_t *column;
 
 extern void quick_message(editor_t *editor, const char *title, const char *msg);
 
