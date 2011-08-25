@@ -162,6 +162,7 @@ static real_line_t *new_real_line(int lineno) {
     line->prev = NULL;
     line->next = NULL;
     line->lineno = lineno;
+    line->y_increment = 0.0;
     return line;
 }
 
@@ -379,6 +380,42 @@ static void freeze_selection(buffer_t *buffer, selection_t *selection, real_line
     }
 }
 
+static void buffer_line_adjust_glyphs(buffer_t *buffer, real_line_t *line, double y) {
+    int i;
+    double y_increment = buffer->line_height;
+    double x = buffer->left_margin;
+    
+    line->start_y = y;
+    line->end_y = y;
+
+    //printf("setting type\n");
+    for (i = 0; i < line->cap; ++i) {
+        x += line->glyph_info[i].kerning_correction;
+        if (x+line->glyph_info[i].x_advance > buffer->rendered_width - buffer->right_margin) {
+            y += buffer->line_height;
+            line->end_y = y;
+            y_increment += buffer->line_height;
+            x = buffer->left_margin;
+        }
+        line->glyphs[i].x = x;
+        line->glyphs[i].y = y;
+        x += line->glyph_info[i].x_advance;
+        //printf("x: %g (%g)\n", x, glyph_info[i].x_advance);
+    }
+
+    line->y_increment = y_increment;
+}
+
+static void buffer_typeset_from(buffer_t *buffer, real_line_t *start_line) {
+    real_line_t *line;
+    double y = start_line->start_y;
+    
+    for (line = start_line; line != NULL; line = line->next) {
+        buffer_line_adjust_glyphs(buffer, line, y);
+        y += line->y_increment;
+    }
+}
+
 void buffer_replace_selection(buffer_t *buffer, const char *new_text) {
     real_line_t *start_line, *end_line;
     int start_glyph, end_glyph;
@@ -401,6 +438,8 @@ void buffer_replace_selection(buffer_t *buffer, const char *new_text) {
     freeze_selection(buffer, &(undo_node->after_selection), start_line, start_glyph, end_line, end_glyph);
 
     undo_push(&(buffer->undo), undo_node);
+
+    buffer_typeset_from(buffer, start_line);
     
     buffer_unset_mark(buffer);
 }
@@ -422,7 +461,7 @@ static void buffer_thaw_selection(buffer_t *buffer, selection_t *selection, real
 }
 
 void buffer_undo(buffer_t *buffer) {
-    real_line_t *start_line, *end_line;
+    real_line_t *start_line, *end_line, *typeset_start_line;
     int start_glyph, end_glyph;
     undo_node_t *undo_node = undo_pop(&(buffer->undo));
 
@@ -432,7 +471,11 @@ void buffer_undo(buffer_t *buffer) {
 
     buffer_remove_selection(buffer, start_line, start_glyph, end_line, end_glyph);
 
+    typeset_start_line = buffer->cursor_line;
+
     buffer_insert_multiline_text(buffer, buffer->cursor_line, buffer->cursor_glyph, undo_node->before_selection.text);
+
+    buffer_typeset_from(buffer, typeset_start_line);
 
     undo_node_free(undo_node);
 }
@@ -474,31 +517,6 @@ uint32_t utf8_to_utf32(const char *text, int *src, int len) {
     }
 
     return code;
-}
-
-void buffer_line_adjust_glyphs(buffer_t *buffer, real_line_t *line, double x, double y, double window_width, double window_height, double *y_increment, double *line_end_width) {
-    int i;
-
-    *y_increment = buffer->line_height;
-    line->start_y = y;
-    line->end_y = y;
-
-    //printf("setting type\n");
-    for (i = 0; i < line->cap; ++i) {
-        x += line->glyph_info[i].kerning_correction;
-        if (x+line->glyph_info[i].x_advance > window_width - buffer->right_margin) {
-            y += buffer->line_height;
-            line->end_y = y;
-            *y_increment += buffer->line_height;
-            x = buffer->right_margin;
-        }
-        line->glyphs[i].x = x;
-        line->glyphs[i].y = y;
-        x += line->glyph_info[i].x_advance;
-        //printf("x: %g (%g)\n", x, glyph_info[i].x_advance);
-    }
-
-    *line_end_width = x;
 }
 
 void load_empty(buffer_t *buffer) {
@@ -934,5 +952,21 @@ void buffer_move_cursor(buffer_t *buffer, int direction) {
         } else {
             buffer->cursor_glyph = buffer->cursor_line->cap;
         }
+    }
+}
+
+void buffer_typeset_maybe(buffer_t *buffer, double width) {
+    real_line_t *line;
+    double y = buffer->line_height;
+    
+    if (fabs(width - buffer->rendered_width) < 0.001) {
+        return;
+    }
+
+    buffer->rendered_width = width;
+
+    for (line = buffer->real_line; line != NULL; line = line->next) {
+        buffer_line_adjust_glyphs(buffer, line, y);
+        y += line->y_increment;
     }
 }

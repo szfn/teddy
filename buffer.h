@@ -24,6 +24,7 @@ typedef struct _real_line_t {
     int lineno; // real line number
     double start_y;
     double end_y;
+    double y_increment;
     struct _real_line_t *prev;
     struct _real_line_t *next;
 } real_line_t;
@@ -110,13 +111,13 @@ char *buffer_lines_to_text(buffer_t *buffer, real_line_t *start_line, real_line_
 // moves cursor by one glyph
 void buffer_move_cursor(buffer_t *buffer, int direction);
 
+// sets character positions if width has changed
+void buffer_typeset_maybe(buffer_t *buffer, double width);
+
 // functions to get screen coordinates of things (yes, I have no idea anymore what the hell they do or are used for)
 void buffer_cursor_position(buffer_t *buffer, double *x, double *y);
 void line_get_glyph_coordinates(buffer_t *buffer, real_line_t *line, int glyph, double *x, double *y);
 void buffer_move_cursor_to_position(buffer_t *buffer, double x, double y);
-
-// correctly sets all the glyph coordinates (to call before printing line
-void buffer_line_adjust_glyphs(buffer_t *buffer, real_line_t *line, double x, double y, double window_width, double window_height, double *y_increment, double *line_end_width);
 
 int buffer_real_line_count(buffer_t *buffer);
 

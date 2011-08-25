@@ -1,5 +1,3 @@
-- undo (without redo)
-
 - remove origin-dependent positioning of glyphs, glyph position should be absolute and scrolling should be done through the transformation matrix
 
 - multiple columns

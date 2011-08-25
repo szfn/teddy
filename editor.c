@@ -1,3 +1,4 @@
+/* Questa e` una lunga linea inserita qui per testare il funzionamento dell'editor sulle linee lunghe, questa e` una lunga linea inserita qui per testare il funzionamento dell'editor sulle linee lunghe */
 #include "editor.h"
 
 #include <math.h>
@@ -10,32 +11,6 @@
 #include "buffers.h"
 #include "interp.h"
 #include "editors.h"
-
-static double calculate_x_origin(editor_t *editor, GtkAllocation *allocation) {
-    double origin_x;
-
-    if (allocation->width > editor->buffer->rendered_width) {
-        /* if there is enough space to show everything then there is no need to use the scrollbar */
-        origin_x = editor->buffer->left_margin;
-    } else {
-        origin_x = editor->buffer->left_margin - gtk_adjustment_get_value(GTK_ADJUSTMENT(editor->hadjustment));
-    }
-
-    return origin_x;
-}
-
-static double calculate_y_origin(editor_t *editor, GtkAllocation *allocation) {
-    double origin_y;
-
-    if (allocation->height > editor->buffer->rendered_height) {
-        /* if there is enough space to show everything then there is no need to use the scrollbar */
-        origin_y = editor->buffer->line_height;
-    } else {
-        origin_y = editor->buffer->line_height - gtk_adjustment_get_value(GTK_ADJUSTMENT(editor->adjustment));
-    }
-
-    return origin_y;
-}
 
 static void set_label_text(editor_t *editor) {
     char *labeltxt;
@@ -590,13 +565,9 @@ static gboolean key_press_callback(GtkWidget *widget, GdkEventKey *event, gpoint
 }
 
 static void move_cursor_to_mouse(editor_t *editor, double x, double y) {
-    double origin_x, origin_y;
     GtkAllocation allocation;
     
     gtk_widget_get_allocation(editor->drar, &allocation);
-    
-    origin_y = calculate_y_origin(editor, &allocation);
-    origin_x = calculate_x_origin(editor, &allocation);
     
     buffer_move_cursor_to_position(editor->buffer, x, y);
 }
@@ -703,10 +674,8 @@ static gboolean cursor_blinker(editor_t *editor) {
 static gboolean expose_event_callback(GtkWidget *widget, GdkEventExpose *event, gpointer data) {
     editor_t *editor = (editor_t*)data;
     cairo_t *cr = gdk_cairo_create(widget->window);
-    double origin_y, origin_x, y;
     GtkAllocation allocation;
-    real_line_t *line, *first_displayed_line = NULL;
-    int first_displayed_glyph = -1;
+    real_line_t *line;
     int mark_mode = 0;
     int count = 0;
 
@@ -727,15 +696,13 @@ static gboolean expose_event_callback(GtkWidget *widget, GdkEventExpose *event, 
     cairo_set_source_rgb(cr, 1.0, 1.0, 1.0);
     cairo_set_scaled_font(cr, editor->buffer->main_font.cairofont);
 
-    origin_y = calculate_y_origin(editor, &allocation);
-    origin_x = calculate_x_origin(editor, &allocation);
-
-    y = origin_y;
-
     /*printf("DRAWING!\n");*/
 
+    buffer_typeset_maybe(editor->buffer, allocation.width);
+
+    editor->buffer->rendered_height = 0.0;
+
     for (line = editor->buffer->real_line; line != NULL; line = line->next) {
-        double line_end_width, y_increment;
         int start_selection_at_glyph = -1, end_selection_at_glyph = -1;
         int i;
         double cury;
@@ -762,24 +729,13 @@ static gboolean expose_event_callback(GtkWidget *widget, GdkEventExpose *event, 
             }
         }
 
-        buffer_line_adjust_glyphs(editor->buffer, line, origin_x, y, allocation.width, allocation.height, &y_increment, &line_end_width);
+        //buffer_line_adjust_glyphs(editor->buffer, line, origin_x, y, allocation.width, allocation.height, &y_increment, &line_end_width);
         cairo_show_glyphs(cr, line->glyphs, line->cap);
 
         cury = line->start_y;
 
-        /* line may not have any glyphs but could still be first displayed line */
-        if ((first_displayed_line == NULL) && (y + editor->buffer->line_height > 0)) {
-            first_displayed_line = line;
-            first_displayed_glyph = 0;
-        }
-        
         for (i = 0; i < line->cap; ++i) {
             if (line->glyphs[i].y - cury > 0.001) {
-                if ((first_displayed_line == NULL) && (y + editor->buffer->line_height > 0)) {
-                    first_displayed_line = line;
-                    first_displayed_glyph = i;
-                }
-
                 /* draw ending tract */
                 cairo_set_line_width(cr, 4.0);
                 cairo_move_to(cr, line->glyphs[i-1].x + line->glyph_info[i-1].x_advance, cury-(editor->buffer->ex_height/2.0));
@@ -798,11 +754,11 @@ static gboolean expose_event_callback(GtkWidget *widget, GdkEventExpose *event, 
             }
         }
 
-        y += y_increment;
+        editor->buffer->rendered_height += line->y_increment;
+
         ++count;
     }
 
-    editor->buffer->rendered_height = y - origin_y;
     draw_selection(editor, allocation.width, cr);
 
     //printf("Expose event final y: %g, lines: %d\n", y, count);
@@ -812,17 +768,9 @@ static gboolean expose_event_callback(GtkWidget *widget, GdkEventExpose *event, 
         
         buffer_cursor_position(editor->buffer, &cursor_x, &cursor_y);
         
-        if ((cursor_y < 0) || (cursor_y > allocation.height)) {
-            /*if (first_displayed_line != NULL) {
-                editor->buffer->cursor_line = first_displayed_line;
-                editor->buffer->cursor_glyph = first_displayed_glyph;
-                redraw_cursor_line(editor, FALSE);
-                }*/
-        } else {
-            /*cairo_set_source_rgb(cr, 119.0/255, 136.0/255, 153.0/255);*/
-            cairo_rectangle(cr, cursor_x, cursor_y-editor->buffer->ascent, 2, editor->buffer->ascent+editor->buffer->descent);
-            cairo_fill(cr);
-        }
+        /*cairo_set_source_rgb(cr, 119.0/255, 136.0/255, 153.0/255);*/
+        cairo_rectangle(cr, cursor_x, cursor_y-editor->buffer->ascent, 2, editor->buffer->ascent+editor->buffer->descent);
+        cairo_fill(cr);
     }
 
     {
