@@ -7,11 +7,38 @@ int columns_allocated;
 GtkWidget *columns_window;
 GtkWidget *columns_hbox;
 
+//static int columns_exposed = 0;
+
 /* TODO:
-   - hbox to actually support more than one column (all columns with the same size(
-   - appropriate initial sizing of columns
    - user column resizing
  */
+
+/*static void columns_adjust_size(void) {
+    GList *list;
+    
+    if (!columns_exposed) return;
+
+    list = gtk_container_get_children(GTK_CONTAINER(columns_hbox));
+
+    if (list != NULL) {
+        gtk_box_set_child_packing(GTK_BOX(columns_hbox), list->data, TRUE, TRUE, 1, GTK_PACK_START);
+    }
+
+    g_list_free(list);
+    }
+
+static gboolean columns_expose_callback(GtkWidget *widget, GdkEventExpose *event, gpointer data) {
+    GList *list = gtk_container_get_children(GTK_CONTAINER(columns_hbox));
+    GList *cur;
+
+    for (cur = list; cur != NULL; cur = cur->next) {
+        gtk_widget_set_size_request(cur->data, 10, 10);
+    }
+
+    g_list_free(list);
+    
+    return FALSE;
+    }*/
 
 void columns_init(GtkWidget *window) {
     int i;
@@ -30,6 +57,8 @@ void columns_init(GtkWidget *window) {
     columns_window = window;
 
     gtk_container_add(GTK_CONTAINER(window), columns_hbox);
+
+    //g_signal_connect(G_OBJECT(columns_hbox), "expose-event", G_CALLBACK(columns_expose_callback), NULL);
 }
 
 static void columns_grow(void) {
@@ -48,6 +77,28 @@ static void columns_grow(void) {
     columns_allocated *= 2;
 }
 
+static column_t *columns_get_last(void) {
+    GList *list = gtk_container_get_children(GTK_CONTAINER(columns_hbox));
+    GList *cur;
+    GtkWidget *w;
+    int i;
+
+    if (list == NULL) return NULL;
+
+    for (cur = list; cur->next != NULL; cur = cur->next);
+
+    w = cur->data;
+
+    g_list_free(list);
+
+    for (i = 0; i < columns_allocated; ++i) {
+        if (columns[i] == NULL) continue;
+        if (columns[i]->editors_vbox == w) return columns[i];
+    }
+
+    return NULL;
+}
+
 editor_t *columns_new(buffer_t *buffer) {
     int i;
     
@@ -56,8 +107,24 @@ editor_t *columns_new(buffer_t *buffer) {
     }
 
     if (i < columns_allocated) {
+        column_t *last_column = columns_get_last();
+
         columns[i] = column_new(columns_window, columns_hbox);
         gtk_box_set_child_packing(GTK_BOX(columns_hbox), columns[i]->editors_vbox, TRUE, TRUE, 1, GTK_PACK_START);
+
+        //printf("Resize mode: %d\n", gtk_container_get_resize_mode(GTK_CONTAINER(columns_hbox)));
+        
+        if (last_column != NULL) {
+            GtkAllocation allocation;
+
+            gtk_widget_get_allocation(last_column->editors_vbox, &allocation);
+            
+            if (allocation.width > 1) {
+                gtk_widget_set_size_request(last_column->editors_vbox, allocation.width * 0.60, 10);
+                gtk_widget_set_size_request(columns[i]->editors_vbox, allocation.width * 0.40, 10);
+            }
+        }
+        
         return column_new_editor(columns[i], buffer);
     } else {
         columns_grow();

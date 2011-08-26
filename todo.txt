@@ -1,6 +1,7 @@
-- imlement initial sizing of columns
 - make resize_handle resize columns too
 - resize on move
+- closing columns
+- reimplement hbox/vbox to not be broken
 
 
 MONODISPLAY ====================================================================
@@ -13,6 +14,9 @@ MONODISPLAY ====================================================================
 
 - drag and drop to switch buffers
 - heuristics to autocreate new frames (and size them)
+
+- implement go command (moves inside buffers and opens files)
+- remove ctrl-o keybinding (go command replaces it)
 
 - Ctrl-backspace to remove one word
 - Ctrl-end to go to end of buffer
@@ -31,6 +35,11 @@ MONODISPLAY ====================================================================
 - history for prompts
 - investigate sam's command language
 - mouse scrollwheel
+- tabs
+- home goes to first non-whitespace character, if it's already there it goes to the first character of the line
+- double click on resize handle hides all other editors of the column
+- command to reload buffer contents from disk
+- auto-reloading buffers when there is no change and the file on disk was changed
 
 - word selection is longest sequence around point consisting of:
   - letters
