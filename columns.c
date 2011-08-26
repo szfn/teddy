@@ -149,3 +149,30 @@ void columns_replace_buffer(buffer_t *buffer) {
         column_replace_buffer(columns[i], buffer);
     }
 }
+
+column_t *columns_get_column_before(column_t *column) {
+    GList *list = gtk_container_get_children(GTK_CONTAINER(columns_hbox));
+    GList *cur;
+    GList *prev = NULL;
+    GtkWidget *w;
+    int i;
+
+    for (cur = list; cur != NULL; cur = cur->next) {
+        if (cur->data == column->editors_vbox) break;
+        prev = cur;
+    }
+
+    if (cur == NULL) return NULL;
+    if (prev == NULL) return NULL;
+
+    w = prev->data;
+
+    g_list_free(list);
+
+    for (i = 0; i < columns_allocated; ++i) {
+        if (columns[i] == NULL) continue;
+        if (columns[i]->editors_vbox == w) break;
+    }
+
+    return (i >= columns_allocated) ? NULL : columns[i];
+}

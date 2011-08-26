@@ -1,6 +1,5 @@
-- resize on move
 - closing columns
-
+- fix vertical space assignment
 
 MONODISPLAY ====================================================================
 - change buffer-manager default action to be "focus buffer" (or "switch buffers" if the buffer is not visible currently)

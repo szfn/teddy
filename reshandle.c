@@ -3,6 +3,7 @@
 #include <stdlib.h>
 
 #include "column.h"
+#include "columns.h"
 
 static gboolean reshandle_expose_callback(GtkWidget *widget, GdkEventExpose *event, reshandle_t *reshandle) {
     cairo_t *cr = gdk_cairo_create(widget->window);
@@ -40,9 +41,10 @@ static gboolean reshandle_button_press_callback(GtkWidget *widget, GdkEventButto
 
 static gboolean reshandle_button_release_callback(GtkWidget *widget, GdkEventButton *event, reshandle_t *reshandle) {
     editor_t *prev_editor;
+    column_t *prev_column;
 
     double changey = event->y - reshandle->origin_y;
-    //double changex = event->x - reshandle->origin_x;
+    double changex = event->x - reshandle->origin_x;
 
     printf("Resizing end\n");
 
@@ -67,8 +69,35 @@ static gboolean reshandle_button_release_callback(GtkWidget *widget, GdkEventBut
         column_adjust_size(reshandle->column);
         gtk_widget_queue_draw(reshandle->column->editors_vbox);
     }
+
+    prev_column = columns_get_column_before(reshandle->column);
+    if (prev_column != NULL) {
+        GtkAllocation allocation;
+        double cur_width;
+        double prev_width;
+
+        printf("Change: %g\n", changex);
+
+        gtk_widget_get_allocation(reshandle->column->editors_vbox, &allocation);
+
+        cur_width = allocation.width - changex;
+
+        printf("Current width: %d -> %g\n", allocation.width, cur_width);
+        
+        gtk_widget_get_allocation(prev_column->editors_vbox, &allocation);
+        
+        prev_width = allocation.width + changex;
+
+        printf("Previous width: %d -> %g\n", allocation.width, prev_width);
+
+        if (cur_width < 50) cur_width = 50;
+        if (prev_width < 50) prev_width = 50;
+
+        gtk_widget_set_size_request(reshandle->column->editors_vbox, cur_width, -1);
+        gtk_widget_set_size_request(prev_column->editors_vbox, prev_width, -1);
+        gtk_widget_queue_draw(columns_hbox);
+    }
     
-    //TODO: resize columns
     return TRUE;
 }
 

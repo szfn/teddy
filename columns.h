@@ -5,11 +5,13 @@
 
 #include "buffer.h"
 #include "editor.h"
+#include "column.h"
 
 void columns_init(GtkWidget *window);
 void columns_free(void);
 editor_t *columns_new(buffer_t *buffer);
 void columns_replace_buffer(buffer_t *buffer);
-
+column_t *columns_get_column_before(column_t *column);
+extern GtkWidget *columns_hbox;
 
 #endif
