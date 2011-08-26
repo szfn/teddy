@@ -9,7 +9,7 @@
 
 #define MAGIC_NUMBER 18
 
-static void editors_adjust_size(column_t *column) {
+void column_adjust_size(column_t *column) {
     int total_allocated_height = 0;
     GtkAllocation allocation;
     int i, count;
@@ -66,7 +66,7 @@ static gboolean editors_expose_event_callback(GtkWidget *widget, GdkEventExpose 
     column_t *column = (column_t *)data;
     if (!(column->exposed)) {
         column->exposed = 1;
-        editors_adjust_size(column);
+        column_adjust_size(column);
     } 
     return FALSE;
 }
@@ -122,14 +122,6 @@ static void editors_grow(column_t *column) {
     column->editors_allocated *= 2;
 }
 
-/*
-static gboolean resize_button_press_callback(GtkWidget *widget, GdkEventButton *event, gpointer data) {
-    column_t *column = (column_t *)data;
-    printf("Starting resize\n");
-    column->frame_resize_origin = event->y;
-    return TRUE;
-    }*/
-
 static int editors_editor_from_table(column_t *column, GtkWidget *table) {
     int i;
     for (i = 0; i < column->editors_allocated; ++i) {
@@ -139,10 +131,39 @@ static int editors_editor_from_table(column_t *column, GtkWidget *table) {
     return -1;
 }
 
-/*
+static int editors_find_editor(column_t *column, editor_t *editor) {
+    int i;
+    for (i = 0; i < column->editors_allocated; ++i) {
+        if (column->editors[i] == editor) return i;
+    }
+    return -1;
+}
+
 static editor_t *editors_index_to_editor(column_t *column, int idx) {
     return (idx != -1) ? column->editors[idx] : NULL;
 }
+
+editor_t *column_get_editor_before(column_t *column, editor_t *editor) {
+    GList *list = gtk_container_get_children(GTK_CONTAINER(column->editors_vbox));
+    GList *prev = NULL, *cur;
+    editor_t *r;
+
+    for (cur = list; cur != NULL; cur = cur->next) {
+        if (cur->data == editor->table) break;
+        prev = cur;
+    }
+
+    if (cur == NULL) return NULL;
+    if (prev == NULL) return NULL;
+
+    r = editors_index_to_editor(column, editors_editor_from_table(column, prev->data));
+
+    g_list_free(list);
+
+    return r;
+}
+
+/*
 
 
 static gboolean resize_button_release_callback(GtkWidget *widget, GdkEventButton *event, gpointer data) {
@@ -200,13 +221,7 @@ static gboolean resize_button_release_callback(GtkWidget *widget, GdkEventButton
     g_list_free(list_head);
     
     return TRUE;
-}
-
-static gboolean resize_expose_event_callback(GtkWidget *widget, GdkEventExpose *event, gpointer data) {
-    gdk_window_set_cursor(gtk_widget_get_window(widget), gdk_cursor_new(GDK_DOUBLE_ARROW));
-    return TRUE;
     }*/
-
 
 void column_add(column_t *column, editor_t *editor) {
     int i;
@@ -225,7 +240,7 @@ void column_add(column_t *column, editor_t *editor) {
 
         editor->allocated_vertical_space = editor_get_height_request(editor);
 
-        editors_adjust_size(column);
+        column_adjust_size(column);
 
         gtk_widget_show_all(column->editors_vbox);
         gtk_widget_queue_draw(column->editors_vbox);
@@ -266,14 +281,6 @@ static int editors_count(column_t *column) {
         if (column->editors[i] != NULL) ++count;
     }
     return count;
-}
-
-static int editors_find_editor(column_t *column, editor_t *editor) {
-    int i;
-    for (i = 0; i < column->editors_allocated; ++i) {
-        if (column->editors[i] == editor) return i;
-    }
-    return -1;
 }
 
 editor_t *column_remove(column_t *column, editor_t *editor) {

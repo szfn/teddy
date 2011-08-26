@@ -887,7 +887,7 @@ editor_t *new_editor(GtkWidget *window, column_t *column, buffer_t *buffer) {
 
         r->table = gtk_table_new(0, 0, FALSE);
 
-        r->reshandle = reshandle_new();
+        r->reshandle = reshandle_new(column, r);
         r->label = gtk_label_new("");
         r->entry = gtk_entry_new();
         
