@@ -1,4 +1,3 @@
-- closing columns
 - fix vertical space assignment
 
 MONODISPLAY ====================================================================
