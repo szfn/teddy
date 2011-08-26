@@ -87,7 +87,7 @@ column_t *column_new(GtkWidget *window, GtkWidget *container) {
         column->editors[i] = NULL;
     }
 
-    column->editors_vbox = gtk_vbox_new(FALSE, 0);
+    column->editors_vbox = gtk_vbox_new(FALSE, 1);
     g_signal_connect(G_OBJECT(column->editors_vbox), "expose-event", G_CALLBACK(editors_expose_event_callback), (gpointer)column);
     gtk_container_add(GTK_CONTAINER(container), column->editors_vbox);
 
@@ -220,7 +220,7 @@ void column_add(column_t *column, editor_t *editor) {
 
         gtk_container_add(GTK_CONTAINER(column->editors_vbox), editor->table);
         
-        gtk_box_set_child_packing(GTK_BOX(column->editors_vbox), editor->table, column->empty ? TRUE : FALSE, column->empty ? TRUE : FALSE, 0, GTK_PACK_START);
+        gtk_box_set_child_packing(GTK_BOX(column->editors_vbox), editor->table, column->empty ? TRUE : FALSE, column->empty ? TRUE : FALSE, 1, GTK_PACK_START);
         column->empty = 0;
 
         editor->allocated_vertical_space = editor_get_height_request(editor);
@@ -293,7 +293,7 @@ editor_t *column_remove(column_t *column, editor_t *editor) {
 
         // set the first element of the vbox (that may have changed) to EXPAND and FILL
         list = gtk_container_get_children(GTK_CONTAINER(column->editors_vbox));
-        gtk_box_set_child_packing(GTK_BOX(column->editors_vbox), list->data, TRUE, TRUE, 0, GTK_PACK_START);        
+        gtk_box_set_child_packing(GTK_BOX(column->editors_vbox), list->data, TRUE, TRUE, 1, GTK_PACK_START);        
         g_list_free(list);
         
     }

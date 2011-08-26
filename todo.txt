@@ -1,4 +1,5 @@
-- add a resize_handle inside each editor and make it functional to resize rows
+- put a black 1 pixel border around editors
+- make resize handles functional for resizing rows
 - make resize_handle resize columns too
 - imlement initial sizing of columns
 

@@ -22,6 +22,6 @@ void global_init() {
     pango_font_description_set_variant(elements_font_description, PANGO_VARIANT_NORMAL);
     pango_font_description_set_weight(elements_font_description, PANGO_WEIGHT_THIN);
     pango_font_description_set_size(elements_font_description, 10);*/
-    elements_font_description = pango_font_description_from_string("tahoma,arial,sans-serif 9");
+    elements_font_description = pango_font_description_from_string("tahoma,arial,sans-serif 11");
     
 }
