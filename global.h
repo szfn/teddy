@@ -15,6 +15,8 @@ extern FT_Library library;
 
 extern void quick_message(editor_t *editor, const char *title, const char *msg);
 
+extern PangoFontDescription *elements_font_description;
+
 #define MAX_LINES_HEIGHT_REQUEST 25
 #define MIN_LINES_HEIGHT_REQUEST 3
 

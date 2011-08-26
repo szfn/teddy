@@ -230,7 +230,7 @@ void column_add(column_t *column, editor_t *editor) {
 
         if (!(column->empty)) {
             GtkWidget *resize_element = gtk_drawing_area_new();
-            gtk_widget_set_size_request(resize_element, 1, 4);
+            gtk_widget_set_size_request(resize_element, 1, 6);
             column->resize_elements[i] = resize_element;
             gtk_container_add(GTK_CONTAINER(column->editors_vbox), resize_element);
             gtk_box_set_child_packing(GTK_BOX(column->editors_vbox), resize_element, FALSE, FALSE, 0, GTK_PACK_START);

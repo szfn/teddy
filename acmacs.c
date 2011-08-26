@@ -20,7 +20,7 @@ int main(int argc, char *argv[]) {
     gtk_init(&argc, &argv);
 
     global_init();
-    
+
     interp_init();
     buffers_init();
 

@@ -878,12 +878,19 @@ editor_t *new_editor(GtkWidget *window, column_t *column, buffer_t *buffer) {
     {
         GtkWidget *drarscroll = gtk_vscrollbar_new((GtkAdjustment *)(r->adjustment = gtk_adjustment_new(0.0, 0.0, 1.0, 1.0, 1.0, 1.0)));
         r->drarhscroll = gtk_hscrollbar_new((GtkAdjustment *)(r->hadjustment = gtk_adjustment_new(0.0, 0.0, 1.0, 1.0, 1.0, 1.0)));
-        GtkWidget *tag = gtk_hbox_new(FALSE, 2);
+        GtkWidget *tag = gtk_hbox_new(FALSE, 0);
+        GtkBorder bor = { 0, 0, 0, 0 };
 
-        r->table = gtk_table_new(2, 2, FALSE);
+        r->table = gtk_table_new(0, 0, FALSE);
         
         r->label = gtk_label_new("");
         r->entry = gtk_entry_new();
+        
+        gtk_widget_set_size_request(r->entry, 10, 14);
+        gtk_entry_set_inner_border(GTK_ENTRY(r->entry), &bor);
+        gtk_entry_set_has_frame(GTK_ENTRY(r->entry), FALSE);
+        gtk_widget_modify_font(r->entry, elements_font_description);
+        gtk_widget_modify_font(r->label, elements_font_description);
 
         r->current_entry_handler_id = g_signal_connect(r->entry, "key-release-event", G_CALLBACK(entry_default_insert_callback), r);
 
