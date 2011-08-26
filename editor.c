@@ -11,14 +11,18 @@
 #include "buffers.h"
 #include "interp.h"
 #include "column.h"
+#include "reshandle.h"
 
 static void set_label_text(editor_t *editor) {
     char *labeltxt;
 
-    asprintf(&labeltxt, "%s %s  |  %s>", (editor->buffer->modified ? "**" : "  "), editor->buffer->name, editor->label_state);
+    asprintf(&labeltxt, " %s |  %s>", editor->buffer->name, editor->label_state);
+
+    editor->reshandle->modified = editor->buffer->modified;
 
     gtk_label_set_text(GTK_LABEL(editor->label), labeltxt);
     gtk_widget_queue_draw(editor->label);
+    gtk_widget_queue_draw(editor->reshandle->resdr);
 
     free(labeltxt); 
 }
@@ -882,7 +886,8 @@ editor_t *new_editor(GtkWidget *window, column_t *column, buffer_t *buffer) {
         GtkBorder bor = { 0, 0, 0, 0 };
 
         r->table = gtk_table_new(0, 0, FALSE);
-        
+
+        r->reshandle = reshandle_new();
         r->label = gtk_label_new("");
         r->entry = gtk_entry_new();
         
@@ -900,9 +905,11 @@ editor_t *new_editor(GtkWidget *window, column_t *column, buffer_t *buffer) {
         g_signal_connect(r->entry, "focus-out-event", G_CALLBACK(entry_focusout_callback), r);
         g_signal_connect(r->entry, "focus-in-event", G_CALLBACK(entry_focusin_callback), r);
 
+        gtk_container_add(GTK_CONTAINER(tag), r->reshandle->resdr);
         gtk_container_add(GTK_CONTAINER(tag), r->label);
         gtk_container_add(GTK_CONTAINER(tag), r->entry);
 
+        gtk_box_set_child_packing(GTK_BOX(tag), r->reshandle->resdr, FALSE, FALSE, 2, GTK_PACK_START);
         gtk_box_set_child_packing(GTK_BOX(tag), r->label, FALSE, FALSE, 2, GTK_PACK_START);
         gtk_box_set_child_packing(GTK_BOX(tag), r->entry, TRUE, TRUE, 2, GTK_PACK_END);
 
@@ -933,6 +940,7 @@ void editor_free(editor_t *editor) {
     if (editor->timeout_id != -1) {
         g_source_remove(editor->timeout_id);
     }
+    reshandle_free(editor->reshandle);
     //gtk_widget_destroy(editor->table);
     free(editor);
 }

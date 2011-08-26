@@ -5,6 +5,8 @@
 
 #include <gtk/gtk.h>
 
+#include "reshandle.h"
+
 typedef struct _editor_t {
     buffer_t *buffer;
     GtkWidget *window;
@@ -18,6 +20,7 @@ typedef struct _editor_t {
     int mouse_marking;
 
     GtkWidget *table;
+    reshandle_t *reshandle;
     GtkWidget *label;
     GtkWidget *entry;
     const char *label_state;
