@@ -163,66 +163,6 @@ editor_t *column_get_editor_before(column_t *column, editor_t *editor) {
     return r;
 }
 
-/*
-
-
-static gboolean resize_button_release_callback(GtkWidget *widget, GdkEventButton *event, gpointer data) {
-    column_t *column = (column_t *)data;
-    double change = event->y - column->frame_resize_origin;
-    GList *prev = NULL;
-    GList *list = gtk_container_get_children(GTK_CONTAINER(column->editors_vbox));
-    GList *list_head = list;
-
-    for ( ; list != NULL; list = list->next) {
-        if (list->data == widget) {
-            break;
-        }
-        prev = list;
-    }
-
-    if (list == NULL) {
-        printf("Resize targets not found\n");
-        return TRUE;
-    } 
-
-    {
-        editor_t *preved = editors_index_to_editor(column, editors_editor_from_table(column, (GtkWidget *)(prev->data)));
-        editor_t *nexted = editors_index_to_editor(column, editors_editor_from_table(column, (GtkWidget *)(list->next->data)));
-        GtkAllocation allocation;
-
-        if (preved == NULL) {
-            printf("Resize previous editor target not found\n");
-            return TRUE;
-        }
-
-        if (nexted == NULL) {
-            printf("Resize next editor target not found\n");
-            return TRUE;
-        }
-
-        nexted->allocated_vertical_space -= change;
-        if (nexted->allocated_vertical_space < 50) nexted->allocated_vertical_space = 50;
-
-        gtk_widget_get_allocation(preved->table, &allocation);
-
-        if (allocation.height > preved->allocated_vertical_space) {
-            double new_height = allocation.height += change;
-            if (new_height < preved->allocated_vertical_space) {
-                preved->allocated_vertical_space = new_height;
-            }
-        } else {
-            preved->allocated_vertical_space += change;
-        }
-        
-        editors_adjust_size(column);
-        gtk_widget_queue_draw(column->editors_vbox);
-    }
-
-    g_list_free(list_head);
-    
-    return TRUE;
-    }*/
-
 void column_add(column_t *column, editor_t *editor) {
     int i;
     
@@ -260,7 +200,6 @@ editor_t *column_new_editor(column_t *column, buffer_t *buffer) {
 
     return e;
 }
-
 
 void column_replace_buffer(column_t *column, buffer_t *buffer) {
     int i;
