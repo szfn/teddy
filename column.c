@@ -83,14 +83,8 @@ column_t *column_new(GtkWidget *window, GtkWidget *container) {
         perror("Out of memory");
         exit(EXIT_FAILURE);
     }
-    column->resize_elements = malloc(sizeof(GtkWidget *) * column->editors_allocated);
-    if (!(column->resize_elements)) {
-        perror("Out of memory");
-        exit(EXIT_FAILURE);
-    }
     for (i = 0; i < column->editors_allocated; ++i) {
         column->editors[i] = NULL;
-        column->resize_elements[i] = NULL;
     }
 
     column->editors_vbox = gtk_vbox_new(FALSE, 0);
@@ -111,7 +105,6 @@ void column_free(column_t *column) {
         }
     }
     free(column->editors);
-    free(column->resize_elements);
     free(column);
 }
 
@@ -123,24 +116,19 @@ static void editors_grow(column_t *column) {
         perror("Out of memory");
         exit(EXIT_FAILURE);
     }
-    column->resize_elements = realloc(column->resize_elements, sizeof(GtkWidget *) * column->editors_allocated * 2);
-    if (!(column->resize_elements)) {
-        perror("Out of memory");
-        exit(EXIT_FAILURE);
-    }
     for (i = column->editors_allocated; i < column->editors_allocated * 2; ++i) {
         column->editors[i] = NULL;
-        column->resize_elements[i] = NULL;
     }
     column->editors_allocated *= 2;
 }
 
+/*
 static gboolean resize_button_press_callback(GtkWidget *widget, GdkEventButton *event, gpointer data) {
     column_t *column = (column_t *)data;
     printf("Starting resize\n");
     column->frame_resize_origin = event->y;
     return TRUE;
-}
+    }*/
 
 static int editors_editor_from_table(column_t *column, GtkWidget *table) {
     int i;
@@ -151,9 +139,11 @@ static int editors_editor_from_table(column_t *column, GtkWidget *table) {
     return -1;
 }
 
+/*
 static editor_t *editors_index_to_editor(column_t *column, int idx) {
     return (idx != -1) ? column->editors[idx] : NULL;
 }
+
 
 static gboolean resize_button_release_callback(GtkWidget *widget, GdkEventButton *event, gpointer data) {
     column_t *column = (column_t *)data;
@@ -215,7 +205,7 @@ static gboolean resize_button_release_callback(GtkWidget *widget, GdkEventButton
 static gboolean resize_expose_event_callback(GtkWidget *widget, GdkEventExpose *event, gpointer data) {
     gdk_window_set_cursor(gtk_widget_get_window(widget), gdk_cursor_new(GDK_DOUBLE_ARROW));
     return TRUE;
-}
+    }*/
 
 
 void column_add(column_t *column, editor_t *editor) {
@@ -227,20 +217,6 @@ void column_add(column_t *column, editor_t *editor) {
 
     if (i < column->editors_allocated) {
         column->editors[i] = editor;
-
-        if (!(column->empty)) {
-            GtkWidget *resize_element = gtk_drawing_area_new();
-            gtk_widget_set_size_request(resize_element, 1, 6);
-            column->resize_elements[i] = resize_element;
-            gtk_container_add(GTK_CONTAINER(column->editors_vbox), resize_element);
-            gtk_box_set_child_packing(GTK_BOX(column->editors_vbox), resize_element, FALSE, FALSE, 0, GTK_PACK_START);
-            g_signal_connect(G_OBJECT(resize_element), "button-press-event", G_CALLBACK(resize_button_press_callback), (gpointer)column);
-            g_signal_connect(G_OBJECT(resize_element), "button-release-event", G_CALLBACK(resize_button_release_callback), (gpointer)column);
-            g_signal_connect(G_OBJECT(resize_element), "expose-event", G_CALLBACK(resize_expose_event_callback), (gpointer)column);
-            gtk_widget_add_events(column->resize_elements[i], GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK);
-        } else {
-            column->resize_elements[i] = NULL;
-        }
 
         gtk_container_add(GTK_CONTAINER(column->editors_vbox), editor->table);
         
@@ -311,34 +287,15 @@ editor_t *column_remove(column_t *column, editor_t *editor) {
     editor->initialization_ended = 0;
 
     if (idx != -1) {
+        GList *list;
         gtk_container_remove(GTK_CONTAINER(column->editors_vbox), editor->table);
-        if (column->resize_elements[idx] != NULL) {
-            gtk_container_remove(GTK_CONTAINER(column->editors_vbox), column->resize_elements[idx]);
-        } else {
-            GList *list, *cur;
-            int new_first_idx;
-            list = gtk_container_get_children(GTK_CONTAINER(column->editors_vbox));
-            cur = list;
-
-            // Remove the first resize element from the vbox
-            gtk_container_remove(GTK_CONTAINER(column->editors_vbox), cur->data);
-            cur = cur->next;
-            assert(cur != NULL);
-
-            gtk_box_set_child_packing(GTK_BOX(column->editors_vbox), cur->data, TRUE, TRUE, 0, GTK_PACK_START);
-
-            new_first_idx = editors_editor_from_table(column, cur->data);
-            assert(new_first_idx != -1);
-
-            //gtk_widget_destroy(column->resize_elements[new_first_idx]);
-            column->resize_elements[new_first_idx] = NULL;
-
-            g_list_free(list);
-        }
-
         column->editors[idx] = NULL;
-        //gtk_widget_destroy(column->resize_elements[idx]);
-        column->resize_elements[idx] = NULL;
+
+        // set the first element of the vbox (that may have changed) to EXPAND and FILL
+        list = gtk_container_get_children(GTK_CONTAINER(column->editors_vbox));
+        gtk_box_set_child_packing(GTK_BOX(column->editors_vbox), list->data, TRUE, TRUE, 0, GTK_PACK_START);        
+        g_list_free(list);
+        
     }
 
     editor_free(editor);

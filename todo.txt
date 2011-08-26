@@ -1,5 +1,6 @@
-- multiple columns
-- ability to resize columns
+- add a resize_handle inside each editor and make it functional to resize rows
+- make resize_handle resize columns too
+- imlement initial sizing of columns
 
 MONODISPLAY ====================================================================
 - change buffer-manager default action to be "focus buffer" (or "switch buffers" if the buffer is not visible currently)
