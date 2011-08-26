@@ -18,7 +18,7 @@ typedef struct _column_t {
     double frame_resize_origin;
 } column_t;
 
-column_t *column_new(GtkWidget *window);
+column_t *column_new(GtkWidget *window, GtkWidget *container);
 void column_free(column_t *column);
 editor_t *column_new_editor(column_t *column, buffer_t *buffer);
 editor_t *column_find_buffer_editor(column_t *column, buffer_t *buffer);

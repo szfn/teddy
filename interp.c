@@ -3,6 +3,7 @@
 #include <tcl.h>
 
 #include "global.h"
+#include "columns.h"
 #include "column.h"
 
 Tcl_Interp *interp;
@@ -15,13 +16,32 @@ static int acmacs_exit_command(ClientData client_data, Tcl_Interp *interp, int a
 }
 
 static int acmacs_new_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
-    column_new_editor(context_editor->column, context_editor->buffer);
+    if (argc != 2) {
+        Tcl_AddErrorInfo(interp, "Wrong number of arguments to 'new', usage: 'new <row|col>'");
+        return TCL_ERROR;
+        
+    }
+
+    if (strcmp(argv[1], "row") == 0) {
+        column_new_editor(context_editor->column, context_editor->buffer);
+        return TCL_OK;
+    } else if (strcmp(argv[1], "col") == 0) {
+        columns_new(context_editor->buffer);
+        return TCL_OK;
+    } 
+    
     /* TODO:
-       - reassign current implementation to "new row"
-       - implement "new col"
        - implement "new" (without arguments)
      */
-    return TCL_OK;
+    
+    {
+        char *msg;
+        asprintf(&msg, "Unknown option to 'new': '%s'", argv[1]);
+        Tcl_AddErrorInfo(interp, msg);
+        free(msg);
+        return TCL_ERROR;
+    }
+
 }
 
 void interp_init(void) {

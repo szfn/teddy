@@ -5,6 +5,7 @@
 column_t **columns;
 int columns_allocated;
 GtkWidget *columns_window;
+GtkWidget *columns_hbox;
 
 /* TODO:
    - hbox to actually support more than one column (all columns with the same size(
@@ -24,7 +25,10 @@ void columns_init(GtkWidget *window) {
         columns[i] = NULL;
     }
 
+    columns_hbox = gtk_hbox_new(FALSE, 0);
     columns_window = window;
+
+    gtk_container_add(GTK_CONTAINER(window), columns_hbox);
 }
 
 static void columns_grow(void) {
@@ -50,7 +54,8 @@ editor_t *columns_new(buffer_t *buffer) {
     }
 
     if (i < columns_allocated) {
-        columns[i] = column_new(columns_window);
+        columns[i] = column_new(columns_window, columns_hbox);
+        gtk_box_set_child_packing(GTK_BOX(columns_hbox), columns[i]->editors_vbox, TRUE, TRUE, 0, GTK_PACK_START);
         return column_new_editor(columns[i], buffer);
     } else {
         columns_grow();

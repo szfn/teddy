@@ -71,7 +71,7 @@ static gboolean editors_expose_event_callback(GtkWidget *widget, GdkEventExpose 
     return FALSE;
 }
 
-column_t *column_new(GtkWidget *window) {
+column_t *column_new(GtkWidget *window, GtkWidget *container) {
     column_t *column = malloc(sizeof(column_t));
     int i;
 
@@ -95,7 +95,7 @@ column_t *column_new(GtkWidget *window) {
 
     column->editors_vbox = gtk_vbox_new(FALSE, 0);
     g_signal_connect(G_OBJECT(column->editors_vbox), "expose-event", G_CALLBACK(editors_expose_event_callback), (gpointer)column);
-    gtk_container_add(GTK_CONTAINER(window), column->editors_vbox);
+    gtk_container_add(GTK_CONTAINER(container), column->editors_vbox);
 
     column->editors_window = window;
 
@@ -230,7 +230,7 @@ void column_add(column_t *column, editor_t *editor) {
 
         if (!(column->empty)) {
             GtkWidget *resize_element = gtk_drawing_area_new();
-            gtk_widget_set_size_request(resize_element, 1, 8);
+            gtk_widget_set_size_request(resize_element, 1, 4);
             column->resize_elements[i] = resize_element;
             gtk_container_add(GTK_CONTAINER(column->editors_vbox), resize_element);
             gtk_box_set_child_packing(GTK_BOX(column->editors_vbox), resize_element, FALSE, FALSE, 0, GTK_PACK_START);
