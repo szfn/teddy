@@ -10,6 +10,7 @@
 #include "global.h"
 #include "buffers.h"
 #include "interp.h"
+#include "columns.h"
 #include "column.h"
 #include "reshandle.h"
 
@@ -359,7 +360,12 @@ static gboolean entry_default_insert_callback(GtkWidget *widget, GdkEventKey *ev
         da = interp_eval(editor, gtk_entry_get_text(GTK_ENTRY(editor->entry)));
         switch(da) {
         case CLOSE_EDITOR:
-            editor = column_remove(editor->column, editor);
+            if (column_editor_count(editor->column) > 1) {
+                editor = column_remove(editor->column, editor);
+            } else {
+                column_t *column = columns_remove(editor->column, editor);
+                editor = column_get_first_editor(column);
+            }
             gtk_widget_grab_focus(editor->drar);
             break;
         default:
@@ -560,6 +566,8 @@ static gboolean key_release_callback(GtkWidget *widget, GdkEventKey *event, edit
             return TRUE;
         }
     }
+
+    return FALSE;
 }
 
 static void move_cursor_to_mouse(editor_t *editor, double x, double y) {

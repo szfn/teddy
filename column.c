@@ -275,7 +275,7 @@ void column_replace_buffer(column_t *column, buffer_t *buffer) {
     }
 }
 
-static int editors_count(column_t *column) {
+int column_editor_count(column_t *column) {
     int i, count = 0;;
     for (i = 0; i < column->editors_allocated; ++i) {
         if (column->editors[i] != NULL) ++count;
@@ -283,10 +283,18 @@ static int editors_count(column_t *column) {
     return count;
 }
 
+editor_t *column_get_first_editor(column_t *column) {
+    GList *list = gtk_container_get_children(GTK_CONTAINER(column->editors_vbox));
+    int new_idx = editors_editor_from_table(column, list->data);
+    editor_t *r = (new_idx != -1) ? column->editors[new_idx] : NULL;
+    g_list_free(list);
+    return r;
+}
+
 editor_t *column_remove(column_t *column, editor_t *editor) {
     int idx = editors_find_editor(column, editor);
     
-    if (editors_count(column) == 1) {
+    if (column_editor_count(column) == 1) {
         quick_message(editor, "Error", "Can not remove last editor of the window");
         return editor;
     }
@@ -307,12 +315,6 @@ editor_t *column_remove(column_t *column, editor_t *editor) {
 
     editor_free(editor);
 
-    {
-        GList *list = gtk_container_get_children(GTK_CONTAINER(column->editors_vbox));
-        int new_idx = editors_editor_from_table(column, list->data);
-        editor_t *r = (new_idx != -1) ? column->editors[new_idx] : NULL;
-        g_list_free(list);
-        return r;
-    }
+    return column_get_first_editor(column);
 }
 

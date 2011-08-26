@@ -10,10 +10,12 @@ MONODISPLAY ====================================================================
 =================================================================================
 
 - drag and drop to switch buffers
-- heuristics to autocreate new frames (and size them)
+- command to switch columns
 
 - implement go command (moves inside buffers and opens files)
 - remove ctrl-o keybinding (go command replaces it)
+
+- heuristics to autocreate new frames (and size them)
 
 - Ctrl-backspace to remove one word
 - Ctrl-end to go to end of buffer
