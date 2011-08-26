@@ -474,6 +474,8 @@ static gboolean key_press_callback(GtkWidget *widget, GdkEventKey *event, gpoint
         case GDK_KEY_Return:
             editor_replace_selection(editor, "\n");
             return TRUE;
+        case GDK_KEY_Escape:
+            return TRUE;
         }
     }
 
@@ -543,6 +545,21 @@ static gboolean key_press_callback(GtkWidget *widget, GdkEventKey *event, gpoint
     printf("Unknown key sequence: %d (shift %d ctrl %d alt %d super %d)\n", event->keyval, shift, ctrl, alt, super);
 
     return TRUE;
+}
+
+static gboolean key_release_callback(GtkWidget *widget, GdkEventKey *event, editor_t *editor) {
+    int shift = event->state & GDK_SHIFT_MASK;
+    int ctrl = event->state & GDK_CONTROL_MASK;
+    int alt = event->state & GDK_MOD1_MASK;
+    int super = event->state & GDK_SUPER_MASK;
+
+    if (!shift && !ctrl && !alt && !super) {
+        switch(event->keyval) {
+        case GDK_KEY_Escape:
+            gtk_widget_grab_focus(editor->entry);
+            return TRUE;
+        }
+    }
 }
 
 static void move_cursor_to_mouse(editor_t *editor, double x, double y) {
@@ -646,12 +663,14 @@ static gboolean cursor_blinker(editor_t *editor) {
     if (editor->cursor_visible < 0) editor->cursor_visible = 1;
 
     if (!gtk_widget_is_focus(editor->drar)) {
-        if (!(editor->cursor_visible)) editor->cursor_visible = 1;
+        if (editor->cursor_visible) {
+            editor->cursor_visible = 0;
+            gtk_widget_queue_draw(editor->drar);
+        }
     } else {
         editor->cursor_visible = (editor->cursor_visible + 1) % 3;
+        gtk_widget_queue_draw(editor->drar);
     }
-
-    gtk_widget_queue_draw(editor->drar);
     
     return TRUE;
 }
@@ -722,7 +741,7 @@ static gboolean expose_event_callback(GtkWidget *widget, GdkEventExpose *event, 
 
         //buffer_line_adjust_glyphs(editor->buffer, line, origin_x, y, allocation.width, allocation.height, &y_increment, &line_end_width);
 
-        if (((line->start_y + line->y_increment - originy) > 0) && ((line->start_y - originy) < allocation.height)) {
+        if (((line->start_y + line->y_increment - originy) > 0) && ((line->start_y - editor->buffer->ascent - originy) < allocation.height)) {
             cairo_show_glyphs(cr, line->glyphs, line->cap);
 
             cury = line->start_y;
@@ -866,6 +885,8 @@ editor_t *new_editor(GtkWidget *window, column_t *column, buffer_t *buffer) {
 
     g_signal_connect(G_OBJECT(r->drar), "key-press-event",
                      G_CALLBACK(key_press_callback), r);
+    g_signal_connect(G_OBJECT(r->drar), "key-release-event",
+                     G_CALLBACK(key_release_callback), r);
 
     g_signal_connect(G_OBJECT(r->drar), "button-press-event",
                      G_CALLBACK(button_press_callback), r);

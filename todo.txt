@@ -1,7 +1,5 @@
-- make resize_handle resize columns too
 - resize on move
 - closing columns
-- reimplement hbox/vbox to not be broken
 
 
 MONODISPLAY ====================================================================
@@ -40,6 +38,9 @@ MONODISPLAY ====================================================================
 - double click on resize handle hides all other editors of the column
 - command to reload buffer contents from disk
 - auto-reloading buffers when there is no change and the file on disk was changed
+- reimplement hbox/vbox to not be broken on resize
+  - column_adjust_size just takes the last row and uses all the empty space or 40% if there isn't any empty space
+  - put the columns_hbox insite a single custom container that returns a requested size of { 0, 0 } and on allocation just resizes everything maintaining proportions
 
 - word selection is longest sequence around point consisting of:
   - letters

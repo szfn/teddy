@@ -792,6 +792,9 @@ void buffer_move_cursor_to_position(buffer_t *buffer, double x, double y) {
     if (i >= line->cap) buffer->cursor_glyph = line->cap;
 }
 
+//#define MAIN_FONT "/usr/share/fonts/truetype/msttcorefonts/arial.ttf"
+#define MAIN_FONT "/usr/share/fonts/truetype/ttf-dejavu/DejaVuSans.ttf"
+
 buffer_t *buffer_create(FT_Library *library) {
     buffer_t *buffer = malloc(sizeof(buffer_t));
 
@@ -803,9 +806,9 @@ buffer_t *buffer_create(FT_Library *library) {
     buffer->has_filename = 0;
 
     undo_init(&(buffer->undo));
-    
-    acmacs_font_init(&(buffer->main_font), library, "/usr/share/fonts/truetype/msttcorefonts/arial.ttf", 16);
-    acmacs_font_init(&(buffer->posbox_font), library, "/usr/share/fonts/truetype/msttcorefonts/arial.ttf", 12);
+
+    acmacs_font_init(&(buffer->main_font), library, MAIN_FONT, 14);
+    acmacs_font_init(&(buffer->posbox_font), library, MAIN_FONT, 12);
     
     {
         cairo_text_extents_t extents;
@@ -838,8 +841,8 @@ buffer_t *buffer_create(FT_Library *library) {
     buffer->mark_line = NULL;
 
     buffer->tab_width = 4;
-    buffer->left_margin = 8.0;
-    buffer->right_margin = 8.0;
+    buffer->left_margin = 4.0;
+    buffer->right_margin = 4.0;
 
     return buffer;
 }
@@ -957,7 +960,7 @@ void buffer_move_cursor(buffer_t *buffer, int direction) {
 
 void buffer_typeset_maybe(buffer_t *buffer, double width) {
     real_line_t *line;
-    double y = buffer->line_height;
+    double y = buffer->line_height + (buffer->ex_height / 2);
     
     if (fabs(width - buffer->rendered_width) < 0.001) {
         return;
