@@ -32,10 +32,10 @@ int main(int argc, char *argv[]) {
         buf = buffers_open(NULL, argv[i], &rp);
         if (buf == NULL) {
             printf("Load of [%s] failed\n", (rp == NULL) ? argv[i] : rp);
-            free(rp);
         } else {
             abuf = buf;
         }
+        free(rp);
     }
 
     window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
