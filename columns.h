@@ -16,5 +16,8 @@ extern GtkWidget *columns_hbox;
 int columns_column_count(void);
 column_t *columns_remove(column_t *column, editor_t *editor);
 editor_t *columns_get_buffer(buffer_t *buffer);
+editor_t *columns_get_editor_from_positioon(double x, double y);
+column_t *columns_get_column_from_position(double x, double y);
+void columns_swap_columns(column_t *cola, column_t *colb);
 
 #endif

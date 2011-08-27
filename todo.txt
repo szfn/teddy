@@ -1,6 +1,3 @@
-- drag and drop to switch buffers
-- command to switch columns
-
 - implement go command (moves inside buffers and opens files)
 - remove ctrl-o keybinding (go command replaces it)
 
@@ -29,7 +26,8 @@
 - mouse scrollwheel
 - tabs
 - home goes to first non-whitespace character, if it's already there it goes to the first character of the line
-- double click on resize handle hides all other editors of the column
+- double click on resize handle / label hides all other editors of the column
+- middle click on resize handle / label closes editor
 - command to reload buffer contents from disk
 - auto-reloading buffers when there is no change and the file on disk was changed
 - reimplement hbox/vbox to not be broken on resize

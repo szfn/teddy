@@ -241,3 +241,19 @@ editor_t *column_find_buffer_editor(column_t *column, buffer_t *buffer) {
     }
     return NULL;
 }
+
+editor_t *column_get_editor_from_position(column_t *column, double x, double y) {
+    int i;
+    for (i = 0; i < column->editors_allocated; ++i) {
+        GtkAllocation allocation;
+        if (column->editors[i] == NULL) continue;
+        gtk_widget_get_allocation(column->editors[i]->table, &allocation);
+        if ((x >= allocation.x)
+            && (x <= allocation.x + allocation.width)
+            && (y >= allocation.y)
+            && (y <= allocation.y + allocation.height))
+            return column->editors[i];
+        
+    }
+    return NULL;
+}

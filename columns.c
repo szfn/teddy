@@ -263,3 +263,62 @@ editor_t *columns_get_buffer(buffer_t *buffer) {
     }
     return NULL;
 }
+
+column_t *columns_get_column_from_position(double x, double y) {
+    int i;
+    for (i = 0; i < columns_allocated; ++i) {
+        GtkAllocation allocation;
+        if (columns[i] == NULL) continue;
+        gtk_widget_get_allocation(columns[i]->editors_vbox, &allocation);
+        printf("Comparing (%g,%g) with (%d,%d) (%d,%d)\n", x, y, allocation.x, allocation.y, allocation.x+allocation.width, allocation.y+allocation.height);
+        if ((x >= allocation.x)
+            && (x <= allocation.x + allocation.width)
+            && (y >= allocation.y)
+            && (y <= allocation.y + allocation.height))
+            return columns[i];
+    }
+    return NULL;
+}
+
+editor_t *columns_get_editor_from_positioon(double x, double y) {
+    column_t *column = columns_get_column_from_position(x, y);
+    if (column == NULL) {
+        printf("Column not found\n");
+        return NULL;
+    }
+    return column_get_editor_from_position(column, x, y);
+}
+
+void columns_swap_columns(column_t *cola, column_t *colb) {
+    GList *list = gtk_container_get_children(GTK_CONTAINER(columns_hbox));
+    GList *cur;
+    int idxa = -1, idxb = -1, i;
+    for (cur = list, i = 0; cur != NULL; cur = cur->next, ++i) {
+        if (cur->data == cola->editors_vbox) {
+            idxa = i;
+        }
+        if (cur->data == colb->editors_vbox) {
+            idxb = i;
+        }
+    }
+    g_list_free(list);
+
+    if (idxa == -1) return;
+    if (idxb == -1) return;
+    
+    gtk_box_reorder_child(GTK_BOX(columns_hbox), cola->editors_vbox, idxb);
+    gtk_box_reorder_child(GTK_BOX(columns_hbox), colb->editors_vbox, idxa);
+
+    {
+        GtkAllocation alla;
+        GtkAllocation allb;
+
+        gtk_widget_get_allocation(cola->editors_vbox, &alla);
+        gtk_widget_get_allocation(colb->editors_vbox, &allb);
+
+        gtk_widget_set_size_request(cola->editors_vbox, allb.width, -1);
+        gtk_widget_set_size_request(colb->editors_vbox, alla.width, -1);
+
+        gtk_widget_queue_draw(columns_hbox);
+    }
+}

@@ -695,6 +695,7 @@ static gboolean expose_event_callback(GtkWidget *widget, GdkEventExpose *event, 
 
     if (!(editor->initialization_ended)) {
         gdk_window_set_cursor(gtk_widget_get_window(editor->drar), gdk_cursor_new(GDK_XTERM));
+        gdk_window_set_cursor(gtk_widget_get_window(editor->label), gdk_cursor_new(GDK_FLEUR));
         editor->timeout_id = g_timeout_add(500, (GSourceFunc)cursor_blinker, (gpointer)editor);
         editor->initialization_ended = 1;
     }
@@ -862,6 +863,39 @@ static gboolean hscrolled_callback(GtkAdjustment *adj, gpointer data) {
     return TRUE;
 }
 
+static gboolean label_button_press_callback(GtkWidget *widget, GdkEventButton *event, editor_t *editor) {
+    return TRUE;
+}
+
+static gboolean label_button_release_callback(GtkWidget *widget, GdkEventButton *event, editor_t *editor) {
+    GtkAllocation allocation;
+    double x, y;
+
+    gtk_widget_get_allocation(widget, &allocation);
+
+    x = event->x + allocation.x;
+    y = event->y + allocation.y;
+
+    if (event->button == 1) {
+        editor_t *target = columns_get_editor_from_positioon(x, y);
+        
+        if ((target != NULL) && (target != editor)) {
+            buffer_t *tbuf = target->buffer;
+            editor_switch_buffer(target, editor->buffer);
+            editor_switch_buffer(editor, tbuf);
+        }
+        return TRUE;
+    } else if (event->button == 3) {
+        column_t *target_column = columns_get_column_from_position(x, y);
+        if ((target_column != NULL) && (target_column != editor->column)) {
+            columns_swap_columns(editor->column, target_column);
+        }
+        return TRUE;
+    }
+    return FALSE;
+}
+
+
 editor_t *new_editor(GtkWidget *window, column_t *column, buffer_t *buffer) {
     editor_t *r = malloc(sizeof(editor_t));
 
@@ -909,12 +943,15 @@ editor_t *new_editor(GtkWidget *window, column_t *column, buffer_t *buffer) {
         r->drarhscroll = gtk_hscrollbar_new((GtkAdjustment *)(r->hadjustment = gtk_adjustment_new(0.0, 0.0, 1.0, 1.0, 1.0, 1.0)));
         GtkWidget *tag = gtk_hbox_new(FALSE, 0);
         GtkBorder bor = { 0, 0, 0, 0 };
+        GtkWidget *event_box = gtk_event_box_new();
 
         r->table = gtk_table_new(0, 0, FALSE);
 
         r->reshandle = reshandle_new(column, r);
         r->label = gtk_label_new("");
         r->entry = gtk_entry_new();
+
+        gtk_container_add(GTK_CONTAINER(event_box), r->label);
         
         gtk_widget_set_size_request(r->entry, 10, 16);
         gtk_entry_set_inner_border(GTK_ENTRY(r->entry), &bor);
@@ -930,12 +967,17 @@ editor_t *new_editor(GtkWidget *window, column_t *column, buffer_t *buffer) {
         g_signal_connect(r->entry, "focus-out-event", G_CALLBACK(entry_focusout_callback), r);
         g_signal_connect(r->entry, "focus-in-event", G_CALLBACK(entry_focusin_callback), r);
 
+        gtk_widget_add_events(event_box, GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK);
+        
+        g_signal_connect(event_box, "button-press-event", G_CALLBACK(label_button_press_callback), r);
+        g_signal_connect(event_box, "button-release-event", G_CALLBACK(label_button_release_callback), r);
+        
         gtk_container_add(GTK_CONTAINER(tag), r->reshandle->resdr);
-        gtk_container_add(GTK_CONTAINER(tag), r->label);
+        gtk_container_add(GTK_CONTAINER(tag), event_box);
         gtk_container_add(GTK_CONTAINER(tag), r->entry);
 
         gtk_box_set_child_packing(GTK_BOX(tag), r->reshandle->resdr, FALSE, FALSE, 0, GTK_PACK_START);
-        gtk_box_set_child_packing(GTK_BOX(tag), r->label, FALSE, FALSE, 0, GTK_PACK_START);
+        gtk_box_set_child_packing(GTK_BOX(tag), event_box, FALSE, FALSE, 0, GTK_PACK_START);
         gtk_box_set_child_packing(GTK_BOX(tag), r->entry, TRUE, TRUE, 0, GTK_PACK_END);
 
         gtk_table_attach(GTK_TABLE(r->table), tag, 0, 2, 0, 1, GTK_EXPAND | GTK_FILL, 0, 0, 0);
