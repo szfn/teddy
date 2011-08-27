@@ -358,6 +358,8 @@ static gboolean entry_default_insert_callback(GtkWidget *widget, GdkEventKey *ev
     if (event->keyval == GDK_KEY_Return) {
         da = interp_eval(editor, gtk_entry_get_text(GTK_ENTRY(editor->entry)));
         switch(da) {
+        case FOCUS_ALREADY_SWITCHED:
+            break;
         case CLOSE_EDITOR:
             if (column_editor_count(editor->column) > 1) {
                 editor = column_remove(editor->column, editor);

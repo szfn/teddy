@@ -5,7 +5,8 @@
 
 enum deferred_action {
     NOTHING,
-    CLOSE_EDITOR
+    CLOSE_EDITOR,
+    FOCUS_ALREADY_SWITCHED
 };
 
 void interp_init(void);

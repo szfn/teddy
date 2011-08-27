@@ -24,10 +24,18 @@ static int acmacs_new_command(ClientData client_data, Tcl_Interp *interp, int ar
     }
 
     if (strcmp(argv[1], "row") == 0) {
-        column_new_editor(context_editor->column, null_buffer());
+        editor_t *n = column_new_editor(context_editor->column, null_buffer());
+        if (n != NULL) {
+            gtk_widget_grab_focus(n->drar);
+            deferred_action_to_return = FOCUS_ALREADY_SWITCHED;
+        }
         return TCL_OK;
     } else if (strcmp(argv[1], "col") == 0) {
-        columns_new(null_buffer());
+        editor_t *n = columns_new(null_buffer());
+        if (n != NULL) {
+            gtk_widget_grab_focus(n->drar);
+            deferred_action_to_return = FOCUS_ALREADY_SWITCHED;
+        }
         return TCL_OK;
     } 
     

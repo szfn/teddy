@@ -1,4 +1,3 @@
-- new should focus the new window
 - implement go command (moves inside buffers and opens files)
   - line / column moves
   - file open
