@@ -53,8 +53,14 @@ static gboolean buffers_key_press_callback(GtkWidget *widget, GdkEventKey *event
         switch(event->keyval) {
         case GDK_KEY_Return: {
             int idx = get_selected_idx();
+            editor_t *editor;
             if (idx < 0) return TRUE;
-            editor_switch_buffer(buffers_selector_focus_editor, buffers[idx]);
+            editor = columns_get_buffer(buffers[idx]);
+            if (editor != NULL) {
+                gtk_widget_grab_focus(editor->drar);
+            } else {
+                editor_switch_buffer(buffers_selector_focus_editor, buffers[idx]);
+            }
             gtk_widget_hide(buffers_window);
             return TRUE;
         }
@@ -194,7 +200,7 @@ void buffers_init(void) {
     {
         GtkWidget *vbox = gtk_vbox_new(FALSE, 2);
         GtkWidget *label = gtk_label_new("Buffers:");
-        GtkWidget *label2 = gtk_label_new("Press <Enter> to select, <Del> to delete buffer,\n<Esc> to close");
+        GtkWidget *label2 = gtk_label_new("Press <Enter> to focus buffer, <Del> to delete buffer,\n<Esc> to close");
 
         buffers_list = gtk_list_store_new(2, G_TYPE_INT, G_TYPE_STRING);
         buffers_tree = gtk_tree_view_new();

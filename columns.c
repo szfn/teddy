@@ -252,3 +252,14 @@ column_t *columns_remove(column_t *column, editor_t *editor) {
 
     return columns_get_first();
 }
+
+editor_t *columns_get_buffer(buffer_t *buffer) {
+    int i;
+    for (i = 0; i < columns_allocated; ++i) {
+        editor_t *r;
+        if (columns[i] == NULL) continue;
+        r = column_find_buffer_editor(columns[i], buffer);
+        if (r != NULL) return r;
+    }
+    return NULL;
+}

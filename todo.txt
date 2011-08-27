@@ -1,7 +1,4 @@
 MONODISPLAY ====================================================================
-- change buffer-manager default action to be "focus buffer" (or "switch buffers" if the buffer is not visible currently)
-- add Shift-Enter to buffer manager to always use the "switch buffers" action
-- add Ctrl-Enter to buffer manager to use the action "focus buffer" when the buffer is visible and "buffer on new frame" when it's not
 - the "new" command should use a predefined default "+null+" buffer (that is set to be empty, not editable and can not be killed)
 - closing a buffer will switch the editor displaying it to "+null+" always
 =================================================================================
@@ -12,13 +9,17 @@ MONODISPLAY ====================================================================
 - implement go command (moves inside buffers and opens files)
 - remove ctrl-o keybinding (go command replaces it)
 
+- scripting for keybindings
+
 - heuristics to autocreate new frames (and size them)
+
+- add Shift-Enter to buffer manager to always use the "switch buffers" action
+- add Ctrl-Enter to buffer manager to use the action "focus buffer" when the buffer is visible and "buffer on new frame" when it's not
 
 - Ctrl-backspace to remove one word
 - Ctrl-end to go to end of buffer
 - click on file name (inside tag) shows full path
 - auto-indent
-- scripting (for keybindings)
 - highlighting
 - reminder: use menu key to highlight command line
 - note: left button click does search/open, middle click does primary paste

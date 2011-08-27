@@ -235,3 +235,11 @@ editor_t *column_remove(column_t *column, editor_t *editor) {
     return column_get_first_editor(column);
 }
 
+editor_t *column_find_buffer_editor(column_t *column, buffer_t *buffer) {
+    int i;
+    for (i = 0; i < column->editors_allocated; ++i) {
+        if (column->editors[i] == NULL) continue;
+        if (column->editors[i]->buffer == buffer) return column->editors[i];
+    }
+    return NULL;
+}
