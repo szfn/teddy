@@ -51,22 +51,20 @@ static gboolean reshandle_button_release_callback(GtkWidget *widget, GdkEventBut
     prev_editor = column_get_editor_before(reshandle->column, reshandle->editor);
     if (prev_editor != NULL) {
         GtkAllocation allocation;
-        
-        reshandle->editor->allocated_vertical_space -= changey;
-        if (reshandle->editor->allocated_vertical_space < 50) reshandle->editor->allocated_vertical_space = 50;
+        double cur_height;
+        double prev_height;
+
+        gtk_widget_get_allocation(reshandle->editor->table, &allocation);
+        cur_height = allocation.height - changey;
 
         gtk_widget_get_allocation(prev_editor->table, &allocation);
+        prev_height = allocation.height + changey;
 
-        if (allocation.height > prev_editor->allocated_vertical_space) {
-            double new_height = allocation.height += changey;
-            if (new_height < prev_editor->allocated_vertical_space) {
-                prev_editor->allocated_vertical_space = new_height;
-            }
-        } else {
-            prev_editor->allocated_vertical_space += changey;
-        }
-        
-        column_adjust_size(reshandle->column);
+        if (cur_height < 50) cur_height = 50;
+        if (prev_height < 50) prev_height = 50;
+
+        gtk_widget_set_size_request(reshandle->editor->table, -1, cur_height);
+        gtk_widget_set_size_request(prev_editor->table, -1, prev_height);
         gtk_widget_queue_draw(reshandle->column->editors_vbox);
     }
 
@@ -76,19 +74,17 @@ static gboolean reshandle_button_release_callback(GtkWidget *widget, GdkEventBut
         double cur_width;
         double prev_width;
 
-        printf("Change: %g\n", changex);
+        //printf("Change: %g\n", changex);
 
         gtk_widget_get_allocation(reshandle->column->editors_vbox, &allocation);
-
         cur_width = allocation.width - changex;
 
-        printf("Current width: %d -> %g\n", allocation.width, cur_width);
+        //printf("Current width: %d -> %g\n", allocation.width, cur_width);
         
         gtk_widget_get_allocation(prev_column->editors_vbox, &allocation);
-        
         prev_width = allocation.width + changex;
 
-        printf("Previous width: %d -> %g\n", allocation.width, prev_width);
+        //printf("Previous width: %d -> %g\n", allocation.width, prev_width);
 
         if (cur_width < 50) cur_width = 50;
         if (prev_width < 50) prev_width = 50;

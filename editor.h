@@ -30,9 +30,6 @@ typedef struct _editor_t {
     gboolean search_failed;
 
     struct _column_t *column;
-
-    // stuff used to calculate space requirements
-    int allocated_vertical_space;
 } editor_t;
 
 editor_t *new_editor(GtkWidget *window, struct _column_t *column, buffer_t *buffer);

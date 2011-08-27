@@ -1,4 +1,4 @@
-- fix vertical space assignment
+- both vertically and horizontally, abort allocation if there isn't enough space
 
 MONODISPLAY ====================================================================
 - change buffer-manager default action to be "focus buffer" (or "switch buffers" if the buffer is not visible currently)

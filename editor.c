@@ -952,8 +952,6 @@ editor_t *new_editor(GtkWidget *window, column_t *column, buffer_t *buffer) {
         g_signal_connect(G_OBJECT(r->drarhscroll), "value_changed", G_CALLBACK(hscrolled_callback), (gpointer)r);
     }
 
-    r->allocated_vertical_space = 0;
-
     return r;
 }
 

@@ -11,7 +11,6 @@ typedef struct _column_t {
     int editors_allocated;
     GtkWidget *editors_window;
     GtkWidget *editors_vbox;
-    int empty;
     int exposed;
 } column_t;
 

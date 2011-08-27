@@ -9,65 +9,8 @@
 
 #define MAGIC_NUMBER 18
 
-void column_adjust_size(column_t *column) {
-    int total_allocated_height = 0;
-    GtkAllocation allocation;
-    int i, count;
-    int coefficient;
-
-    if (!(column->exposed)) return;
-
-    for (i = 0; i < column->editors_allocated; ++i) {
-        if (column->editors[i] == NULL) continue;
-        total_allocated_height += (column->editors[i]->allocated_vertical_space + MAGIC_NUMBER);
-    }
-
-    gtk_widget_get_allocation(column->editors_vbox, &allocation);
-
-    printf("Total space needed for editors %d, allocated space %d\n", total_allocated_height, allocation.height);
-
-    coefficient = total_allocated_height;
-
-    for (count = 0; (count < 4) && (total_allocated_height > allocation.height); ++count) {
-        int difference = total_allocated_height - allocation.height;
-        int new_coefficient = 0;
-        int new_total_allocated_height = 0;
-
-        printf("Removing: %d\n", difference);
-
-        for (i = 0; i < column->editors_allocated; ++i) {
-            if (column->editors[i] == NULL) continue;
-            if (column->editors[i]->allocated_vertical_space > 50) {
-                int cut = (int)ceil(difference * ((double)(column->editors[i]->allocated_vertical_space+MAGIC_NUMBER) / coefficient));
-                printf("   cutting: %d\n", cut);
-                column->editors[i]->allocated_vertical_space -= cut;
-                if (column->editors[i]->allocated_vertical_space < 50) {
-                    column->editors[i]->allocated_vertical_space = 50;
-                }
-
-                new_coefficient += column->editors[i]->allocated_vertical_space + MAGIC_NUMBER;
-            }
-            new_total_allocated_height += column->editors[i]->allocated_vertical_space + MAGIC_NUMBER;
-        }
-
-        total_allocated_height = new_total_allocated_height;
-        coefficient = new_coefficient;
-    }
-
-    printf("Height requests:\n");
-    for (i = 0; i < column->editors_allocated; ++i) {
-        if (column->editors[i] == NULL) continue;
-        printf("   vspace: %d\n", column->editors[i]->allocated_vertical_space);
-        gtk_widget_set_size_request(column->editors[i]->table, 10, column->editors[i]->allocated_vertical_space);
-    }
-}
-
-static gboolean editors_expose_event_callback(GtkWidget *widget, GdkEventExpose *event, gpointer data) {
-    column_t *column = (column_t *)data;
-    if (!(column->exposed)) {
-        column->exposed = 1;
-        column_adjust_size(column);
-    } 
+static gboolean editors_expose_event_callback(GtkWidget *widget, GdkEventExpose *event, column_t *column) {
+    column->exposed = 1;    
     return FALSE;
 }
 
@@ -75,7 +18,6 @@ column_t *column_new(GtkWidget *window, GtkWidget *container) {
     column_t *column = malloc(sizeof(column_t));
     int i;
 
-    column->empty = 1;
     column->exposed = 0;
     column->editors_allocated = 10;
     column->editors = malloc(sizeof(editor_t *) * column->editors_allocated);
@@ -163,6 +105,27 @@ editor_t *column_get_editor_before(column_t *column, editor_t *editor) {
     return r;
 }
 
+static editor_t *column_get_last(column_t *column) {
+    GList *list = gtk_container_get_children(GTK_CONTAINER(column->editors_vbox));
+    GList *cur, *prev = NULL;
+    GtkWidget *w;
+
+    for (cur = list; cur != NULL; cur = cur->next) {
+        prev = cur;
+    }
+
+    if (prev == NULL) return NULL;
+
+    w = prev->data;
+
+    g_list_free(list);
+    
+    {
+        int idx = editors_editor_from_table(column, w);
+        return editors_index_to_editor(column, idx);
+    }
+}
+
 void column_add(column_t *column, editor_t *editor) {
     int i;
     
@@ -170,17 +133,39 @@ void column_add(column_t *column, editor_t *editor) {
         if (column->editors[i] == NULL) break;
     }
 
+    printf("Adding editor\n");
+
     if (i < column->editors_allocated) {
+        editor_t *last_editor = column_get_last(column);
+
+        printf("Last editor is null: %d\n", last_editor == NULL);
+        
         column->editors[i] = editor;
 
         gtk_container_add(GTK_CONTAINER(column->editors_vbox), editor->table);
-        
-        gtk_box_set_child_packing(GTK_BOX(column->editors_vbox), editor->table, column->empty ? TRUE : FALSE, column->empty ? TRUE : FALSE, 1, GTK_PACK_START);
-        column->empty = 0;
+        gtk_box_set_child_packing(GTK_BOX(column->editors_vbox), editor->table, TRUE, TRUE, 1, GTK_PACK_START);
 
-        editor->allocated_vertical_space = editor_get_height_request(editor);
+        if (last_editor != NULL) {
+            GtkAllocation allocation;
+            double last_editor_real_size;
+            double new_height;
 
-        column_adjust_size(column);
+            printf("Allocating\n");
+
+            gtk_widget_get_allocation(last_editor->table, &allocation);
+            last_editor_real_size = editor_get_height_request(last_editor);
+
+
+            if (allocation.height * 0.40 > allocation.height - last_editor_real_size) {
+                new_height = allocation.height * 0.40;
+            } else {
+                new_height = allocation.height - last_editor_real_size;
+            }
+
+            gtk_widget_set_size_request(editor->table, -1, new_height);
+            gtk_widget_set_size_request(last_editor->table, -1, allocation.height - new_height);
+
+        }
 
         gtk_widget_show_all(column->editors_vbox);
         gtk_widget_queue_draw(column->editors_vbox);
@@ -241,15 +226,8 @@ editor_t *column_remove(column_t *column, editor_t *editor) {
     editor->initialization_ended = 0;
 
     if (idx != -1) {
-        GList *list;
         gtk_container_remove(GTK_CONTAINER(column->editors_vbox), editor->table);
         column->editors[idx] = NULL;
-
-        // set the first element of the vbox (that may have changed) to EXPAND and FILL
-        list = gtk_container_get_children(GTK_CONTAINER(column->editors_vbox));
-        gtk_box_set_child_packing(GTK_BOX(column->editors_vbox), list->data, TRUE, TRUE, 1, GTK_PACK_START);        
-        g_list_free(list);
-        
     }
 
     editor_free(editor);
