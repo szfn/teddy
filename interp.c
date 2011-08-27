@@ -4,6 +4,7 @@
 
 #include "global.h"
 #include "columns.h"
+#include "buffers.h"
 #include "column.h"
 
 Tcl_Interp *interp;
@@ -23,10 +24,10 @@ static int acmacs_new_command(ClientData client_data, Tcl_Interp *interp, int ar
     }
 
     if (strcmp(argv[1], "row") == 0) {
-        column_new_editor(context_editor->column, context_editor->buffer);
+        column_new_editor(context_editor->column, null_buffer());
         return TCL_OK;
     } else if (strcmp(argv[1], "col") == 0) {
-        columns_new(context_editor->buffer);
+        columns_new(null_buffer());
         return TCL_OK;
     } 
     

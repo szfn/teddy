@@ -1,8 +1,3 @@
-MONODISPLAY ====================================================================
-- the "new" command should use a predefined default "+null+" buffer (that is set to be empty, not editable and can not be killed)
-- closing a buffer will switch the editor displaying it to "+null+" always
-=================================================================================
-
 - drag and drop to switch buffers
 - command to switch columns
 

@@ -188,13 +188,11 @@ editor_t *column_new_editor(column_t *column, buffer_t *buffer) {
 
 void column_replace_buffer(column_t *column, buffer_t *buffer) {
     int i;
-    buffer_t *replacement_buffer = NULL;
 
     for (i = 0; i < column->editors_allocated; ++i) {
         if (column->editors[i] == NULL) continue;
         if (column->editors[i]->buffer == buffer) {
-            if (replacement_buffer == NULL) replacement_buffer = buffers_get_replacement_buffer(buffer);
-            editor_switch_buffer(column->editors[i], replacement_buffer);
+            editor_switch_buffer(column->editors[i], null_buffer());
         }
     }
 }

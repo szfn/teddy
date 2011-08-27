@@ -15,6 +15,7 @@ static gboolean delete_callback(GtkWidget *widget, GdkEvent *event, gpointer dat
 int main(int argc, char *argv[]) {
     GtkWidget *window;
     editor_t *editor;
+    buffer_t *abuf;
     int i;
 
     gtk_init(&argc, &argv);
@@ -26,10 +27,14 @@ int main(int argc, char *argv[]) {
 
     for (i = 1; i < argc; ++i) {
         char *rp;
+        buffer_t *buf;
         printf("Will show: %s\n", argv[i]);
-        if (buffers_open(NULL, argv[i], &rp) == NULL) {
+        buf = buffers_open(NULL, argv[i], &rp);
+        if (buf == NULL) {
             printf("Load of [%s] failed\n", (rp == NULL) ? argv[i] : rp);
             free(rp);
+        } else {
+            abuf = buf;
         }
     }
 
@@ -42,7 +47,7 @@ int main(int argc, char *argv[]) {
     g_signal_connect_swapped(G_OBJECT(window), "destroy", G_CALLBACK(gtk_main_quit), NULL);
 
     columns_init(window);
-    editor = columns_new(buffers_get_replacement_buffer(NULL));
+    editor = columns_new((abuf == NULL) ? null_buffer() : abuf);
 
     gtk_widget_show_all(window);
 

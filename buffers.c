@@ -17,6 +17,10 @@ GtkListStore *buffers_list;
 GtkWidget *buffers_tree;
 editor_t *buffers_selector_focus_editor;
 
+buffer_t *null_buffer(void) {
+    return buffers[0];
+}
+
 static int get_selected_idx(void) {
     GtkTreePath *focus_path;
     GtkTreeViewColumn *focus_column;
@@ -80,29 +84,13 @@ static gboolean buffers_key_press_callback(GtkWidget *widget, GdkEventKey *event
     return FALSE;
 }
 
-buffer_t *buffers_get_replacement_buffer(buffer_t *buffer) {
-    int i;
-    for (i = 0; i < buffers_allocated; ++i) {
-        if (buffers[i] == NULL) continue;
-        if (buffers[i] == buffer) continue;
-        break;
-    }
-
-    if (i < buffers_allocated) {
-        return buffers[i];
-    } else {
-        buffer_t *replacement = buffer_create(&library);
-        load_empty(replacement);
-        buffers_add(replacement);
-        return replacement;
-    }
-}
-
 #define SAVE_AND_CLOSE_RESPONSE 1
 #define DISCARD_CHANGES_RESPONSE 2
 #define CANCEL_ACTION_RESPONSE 3
 
 int buffers_close(buffer_t *buffer, GtkWidget *window) {
+    if (buffers[0] == buffer) return 1;
+                                  
     if (buffer->modified) {
         GtkWidget *dialog;
         GtkWidget *content_area;
@@ -195,6 +183,14 @@ void buffers_init(void) {
             perror("Out of memory");
             exit(EXIT_FAILURE);
         }
+    }
+
+    buffers[0] = buffer_create(&library);
+    {
+        free(buffers[0]->name);
+        asprintf(&(buffers[0]->name), "+null+");
+        load_empty(buffers[0]);
+        buffers[0]->editable = 0;
     }
 
     {

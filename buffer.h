@@ -34,6 +34,7 @@ typedef struct _buffer_t {
     char *path;
     int has_filename;
     int modified;
+    int editable;
     
     /* Font face stuff */
     FT_Library *library;

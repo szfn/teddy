@@ -419,7 +419,13 @@ static void buffer_typeset_from(buffer_t *buffer, real_line_t *start_line) {
 void buffer_replace_selection(buffer_t *buffer, const char *new_text) {
     real_line_t *start_line, *end_line;
     int start_glyph, end_glyph;
-    undo_node_t *undo_node = malloc(sizeof(undo_node_t));
+    undo_node_t *undo_node;
+
+    if (!(buffer->editable)) return;
+
+    buffer->modified = 1;
+
+    undo_node = malloc(sizeof(undo_node_t));
 
     buffer_get_selection(buffer, &start_line, &start_glyph, &end_line, &end_glyph);
 
@@ -463,7 +469,13 @@ static void buffer_thaw_selection(buffer_t *buffer, selection_t *selection, real
 void buffer_undo(buffer_t *buffer) {
     real_line_t *start_line, *end_line, *typeset_start_line;
     int start_glyph, end_glyph;
-    undo_node_t *undo_node = undo_pop(&(buffer->undo));
+    undo_node_t *undo_node; 
+
+    if (!(buffer->editable)) return;
+
+    undo_node = undo_pop(&(buffer->undo));
+
+    buffer->modified = 1;
 
     buffer_unset_mark(buffer);
 
@@ -727,6 +739,8 @@ void save_to_text_file(buffer_t *buffer) {
     asprintf(&cmd, "diff %s %s~", buffer->path, buffer->path);
     system(cmd);
     free(cmd);
+
+    buffer->modified = 0;
 }
 
 void line_get_glyph_coordinates(buffer_t *buffer, real_line_t *line, int glyph, double *x, double *y) {
@@ -800,6 +814,7 @@ buffer_t *buffer_create(FT_Library *library) {
 
     buffer->library = library;
     buffer->modified = 0;
+    buffer->editable = 1;
 
     asprintf(&(buffer->name), "+unnamed");
     buffer->path = NULL;

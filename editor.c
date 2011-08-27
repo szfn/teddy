@@ -30,7 +30,6 @@ static void set_label_text(editor_t *editor) {
 
 static void editor_replace_selection(editor_t *editor, const char *new_text) {
     buffer_replace_selection(editor->buffer, new_text);
-    editor->buffer->modified = 1;
     set_label_text(editor);
     gtk_widget_queue_draw(editor->drar);
 }
@@ -517,7 +516,6 @@ static gboolean key_press_callback(GtkWidget *widget, GdkEventKey *event, gpoint
             return TRUE;
         case GDK_KEY_s:
             save_to_text_file(editor->buffer);
-            editor->buffer->modified = 0;
             set_label_text(editor);
             return TRUE;
         case GDK_KEY_f:
@@ -874,8 +872,6 @@ editor_t *new_editor(GtkWidget *window, column_t *column, buffer_t *buffer) {
     r->initialization_ended = 0;
     r->mouse_marking = 0;
 
-    r->buffer->modified = 0;
-    
     r->search_mode = FALSE;
     r->search_failed = FALSE;
 
