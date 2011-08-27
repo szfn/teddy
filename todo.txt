@@ -1,4 +1,4 @@
-- implement go command (moves inside buffers and opens files)
+ go command (moves inside buffers and opens files)
   - line / column moves
   - file open
   - buffer switching when file is already open
@@ -52,11 +52,8 @@
   - stuff after filename is optionally enclosed in [] and separed by either ":" or "," at most two numbers
 
 - tcl commands to disable:
-  - pwd <- return working directory for current buffer
   - unknown <- if it's a command in the path execute it as if it was specified in exec (but also expand all the words containing a * or a ?)
   
 - tcl commands to add:
-  - putm -> write into a message box
-  - pwf -> return current buffer's file
   - kill -> kill's current process (if one is active in the buffer), otherwise kills current buffer. If an argument is specified does the same thing as the kill command
 

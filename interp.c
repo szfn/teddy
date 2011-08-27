@@ -50,7 +50,11 @@ static int acmacs_new_command(ClientData client_data, Tcl_Interp *interp, int ar
         free(msg);
         return TCL_ERROR;
     }
+}
 
+static int acmacs_pwf_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
+    Tcl_SetResult(interp, context_editor->buffer->path, TCL_VOLATILE);
+    return TCL_OK;
 }
 
 void interp_init(void) {
@@ -67,6 +71,7 @@ void interp_init(void) {
     Tcl_CreateCommand(interp, "exit", &acmacs_exit_command, (ClientData)NULL, NULL);
 
     Tcl_CreateCommand(interp, "new", &acmacs_new_command, (ClientData)NULL, NULL);
+    Tcl_CreateCommand(interp, "pwf", &acmacs_pwf_command, (ClientData)NULL, NULL);
 }
 
 void interp_free(void) {
@@ -75,10 +80,11 @@ void interp_free(void) {
 
 enum deferred_action interp_eval(editor_t *editor, const char *command) {
     int code;
+    
     context_editor = editor;
     deferred_action_to_return = NOTHING;
-    
-    //TODO: switch to buffer directory before executing command
+
+    chdir(context_editor->buffer->wd);
     
     code = Tcl_Eval(interp, command);
         
@@ -92,6 +98,11 @@ enum deferred_action interp_eval(editor_t *editor, const char *command) {
 
         quick_message(context_editor, "TCL Error", Tcl_GetString(stackTrace));
         //TODO: if the error string is very long use a buffer instead
+    } else {
+        const char *result = Tcl_GetStringResult(interp);
+        if (strcmp(result, "") != 0) {
+            quick_message(context_editor, "TCL Result", result);
+        }
     }
 
     Tcl_ResetResult(interp);

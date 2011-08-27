@@ -570,6 +570,12 @@ int load_text_file(buffer_t *buffer, const char *filename) {
             asprintf(&(buffer->name), "%s", buffer->path);
         } else {
             asprintf(&(buffer->name), "%s", name+1);
+            
+            free(buffer->wd);
+            buffer->wd = malloc(sizeof(char) * (name - buffer->path + 2));
+            strncpy(buffer->wd, buffer->path, (name - buffer->path + 1));
+            buffer->wd[name - buffer->path + 1] = '\0';
+            //printf("Working directory: [%s]\n", buffer->wd);
         }
     }
 
@@ -818,6 +824,7 @@ buffer_t *buffer_create(FT_Library *library) {
 
     asprintf(&(buffer->name), "+unnamed");
     buffer->path = NULL;
+    asprintf(&(buffer->wd), "%s", getcwd(NULL, 0));
     buffer->has_filename = 0;
 
     undo_init(&(buffer->undo));
@@ -884,6 +891,7 @@ void buffer_free(buffer_t *buffer) {
 
     free(buffer->name);
     free(buffer->path);
+    free(buffer->wd);
     free(buffer);
 }
 
