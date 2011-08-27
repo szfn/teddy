@@ -6,6 +6,7 @@
 #include "columns.h"
 #include "buffers.h"
 #include "column.h"
+#include "go.h"
 
 Tcl_Interp *interp;
 editor_t *context_editor;
@@ -20,7 +21,6 @@ static int acmacs_new_command(ClientData client_data, Tcl_Interp *interp, int ar
     if (argc != 2) {
         Tcl_AddErrorInfo(interp, "Wrong number of arguments to 'new', usage: 'new <row|col>'");
         return TCL_ERROR;
-        
     }
 
     if (strcmp(argv[1], "row") == 0) {
@@ -72,6 +72,8 @@ void interp_init(void) {
 
     Tcl_CreateCommand(interp, "new", &acmacs_new_command, (ClientData)NULL, NULL);
     Tcl_CreateCommand(interp, "pwf", &acmacs_pwf_command, (ClientData)NULL, NULL);
+
+    Tcl_CreateCommand(interp, "go", &acmacs_go_command, (ClientData)NULL, NULL);
 }
 
 void interp_free(void) {

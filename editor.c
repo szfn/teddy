@@ -34,7 +34,7 @@ static void editor_replace_selection(editor_t *editor, const char *new_text) {
     gtk_widget_queue_draw(editor->drar);
 }
 
-static void editor_center_on_cursor(editor_t *editor) {
+void editor_center_on_cursor(editor_t *editor) {
     double x, y;
     double translated_y;
     GtkAllocation allocation;
