@@ -1,12 +1,22 @@
+- new should focus the new window
 - implement go command (moves inside buffers and opens files)
+  - line / column moves
+  - file open
+  - buffer switching when file is already open
+  - if file doesn't exist ask if user wants to create it before doing it
 - remove ctrl-o keybinding (go command replaces it)
+
+- when buffer manager needs to swap a buffer in asks to select (new frame, current frame, sleect frame) like the 'go' command
 
 - scripting for keybindings
 
 - heuristics to autocreate new frames (and size them)
-
-- add Shift-Enter to buffer manager to always use the "switch buffers" action
-- add Ctrl-Enter to buffer manager to use the action "focus buffer" when the buffer is visible and "buffer on new frame" when it's not
+  - if it was invoked with a buffer that isn't the '+null+' buffer search for an editor containing the '+null+' buffer and if it exists use it (start the search at the right column if the buffer we are trying to open starts with '+' or at the left column otherwise)
+  - search for a column with some empty space, start at the right if the buffer we are trying to open starts wit '+', at the left otherwise
+  - if none is found try to open a new column
+  - if a new column can not be opened try to add a row to the "active" column (the one subjected to the last editing action)
+  - if that fails try to open a row starting with the first column and continue until one is found
+  - if even this doesn't succeed just replace the current editor with the buffer (or give up if the currrent buffer is '+null+')
 
 - Ctrl-backspace to remove one word
 - Ctrl-end to go to end of buffer
