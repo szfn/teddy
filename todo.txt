@@ -1,8 +1,4 @@
- go command (moves inside buffers and opens files)
-  - line / column moves
-  - file open
-  - buffer switching when file is already open
-  - if file doesn't exist ask if user wants to create it before doing it
+- implement go_to_buffer frame selection interface
 - remove ctrl-o keybinding (go command replaces it)
 
 - when buffer manager needs to swap a buffer in asks to select (new frame, current frame, sleect frame) like the 'go' command

@@ -3,6 +3,7 @@
 #include "global.h"
 #include "columns.h"
 #include "editor.h"
+#include "go.h"
 
 #include <gdk/gdkkeysyms.h>
 #include <glib-object.h>
@@ -57,14 +58,8 @@ static gboolean buffers_key_press_callback(GtkWidget *widget, GdkEventKey *event
         switch(event->keyval) {
         case GDK_KEY_Return: {
             int idx = get_selected_idx();
-            editor_t *editor;
             if (idx < 0) return TRUE;
-            editor = columns_get_buffer(buffers[idx]);
-            if (editor != NULL) {
-                gtk_widget_grab_focus(editor->drar);
-            } else {
-                editor_switch_buffer(buffers_selector_focus_editor, buffers[idx]);
-            }
+            go_to_buffer(buffers_selector_focus_editor, buffers[idx]);
             gtk_widget_hide(buffers_window);
             return TRUE;
         }
@@ -289,7 +284,7 @@ void buffers_show_window(editor_t *editor) {
     gtk_widget_grab_focus(buffers_tree);
 }
 
-static char *unrealpath(char *absolute_path, const char *relative_path) {
+char *unrealpath(char *absolute_path, const char *relative_path) {
     if (strlen(relative_path) == 0) goto return_relative_path;
     if (relative_path[0] == '/') goto return_relative_path;
 
@@ -379,4 +374,23 @@ buffer_t *buffers_open(buffer_t *base_buffer, const char *filename, char **rp) {
     // file loaded or created successfully
     buffers_add(b);
     return b;
+}
+
+buffer_t *buffers_find_buffer_from_path(const char *urp) {
+    char *rp = realpath(urp, NULL);
+    buffer_t *r = NULL;
+    int i;
+
+    for (i = 0; i < buffers_allocated; ++i) {
+        if (buffers[i] == NULL) continue;
+        if (!(buffers[i]->has_filename)) continue;
+        if (buffers[i]->path == NULL) continue;
+        if (strcmp(buffers[i]->path, rp) == 0) {
+            r = buffers[i];
+            break;
+        }
+    }
+
+    free(rp);
+    return r;
 }

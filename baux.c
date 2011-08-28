@@ -30,6 +30,7 @@ void buffer_aux_go_line(buffer_t *buffer, int n) {
         prev = cur;
     }
     if (cur == NULL) {
+        printf("Last line: %d\n", prev);
         buffer->cursor_line = prev;
         buffer->cursor_glyph = 0;
     }

@@ -9,6 +9,8 @@ enum deferred_action {
     FOCUS_ALREADY_SWITCHED
 };
 
+extern enum deferred_action deferred_action_to_return;
+
 void interp_init(void);
 void interp_free(void);
 enum deferred_action interp_eval(editor_t *editor, const char *command);

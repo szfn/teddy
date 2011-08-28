@@ -4,8 +4,11 @@
 #include "baux.h"
 #include "ctype.h"
 #include "editor.h"
+#include "buffers.h"
+#include "global.h"
+#include "columns.h"
 
-int exec_char_specifier(const char *specifier, int really_exec) {
+static int exec_char_specifier(const char *specifier, int really_exec, editor_t *context_editor) {
     long int n1;
     
     if ((strcmp(specifier, "^") == 0) || (strcmp(specifier, ":^") == 0)) {
@@ -29,25 +32,28 @@ int exec_char_specifier(const char *specifier, int really_exec) {
     return 0;
 }
 
-int isnumber(const char *str) {
-    const char *c;
-    for (c = str; *c != '\0'; ++c) {
+static int isnumber(const char *str) {
+    const char *c = str;
+    
+    if ((*c == '+') || (*c == '-')) ++c;
+    
+    for (; *c != '\0'; ++c) {
         if (!isdigit(*c)) return 0;
     }
     return 1;
 }
 
-void exec_go(const char *specifier) {
+static int exec_go_position(const char *specifier, editor_t *context_editor) {
     long int n1;
     char *pos;
 
-    if (exec_char_specifier(specifier, 1)) return;
+    if (exec_char_specifier(specifier, 1, context_editor)) return 1;
     
     if (isnumber(specifier)) {
         n1 = strtol(specifier, NULL, 10);        
         printf("Line\n");
         buffer_aux_go_line(context_editor->buffer, (int)n1);
-        return;
+        return 1;
     }
 
     pos = strchr(specifier, ':');
@@ -57,16 +63,82 @@ void exec_go(const char *specifier) {
         c[pos - specifier] = '\0';
         if (isnumber(c)) {
             n1 = strtol(c, NULL, 10);
-            if (exec_char_specifier(pos, 0)) {
+            if (exec_char_specifier(pos, 0, context_editor)) {
                 printf("Line + char\n");
                 buffer_aux_go_line(context_editor->buffer, (int)n1);
-                exec_char_specifier(pos, 1);
-                return;
+                exec_char_specifier(pos, 1, context_editor);
+                return 1;
+            } else {
+                return 0;
             }
         }
     }
 
-    //TODO: then it could be a buffer or a filename
+    return 0;
+}
+
+editor_t *go_to_buffer(editor_t *editor, buffer_t *buffer) {
+    editor_t *target = columns_get_buffer(buffer);
+    if (target != NULL) {
+        gtk_widget_grab_focus(target->drar);
+        deferred_action_to_return = FOCUS_ALREADY_SWITCHED;
+        return target;
+    }
+    
+    //TODO: here we should ask what to do and potentially open a new editor
+    editor_switch_buffer(editor, buffer);
+    chdir(editor->buffer->wd);
+    return editor;
+}
+
+int exec_go(const char *specifier) {
+     char *sc = NULL;
+     char *saveptr, *tok;
+     char *urp;
+     buffer_t *buffer = NULL;
+     editor_t *editor = NULL;
+     int retval;
+
+     if (exec_go_position(specifier, context_editor)) {
+         retval = 1;
+         goto exec_go_cleanup;
+     }
+
+     sc = malloc(sizeof(char) * (strlen(specifier) + 1));
+     strcpy(sc, specifier);
+
+     tok = strtok_r(sc, ":", &saveptr);
+     if (tok == NULL) { retval = 0; goto exec_go_cleanup; }
+
+     urp = unrealpath(context_editor->buffer->path, tok);
+
+     buffer = buffers_find_buffer_from_path(urp);
+     if (buffer == NULL) {
+         buffer = buffer_create(&library);
+         if (load_text_file(buffer, urp) != 0) {
+             buffer_free(buffer);
+             retval = 0;
+             goto exec_go_cleanup;
+         } 
+         buffers_add(buffer);
+    }
+
+    editor = go_to_buffer(context_editor, buffer);
+
+    tok = strtok_r(sc, ":", &saveptr);
+    if (tok == NULL) { retval = 1; goto exec_go_cleanup; }
+    if (strlen(tok) == 0) { retval = 1; goto exec_go_cleanup; }
+
+    if (tok[0] == '[') ++tok;
+    if (tok[strlen(tok)-1] == ']') tok[strlen(tok)-1] = '\0';
+
+    exec_go_position(tok, context_editor);
+
+    retval = 1;
+
+ exec_go_cleanup:
+    if (sc != NULL) free(sc);
+    return retval;
 }
 
 int acmacs_go_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
@@ -75,11 +147,16 @@ int acmacs_go_command(ClientData client_data, Tcl_Interp *interp, int argc, cons
         return TCL_ERROR;
     }
 
-    exec_go(argv[1]);
-
-    editor_center_on_cursor(context_editor);
-    gtk_widget_queue_draw(context_editor->drar);
-    return TCL_OK;
+    if (!exec_go(argv[1])) {
+        //TODO:
+        // - ask user if one wants to create a new file
+        Tcl_AddErrorInfo(interp, "Command 'go' couldn't understand its argument, usage: 'go [<filename>][\":[\"[\"][<line-specifier>][\":\"][<column-specifier][\"]\"]]");
+        return TCL_ERROR;
+    } else {
+        editor_center_on_cursor(context_editor);
+        gtk_widget_queue_draw(context_editor->drar);
+        return TCL_OK;
+    }
 }
 
 
