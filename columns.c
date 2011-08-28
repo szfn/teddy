@@ -322,3 +322,8 @@ void columns_swap_columns(column_t *cola, column_t *colb) {
         gtk_widget_queue_draw(columns_hbox);
     }
 }
+
+editor_t *heuristic_new_frame(buffer_t *buffer) {
+    //TODO: needs to be implemented
+    return NULL;
+}

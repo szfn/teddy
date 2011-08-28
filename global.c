@@ -6,6 +6,8 @@ GtkClipboard *selection_clipboard;
 GtkClipboard *default_clipboard;
 PangoFontDescription *elements_font_description;
 
+buffer_t *selection_target_buffer = NULL;
+
 void global_init() {
     int error = FT_Init_FreeType(&library);
     if (error) {

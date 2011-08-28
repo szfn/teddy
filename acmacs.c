@@ -2,6 +2,7 @@
 #include <stdlib.h>
 
 #include "global.h"
+#include "go.h"
 #include "undo.h"
 #include "buffers.h"
 #include "columns.h"
@@ -46,6 +47,7 @@ int main(int argc, char *argv[]) {
     g_signal_connect(G_OBJECT(window), "delete-event", G_CALLBACK(delete_callback), NULL);
     g_signal_connect_swapped(G_OBJECT(window), "destroy", G_CALLBACK(gtk_main_quit), NULL);
 
+    go_init(window);
     columns_init(window);
     editor = columns_new((abuf == NULL) ? null_buffer() : abuf);
 

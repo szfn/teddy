@@ -3,6 +3,7 @@
 
 #include "editor.h"
 #include "column.h"
+#include "buffer.h"
 
 #include <gtk/gtk.h>
 #include <ft2build.h>
@@ -16,6 +17,8 @@ extern FT_Library library;
 extern void quick_message(editor_t *editor, const char *title, const char *msg);
 
 extern PangoFontDescription *elements_font_description;
+
+extern buffer_t *selection_target_buffer;
 
 #define MAX_LINES_HEIGHT_REQUEST 25
 #define MIN_LINES_HEIGHT_REQUEST 3

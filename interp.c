@@ -18,9 +18,18 @@ static int acmacs_exit_command(ClientData client_data, Tcl_Interp *interp, int a
 }
 
 static int acmacs_new_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
-    if (argc != 2) {
+    if (argc > 2) {
         Tcl_AddErrorInfo(interp, "Wrong number of arguments to 'new', usage: 'new <row|col>'");
         return TCL_ERROR;
+    }
+
+    if (argc == 1) {
+        editor_t *n = heuristic_new_frame(null_buffer());
+        if (n != NULL) {
+            gtk_widget_grab_focus(n->drar);
+            deferred_action_to_return = FOCUS_ALREADY_SWITCHED;
+        }
+        return TCL_OK;
     }
 
     if (strcmp(argv[1], "row") == 0) {
@@ -38,10 +47,6 @@ static int acmacs_new_command(ClientData client_data, Tcl_Interp *interp, int ar
         }
         return TCL_OK;
     } 
-    
-    /* TODO:
-       - implement "new" (without arguments)
-     */
     
     {
         char *msg;

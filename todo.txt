@@ -1,7 +1,8 @@
-- implement go_to_buffer frame selection interface
-- remove ctrl-o keybinding (go command replaces it)
+- implement frame selection
+- implement heuristic_new_frame
+- go command should attempt to create a file if it doesn't exist
 
-- when buffer manager needs to swap a buffer in asks to select (new frame, current frame, sleect frame) like the 'go' command
+- remove ctrl-o keybinding (go command replaces it)
 
 - scripting for keybindings
 
