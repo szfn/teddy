@@ -381,6 +381,10 @@ buffer_t *buffers_find_buffer_from_path(const char *urp) {
     buffer_t *r = NULL;
     int i;
 
+    if (rp == NULL) {
+        return NULL;
+    }
+
     for (i = 0; i < buffers_allocated; ++i) {
         if (buffers[i] == NULL) continue;
         if (!(buffers[i]->has_filename)) continue;

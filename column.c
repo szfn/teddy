@@ -181,9 +181,10 @@ editor_t *column_new_editor(column_t *column, buffer_t *buffer) {
 
     if (!column_add(column, e)) {
         column_remove(column, e);
+        return NULL;
+    } else {
+        return e;
     }
-
-    return e;
 }
 
 void column_replace_buffer(column_t *column, buffer_t *buffer) {
@@ -192,7 +193,7 @@ void column_replace_buffer(column_t *column, buffer_t *buffer) {
     for (i = 0; i < column->editors_allocated; ++i) {
         if (column->editors[i] == NULL) continue;
         if (column->editors[i]->buffer == buffer) {
-            editor_switch_buffer(column->editors[i], null_buffer());
+            column->editors[i]->buffer = null_buffer();
         }
     }
 }

@@ -335,6 +335,8 @@ editor_t *heuristic_new_frame(editor_t *spawning_editor, buffer_t *buffer) {
     column_t **ordered_columns = columns_ordered_columns(&numcol);
     editor_t *retval = NULL;
 
+    printf("New Buffer Heuristic\n");
+
     {
         int i;
         for (i = 0; i < numcol; ++i) {
@@ -359,6 +361,8 @@ editor_t *heuristic_new_frame(editor_t *spawning_editor, buffer_t *buffer) {
             }
             i += (garbage ? -1 : +1);
         }
+
+        printf("   No +null+ editor to take over\n");
     }
 
     { // if the last column is very large create a new column and use it
@@ -372,6 +376,8 @@ editor_t *heuristic_new_frame(editor_t *spawning_editor, buffer_t *buffer) {
                 goto heuristic_new_frame_exit;
             }
         }
+        
+        printf("   No large column to split\n");
     }
 
     { // search for a column with some empty space
@@ -381,6 +387,8 @@ editor_t *heuristic_new_frame(editor_t *spawning_editor, buffer_t *buffer) {
             GtkAllocation allocation;
             double occupied = column_get_occupied_space(ordered_columns[i]);
             gtk_widget_get_allocation(ordered_columns[i]->editors_vbox, &allocation);
+
+            printf("   - column %d (allocated: %d used: %g)\n", i, allocation.height, occupied);
 
             if (allocation.height - occupied > 50) {
                 editor_t *editor = column_new_editor(ordered_columns[i], buffer);
@@ -392,6 +400,8 @@ editor_t *heuristic_new_frame(editor_t *spawning_editor, buffer_t *buffer) {
             
             i += (garbage ? -1 : +1);
         }
+
+        printf("   No column with empty space found\n");
     }
 
     // try to create a new frame inside the active column (column of last edit operation)
@@ -401,13 +411,25 @@ editor_t *heuristic_new_frame(editor_t *spawning_editor, buffer_t *buffer) {
             retval = editor;
             goto heuristic_new_frame_exit;
         }
+        printf("   Splitting of active column failed\n");
+    } else {
+        printf("   Active column isn't set\n");
     }
 
-    { // no good place was found, let's open a new column
-        editor_t *editor = columns_new(buffer);
-        if (editor != NULL) {
-            retval = editor;
-            goto heuristic_new_frame_exit;
+    
+    { // no good place was found, see if it's appropriate to open a new column
+        GtkAllocation allocation;
+        gtk_widget_get_allocation(ordered_columns[numcol-1]->editors_vbox, &allocation);
+
+        if ((allocation.width * 0.40) > (30 * buffer->em_advance)) {
+            editor_t *editor = columns_new(buffer);
+            if (editor != NULL) {
+                retval = editor;
+                goto heuristic_new_frame_exit;
+            }
+            printf("   Couldn't open a new column\n");
+        } else {
+            printf("   Opening a new column is not appropriate: %g %g\n", allocation.width * 0.40, 30 * buffer->em_advance);
         }
     }
 
@@ -416,20 +438,27 @@ editor_t *heuristic_new_frame(editor_t *spawning_editor, buffer_t *buffer) {
         while (garbage ? (i >= 0) : (i < numcol)) {
             editor_t *editor = column_new_editor(ordered_columns[i], buffer);
             if (editor != NULL) {
+                printf("   New editor\n");
                 retval = editor;
                 goto heuristic_new_frame_exit;
             }
             i += (garbage ? -1 : +1);
         }
+
+        printf("   Couldn't open a new row anywhere\n");
     }
 
     // no good place exists for this buffer, if we aren't trying to open a +null+ buffer we are authorized to take over the spawning editor
     if (buffer != null_buffer()) {
+        printf("   Taking over current editor\n");
+        editor_switch_buffer(spawning_editor, buffer);
+        gtk_widget_queue_draw(spawning_editor->table);
         retval = spawning_editor;
         goto heuristic_new_frame_exit;
     }
 
- heuristic_new_frame_exit:    
+ heuristic_new_frame_exit:
+    printf("   Done\n");
     free(ordered_columns);
     return retval;
 }

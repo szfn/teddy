@@ -20,8 +20,9 @@ extern PangoFontDescription *elements_font_description;
 
 extern buffer_t *selection_target_buffer;
 
-#define MAX_LINES_HEIGHT_REQUEST 25
+#define MAX_LINES_HEIGHT_REQUEST 80
 #define MIN_LINES_HEIGHT_REQUEST 3
+#define MIN_EM_COLUMN_SIZE_ATTEMPTED 50
 
 void global_init();
 

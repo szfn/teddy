@@ -14,7 +14,7 @@
 #include "column.h"
 #include "reshandle.h"
 
-static void set_label_text(editor_t *editor) {
+void set_label_text(editor_t *editor) {
     char *labeltxt;
 
     asprintf(&labeltxt, " %s |  %s>", editor->buffer->name, editor->label_state);
@@ -385,6 +385,7 @@ static gboolean entry_default_insert_callback(GtkWidget *widget, GdkEventKey *ev
 void editor_switch_buffer(editor_t *editor, buffer_t *buffer) {
     editor->buffer = buffer;
     set_label_text(editor);
+    editor_center_on_cursor(editor);
     gtk_widget_queue_draw(editor->drar);
 }
 
