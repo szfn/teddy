@@ -30,6 +30,7 @@ static void set_label_text(editor_t *editor) {
 
 static void editor_replace_selection(editor_t *editor, const char *new_text) {
     buffer_replace_selection(editor->buffer, new_text);
+    active_column = editor->column;
     set_label_text(editor);
     gtk_widget_queue_draw(editor->drar);
 }
@@ -531,6 +532,7 @@ static gboolean key_press_callback(GtkWidget *widget, GdkEventKey *event, gpoint
             return TRUE;
         case GDK_KEY_u:
             buffer_undo(editor->buffer);
+            active_column = editor->column;
             return TRUE;
         }
     }

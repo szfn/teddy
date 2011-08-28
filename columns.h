@@ -20,6 +20,8 @@ editor_t *columns_get_editor_from_positioon(double x, double y);
 column_t *columns_get_column_from_position(double x, double y);
 void columns_swap_columns(column_t *cola, column_t *colb);
 
-editor_t *heuristic_new_frame(buffer_t *buffer);
+editor_t *heuristic_new_frame(editor_t *spawning_editor, buffer_t *buffer);
+
+extern column_t *active_column; // column where the last edit operation happened
 
 #endif

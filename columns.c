@@ -2,44 +2,20 @@
 
 #include "column.h"
 #include "global.h"
+#include "buffers.h"
 
 column_t **columns;
 int columns_allocated;
 GtkWidget *columns_window;
 GtkWidget *columns_hbox;
 
+column_t *active_column = NULL;
+
 //static int columns_exposed = 0;
 
 /* TODO:
    - user column resizing
  */
-
-/*static void columns_adjust_size(void) {
-    GList *list;
-    
-    if (!columns_exposed) return;
-
-    list = gtk_container_get_children(GTK_CONTAINER(columns_hbox));
-
-    if (list != NULL) {
-        gtk_box_set_child_packing(GTK_BOX(columns_hbox), list->data, TRUE, TRUE, 1, GTK_PACK_START);
-    }
-
-    g_list_free(list);
-    }
-
-static gboolean columns_expose_callback(GtkWidget *widget, GdkEventExpose *event, gpointer data) {
-    GList *list = gtk_container_get_children(GTK_CONTAINER(columns_hbox));
-    GList *cur;
-
-    for (cur = list; cur != NULL; cur = cur->next) {
-        gtk_widget_set_size_request(cur->data, 10, 10);
-    }
-
-    g_list_free(list);
-    
-    return FALSE;
-    }*/
 
 void columns_init(GtkWidget *window) {
     int i;
@@ -323,7 +299,137 @@ void columns_swap_columns(column_t *cola, column_t *colb) {
     }
 }
 
-editor_t *heuristic_new_frame(buffer_t *buffer) {
-    //TODO: needs to be implemented
+static column_t *columns_column_from_vbox(GtkWidget *vbox) {
+    int i;
+    for (i = 0; i < columns_allocated; ++i) {
+        if (columns[i] == NULL) continue;
+        if (columns[i]->editors_vbox == vbox) return columns[i];
+    }
     return NULL;
+}
+
+static column_t **columns_ordered_columns(int *numcol) {
+    GList *list = gtk_container_get_children(GTK_CONTAINER(columns_hbox));
+    column_t **r = malloc(sizeof(column_t *) * g_list_length(list));
+    GList *cur;
+    int i = 0;
+
+    *numcol = g_list_length(list);
+
+    for (cur = list; cur != NULL; cur = cur->next) {
+        r[i] = columns_column_from_vbox(cur->data);
+        if (r[i] == NULL) {
+            printf("Error, one element of columns wasn't a column?!\n");
+        }
+        ++i;
+    }
+
+    g_list_free(list);
+
+    return r;
+}
+
+editor_t *heuristic_new_frame(editor_t *spawning_editor, buffer_t *buffer) {
+    int garbage = (buffer->name[0] == '+'); // when the garbage flag is set we want to put the buffer in a frame to the right
+    int numcol;
+    column_t **ordered_columns = columns_ordered_columns(&numcol);
+    editor_t *retval = NULL;
+
+    {
+        int i;
+        for (i = 0; i < numcol; ++i) {
+            if (ordered_columns[i] == NULL) {
+                printf("There were unexpected errors, bailing out of new heuristic\n");
+                goto heuristic_new_frame_exit;
+            }
+        }
+    }
+    
+    if (null_buffer() != buffer) { // not the +null+ buffer
+        int i = garbage ? numcol-1 : 0;
+
+        // search for an editor pointing at +null+, direction of search determined by garbage flag
+        
+        while (garbage ? (i >= 0) : (i < numcol)) {
+            editor_t *editor = column_find_buffer_editor(ordered_columns[i], null_buffer());
+            if (editor != NULL) {
+                editor_switch_buffer(editor, buffer);
+                retval = editor;
+                goto heuristic_new_frame_exit;
+            }
+            i += (garbage ? -1 : +1);
+        }
+    }
+
+    { // if the last column is very large create a new column and use it
+        GtkAllocation allocation;
+        gtk_widget_get_allocation(ordered_columns[numcol-1]->editors_vbox, &allocation);
+
+        if (allocation.width > 1000) {
+            editor_t *editor = columns_new(buffer);
+            if (editor != NULL) {
+                retval = editor;
+                goto heuristic_new_frame_exit;
+            }
+        }
+    }
+
+    { // search for a column with some empty space
+        int i = garbage ? numcol-1 : 0;
+
+        while (garbage ? (i >= 0) : (i < numcol)) {
+            GtkAllocation allocation;
+            double occupied = column_get_occupied_space(ordered_columns[i]);
+            gtk_widget_get_allocation(ordered_columns[i]->editors_vbox, &allocation);
+
+            if (allocation.height - occupied > 50) {
+                editor_t *editor = column_new_editor(ordered_columns[i], buffer);
+                if (editor != NULL) {
+                    retval = editor;
+                    goto heuristic_new_frame_exit;
+                }
+            }
+            
+            i += (garbage ? -1 : +1);
+        }
+    }
+
+    // try to create a new frame inside the active column (column of last edit operation)
+    if (active_column != NULL) {
+        editor_t *editor = column_new_editor(active_column, buffer);
+        if (editor != NULL) {
+            retval = editor;
+            goto heuristic_new_frame_exit;
+        }
+    }
+
+    { // no good place was found, let's open a new column
+        editor_t *editor = columns_new(buffer);
+        if (editor != NULL) {
+            retval = editor;
+            goto heuristic_new_frame_exit;
+        }
+    }
+
+    { // no good place was found AND it wasn't possible to open a column
+        int i = garbage ? numcol-1 : 0;
+        while (garbage ? (i >= 0) : (i < numcol)) {
+            editor_t *editor = column_new_editor(ordered_columns[i], buffer);
+            if (editor != NULL) {
+                retval = editor;
+                goto heuristic_new_frame_exit;
+            }
+            i += (garbage ? -1 : +1);
+        }
+    }
+
+    // no good place exists for this buffer, if we aren't trying to open a +null+ buffer we are authorized to take over the spawning editor
+    if (buffer != null_buffer()) {
+        retval = spawning_editor;
+        goto heuristic_new_frame_exit;
+    }
+
+ heuristic_new_frame_exit:    
+    free(ordered_columns);
+    return retval;
 }

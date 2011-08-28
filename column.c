@@ -257,3 +257,13 @@ editor_t *column_get_editor_from_position(column_t *column, double x, double y) 
     }
     return NULL;
 }
+
+double column_get_occupied_space(column_t *column) {
+    int i;
+    double r = 0.0;
+    for (i = 0; i < column->editors_allocated; ++i) {
+        if (column->editors[i] == NULL) continue;
+        r += editor_get_height_request(column->editors[i]);
+    }
+    return r;
+}

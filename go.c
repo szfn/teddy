@@ -124,7 +124,7 @@ editor_t *go_to_buffer(editor_t *editor, buffer_t *buffer) {
         
     case GO_NEW:
     default: 
-        target = heuristic_new_frame(buffer);
+        target = heuristic_new_frame(editor, buffer);
         if (target != NULL) {
             gtk_widget_grab_focus(target->drar);
             deferred_action_to_return = FOCUS_ALREADY_SWITCHED;
