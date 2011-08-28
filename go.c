@@ -119,6 +119,7 @@ editor_t *go_to_buffer(editor_t *editor, buffer_t *buffer) {
         
     case GO_SELECT:
         selection_target_buffer = buffer;
+        gtk_widget_queue_draw(editor->window);
         return editor;
         
     case GO_NEW:

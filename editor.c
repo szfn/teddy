@@ -583,6 +583,13 @@ static void move_cursor_to_mouse(editor_t *editor, double x, double y) {
 
 static gboolean button_press_callback(GtkWidget *widget, GdkEventButton *event, gpointer data) {
     editor_t *editor = (editor_t *)data;
+
+    if (selection_target_buffer != NULL) {
+        editor_switch_buffer(editor, selection_target_buffer);
+        selection_target_buffer = NULL;
+        return TRUE;
+    }
+    
     gtk_widget_queue_draw(editor->drar);
     gtk_widget_grab_focus(editor->drar);
 
@@ -696,10 +703,15 @@ static gboolean expose_event_callback(GtkWidget *widget, GdkEventExpose *event, 
     gtk_widget_get_allocation(widget, &allocation);
 
     if (!(editor->initialization_ended)) {
-        gdk_window_set_cursor(gtk_widget_get_window(editor->drar), gdk_cursor_new(GDK_XTERM));
         gdk_window_set_cursor(gtk_widget_get_window(editor->label), gdk_cursor_new(GDK_FLEUR));
         editor->timeout_id = g_timeout_add(500, (GSourceFunc)cursor_blinker, (gpointer)editor);
         editor->initialization_ended = 1;
+    }
+
+    if (selection_target_buffer != NULL) {
+        gdk_window_set_cursor(gtk_widget_get_window(editor->drar), gdk_cursor_new(GDK_ICON));
+    } else {
+        gdk_window_set_cursor(gtk_widget_get_window(editor->drar), gdk_cursor_new(GDK_XTERM));
     }
 
     /*printf("%dx%d +%dx%d (%dx%d)\n", event->area.x, event->area.y, event->area.width, event->area.height, allocation.width, allocation.height);*/
