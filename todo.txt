@@ -1,12 +1,12 @@
-- implement heuristic_new_frame
-- go command should attempt to create a file if it doesn't exist
+- remove ctrl-o keybinding (go command replaces it)
 
 - rename to teddy
 
-- remove ctrl-o keybinding (go command replaces it)
+- bug: starting selection on the margin for some reason starts selection from the last glyph instead of the first
 
 - scripting for keybindings
 
+- focus follows mouse
 - Ctrl-backspace to remove one word
 - Ctrl-end to go to end of buffer
 - click on file name (inside tag) shows full path
@@ -36,6 +36,7 @@
 - go command improvements:
   - a ':' at the end of the 'go' argument should be always ignored
   - '(' and ')' should be treated as '[' and ']'
+  - line number and column can also be separated by ','
 
 - word selection is longest sequence around point consisting of:
   - letters

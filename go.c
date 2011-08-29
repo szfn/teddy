@@ -194,10 +194,41 @@ int acmacs_go_command(ClientData client_data, Tcl_Interp *interp, int argc, cons
     }
 
     if (!exec_go(argv[1])) {
-        //TODO:
-        // - ask user if one wants to create a new file
-        Tcl_AddErrorInfo(interp, "Command 'go' couldn't understand its argument, usage: 'go [<filename>][\":[\"[\"][<line-specifier>][\":\"][<column-specifier][\"]\"]]");
-        return TCL_ERROR;
+		char *urp = unrealpath(context_editor->buffer->path, argv[1]);
+		char *msg;
+		GtkWidget *dialog = gtk_dialog_new_with_buttons("Create file", GTK_WINDOW(context_editor->window), GTK_DIALOG_MODAL|GTK_DIALOG_DESTROY_WITH_PARENT, "Yes", 1, "No", 0, NULL);
+		
+		asprintf(&msg, "File [%s] does not exist, do you want to create it?", urp);
+		gtk_container_add(GTK_CONTAINER(gtk_dialog_get_content_area(GTK_DIALOG(dialog))), gtk_label_new(msg));
+		free(msg);
+
+		gtk_widget_show_all(dialog);
+
+		if (gtk_dialog_run(GTK_DIALOG(dialog))) {
+			FILE *f = fopen(urp, "w");
+
+			gtk_widget_hide(dialog);
+
+			if (!f) {
+				asprintf(&msg, "Could not create [%s]", urp);
+				quick_message(context_editor, "Error", msg);
+				free(msg);
+			} else {
+				buffer_t *buffer = buffer_create(&library);
+				fclose(f);
+				if (load_text_file(buffer, urp) != 0) {
+					buffer_free(buffer);
+					quick_message(context_editor, "Error", "Unexpected error during file creation");
+				} else {
+					buffers_add(buffer);
+					go_to_buffer(context_editor, buffer);
+				}
+			}
+		}
+
+		gtk_widget_destroy(dialog);
+		free(urp);
+		return TCL_OK;
     } else {
         editor_center_on_cursor(context_editor);
         gtk_widget_queue_draw(context_editor->drar);
