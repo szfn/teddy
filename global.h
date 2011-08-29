@@ -9,6 +9,13 @@
 #include <ft2build.h>
 #include FT_FREETYPE_H
 
+#define CONFIG_ITEM_STRING_SIZE 512
+
+typedef struct _config_item_t {
+    char strval[CONFIG_ITEM_STRING_SIZE];
+    int intval;
+} config_item_t;
+
 extern GtkClipboard *selection_clipboard;
 extern GtkClipboard *default_clipboard;
 
@@ -24,6 +31,10 @@ extern buffer_t *selection_target_buffer;
 #define MIN_LINES_HEIGHT_REQUEST 3
 #define MIN_EM_COLUMN_SIZE_ATTEMPTED 50
 
+config_item_t cfg_main_font;
+config_item_t cfg_posbox_font;
+
 void global_init();
+void setcfg(config_item_t *ci, const char *val);
 
 #endif

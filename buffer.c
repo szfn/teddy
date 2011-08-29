@@ -5,7 +5,7 @@
 #include <math.h>
 #include <assert.h>
 
-
+#include "global.h"
 
 void buffer_set_mark_at_cursor(buffer_t *buffer) {
     buffer->mark_line = buffer->cursor_line;
@@ -830,8 +830,8 @@ buffer_t *buffer_create(FT_Library *library) {
 
     undo_init(&(buffer->undo));
 
-    teddy_font_init(&(buffer->main_font), library, "Arial-11");
-    teddy_font_init(&(buffer->posbox_font), library, "Arial-9");
+    teddy_font_init(&(buffer->main_font), library, cfg_main_font.strval);
+    teddy_font_init(&(buffer->posbox_font), library, cfg_main_font.strval);
     
     {
         cairo_text_extents_t extents;

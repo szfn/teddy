@@ -24,6 +24,9 @@ int main(int argc, char *argv[]) {
     global_init();
 
     interp_init();
+
+    read_conf();
+    
     buffers_init();
 
     for (i = 1; i < argc; ++i) {

@@ -8,11 +8,18 @@
 #include "column.h"
 #include "go.h"
 
+#define INITFILE ".teddy"
+
 Tcl_Interp *interp;
-editor_t *context_editor;
+editor_t *context_editor = NULL;
 enum deferred_action deferred_action_to_return;
 
 static int teddy_exit_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
+    if (context_editor == NULL) {
+        Tcl_AddErrorInfo(interp, "No editor open, can not execute 'exit' command");
+        return TCL_ERROR;
+    }
+
     deferred_action_to_return = CLOSE_EDITOR;
     return TCL_OK;
 }
@@ -20,6 +27,11 @@ static int teddy_exit_command(ClientData client_data, Tcl_Interp *interp, int ar
 static int teddy_new_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
     if (argc > 2) {
         Tcl_AddErrorInfo(interp, "Wrong number of arguments to 'new', usage: 'new <row|col>'");
+        return TCL_ERROR;
+    }
+
+    if (context_editor == NULL) {
+        Tcl_AddErrorInfo(interp, "No editor open, can not execute 'new' command");
         return TCL_ERROR;
     }
 
@@ -58,8 +70,35 @@ static int teddy_new_command(ClientData client_data, Tcl_Interp *interp, int arg
 }
 
 static int teddy_pwf_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
+    if (context_editor == NULL) {
+        Tcl_AddErrorInfo(interp, "No editor open, can not execute 'pwf' command");
+        return TCL_ERROR;
+    }
+
     Tcl_SetResult(interp, context_editor->buffer->path, TCL_VOLATILE);
     return TCL_OK;
+}
+
+static int teddy_setcfg_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
+    config_item_t *ci = NULL;
+    
+    if (argc != 3) {
+        Tcl_AddErrorInfo(interp, "Wrong number of arguments to setcfg");
+        return TCL_ERROR;
+    }
+
+    if (strcmp(argv[1], "main_font") == 0) {
+        ci = &cfg_main_font;
+    } else if (strcmp(argv[1], "posbox_font") == 0) {
+        ci = &cfg_posbox_font;
+    }
+
+    if (ci == NULL) {
+        Tcl_AddErrorInfo(interp, "Unknown configuration option specified in setcfg");
+        return TCL_ERROR;
+    }
+
+    setcfg(ci, argv[2]);
 }
 
 void interp_init(void) {
@@ -74,6 +113,8 @@ void interp_init(void) {
     
     Tcl_HideCommand(interp, "exit", "hidden_exit");
     Tcl_CreateCommand(interp, "exit", &teddy_exit_command, (ClientData)NULL, NULL);
+
+    Tcl_CreateCommand(interp, "setcfg", &teddy_setcfg_command, (ClientData)NULL, NULL);
 
     Tcl_CreateCommand(interp, "new", &teddy_new_command, (ClientData)NULL, NULL);
     Tcl_CreateCommand(interp, "pwf", &teddy_pwf_command, (ClientData)NULL, NULL);
@@ -115,4 +156,27 @@ enum deferred_action interp_eval(editor_t *editor, const char *command) {
     Tcl_ResetResult(interp);
 
     return deferred_action_to_return;
+}
+
+void read_conf(void) {
+    const char *home = getenv("HOME");
+    char *name;
+
+    asprintf(&name, "%s/%s", home, INITFILE);
+    
+    int code = Tcl_EvalFile(interp, name);
+    
+    if (code != TCL_OK) {
+        Tcl_Obj *options = Tcl_GetReturnOptions(interp, code);  
+        Tcl_Obj *key = Tcl_NewStringObj("-errorinfo", -1);
+        Tcl_Obj *stackTrace;
+        Tcl_IncrRefCount(key);
+        Tcl_DictObjGet(NULL, options, key, &stackTrace);
+        Tcl_DecrRefCount(key);
+
+        printf("TCL Error: %s\n", Tcl_GetString(stackTrace));
+        exit(EXIT_FAILURE);
+    }
+    
+    free(name);
 }

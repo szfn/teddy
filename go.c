@@ -193,6 +193,11 @@ int teddy_go_command(ClientData client_data, Tcl_Interp *interp, int argc, const
         return TCL_ERROR;
     }
 
+    if (context_editor == NULL) {
+        Tcl_AddErrorInfo(interp, "No editor open, can not execute 'go' command");
+        return TCL_ERROR;
+    }
+
     if (!exec_go(argv[1])) {
 		char *urp = unrealpath(context_editor->buffer->path, argv[1]);
 		char *msg;

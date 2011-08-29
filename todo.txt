@@ -1,5 +1,4 @@
 - scripting for keybindings
-- font customization
 
 - bug: starting selection on the margin for some reason starts selection from the last glyph instead of the first
 
