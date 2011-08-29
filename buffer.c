@@ -813,7 +813,8 @@ void buffer_move_cursor_to_position(buffer_t *buffer, double x, double y) {
 }
 
 //#define MAIN_FONT "/usr/share/fonts/truetype/msttcorefonts/arial.ttf"
-#define MAIN_FONT "/usr/share/fonts/truetype/ttf-dejavu/DejaVuSans.ttf"
+//#define MAIN_FONT "/usr/share/fonts/truetype/ttf-dejavu/DejaVuSans.ttf"
+#define MAIN_FONT "/usr/share/fonts/truetype/freefont/FreeSans.ttf"
 
 buffer_t *buffer_create(FT_Library *library) {
     buffer_t *buffer = malloc(sizeof(buffer_t));
