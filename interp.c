@@ -79,6 +79,16 @@ static int teddy_pwf_command(ClientData client_data, Tcl_Interp *interp, int arg
     return TCL_OK;
 }
 
+static int teddy_pwd_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
+    if (context_editor == NULL) {
+        Tcl_AddErrorInfo(interp, "No editor open, can not execute 'pwf' command");
+        return TCL_ERROR;
+    }
+
+    Tcl_SetResult(interp, context_editor->buffer->wd, TCL_VOLATILE);
+    return TCL_OK;
+}
+
 static int teddy_setcfg_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
     config_item_t *ci = NULL;
     
@@ -99,6 +109,7 @@ static int teddy_setcfg_command(ClientData client_data, Tcl_Interp *interp, int 
     }
 
     setcfg(ci, argv[2]);
+    return TCL_OK;
 }
 
 void interp_init(void) {
@@ -118,6 +129,7 @@ void interp_init(void) {
 
     Tcl_CreateCommand(interp, "new", &teddy_new_command, (ClientData)NULL, NULL);
     Tcl_CreateCommand(interp, "pwf", &teddy_pwf_command, (ClientData)NULL, NULL);
+    Tcl_CreateCommand(interp, "pwd", &teddy_pwd_command, (ClientData)NULL, NULL);
 
     Tcl_CreateCommand(interp, "go", &teddy_go_command, (ClientData)NULL, NULL);
 }
