@@ -316,37 +316,6 @@ void quick_message(editor_t *editor, const char *title, const char *msg) {
     gtk_dialog_run(GTK_DIALOG(dialog));
 }
 
-static gboolean entry_open_insert_callback(GtkWidget *widget, GdkEventKey *event, gpointer data) {
-    editor_t *editor = (editor_t*)data;
-
-    if (event->keyval == GDK_KEY_Escape) {
-        gtk_widget_grab_focus(editor->drar);
-        return TRUE;
-    }
-
-    if (event->keyval == GDK_KEY_Return) {
-        char *rp;
-        buffer_t *buffer = buffers_open(editor->buffer, gtk_entry_get_text(GTK_ENTRY(editor->entry)), &rp);
-        if (buffer == NULL) {
-            char *msg;
-            asprintf(&msg, "Couldn't create or open [%s]", (rp == NULL) ? gtk_entry_get_text(GTK_ENTRY(editor->entry)) : rp);
-            quick_message(editor, "Error", msg);
-            free(msg);
-        } else {
-            editor_switch_buffer(editor, buffer);
-        }
-
-        if (rp != NULL) free(rp);
-        gtk_widget_grab_focus(editor->drar);
-        return TRUE;
-    }
-
-    //TODO: autocompletion on TAB
-    
-    return FALSE;
-}
-
-
 static gboolean entry_default_insert_callback(GtkWidget *widget, GdkEventKey *event, gpointer data) {
     editor_t *editor = (editor_t*)data;
     enum deferred_action da;
@@ -387,15 +356,6 @@ void editor_switch_buffer(editor_t *editor, buffer_t *buffer) {
     set_label_text(editor);
     editor_center_on_cursor(editor);
     gtk_widget_queue_draw(editor->drar);
-}
-
-
-static void start_open(editor_t *editor) {
-    editor->label_state = "open";
-    set_label_text(editor);
-    gtk_widget_grab_focus(editor->entry);
-    g_signal_handler_disconnect(editor->entry, editor->current_entry_handler_id);
-    editor->current_entry_handler_id = g_signal_connect(editor->entry, "key-release-event", G_CALLBACK(entry_open_insert_callback), editor);
 }
 
 static gboolean entry_focusout_callback(GtkWidget *widget, GdkEventFocus *event, gpointer data) {
@@ -524,9 +484,6 @@ static gboolean key_press_callback(GtkWidget *widget, GdkEventKey *event, gpoint
             return TRUE;
         case GDK_KEY_f:
             start_search(editor);
-            return TRUE;
-        case GDK_KEY_o:
-            start_open(editor);
             return TRUE;
         case GDK_KEY_b:
             buffers_show_window(editor);

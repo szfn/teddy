@@ -1,10 +1,9 @@
-- remove ctrl-o keybinding (go command replaces it)
-
 - rename to teddy
 
-- bug: starting selection on the margin for some reason starts selection from the last glyph instead of the first
-
 - scripting for keybindings
+- font customization
+
+- bug: starting selection on the margin for some reason starts selection from the last glyph instead of the first
 
 - focus follows mouse
 - Ctrl-backspace to remove one word
