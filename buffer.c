@@ -814,7 +814,7 @@ void buffer_move_cursor_to_position(buffer_t *buffer, double x, double y) {
 
 //#define MAIN_FONT "/usr/share/fonts/truetype/msttcorefonts/arial.ttf"
 //#define MAIN_FONT "/usr/share/fonts/truetype/ttf-dejavu/DejaVuSans.ttf"
-#define MAIN_FONT "/usr/share/fonts/truetype/freefont/FreeSans.ttf"
+//#define MAIN_FONT "/usr/share/fonts/truetype/freefont/FreeSans.ttf"
 
 buffer_t *buffer_create(FT_Library *library) {
     buffer_t *buffer = malloc(sizeof(buffer_t));
@@ -830,8 +830,8 @@ buffer_t *buffer_create(FT_Library *library) {
 
     undo_init(&(buffer->undo));
 
-    acmacs_font_init(&(buffer->main_font), library, MAIN_FONT, 14);
-    acmacs_font_init(&(buffer->posbox_font), library, MAIN_FONT, 12);
+    acmacs_font_init(&(buffer->main_font), library, "Arial-11");
+    acmacs_font_init(&(buffer->posbox_font), library, "Arial-9");
     
     {
         cairo_text_extents_t extents;
