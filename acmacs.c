@@ -16,7 +16,7 @@ static gboolean delete_callback(GtkWidget *widget, GdkEvent *event, gpointer dat
 int main(int argc, char *argv[]) {
     GtkWidget *window;
     editor_t *editor;
-    buffer_t *abuf;
+    buffer_t *abuf = NULL;
     int i;
 
     gtk_init(&argc, &argv);
