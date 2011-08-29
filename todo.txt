@@ -1,5 +1,3 @@
-- rename to teddy
-
 - scripting for keybindings
 - font customization
 

@@ -1,13 +1,13 @@
 CFLAGS=`pkg-config --cflags gtk+-2.0` -Wall -D_FORTIFY_SOURCE=2 -g -D_GNU_SOURCE -I/usr/include/tcl8.5
 LIBS=`pkg-config --libs gtk+-2.0` -ltcl8.5 -lfontconfig
-OBJS := acmacs.o buffer.o font.o editor.o buffers.o columns.o column.o interp.o global.o undo.o reshandle.o go.o baux.o
+OBJS := teddy.o buffer.o font.o editor.o buffers.o columns.o column.o interp.o global.o undo.o reshandle.o go.o baux.o
 
-all: acmacs
+all: teddy
 
 clean:
-	rm $(OBJS) *.d *~ acmacs
+	rm $(OBJS) *.d *~ teddy
 
-acmacs: $(OBJS)
+teddy: $(OBJS)
 	$(CC) -o $@ $^ $(LIBS) 
 
 # pull in dependency info for *existing* .o files

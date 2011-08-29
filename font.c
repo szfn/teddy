@@ -1,6 +1,6 @@
 #include "font.h"
 
-void acmacs_font_init(acmacs_font_t *font, FT_Library *library, const char *fontpattern) {
+void teddy_font_init(teddy_font_t *font, FT_Library *library, const char *fontpattern) {
     int error;
     FcPattern *pat, *match;
     FcResult result;
@@ -44,7 +44,7 @@ void acmacs_font_init(acmacs_font_t *font, FT_Library *library, const char *font
     font->cairofont = cairo_scaled_font_create(font->cairoface, &(font->font_size_matrix), &(font->font_ctm), font->font_options);
 }
 
-void acmacs_font_free(acmacs_font_t *font) {
+void teddy_font_free(teddy_font_t *font) {
     cairo_scaled_font_destroy(font->cairofont);
     cairo_font_options_destroy(font->font_options);
     cairo_font_face_destroy(font->cairoface);

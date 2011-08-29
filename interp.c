@@ -12,12 +12,12 @@ Tcl_Interp *interp;
 editor_t *context_editor;
 enum deferred_action deferred_action_to_return;
 
-static int acmacs_exit_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
+static int teddy_exit_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
     deferred_action_to_return = CLOSE_EDITOR;
     return TCL_OK;
 }
 
-static int acmacs_new_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
+static int teddy_new_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
     if (argc > 2) {
         Tcl_AddErrorInfo(interp, "Wrong number of arguments to 'new', usage: 'new <row|col>'");
         return TCL_ERROR;
@@ -57,7 +57,7 @@ static int acmacs_new_command(ClientData client_data, Tcl_Interp *interp, int ar
     }
 }
 
-static int acmacs_pwf_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
+static int teddy_pwf_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
     Tcl_SetResult(interp, context_editor->buffer->path, TCL_VOLATILE);
     return TCL_OK;
 }
@@ -73,12 +73,12 @@ void interp_init(void) {
     Tcl_HideCommand(interp, "cd", "hidden_cd");
     
     Tcl_HideCommand(interp, "exit", "hidden_exit");
-    Tcl_CreateCommand(interp, "exit", &acmacs_exit_command, (ClientData)NULL, NULL);
+    Tcl_CreateCommand(interp, "exit", &teddy_exit_command, (ClientData)NULL, NULL);
 
-    Tcl_CreateCommand(interp, "new", &acmacs_new_command, (ClientData)NULL, NULL);
-    Tcl_CreateCommand(interp, "pwf", &acmacs_pwf_command, (ClientData)NULL, NULL);
+    Tcl_CreateCommand(interp, "new", &teddy_new_command, (ClientData)NULL, NULL);
+    Tcl_CreateCommand(interp, "pwf", &teddy_pwf_command, (ClientData)NULL, NULL);
 
-    Tcl_CreateCommand(interp, "go", &acmacs_go_command, (ClientData)NULL, NULL);
+    Tcl_CreateCommand(interp, "go", &teddy_go_command, (ClientData)NULL, NULL);
 }
 
 void interp_free(void) {

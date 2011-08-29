@@ -187,7 +187,7 @@ int exec_go(const char *specifier) {
     return retval;
 }
 
-int acmacs_go_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
+int teddy_go_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
     if (argc != 2) {
         Tcl_AddErrorInfo(interp, "Wrong number of arguments to 'go', usage: 'go [<filename>][\":[\"[\"][<line-specifier>][\":\"][<column-specifier][\"]\"]]");
         return TCL_ERROR;

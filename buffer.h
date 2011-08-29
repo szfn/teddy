@@ -39,8 +39,8 @@ typedef struct _buffer_t {
     
     /* Font face stuff */
     FT_Library *library;
-    acmacs_font_t main_font;
-    acmacs_font_t posbox_font;
+    teddy_font_t main_font;
+    teddy_font_t posbox_font;
 
     /* Font secondary metrics of main font */
     double em_advance;

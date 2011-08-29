@@ -830,8 +830,8 @@ buffer_t *buffer_create(FT_Library *library) {
 
     undo_init(&(buffer->undo));
 
-    acmacs_font_init(&(buffer->main_font), library, "Arial-11");
-    acmacs_font_init(&(buffer->posbox_font), library, "Arial-9");
+    teddy_font_init(&(buffer->main_font), library, "Arial-11");
+    teddy_font_init(&(buffer->posbox_font), library, "Arial-9");
     
     {
         cairo_text_extents_t extents;
@@ -885,8 +885,8 @@ void buffer_free(buffer_t *buffer) {
         }
     }
 
-    acmacs_font_free(&(buffer->main_font));
-    acmacs_font_free(&(buffer->posbox_font));
+    teddy_font_free(&(buffer->main_font));
+    teddy_font_free(&(buffer->posbox_font));
 
     undo_free(&(buffer->undo));
 
