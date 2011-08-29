@@ -5,10 +5,8 @@
 - focus follows mouse
 - Ctrl-backspace to remove one word
 - Ctrl-end to go to end of buffer
-- click on file name (inside tag) shows full path
 - auto-indent
 - highlighting
-- reminder: use menu key to highlight command line
 - note: left button click does search/open, middle click does primary paste
 - left+middle -> cut
 - middle click -> paste
@@ -23,6 +21,7 @@
 - home goes to first non-whitespace character, if it's already there it goes to the first character of the line
 - double click on resize handle / label hides all other editors of the column
 - middle click on resize handle / label closes editor
+- left click on resize handle / label calls new row
 - command to reload buffer contents from disk
 - auto-reloading buffers when there is no change and the file on disk was changed
 - reimplement hbox/vbox to not be broken on resize

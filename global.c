@@ -8,9 +8,15 @@ PangoFontDescription *elements_font_description;
 
 buffer_t *selection_target_buffer = NULL;
 
+GHashTable *keybindings;
+
 void setcfg(config_item_t *ci, const char *val) {
     strcpy(ci->strval, val);
     ci->intval = atoi(val);
+}
+
+gboolean streq(gconstpointer a, gconstpointer b) {
+    return (strcmp(a, b) == 0);
 }
 
 void global_init() {
@@ -32,6 +38,8 @@ void global_init() {
 
     setcfg(&cfg_main_font, "Arial-11");
     setcfg(&cfg_posbox_font, "Arial-9");
+
+    keybindings = g_hash_table_new(g_str_hash, streq);
 }
 
 void global_free() {

@@ -112,6 +112,24 @@ static int teddy_setcfg_command(ClientData client_data, Tcl_Interp *interp, int 
     return TCL_OK;
 }
 
+static int teddy_bindkey_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
+    char *key, *value;
+    
+    if (argc != 3) {
+        Tcl_AddErrorInfo(interp, "Wrong number of arguments to setcfg");
+        return TCL_ERROR;
+    }
+
+    key = malloc(sizeof(char) * (strlen(argv[1]) + 1));
+    strcpy(key, argv[1]);
+    value = malloc(sizeof(char) * (strlen(argv[2]) + 1));
+    strcpy(value, argv[2]);
+    
+    g_hash_table_replace(keybindings, key, value);
+
+    return TCL_OK;
+}
+
 void interp_init(void) {
     interp = Tcl_CreateInterp();
     if (interp == NULL) {
@@ -126,6 +144,7 @@ void interp_init(void) {
     Tcl_CreateCommand(interp, "exit", &teddy_exit_command, (ClientData)NULL, NULL);
 
     Tcl_CreateCommand(interp, "setcfg", &teddy_setcfg_command, (ClientData)NULL, NULL);
+    Tcl_CreateCommand(interp, "bindkey", &teddy_bindkey_command, (ClientData)NULL, NULL);
 
     Tcl_CreateCommand(interp, "new", &teddy_new_command, (ClientData)NULL, NULL);
     Tcl_CreateCommand(interp, "pwf", &teddy_pwf_command, (ClientData)NULL, NULL);

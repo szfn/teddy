@@ -27,6 +27,8 @@ extern PangoFontDescription *elements_font_description;
 
 extern buffer_t *selection_target_buffer;
 
+extern GHashTable *keybindings;
+
 #define MAX_LINES_HEIGHT_REQUEST 80
 #define MIN_LINES_HEIGHT_REQUEST 3
 #define MIN_EM_COLUMN_SIZE_ATTEMPTED 50
