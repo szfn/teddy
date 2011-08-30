@@ -454,15 +454,17 @@ void editor_undo_action(editor_t *editor) {
     active_column = editor->column;
 }
 
-static gboolean key_press_callback(GtkWidget *widget, GdkEventKey *event, gpointer data) {
-    editor_t *editor = (editor_t*)data;
+static gboolean key_press_callback(GtkWidget *widget, GdkEventKey *event, editor_t *editor) {
     char pressed[40];
     const char *converted;
     const char *command;
+    GtkAllocation allocation;
     int shift = event->state & GDK_SHIFT_MASK;
     int ctrl = event->state & GDK_CONTROL_MASK;
     int alt = event->state & GDK_MOD1_MASK;
     int super = event->state & GDK_SUPER_MASK;
+
+    gtk_widget_get_allocation(editor->drar, &allocation);
 
     /* Default key bindings */
     if (!shift && !ctrl && !alt && !super) {
@@ -481,17 +483,20 @@ static gboolean key_press_callback(GtkWidget *widget, GdkEventKey *event, gpoint
             return TRUE;
             
         case GDK_KEY_Page_Up:
-            gtk_adjustment_set_value(GTK_ADJUSTMENT(editor->adjustment), gtk_adjustment_get_value(GTK_ADJUSTMENT(editor->adjustment)) - gtk_adjustment_get_page_increment(GTK_ADJUSTMENT(editor->adjustment)));
+            move_cursor(editor, -(allocation.height / editor->buffer->line_height) + 2, 0, MOVE_NORMAL, TRUE);
+            //gtk_adjustment_set_value(GTK_ADJUSTMENT(editor->adjustment), gtk_adjustment_get_value(GTK_ADJUSTMENT(editor->adjustment)) - gtk_adjustment_get_page_increment(GTK_ADJUSTMENT(editor->adjustment)));
             return TRUE;
         case GDK_KEY_Page_Down:
-            {
+            move_cursor(editor, +(allocation.height / editor->buffer->line_height) - 2, 0, MOVE_NORMAL, TRUE);
+            /*{
                 double nv = gtk_adjustment_get_value(GTK_ADJUSTMENT(editor->adjustment)) + gtk_adjustment_get_page_increment(GTK_ADJUSTMENT(editor->adjustment));
                 double mv = gtk_adjustment_get_upper(GTK_ADJUSTMENT(editor->adjustment)) - gtk_adjustment_get_page_size(GTK_ADJUSTMENT(editor->adjustment));
                 if (nv > mv) nv = mv;
                 gtk_adjustment_set_value(GTK_ADJUSTMENT(editor->adjustment), nv);
                 
-                return TRUE;
-            }
+
+                }*/
+            return TRUE;
             
         case GDK_KEY_Home:
             move_cursor(editor, 0, 0, MOVE_LINE_START, TRUE);

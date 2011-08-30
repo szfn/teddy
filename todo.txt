@@ -1,4 +1,3 @@
-- bugfix: PgUp/PgDn doesn't move cursor
 - motion by words
 - Ctrl-backspace to remove one word
 - Ctrl-end to go to end of buffer
