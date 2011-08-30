@@ -838,7 +838,7 @@ buffer_t *buffer_create(FT_Library *library) {
     undo_init(&(buffer->undo));
 
     teddy_font_init(&(buffer->main_font), library, cfg_main_font.strval);
-    teddy_font_init(&(buffer->posbox_font), library, cfg_main_font.strval);
+    teddy_font_init(&(buffer->posbox_font), library, cfg_posbox_font.strval);
     
     {
         cairo_text_extents_t extents;

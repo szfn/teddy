@@ -101,6 +101,18 @@ static int teddy_setcfg_command(ClientData client_data, Tcl_Interp *interp, int 
         ci = &cfg_main_font;
     } else if (strcmp(argv[1], "posbox_font") == 0) {
         ci = &cfg_posbox_font;
+    } else if (strcmp(argv[1], "focus_follows_mouse") == 0) {
+        ci = &cfg_focus_follows_mouse;
+    } else if (strcmp(argv[1], "editor_bg_color") == 0) {
+        ci = &cfg_editor_bg_color;
+    } else if (strcmp(argv[1], "editor_fg_color") == 0) {
+        ci = &cfg_editor_fg_color;
+    } else if (strcmp(argv[1], "posbox_border_color") == 0) {
+        ci = &cfg_posbox_border_color;
+    } else if (strcmp(argv[1], "posbox_bg_color") == 0) {
+        ci = &cfg_posbox_bg_color;
+    } else if (strcmp(argv[1], "posbox_fg_color") == 0) {
+        ci = &cfg_posbox_fg_color;
     }
 
     if (ci == NULL) {

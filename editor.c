@@ -648,9 +648,11 @@ static gboolean motion_callback(GtkWidget *widget, GdkEventMotion *event, editor
     }
 
     // focus follows mouse
-    if (!gtk_widget_is_focus(editor->drar)) {
-        gtk_widget_grab_focus(editor->drar);
-        gtk_widget_queue_draw(editor->drar);
+    if (cfg_focus_follows_mouse.intval) {
+        if (!gtk_widget_is_focus(editor->drar)) {
+            gtk_widget_grab_focus(editor->drar);
+            gtk_widget_queue_draw(editor->drar);
+        }
     }
     
     return TRUE;
@@ -712,8 +714,15 @@ static gboolean cursor_blinker(editor_t *editor) {
     return TRUE;
 }
 
-static gboolean expose_event_callback(GtkWidget *widget, GdkEventExpose *event, gpointer data) {
-    editor_t *editor = (editor_t*)data;
+static void set_color_cfg(cairo_t *cr, int color) {
+    uint8_t blue = (uint8_t)color;
+    uint8_t red = (uint8_t)(color >> 8);
+    uint8_t green = (uint8_t)(color >> 16);
+
+    cairo_set_source_rgb(cr, red/255.0, green/255.0, blue/255.0);
+}
+
+static gboolean expose_event_callback(GtkWidget *widget, GdkEventExpose *event, editor_t *editor) {
     cairo_t *cr = gdk_cairo_create(widget->window);
     GtkAllocation allocation;
     double originy;
@@ -738,11 +747,11 @@ static gboolean expose_event_callback(GtkWidget *widget, GdkEventExpose *event, 
 
     /*printf("%dx%d +%dx%d (%dx%d)\n", event->area.x, event->area.y, event->area.width, event->area.height, allocation.width, allocation.height);*/
 
-    cairo_set_source_rgb(cr, 0, 0, 1.0);
+    set_color_cfg(cr, cfg_editor_bg_color.intval);
     cairo_rectangle(cr, 0, 0, allocation.width, allocation.height);
     cairo_fill(cr);
 
-    cairo_set_source_rgb(cr, 1.0, 1.0, 1.0);
+    set_color_cfg(cr, cfg_editor_fg_color.intval);
     cairo_set_scaled_font(cr, editor->buffer->main_font.cairofont);
 
     cairo_translate(cr, -gtk_adjustment_get_value(GTK_ADJUSTMENT(editor->hadjustment)), -gtk_adjustment_get_value(GTK_ADJUSTMENT(editor->adjustment)));
@@ -827,7 +836,6 @@ static gboolean expose_event_callback(GtkWidget *widget, GdkEventExpose *event, 
         
         buffer_cursor_position(editor->buffer, &cursor_x, &cursor_y);
         
-        /*cairo_set_source_rgb(cr, 119.0/255, 136.0/255, 153.0/255);*/
         cairo_rectangle(cr, cursor_x, cursor_y-editor->buffer->ascent, 2, editor->buffer->ascent+editor->buffer->descent);
         cairo_fill(cr);
     }
@@ -849,15 +857,16 @@ static gboolean expose_event_callback(GtkWidget *widget, GdkEventExpose *event, 
         y = allocation.height - posbox_ext.height - 4.0;
         x = allocation.width - posbox_ext.x_advance - 4.0;
 
-        cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
+        set_color_cfg(cr, cfg_posbox_border_color.intval);
         cairo_rectangle(cr, x-1.0, y-1.0, posbox_ext.x_advance+4.0, posbox_ext.height+4.0);
         cairo_fill(cr);
-        cairo_set_source_rgb(cr, 238.0/255, 221.0/255, 130.0/255);
+        set_color_cfg(cr, cfg_posbox_bg_color.intval);
+        //cairo_set_source_rgb(cr, 238.0/255, 221.0/255, 130.0/255);
         cairo_rectangle(cr, x, y, posbox_ext.x_advance + 2.0, posbox_ext.height + 2.0);
         cairo_fill(cr);
 
         cairo_move_to(cr, x+1.0, y+posbox_ext.height);
-        cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
+        set_color_cfg(cr, cfg_posbox_fg_color.intval);
         cairo_show_text(cr, posbox_text);
         
         free(posbox_text);

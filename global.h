@@ -33,8 +33,15 @@ extern GHashTable *keybindings;
 #define MIN_LINES_HEIGHT_REQUEST 3
 #define MIN_EM_COLUMN_SIZE_ATTEMPTED 50
 
-config_item_t cfg_main_font;
-config_item_t cfg_posbox_font;
+extern config_item_t cfg_main_font;
+extern config_item_t cfg_posbox_font;
+extern config_item_t cfg_focus_follows_mouse;
+
+extern config_item_t cfg_editor_bg_color;
+extern config_item_t cfg_editor_fg_color;
+extern config_item_t cfg_posbox_border_color;
+extern config_item_t cfg_posbox_bg_color;
+extern config_item_t cfg_posbox_fg_color;
 
 void global_init();
 void setcfg(config_item_t *ci, const char *val);

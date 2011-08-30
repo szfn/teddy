@@ -14,17 +14,17 @@ void teddy_font_init(teddy_font_t *font, FT_Library *library, const char *fontpa
     match = FcFontMatch(NULL, pat, &result);
 
     if (!match) {
-	printf("Couldn't resolve font pattern [%s], this shouldn't happen\n", fontpattern);
-	exit(EXIT_FAILURE);
+        printf("Couldn't resolve font pattern [%s], this shouldn't happen\n", fontpattern);
+        exit(EXIT_FAILURE);
     }
 
     if (FcPatternGetString(match, FC_FILE, 0, &fontfile) != FcResultMatch) {
-	printf("Font file not found [%s]\n", fontpattern);
-	exit(EXIT_FAILURE);
+        printf("Font file not found [%s]\n", fontpattern);
+        exit(EXIT_FAILURE);
     }
 
     if (FcPatternGetDouble(match, FC_SIZE, 0, &size) != FcResultMatch) {
-	size = 12.0;
+        size = 12.0;
     }
 
     text_size = 96.0 / 72.0 * size;

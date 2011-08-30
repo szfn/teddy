@@ -20,6 +20,8 @@
 - note: left button click does search/open, middle click does primary paste
 - tabs
 - highlighting
+- configurability
+  - enable/disable soft line wrap
 - reimplement hbox/vbox to not be broken on resize
   - column_adjust_size just takes the last row and uses all the empty space or 40% if there isn't any empty space
   - put the columns_hbox insite a single custom container that returns a requested size of { 0, 0 } and on allocation just resizes everything maintaining proportions
