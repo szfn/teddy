@@ -13,6 +13,13 @@ bindkey Ctrl-c {cb copy}
 bindkey Ctrl-v {cb paste}
 bindkey Ctrl-x {cb cut}
 bindkey Ctrl-y {cb ppaste}
+
 bindkey Ctrl-s save
-bindkey Ctrl-f search
 bindkey Ctrl-b bufman
+
+bindkey Ctrl-f search
+
+bindkey Ctrl-Left {move prev wnwa}
+bindkey Ctrl-Right {move next wnwa}
+
+bindkey Ctrl-Backspace {move prev wnwa del}

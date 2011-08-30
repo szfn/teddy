@@ -38,6 +38,8 @@ void editor_switch_buffer(editor_t *editor, buffer_t *buffer);
 gint editor_get_height_request(editor_t *editor);
 void editor_center_on_cursor(editor_t *editor);
 
+void editor_replace_selection(editor_t *editor, const char *new_text);
+
 /* actions */
 void editor_mark_action(editor_t *editor);
 void editor_copy_action(editor_t *editor);
@@ -46,5 +48,16 @@ void editor_cut_action(editor_t *editor);
 void editor_save_action(editor_t *editor);
 void editor_start_search(editor_t *editor);
 void editor_undo_action(editor_t *editor);
+
+enum MoveCursorSpecial {
+    MOVE_NORMAL = 1,
+    MOVE_LINE_START,
+    MOVE_LINE_END,
+};
+
+void editor_move_cursor(editor_t *editor, int delta_line, int delta_char, enum MoveCursorSpecial special, gboolean should_move_origin);
+
+void editor_complete_move(editor_t *editor, gboolean should_move_origin);
+
 
 #endif

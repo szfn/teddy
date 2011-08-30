@@ -28,7 +28,7 @@ void set_label_text(editor_t *editor) {
     free(labeltxt); 
 }
 
-static void editor_replace_selection(editor_t *editor, const char *new_text) {
+void editor_replace_selection(editor_t *editor, const char *new_text) {
     buffer_replace_selection(editor->buffer, new_text);
     active_column = editor->column;
     set_label_text(editor);
@@ -69,16 +69,22 @@ static void copy_selection_to_clipboard(editor_t *editor, GtkClipboard *clipboar
     free(r);
 }
 
-enum MoveCursorSpecial {
-    MOVE_NORMAL = 1,
-    MOVE_LINE_START,
-    MOVE_LINE_END,
-};
-
-static void move_cursor(editor_t *editor, int delta_line, int delta_char, enum MoveCursorSpecial special, gboolean should_move_origin) {
-    int i = 0;
-
+void editor_complete_move(editor_t *editor, gboolean should_move_origin) {
     gtk_widget_queue_draw(editor->drar);
+
+    editor->cursor_visible = TRUE;
+
+    if (should_move_origin) {
+        editor_center_on_cursor(editor);
+    } else {
+        gtk_widget_queue_draw(editor->drar);
+    }
+
+    copy_selection_to_clipboard(editor, selection_clipboard);
+}
+
+void editor_move_cursor(editor_t *editor, int delta_line, int delta_char, enum MoveCursorSpecial special, gboolean should_move_origin) {
+    int i = 0;
 
     if (delta_line > 0) {
         for (i = 0; i < delta_line; ++i) {
@@ -175,15 +181,7 @@ static void move_cursor(editor_t *editor, int delta_line, int delta_char, enum M
         }
     }
 
-    editor->cursor_visible = TRUE;
-
-    if (should_move_origin) {
-        editor_center_on_cursor(editor);
-    } else {
-        gtk_widget_queue_draw(editor->drar);
-    }
-
-    copy_selection_to_clipboard(editor, selection_clipboard);
+    editor_complete_move(editor, should_move_origin);
 }
 
 static void text_entry_callback(GtkIMContext *context, gchar *str, gpointer data) {
@@ -470,24 +468,24 @@ static gboolean key_press_callback(GtkWidget *widget, GdkEventKey *event, editor
     if (!shift && !ctrl && !alt && !super) {
         switch(event->keyval) {
         case GDK_KEY_Up:
-            move_cursor(editor, -1, 0, MOVE_NORMAL, TRUE);
+            editor_move_cursor(editor, -1, 0, MOVE_NORMAL, TRUE);
             return TRUE;
         case GDK_KEY_Down:
-            move_cursor(editor, 1, 0, MOVE_NORMAL, TRUE);
+            editor_move_cursor(editor, 1, 0, MOVE_NORMAL, TRUE);
             return TRUE;
         case GDK_KEY_Right:
-            move_cursor(editor, 0, 1, MOVE_NORMAL, TRUE);
+            editor_move_cursor(editor, 0, 1, MOVE_NORMAL, TRUE);
             return TRUE;
         case GDK_KEY_Left:
-            move_cursor(editor, 0, -1, MOVE_NORMAL, TRUE);
+            editor_move_cursor(editor, 0, -1, MOVE_NORMAL, TRUE);
             return TRUE;
             
         case GDK_KEY_Page_Up:
-            move_cursor(editor, -(allocation.height / editor->buffer->line_height) + 2, 0, MOVE_NORMAL, TRUE);
+            editor_move_cursor(editor, -(allocation.height / editor->buffer->line_height) + 2, 0, MOVE_NORMAL, TRUE);
             //gtk_adjustment_set_value(GTK_ADJUSTMENT(editor->adjustment), gtk_adjustment_get_value(GTK_ADJUSTMENT(editor->adjustment)) - gtk_adjustment_get_page_increment(GTK_ADJUSTMENT(editor->adjustment)));
             return TRUE;
         case GDK_KEY_Page_Down:
-            move_cursor(editor, +(allocation.height / editor->buffer->line_height) - 2, 0, MOVE_NORMAL, TRUE);
+            editor_move_cursor(editor, +(allocation.height / editor->buffer->line_height) - 2, 0, MOVE_NORMAL, TRUE);
             /*{
                 double nv = gtk_adjustment_get_value(GTK_ADJUSTMENT(editor->adjustment)) + gtk_adjustment_get_page_increment(GTK_ADJUSTMENT(editor->adjustment));
                 double mv = gtk_adjustment_get_upper(GTK_ADJUSTMENT(editor->adjustment)) - gtk_adjustment_get_page_size(GTK_ADJUSTMENT(editor->adjustment));
@@ -499,10 +497,10 @@ static gboolean key_press_callback(GtkWidget *widget, GdkEventKey *event, editor
             return TRUE;
             
         case GDK_KEY_Home:
-            move_cursor(editor, 0, 0, MOVE_LINE_START, TRUE);
+            editor_move_cursor(editor, 0, 0, MOVE_LINE_START, TRUE);
             return TRUE;
         case GDK_KEY_End:
-            move_cursor(editor, 0, 0, MOVE_LINE_END, TRUE);
+            editor_move_cursor(editor, 0, 0, MOVE_LINE_END, TRUE);
             return TRUE;
 
         case GDK_KEY_Tab:

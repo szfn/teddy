@@ -1,5 +1,5 @@
-- motion by words
-- Ctrl-backspace to remove one word
+- home goes to first non-whitespace character, if it's already there it goes to the first character of the line
+- possibility to bind Ctrl-a and Ctrl-e to the same function as home and end
 - Ctrl-end to go to end of buffer
 - auto-indent
 - autocompletion on commandline commandline
@@ -10,7 +10,6 @@
 - triple click -> select lines (and movement will also select lines)
 - right click -> search/open file
 - mouse scrollwheel
-- home goes to first non-whitespace character, if it's already there it goes to the first character of the line
 - double click on resize handle / label hides all other editors of the column
 - middle click on resize handle / label closes editor
 - left click on resize handle / label calls new row

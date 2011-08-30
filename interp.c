@@ -7,6 +7,7 @@
 #include "buffers.h"
 #include "column.h"
 #include "go.h"
+#include "baux.h"
 
 #define INITFILE ".teddy"
 
@@ -265,6 +266,72 @@ static int teddy_focuscmd_command(ClientData client_data, Tcl_Interp *interp, in
     return TCL_OK;
 }
 
+enum teddy_move_command_operation_t {
+    TMCO_NONE = 0,
+    TMCO_DEL,
+    TMCO_CUT
+};
+
+static int teddy_move_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
+    int next;
+    enum teddy_move_command_operation_t operation = TMCO_NONE;
+    if (context_editor == NULL) {
+        Tcl_AddErrorInfo(interp, "No editor open, can not execute 'move' command");
+        return TCL_ERROR;
+    }
+
+    if ((argc < 3) || (argc > 4)) {
+        Tcl_AddErrorInfo(interp, "Wrong number of arguments to 'move' command, usage: move <prev|next> <char|wnwa|softline> [del|cut]");
+        return TCL_ERROR;
+    }
+
+    next = (strcmp(argv[1], "next") == 0);
+
+    if (argc == 4) {
+        if (strcmp(argv[3], "del") == 0) {
+            operation = TMCO_DEL;
+        } else if (strcmp(argv[3], "cut") == 0) {
+            operation = TMCO_CUT;
+        } else {
+            Tcl_AddErrorInfo(interp, "Unknown action argument to 'move' command");
+            return TCL_ERROR;
+        }
+    }
+
+    if (operation != TMCO_NONE) {
+        editor_mark_action(context_editor);
+    }
+    
+    if (strcmp(argv[2], "char") == 0) {
+        editor_move_cursor(context_editor, 0, next ? 1 : -1, MOVE_NORMAL, TRUE);
+    } else if (strcmp(argv[2], "softline") == 0) {
+        editor_move_cursor(context_editor, next ? 1 : -1, 0, MOVE_NORMAL, TRUE);
+    } else if (strcmp(argv[2], "wnwa") == 0) {
+        if (next)
+            buffer_aux_wnwa_next(context_editor->buffer);
+        else
+            buffer_aux_wnwa_prev(context_editor->buffer);
+        editor_complete_move(context_editor, TRUE);
+    } else {
+        if (operation != TMCO_NONE) 
+        Tcl_AddErrorInfo(interp, "Unknown argument to 'move' command");
+        return TCL_ERROR;
+    }
+
+    switch(operation) {
+    case TMCO_DEL:
+        editor_replace_selection(context_editor, "");
+        break;
+    case TMCO_CUT:
+        editor_cut_action(context_editor);
+        break;
+    default: // TMCO_NONE -- nothing is done
+        break;
+    }
+
+    return TCL_OK;
+}
+
 void interp_init(void) {
     interp = Tcl_CreateInterp();
     if (interp == NULL) {
@@ -294,6 +361,9 @@ void interp_init(void) {
     Tcl_CreateCommand(interp, "undo", &teddy_undo_command, (ClientData)NULL, NULL);
     Tcl_CreateCommand(interp, "search", &teddy_search_command, (ClientData)NULL, NULL);
     Tcl_CreateCommand(interp, "focuscmd", &teddy_focuscmd_command, (ClientData)NULL, NULL);
+
+    Tcl_CreateCommand(interp, "move", &teddy_move_command, (ClientData)NULL, NULL);
+
 }
 
 void interp_free(void) {

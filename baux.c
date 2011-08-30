@@ -1,5 +1,7 @@
 #include "baux.h"
 
+#include <unicode/uchar.h>
+
 void buffer_aux_go_first_nonws(buffer_t *buffer) {
     int i;
     for (i = 0; i < buffer->cursor_line->cap; ++i) {
@@ -34,4 +36,31 @@ void buffer_aux_go_line(buffer_t *buffer, int n) {
         buffer->cursor_glyph = 0;
     }
 }
+
+void buffer_aux_wnwa_next(buffer_t *buffer) {
+    UBool searching_alnum;
+    if (buffer->cursor_glyph >= buffer->cursor_line->cap) return;
+
+    searching_alnum = !u_isalnum(buffer->cursor_line->glyph_info[buffer->cursor_glyph].code);
+
+    for ( ; buffer->cursor_glyph < buffer->cursor_line->cap; ++(buffer->cursor_glyph)) {
+        if (u_isalnum(buffer->cursor_line->glyph_info[buffer->cursor_glyph].code) == searching_alnum) break;
+    }
+}
+
+void buffer_aux_wnwa_prev(buffer_t *buffer) {
+    UBool searching_alnum;
+    if (buffer->cursor_glyph <= 0) return;
+
+    --(buffer->cursor_glyph);
+
+    searching_alnum = !u_isalnum(buffer->cursor_line->glyph_info[buffer->cursor_glyph].code);
+
+    for ( ; buffer->cursor_glyph >= 0; --(buffer->cursor_glyph)) {
+        if (u_isalnum(buffer->cursor_line->glyph_info[buffer->cursor_glyph].code) == searching_alnum) break;
+    }
+
+    ++(buffer->cursor_glyph);
+}
+
 
