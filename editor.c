@@ -193,7 +193,7 @@ static void text_entry_callback(GtkIMContext *context, gchar *str, gpointer data
     editor_replace_selection(editor, str);
 }
 
-static void insert_paste(editor_t *editor, GtkClipboard *clipboard) {
+void editor_insert_paste(editor_t *editor, GtkClipboard *clipboard) {
     gchar *text = gtk_clipboard_wait_for_text(clipboard);
     if (text == NULL) return;
 
@@ -292,7 +292,7 @@ static gboolean entry_search_insert_callback(GtkWidget *widget, GdkEventKey *eve
     }
 }
 
-static void start_search(editor_t *editor) {
+void editor_start_search(editor_t *editor) {
     buffer_set_mark_at_cursor(editor->buffer);
     editor->label_state = "search";
     set_label_text(editor);
@@ -375,8 +375,90 @@ static gboolean entry_focusin_callback(GtkWidget *widget, GdkEventFocus *event, 
     return FALSE;
 }
 
+static const char *keyevent_to_string(guint keyval) {
+    static char ascii[2];
+    
+    switch (keyval) {
+    case GDK_KEY_BackSpace: return "Backspace";
+    case GDK_KEY_Tab: return "Tab";
+    case GDK_KEY_Return: return "Return";
+    case GDK_KEY_Pause: return "Pause";
+    case GDK_KEY_Escape: return "Escape";
+    case GDK_KEY_Delete: return "Delete";
+    case GDK_KEY_Home: return "Home";
+    case GDK_KEY_Left: return "Left";
+    case GDK_KEY_Up: return "Up";
+    case GDK_KEY_Right: return "Right";
+    case GDK_KEY_Down: return "Down";
+    case GDK_KEY_Page_Up: return "PageUp";
+    case GDK_KEY_Page_Down: return "PageDown";
+    case GDK_KEY_End: return "End";
+    case GDK_KEY_Insert: return "Insert";
+    case GDK_KEY_F1: return "F1";
+    case GDK_KEY_F2: return "F2";
+    case GDK_KEY_F3: return "F3";
+    case GDK_KEY_F4: return "F4";
+    case GDK_KEY_F5: return "F5";
+    case GDK_KEY_F6: return "F6";
+    case GDK_KEY_F7: return "F7";
+    case GDK_KEY_F8: return "F8";
+    case GDK_KEY_F9: return "F9";
+    case GDK_KEY_F10: return "F10";
+    case GDK_KEY_F11: return "F11";
+    case GDK_KEY_F12: return "F12";
+    case GDK_KEY_F13: return "F13";
+    case GDK_KEY_F14: return "F14";
+    }
+
+    if ((keyval >= 0x20) && (keyval <= 0x7e)) {
+        ascii[0] = (char)keyval;
+        ascii[1] = 0;
+        return ascii;
+    } else {
+        return NULL;
+    }
+}
+
+void editor_mark_action(editor_t *editor) {
+    if (editor->buffer->mark_line == NULL) {
+        buffer_set_mark_at_cursor(editor->buffer);
+    } else {
+        buffer_unset_mark(editor->buffer);
+        gtk_widget_queue_draw(editor->drar);
+    }
+}
+
+void editor_copy_action(editor_t *editor) {
+    if (editor->buffer->mark_line != NULL) {
+        copy_selection_to_clipboard(editor, default_clipboard);
+        buffer_unset_mark(editor->buffer);
+        gtk_widget_queue_draw(editor->drar);
+    }
+}
+
+void editor_cut_action(editor_t *editor) {
+    if (editor->buffer->mark_line != NULL) {
+        copy_selection_to_clipboard(editor, default_clipboard);
+        editor_replace_selection(editor, "");
+        gtk_widget_queue_draw(editor->drar);
+    }
+}
+
+void editor_save_action(editor_t *editor) {
+    save_to_text_file(editor->buffer);
+    set_label_text(editor);
+}
+
+void editor_undo_action(editor_t *editor) {
+    buffer_undo(editor->buffer);
+    active_column = editor->column;
+}
+
 static gboolean key_press_callback(GtkWidget *widget, GdkEventKey *event, gpointer data) {
     editor_t *editor = (editor_t*)data;
+    char pressed[40];
+    const char *converted;
+    const char *command;
     int shift = event->state & GDK_SHIFT_MASK;
     int ctrl = event->state & GDK_CONTROL_MASK;
     int alt = event->state & GDK_MOD1_MASK;
@@ -445,64 +527,39 @@ static gboolean key_press_callback(GtkWidget *widget, GdkEventKey *event, gpoint
             return TRUE;
         case GDK_KEY_Escape:
             return TRUE;
+        default: // At least one modifier must be pressed to activate special actions
+            goto im_context;
         }
     }
 
-    /* Temporary default actions */
-    if (!shift && ctrl && !alt && !super) {
-        switch (event->keyval) {
-        case GDK_KEY_space:
-            if (editor->buffer->mark_line == NULL) {
-                buffer_set_mark_at_cursor(editor->buffer);
-            } else {
-                buffer_unset_mark(editor->buffer);
-                gtk_widget_queue_draw(editor->drar);
-            }
-            return TRUE;
-        case GDK_KEY_c:
-            if (editor->buffer->mark_line != NULL) {
-                copy_selection_to_clipboard(editor, default_clipboard);
-                buffer_unset_mark(editor->buffer);
-                gtk_widget_queue_draw(editor->drar);
-            }
-            return TRUE;
-        case GDK_KEY_v:
-            insert_paste(editor, default_clipboard);
-            return TRUE;
-        case GDK_KEY_y:
-            insert_paste(editor, selection_clipboard);
-            return TRUE;
-        case GDK_KEY_x:
-            if (editor->buffer->mark_line == NULL) {
-                copy_selection_to_clipboard(editor, default_clipboard);
-                editor_replace_selection(editor, "");
-            }
-            return TRUE;
-        case GDK_KEY_s:
-            save_to_text_file(editor->buffer);
-            set_label_text(editor);
-            return TRUE;
-        case GDK_KEY_f:
-            start_search(editor);
-            return TRUE;
-        case GDK_KEY_b:
-            buffers_show_window(editor);
-            return TRUE;
-        case GDK_KEY_u:
-            buffer_undo(editor->buffer);
-            active_column = editor->column;
-            return TRUE;
-        }
+    converted = keyevent_to_string(event->keyval);
+
+    if (converted == NULL) goto im_context;
+    
+    strcpy(pressed, "");
+
+    if (super) {
+        strcat(pressed, "Super-");
     }
 
-    if (!ctrl && !shift && alt && !super) {
-        switch(event->keyval) {
-        case GDK_KEY_x:
-            gtk_widget_grab_focus(editor->entry);
-            return TRUE;
-        }
+    if (ctrl) {
+        strcat(pressed, "Ctrl-");
     }
 
+    if (alt) {
+        strcat(pressed, "Alt-");
+    }
+
+    strcat(pressed, converted);
+
+    command = g_hash_table_lookup(keybindings, pressed);
+    printf("Keybinding [%s] -> {%s}\n", pressed, command);
+
+    if (command != NULL) {
+        interp_eval(editor, command);
+    }
+
+ im_context:
     /* Normal text input processing */
     if (gtk_im_context_filter_keypress(editor->drarim, event)) {
         return TRUE;

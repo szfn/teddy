@@ -130,6 +130,129 @@ static int teddy_bindkey_command(ClientData client_data, Tcl_Interp *interp, int
     return TCL_OK;
 }
 
+static int teddy_mark_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
+    if (context_editor == NULL) {
+        Tcl_AddErrorInfo(interp, "No editor open, can not execute 'mark' command");
+        return TCL_ERROR;
+    }
+
+    if (argc != 1) {
+        Tcl_AddErrorInfo(interp, "Wrong number of arguments to 'mark' command");
+        return TCL_ERROR;
+    }
+
+    editor_mark_action(context_editor);
+
+    return TCL_OK;
+}
+
+static int teddy_cb_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
+    if (context_editor == NULL) {
+        Tcl_AddErrorInfo(interp, "No editor open, can not execute 'cb' command");
+        return TCL_ERROR;
+    }
+
+    if (argc != 2) {
+        Tcl_AddErrorInfo(interp, "Wrong number of arguments to 'cb' command");
+        return TCL_ERROR;
+    }
+
+    if (strcmp(argv[1], "copy") == 0) {
+        editor_copy_action(context_editor);
+    } else if (strcmp(argv[1], "cut") == 0) {
+        editor_cut_action(context_editor);
+    } else if (strcmp(argv[1], "paste") == 0) {
+        editor_insert_paste(context_editor, default_clipboard);
+    } else if (strcmp(argv[1], "ppaste") == 0) {
+        editor_insert_paste(context_editor, selection_clipboard);
+    } else {
+        Tcl_AddErrorInfo(interp, "Wrong argument to 'cb' command");
+        return TCL_ERROR;
+    }
+
+    return TCL_OK;
+}
+
+static int teddy_save_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
+    if (context_editor == NULL) {
+        Tcl_AddErrorInfo(interp, "No editor open, can not execute 'save' command");
+        return TCL_ERROR;
+    }
+
+    if (argc != 1) {
+        Tcl_AddErrorInfo(interp, "Wrong number of arguments to 'save' command");
+        return TCL_ERROR;
+    }
+
+    editor_save_action(context_editor);
+
+    return TCL_OK;
+}
+
+static int teddy_bufman_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
+    if (context_editor == NULL) {
+        Tcl_AddErrorInfo(interp, "No editor open, can not execute 'bufman' command");
+        return TCL_ERROR;
+    }
+
+    if (argc != 1) {\
+        Tcl_AddErrorInfo(interp, "Wrong number of arguments to 'bufman' command");
+        return TCL_ERROR;
+    }
+
+    buffers_show_window(context_editor);
+
+    return TCL_OK;
+}
+
+static int teddy_undo_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
+    if (context_editor == NULL) {
+        Tcl_AddErrorInfo(interp, "No editor open, can not execute 'undo' command");
+        return TCL_ERROR;
+    }
+
+    if (argc != 1) {
+        Tcl_AddErrorInfo(interp, "Wrong number of arguments to 'undo' command");
+        return TCL_ERROR;
+    }
+
+    editor_undo_action(context_editor);
+
+    return TCL_OK;
+}
+
+static int teddy_search_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
+    if (context_editor == NULL) {
+        Tcl_AddErrorInfo(interp, "No editor open, can not execute 'search' command");
+        return TCL_ERROR;
+    }
+
+    if (argc != 1) {
+        Tcl_AddErrorInfo(interp, "Wrong number of arguments to 'search' command");
+        return TCL_ERROR;
+    }
+
+    editor_start_search(context_editor);
+
+    return TCL_OK;
+}
+
+static int teddy_focuscmd_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
+    if (context_editor == NULL) {
+        Tcl_AddErrorInfo(interp, "No editor open, can not execute 'focuscmd' command");
+        return TCL_ERROR;
+    }
+
+    if (argc != 1) {
+        Tcl_AddErrorInfo(interp, "Wrong number of arguments to 'focuscmd' command");
+        return TCL_ERROR;
+    }
+
+    gtk_widget_grab_focus(context_editor->entry);
+
+    return TCL_OK;
+}
+
 void interp_init(void) {
     interp = Tcl_CreateInterp();
     if (interp == NULL) {
@@ -151,6 +274,14 @@ void interp_init(void) {
     Tcl_CreateCommand(interp, "pwd", &teddy_pwd_command, (ClientData)NULL, NULL);
 
     Tcl_CreateCommand(interp, "go", &teddy_go_command, (ClientData)NULL, NULL);
+
+    Tcl_CreateCommand(interp, "mark", &teddy_mark_command, (ClientData)NULL, NULL);
+    Tcl_CreateCommand(interp, "cb", &teddy_cb_command, (ClientData)NULL, NULL);
+    Tcl_CreateCommand(interp, "save", &teddy_save_command, (ClientData)NULL, NULL);
+    Tcl_CreateCommand(interp, "bufman", &teddy_bufman_command, (ClientData)NULL, NULL);
+    Tcl_CreateCommand(interp, "undo", &teddy_undo_command, (ClientData)NULL, NULL);
+    Tcl_CreateCommand(interp, "search", &teddy_search_command, (ClientData)NULL, NULL);
+    Tcl_CreateCommand(interp, "focuscmd", &teddy_focuscmd_command, (ClientData)NULL, NULL);
 }
 
 void interp_free(void) {

@@ -38,4 +38,13 @@ void editor_switch_buffer(editor_t *editor, buffer_t *buffer);
 gint editor_get_height_request(editor_t *editor);
 void editor_center_on_cursor(editor_t *editor);
 
+/* actions */
+void editor_mark_action(editor_t *editor);
+void editor_copy_action(editor_t *editor);
+void editor_insert_paste(editor_t *editor, GtkClipboard *clipboard); /* default_clipboard, selection_clipboard */
+void editor_cut_action(editor_t *editor);
+void editor_save_action(editor_t *editor);
+void editor_start_search(editor_t *editor);
+void editor_undo_action(editor_t *editor);
+
 #endif
