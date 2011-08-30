@@ -1,3 +1,4 @@
+- bugfix: it's possible to bind shift-letter combinations. It shouldn't be.
 - auto-indent
 - autocompletion on commandline
 - history on commandline (separate history for searches)

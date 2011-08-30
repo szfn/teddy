@@ -538,6 +538,12 @@ static gboolean key_press_callback(GtkWidget *widget, GdkEventKey *event, editor
         }
     }
 
+    if (shift && !ctrl && !alt && !super) {
+        if ((event->keyval >= 0x21) && (event->keyval <= 0x7e)) {
+            goto im_context;
+        } 
+    }
+    
     converted = keyevent_to_string(event->keyval);
 
     if (converted == NULL) goto im_context;
@@ -554,6 +560,12 @@ static gboolean key_press_callback(GtkWidget *widget, GdkEventKey *event, editor
 
     if (alt) {
         strcat(pressed, "Alt-");
+    }
+
+    if (shift) {
+        if ((event->keyval < 0x21) || (event->keyval > 0x7e)) {
+            strcat(pressed, "Shift-");
+        }
     }
 
     strcat(pressed, converted);
