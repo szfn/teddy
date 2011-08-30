@@ -565,7 +565,7 @@ static gboolean key_press_callback(GtkWidget *widget, GdkEventKey *event, gpoint
         return TRUE;
     }
     
-    printf("Unknown key sequence: %d (shift %d ctrl %d alt %d super %d)\n", event->keyval, shift, ctrl, alt, super);
+    /*printf("Unknown key sequence: %d (shift %d ctrl %d alt %d super %d)\n", event->keyval, shift, ctrl, alt, super);*/
 
     return TRUE;
 }

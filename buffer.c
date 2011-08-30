@@ -796,6 +796,11 @@ void buffer_move_cursor_to_position(buffer_t *buffer, double x, double y) {
             double glyph_start = line->glyphs[i].x;
             double glyph_end = glyph_start + line->glyph_info[i].x_advance;
 
+            if (x < glyph_start) {
+                buffer->cursor_glyph = i;
+                break;
+            }
+
             if ((x >= glyph_start) && (x <= glyph_end)) {
                 double dist_start = x - glyph_start;
                 double dist_end = glyph_end - x;
@@ -809,7 +814,9 @@ void buffer_move_cursor_to_position(buffer_t *buffer, double x, double y) {
         }
     }
 
-    if (i >= line->cap) buffer->cursor_glyph = line->cap;
+    if (i >= line->cap) {
+        buffer->cursor_glyph = line->cap;
+    }
 }
 
 //#define MAIN_FONT "/usr/share/fonts/truetype/msttcorefonts/arial.ttf"
