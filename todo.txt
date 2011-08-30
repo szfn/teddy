@@ -1,8 +1,5 @@
-- home goes to first non-whitespace character, if it's already there it goes to the first character of the line
-- possibility to bind Ctrl-a and Ctrl-e to the same function as home and end
-- Ctrl-end to go to end of buffer
 - auto-indent
-- autocompletion on commandline commandline
+- autocompletion on commandline
 - history on commandline (separate history for searches)
 - left+middle -> cut
 - middle click -> paste

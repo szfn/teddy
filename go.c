@@ -61,12 +61,16 @@ static int exec_go_position(const char *specifier, editor_t *context_editor) {
     long int n1;
     char *pos;
 
-    if (exec_char_specifier(specifier, 1, context_editor)) return 1;
+    if (exec_char_specifier(specifier, 1, context_editor)) {
+        editor_complete_move(context_editor, TRUE);
+        return 1;
+    }
     
     if (isnumber(specifier)) {
         n1 = strtol(specifier, NULL, 10);        
         printf("Line\n");
         buffer_aux_go_line(context_editor->buffer, (int)n1);
+        editor_complete_move(context_editor, TRUE);
         return 1;
     }
 
@@ -81,6 +85,7 @@ static int exec_go_position(const char *specifier, editor_t *context_editor) {
                 printf("Line + char\n");
                 buffer_aux_go_line(context_editor->buffer, (int)n1);
                 exec_char_specifier(pos, 1, context_editor);
+                editor_complete_move(context_editor, TRUE);
                 return 1;
             } else {
                 return 0;

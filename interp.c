@@ -332,6 +332,23 @@ static int teddy_move_command(ClientData client_data, Tcl_Interp *interp, int ar
     return TCL_OK;
 }
 
+static int teddy_gohome_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
+    if (context_editor == NULL) {
+        Tcl_AddErrorInfo(interp, "No editor open, can not execute 'gohome' command");
+        return TCL_ERROR;
+    }
+
+    if (argc != 1) {
+        Tcl_AddErrorInfo(interp, "Wrong number of arguments to 'gohome' command");
+        return TCL_ERROR;
+    }
+
+    buffer_aux_go_first_nonws_or_0(context_editor->buffer);
+    editor_complete_move(context_editor, TRUE);
+
+    return TCL_OK;
+}
+
 void interp_init(void) {
     interp = Tcl_CreateInterp();
     if (interp == NULL) {
@@ -363,7 +380,7 @@ void interp_init(void) {
     Tcl_CreateCommand(interp, "focuscmd", &teddy_focuscmd_command, (ClientData)NULL, NULL);
 
     Tcl_CreateCommand(interp, "move", &teddy_move_command, (ClientData)NULL, NULL);
-
+    Tcl_CreateCommand(interp, "gohome", &teddy_gohome_command, (ClientData)NULL, NULL);
 }
 
 void interp_free(void) {

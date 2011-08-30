@@ -3,7 +3,12 @@
 
 #include "buffer.h"
 
+/* Moves cursor to first non-whitespace character */
 void buffer_aux_go_first_nonws(buffer_t *buffer);
+
+/* Moves cursor to first non-whitespace character, if cursor is already there goes to character 0 */
+void buffer_aux_go_first_nonws_or_0(buffer_t *buffer);
+
 void buffer_aux_go_end(buffer_t *buffer);
 void buffer_aux_go_char(buffer_t *buffer, int n);
 void buffer_aux_go_line(buffer_t *buffer, int n);

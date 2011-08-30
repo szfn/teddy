@@ -2,6 +2,14 @@
 
 #include <unicode/uchar.h>
 
+void buffer_aux_go_first_nonws_or_0(buffer_t *buffer) {
+    int old_cursor_glyph = buffer->cursor_glyph;
+    buffer_aux_go_first_nonws(buffer);
+    if (old_cursor_glyph == buffer->cursor_glyph) {
+        buffer->cursor_glyph = 0;
+    }
+}
+
 void buffer_aux_go_first_nonws(buffer_t *buffer) {
     int i;
     for (i = 0; i < buffer->cursor_line->cap; ++i) {

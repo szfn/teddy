@@ -13,6 +13,7 @@
 #include "columns.h"
 #include "column.h"
 #include "reshandle.h"
+#include "baux.h"
 
 void set_label_text(editor_t *editor) {
     char *labeltxt;
@@ -406,9 +407,10 @@ static const char *keyevent_to_string(guint keyval) {
     case GDK_KEY_F12: return "F12";
     case GDK_KEY_F13: return "F13";
     case GDK_KEY_F14: return "F14";
+    case GDK_KEY_space: return "Space";
     }
 
-    if ((keyval >= 0x20) && (keyval <= 0x7e)) {
+    if ((keyval >= 0x21) && (keyval <= 0x7e)) {
         ascii[0] = (char)keyval;
         ascii[1] = 0;
         return ascii;
@@ -497,7 +499,8 @@ static gboolean key_press_callback(GtkWidget *widget, GdkEventKey *event, editor
             return TRUE;
             
         case GDK_KEY_Home:
-            editor_move_cursor(editor, 0, 0, MOVE_LINE_START, TRUE);
+            buffer_aux_go_first_nonws_or_0(editor->buffer);
+            editor_complete_move(editor, TRUE);
             return TRUE;
         case GDK_KEY_End:
             editor_move_cursor(editor, 0, 0, MOVE_LINE_END, TRUE);
