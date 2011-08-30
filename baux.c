@@ -71,4 +71,18 @@ void buffer_aux_wnwa_prev(buffer_t *buffer) {
     ++(buffer->cursor_glyph);
 }
 
-
+void buffer_indent_newline(buffer_t *buffer, char *r) {
+    int i = 0;
+    r[0] = '\n';
+    for ( ; i < buffer->cursor_line->cap; ++i) {
+        uint32_t code = buffer->cursor_line->glyph_info[i].code;
+        if (code == 0x20) {
+            r[i+1] = ' ';
+        } else if (code == 0x09) {
+            r[i+1] = '\t';
+        } else {
+            r[i+1] = '\0';
+            break;
+        }
+    }
+}

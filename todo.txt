@@ -1,5 +1,3 @@
-- bugfix: it's possible to bind shift-letter combinations. It shouldn't be.
-- auto-indent
 - autocompletion on commandline
 - history on commandline (separate history for searches)
 - left+middle -> cut
@@ -15,6 +13,7 @@
 - auto-reloading buffers when there is no change and the file on disk was changed
 - note: left button click does search/open, middle click does primary paste
 - tabs
+- smart search: search for exact case match only if there is at least one upcase letter in the input
 - highlighting
 - configurability
   - enable/disable soft line wrap

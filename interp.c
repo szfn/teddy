@@ -104,6 +104,8 @@ static int teddy_setcfg_command(ClientData client_data, Tcl_Interp *interp, int 
         ci = &cfg_posbox_font;
     } else if (strcmp(argv[1], "focus_follows_mouse") == 0) {
         ci = &cfg_focus_follows_mouse;
+    } else if (strcmp(argv[1], "default_autoindent") == 0) {
+        ci = &cfg_default_autoindent;
     } else if (strcmp(argv[1], "editor_bg_color") == 0) {
         ci = &cfg_editor_bg_color;
     } else if (strcmp(argv[1], "editor_fg_color") == 0) {

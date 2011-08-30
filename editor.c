@@ -528,9 +528,17 @@ static gboolean key_press_callback(GtkWidget *widget, GdkEventKey *event, editor
                 editor_replace_selection(editor, "");
             }
             return TRUE;
-        case GDK_KEY_Return:
-            editor_replace_selection(editor, "\n");
+        case GDK_KEY_Return: {
+            char *r = alloca(sizeof(char) * (editor->buffer->cursor_line->cap + 2));
+            if (cfg_default_autoindent.intval) {
+                buffer_indent_newline(editor->buffer, r);
+            } else {
+                r[0] = '\n';
+                r[1] = '\0';
+            }
+            editor_replace_selection(editor, r);
             return TRUE;
+        }
         case GDK_KEY_Escape:
             return TRUE;
         default: // At least one modifier must be pressed to activate special actions

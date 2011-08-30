@@ -19,4 +19,7 @@ void buffer_aux_wnwa_next(buffer_t *buffer);
 /* If it is at the beginning of a word (or inside a non-word sequence) goes to the end of the previous word, if it is at the end of a word (or inside a word) goes to the beginning of the word) */
 void buffer_aux_wnwa_prev(buffer_t *buffer);
 
+/* writes in r the indent of cursor_line + a newline and the 0 byte */
+void buffer_indent_newline(buffer_t *buffer, char *r);
+
 #endif
