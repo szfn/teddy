@@ -639,8 +639,7 @@ static gboolean button_release_callback(GtkWidget *widget, GdkEventButton *event
     return TRUE;
 }
 
-static gboolean motion_callback(GtkWidget *widget, GdkEventMotion *event, gpointer data) {
-    editor_t *editor = (editor_t*)data;
+static gboolean motion_callback(GtkWidget *widget, GdkEventMotion *event, editor_t *editor) {
     if (editor->mouse_marking) {
         move_cursor_to_mouse(editor, event->x, event->y);
         copy_selection_to_clipboard(editor, selection_clipboard);
@@ -648,6 +647,12 @@ static gboolean motion_callback(GtkWidget *widget, GdkEventMotion *event, gpoint
         gtk_widget_queue_draw(editor->drar);
     }
 
+    // focus follows mouse
+    if (!gtk_widget_is_focus(editor->drar)) {
+        gtk_widget_grab_focus(editor->drar);
+        gtk_widget_queue_draw(editor->drar);
+    }
+    
     return TRUE;
 }
 

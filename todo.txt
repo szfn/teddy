@@ -1,4 +1,3 @@
-- focus follows mouse
 - bugfix: PgUp/PgDn doesn't move cursor
 - motion by words
 - Ctrl-backspace to remove one word
