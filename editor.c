@@ -644,8 +644,8 @@ static gboolean button_press_callback(GtkWidget *widget, GdkEventButton *event, 
         buffer_unset_mark(editor->buffer);
         editor_complete_move(editor, TRUE);
         editor_insert_paste(editor, selection_clipboard);
-    }
-    
+    } 
+
     return TRUE;
 }
 
@@ -658,6 +658,29 @@ static gboolean button_release_callback(GtkWidget *widget, GdkEventButton *event
         editor->buffer->mark_line = NULL;
         editor->buffer->mark_glyph = -1;
         gtk_widget_queue_draw(editor->drar);
+    }
+
+    return TRUE;
+}
+
+static gboolean scroll_callback(GtkWidget *widget, GdkEventScroll *event, editor_t *editor) {
+    switch(event->direction) {
+    case GDK_SCROLL_UP: {
+        double nv = gtk_adjustment_get_value(GTK_ADJUSTMENT(editor->adjustment)) - editor->buffer->line_height;
+        if (nv < 0) nv = 0;
+        gtk_adjustment_set_value(GTK_ADJUSTMENT(editor->adjustment), nv);
+        break;
+    }
+    case GDK_SCROLL_DOWN: {
+        double nv = gtk_adjustment_get_value(GTK_ADJUSTMENT(editor->adjustment)) + editor->buffer->line_height;
+        double mv = gtk_adjustment_get_upper(GTK_ADJUSTMENT(editor->adjustment)) - gtk_adjustment_get_page_size(GTK_ADJUSTMENT(editor->adjustment));
+        if (nv > mv) nv = mv;
+        gtk_adjustment_set_value(GTK_ADJUSTMENT(editor->adjustment), nv);
+        break;
+    }
+    default:
+        // no scroll left/right for now
+        break;
     }
 
     return TRUE;
@@ -960,7 +983,8 @@ static gboolean label_button_release_callback(GtkWidget *widget, GdkEventButton 
             columns_swap_columns(editor->column, target_column);
         }
         return TRUE;
-    }
+    } 
+    
     return FALSE;
 }
 
@@ -1000,6 +1024,9 @@ editor_t *new_editor(GtkWidget *window, column_t *column, buffer_t *buffer) {
 
     g_signal_connect(G_OBJECT(r->drar), "button-release-event",
                      G_CALLBACK(button_release_callback), r);
+
+    g_signal_connect(G_OBJECT(r->drar), "scroll-event",
+                     G_CALLBACK(scroll_callback), r);
 
     g_signal_connect(G_OBJECT(r->drar), "motion-notify-event",
                      G_CALLBACK(motion_callback), r);
