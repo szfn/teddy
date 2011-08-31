@@ -59,5 +59,6 @@ void editor_move_cursor(editor_t *editor, int delta_line, int delta_char, enum M
 
 void editor_complete_move(editor_t *editor, gboolean should_move_origin);
 
+void editor_close_editor(editor_t *editor);
 
 #endif

@@ -4,6 +4,7 @@
 
 #include "column.h"
 #include "columns.h"
+#include "editor.h"
 
 static gboolean reshandle_expose_callback(GtkWidget *widget, GdkEventExpose *event, reshandle_t *reshandle) {
     cairo_t *cr = gdk_cairo_create(widget->window);
@@ -41,6 +42,9 @@ static gboolean reshandle_button_press_callback(GtkWidget *widget, GdkEventButto
         if (column_remove_others(reshandle->editor->column, reshandle->editor) == 0) {
             columns_remove_others(reshandle->editor->column, reshandle->editor);
         }
+    }
+    if ((event->type == GDK_BUTTON_PRESS) && (event->button == 2)) {
+        editor_close_editor(reshandle->editor);
     }
     return TRUE;
 }

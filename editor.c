@@ -315,6 +315,16 @@ void quick_message(editor_t *editor, const char *title, const char *msg) {
     gtk_dialog_run(GTK_DIALOG(dialog));
 }
 
+void editor_close_editor(editor_t *editor) {
+    if (column_editor_count(editor->column) > 1) {
+        editor = column_remove(editor->column, editor);
+    } else {
+        column_t *column = columns_remove(editor->column, editor);
+        editor = column_get_first_editor(column);
+    }
+    gtk_widget_grab_focus(editor->drar);
+}
+
 static gboolean entry_default_insert_callback(GtkWidget *widget, GdkEventKey *event, gpointer data) {
     editor_t *editor = (editor_t*)data;
     enum deferred_action da;
@@ -330,13 +340,7 @@ static gboolean entry_default_insert_callback(GtkWidget *widget, GdkEventKey *ev
         case FOCUS_ALREADY_SWITCHED:
             break;
         case CLOSE_EDITOR:
-            if (column_editor_count(editor->column) > 1) {
-                editor = column_remove(editor->column, editor);
-            } else {
-                column_t *column = columns_remove(editor->column, editor);
-                editor = column_get_first_editor(column);
-            }
-            gtk_widget_grab_focus(editor->drar);
+            editor_close_editor(editor);
             break;
         default:
             gtk_widget_grab_focus(editor->drar);
@@ -960,6 +964,10 @@ static gboolean label_button_press_callback(GtkWidget *widget, GdkEventButton *e
         if (column_remove_others(editor->column, editor) == 0) {
             columns_remove_others(editor->column, editor);
         }
+    }
+
+    if ((event->type == GDK_BUTTON_PRESS) && (event->button == 2)) {
+        editor_close_editor(editor);
     }
     return TRUE;
 }
