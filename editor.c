@@ -964,12 +964,20 @@ static gboolean label_button_press_callback(GtkWidget *widget, GdkEventButton *e
         if (column_remove_others(editor->column, editor) == 0) {
             columns_remove_others(editor->column, editor);
         }
+        return TRUE;
     }
 
     if ((event->type == GDK_BUTTON_PRESS) && (event->button == 2)) {
         editor_close_editor(editor);
+        return TRUE;
     }
-    return TRUE;
+
+    if ((event->type == GDK_BUTTON_PRESS) && (event->button == 3)) {
+        heuristic_new_frame(editor, null_buffer());
+        return TRUE;
+    }
+
+    return FALSE;
 }
 
 static gboolean label_button_release_callback(GtkWidget *widget, GdkEventButton *event, editor_t *editor) {
