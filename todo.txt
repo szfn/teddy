@@ -1,20 +1,20 @@
-- autocompletion on commandline
-- history on commandline (separate history for searches)
-- left+middle -> cut
 - middle click -> paste
-- double click -> select word (and movement will also select words)
-- triple click -> select lines (and movement will also select lines)
-- right click -> search/open file
 - mouse scrollwheel
 - double click on resize handle / label hides all other editors of the column
 - middle click on resize handle / label closes editor
 - left click on resize handle / label calls new row
+- autocompletion on commandline
+- history on commandline (separate history for searches)
+- double click -> select word (and movement will also select words)
+- triple click -> select lines (and movement will also select lines)
+- right click -> search/open file
 - command to reload buffer contents from disk
 - auto-reloading buffers when there is no change and the file on disk was changed
 - note: left button click does search/open, middle click does primary paste
 - tabs
 - smart search: search for exact case match only if there is at least one upcase letter in the input
 - highlighting
+- left+middle -> cut
 - configurability
   - enable/disable soft line wrap
 - reimplement hbox/vbox to not be broken on resize

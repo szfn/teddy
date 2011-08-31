@@ -624,29 +624,27 @@ static void move_cursor_to_mouse(editor_t *editor, double x, double y) {
     buffer_move_cursor_to_position(editor->buffer, x, y);
 }
 
-static gboolean button_press_callback(GtkWidget *widget, GdkEventButton *event, gpointer data) {
-    editor_t *editor = (editor_t *)data;
-
+static gboolean button_press_callback(GtkWidget *widget, GdkEventButton *event, editor_t *editor) {
     if (selection_target_buffer != NULL) {
         editor_switch_buffer(editor, selection_target_buffer);
         selection_target_buffer = NULL;
         return TRUE;
     }
-    
-    gtk_widget_queue_draw(editor->drar);
+
     gtk_widget_grab_focus(editor->drar);
 
-    move_cursor_to_mouse(editor, event->x, event->y);
-    
-    editor->cursor_visible = TRUE;
-
-    if (editor->buffer->mark_line != NULL) copy_selection_to_clipboard(editor, selection_clipboard);
-
-
-    editor->mouse_marking = 1;
-    buffer_set_mark_at_cursor(editor->buffer);
-
-    editor_center_on_cursor(editor);
+    if (event->button == 1) {
+        move_cursor_to_mouse(editor, event->x, event->y);
+        editor_complete_move(editor, TRUE);
+        
+        editor->mouse_marking = 1;
+        buffer_set_mark_at_cursor(editor->buffer);
+    } else if (event->button == 2) {
+        move_cursor_to_mouse(editor, event->x, event->y);
+        buffer_unset_mark(editor->buffer);
+        editor_complete_move(editor, TRUE);
+        editor_insert_paste(editor, selection_clipboard);
+    }
     
     return TRUE;
 }
