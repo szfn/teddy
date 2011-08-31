@@ -17,5 +17,6 @@ enum deferred_action interp_eval(editor_t *editor, const char *command);
 void read_conf(void);
 
 extern editor_t *context_editor;
+extern const char *command_line[];
 
 #endif

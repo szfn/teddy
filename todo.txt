@@ -15,6 +15,7 @@
 - reimplement hbox/vbox to not be broken on resize
   - column_adjust_size just takes the last row and uses all the empty space or 40% if there isn't any empty space
   - put the columns_hbox insite a single custom container that returns a requested size of { 0, 0 } and on allocation just resizes everything maintaining proportions
+- highlighting della parentesi associata
 
 - go command improvements:
   - a ':' at the end of the 'go' argument should be always ignored

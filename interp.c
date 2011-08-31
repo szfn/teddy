@@ -15,6 +15,39 @@ Tcl_Interp *interp;
 editor_t *context_editor = NULL;
 enum deferred_action deferred_action_to_return;
 
+const char *command_list[] = {
+    // tcl default commands (and redefined tcl default commands)
+    "error", "lappend", "platform", 
+    "append",	"eval",	"lassign",	"platform::shell",
+    "apply",	"exec",	"lindex",	"proc",
+    "array",	"exit",	"linsert",	"puts",
+    "auto_execok",	"expr",	"list",	"pwd",
+    "auto_import",	"fblocked",	"llength",	"re_syntax",	"tcltest",
+    "auto_load",	"fconfigure",	"load",	"read",	"tclvars",
+    "auto_mkindex",	"fcopy",	"lrange",	"refchan",	"tell",
+    "auto_mkindex_old",	"file",	"lrepeat",	"regexp",	"time",
+    "auto_qualify",	"fileevent",	"lreplace",	"registry",	"tm",
+    "auto_reset",	"filename",	"lreverse",	"regsub",	"trace",
+    "bgerror",	"flush",	"lsearch",	"rename",	"unknown",
+    "binary",	"for",	"lset",	"return",	"unload",
+    "break",	"foreach",	"lsort",	"unset",
+    "catch",	"format",	"mathfunc",	"scan",	"update",
+    "gets",	"mathop",	"seek",	"uplevel",
+    "chan",	"glob",	"memory",	"set",	"upvar",
+    "clock",	"global",	"msgcat",	"socket",	"variable",
+    "close",	"history",	"namespace",	"source",	"vwait",
+    "concat",	"http",	"open",	"split",	"while",
+    "continue",	"if",	"package",	"string",
+    "dde",	"incr",	"parray",	"subst",
+    "dict",	"info",	"pid",	"switch",
+    "encoding",	"interp",	"pkg::create",	"Tcl",
+    "eof",	"join",	"pkg_mkIndex",
+
+    // special commands
+    "setcfg", "bindkey", "new", "pwf", "go", "mark", "cb", "save",
+    "bufman", "undo", "search", "focuscmd", "move", "gohome",
+};
+
 static int teddy_exit_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
     if (context_editor == NULL) {
         Tcl_AddErrorInfo(interp, "No editor open, can not execute 'exit' command");
@@ -360,6 +393,11 @@ void interp_init(void) {
     
     Tcl_HideCommand(interp, "after", "hidden_after");
     Tcl_HideCommand(interp, "cd", "hidden_cd");
+    Tcl_HideCommand(interp, "tcl_endOfWord", "hidden_tcl_endOfWord");
+    Tcl_HideCommand(interp, "tcl_findLibrary", "hidden_tcl_findLibrary");
+    Tcl_HideCommand(interp, "tcl_startOfPreviousWord", "hidden_tcl_startOfPreviousWord");
+    Tcl_HideCommand(interp, "tcl_wordBreakAfter", "hidden_tcl_wordBreakAfter");
+    Tcl_HideCommand(interp, "tcl_wordBreakBefore", "hidden_tcl_wordBreakBefore");
     
     Tcl_HideCommand(interp, "exit", "hidden_exit");
     Tcl_CreateCommand(interp, "exit", &teddy_exit_command, (ClientData)NULL, NULL);
