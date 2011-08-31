@@ -1,4 +1,3 @@
-- middle click -> paste
 - mouse scrollwheel
 - double click on resize handle / label hides all other editors of the column
 - middle click on resize handle / label closes editor

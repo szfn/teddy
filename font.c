@@ -15,6 +15,7 @@ void teddy_font_init(teddy_font_t *font, FT_Library *library, const char *fontpa
 
     if (!match) {
         printf("Couldn't resolve font pattern [%s], this shouldn't happen\n", fontpattern);
+        FcPatternDestroy(pat);
         exit(EXIT_FAILURE);
     }
 
@@ -42,6 +43,8 @@ void teddy_font_init(teddy_font_t *font, FT_Library *library, const char *fontpa
     font->font_options = cairo_font_options_create();
 
     font->cairofont = cairo_scaled_font_create(font->cairoface, &(font->font_size_matrix), &(font->font_ctm), font->font_options);
+
+    FcPatternDestroy(match);
 }
 
 void teddy_font_free(teddy_font_t *font) {
