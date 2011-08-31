@@ -956,6 +956,11 @@ static gboolean hscrolled_callback(GtkAdjustment *adj, gpointer data) {
 }
 
 static gboolean label_button_press_callback(GtkWidget *widget, GdkEventButton *event, editor_t *editor) {
+    if ((event->type == GDK_2BUTTON_PRESS) && (event->button == 1)) {
+        if (column_remove_others(editor->column, editor) == 0) {
+            columns_remove_others(editor->column, editor);
+        }
+    }
     return TRUE;
 }
 

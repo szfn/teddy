@@ -33,9 +33,15 @@ static gboolean reshandle_expose_callback(GtkWidget *widget, GdkEventExpose *eve
 }
 
 static gboolean reshandle_button_press_callback(GtkWidget *widget, GdkEventButton *event, reshandle_t *reshandle) {
-    printf("Starting resize\n");
-    reshandle->origin_x = event->x;
-    reshandle->origin_y = event->y;
+    if ((event->type == GDK_BUTTON_PRESS) && (event->button == 1)) {
+        reshandle->origin_x = event->x;
+        reshandle->origin_y = event->y;
+    }
+    if ((event->type == GDK_2BUTTON_PRESS) && (event->button == 1)) {
+        if (column_remove_others(reshandle->editor->column, reshandle->editor) == 0) {
+            columns_remove_others(reshandle->editor->column, reshandle->editor);
+        }
+    }
     return TRUE;
 }
 

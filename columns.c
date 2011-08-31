@@ -229,6 +229,15 @@ column_t *columns_remove(column_t *column, editor_t *editor) {
     return columns_get_first();
 }
 
+void columns_remove_others(column_t *column, editor_t *editor) {
+    int i;
+    for (i = 0; i < columns_allocated; ++i) {
+        if (columns[i] == NULL) continue;
+        if (columns[i] == column) continue;
+        columns_remove(columns[i], editor);
+    }
+}
+
 editor_t *columns_get_buffer(buffer_t *buffer) {
     int i;
     for (i = 0; i < columns_allocated; ++i) {

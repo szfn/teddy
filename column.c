@@ -234,6 +234,17 @@ editor_t *column_remove(column_t *column, editor_t *editor) {
     return column_get_first_editor(column);
 }
 
+int column_remove_others(column_t *column, editor_t *editor) {
+    int i, count = 0;
+    for (i = 0; i < column->editors_allocated; ++i) {
+        if (column->editors[i] == NULL) continue;
+        if (column->editors[i] == editor) continue;
+        column_remove(column, column->editors[i]);
+        ++count;
+    }
+    return count;
+}
+
 editor_t *column_find_buffer_editor(column_t *column, buffer_t *buffer) {
     int i;
     for (i = 0; i < column->editors_allocated; ++i) {
