@@ -325,8 +325,7 @@ void editor_close_editor(editor_t *editor) {
     gtk_widget_grab_focus(editor->drar);
 }
 
-static gboolean entry_default_insert_callback(GtkWidget *widget, GdkEventKey *event, gpointer data) {
-    editor_t *editor = (editor_t*)data;
+static gboolean entry_default_insert_callback(GtkWidget *widget, GdkEventKey *event, editor_t *editor) {
     enum deferred_action da;
 
     if (event->keyval == GDK_KEY_Escape) {
@@ -344,15 +343,32 @@ static gboolean entry_default_insert_callback(GtkWidget *widget, GdkEventKey *ev
             break;
         default:
             gtk_widget_grab_focus(editor->drar);
-        } 
+        }
+        return TRUE;
     }
-    
-    //TODO: autocompletion on TAB (here it's complex)
+
     //TODO: history search on Ctrl-R
     //TODO: history scan with up, down - arrow keys
 
     return FALSE;
 }
+
+static gboolean entry_autocomplete_callback(GtkWidget *widget, GdkEventKey *event, editor_t *editor) {
+    GValue cursor_position = {0};
+    
+    if (editor->search_mode) return FALSE;
+    if (event->keyval != GDK_KEY_Tab) return FALSE;
+
+    g_value_init(&cursor_position, G_TYPE_UINT);
+    g_object_get_property(G_OBJECT(editor->entry), "cursor-position", &cursor_position);
+    printf("Position: %d\n", g_value_get_uint(&cursor_position));
+    
+    //TODO: autocompletion on TAB
+    
+    g_value_reset(&cursor_position);
+    return TRUE;
+}
+
 
 void editor_switch_buffer(editor_t *editor, buffer_t *buffer) {
     editor->buffer = buffer;
@@ -1077,6 +1093,7 @@ editor_t *new_editor(GtkWidget *window, column_t *column, buffer_t *buffer) {
         gtk_widget_modify_font(r->label, elements_font_description);
 
         r->current_entry_handler_id = g_signal_connect(r->entry, "key-release-event", G_CALLBACK(entry_default_insert_callback), r);
+        g_signal_connect(r->entry, "key-press-event", G_CALLBACK(entry_autocomplete_callback), r);
 
         r->label_state = "cmd";
         set_label_text(r);
