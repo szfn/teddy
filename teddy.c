@@ -7,6 +7,7 @@
 #include "buffers.h"
 #include "columns.h"
 #include "interp.h"
+#include "cmdcompl.h"
 
 static gboolean delete_callback(GtkWidget *widget, GdkEvent *event, gpointer data) {
     if (buffers_close_all(widget)) return FALSE;
@@ -23,6 +24,7 @@ int main(int argc, char *argv[]) {
 
     global_init();
 
+    cmdcompl_init();
     interp_init();
 
     read_conf();
@@ -63,6 +65,7 @@ int main(int argc, char *argv[]) {
     buffers_free();
     columns_free();
     interp_free();
+    cmdcompl_free();
     
     return 0;
 }
