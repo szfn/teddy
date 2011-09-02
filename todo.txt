@@ -25,7 +25,7 @@
 - word selection is longest sequence around point consisting of:
   - letters
   - numbers
-  - [-_/]
+  - [-_/.]
   - if has at least one / treat as filename
   - if after the end a colon is found treat as filename
   - stuff after filename is optionally enclosed in [] and separed by either ":" or "," at most two numbers

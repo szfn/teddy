@@ -8,5 +8,6 @@ extern int external_commands_cap;
 
 void cmdcompl_init(void);
 void cmdcompl_free(void);
+void cmdcompl_complete(const char *text, int length);
 
 #endif

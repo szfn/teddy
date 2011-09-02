@@ -6,6 +6,7 @@
 
 #include <tcl.h>
 #include <gdk/gdkkeysyms.h>
+#include <unicode/uchar.h>
 
 #include "global.h"
 #include "buffers.h"
@@ -14,6 +15,7 @@
 #include "column.h"
 #include "reshandle.h"
 #include "baux.h"
+#include "cmdcompl.h"
 
 void set_label_text(editor_t *editor) {
     char *labeltxt;
@@ -355,13 +357,33 @@ static gboolean entry_default_insert_callback(GtkWidget *widget, GdkEventKey *ev
 
 static gboolean entry_autocomplete_callback(GtkWidget *widget, GdkEventKey *event, editor_t *editor) {
     GValue cursor_position = {0};
+    const char *text;
+    int end, i;
     
     if (editor->search_mode) return FALSE;
     if (event->keyval != GDK_KEY_Tab) return FALSE;
 
     g_value_init(&cursor_position, G_TYPE_UINT);
     g_object_get_property(G_OBJECT(editor->entry), "cursor-position", &cursor_position);
-    printf("Position: %d\n", g_value_get_uint(&cursor_position));
+
+    text = gtk_entry_get_text(GTK_ENTRY(editor->entry));
+
+    end = g_value_get_uint(&cursor_position);
+
+    for (i = end-1; i >= 0; --i) {
+        if (u_isalnum(text[i])) continue;
+        if (text[i] == '-') continue;
+        if (text[i] == '_') continue;
+        if (text[i] == '/') continue;
+        if (text[i] == '~') continue;
+        if (text[i] == ':') continue;
+        //printf("Breaking on [%c] %d (text: %s)\n", text[i], i, text);
+        break;
+    }
+
+    //printf("Completion start %d end %d\n", i+1, end);
+
+    cmdcompl_complete(text+i+1, end-i-1);
     
     //TODO: autocompletion on TAB
     

@@ -8,7 +8,10 @@
 #include <stdlib.h>
 #include <string.h>
 
-const char *command_list[] = {
+#define MAX_COMPLETION_REQUEST_LENGTH 256
+#define MAX_NUMBER_OF_COMPLETIONS 128
+
+const char *list_internal_commands[] = {
     // tcl default commands (and redefined tcl default commands)
     "error", "lappend", "platform", 
     "append",	"eval",	"lassign",	"platform::shell",
@@ -129,7 +132,7 @@ void cmdcompl_rehash(void) {
 
     /*** Alphabetical sorting for internal commands ***/
 
-    qsort(command_list, sizeof(command_list) / sizeof(const char *), sizeof(const char *), qsort_strcmp_wrap);
+    qsort(list_internal_commands, sizeof(list_internal_commands) / sizeof(const char *), sizeof(const char *), qsort_strcmp_wrap);
 }
 
 void cmdcompl_init(void) {
@@ -150,4 +153,37 @@ void cmdcompl_free(void) {
         free(list_external_commands[i]);
     }
     free(list_external_commands);
+}
+
+static void cmdcompl_add_matches(const char **list, int listlen, const char *text, int textlen) {
+    int i;
+    for (i = 0; i < listlen; ++i) {
+        if (strncmp(list[i], text, textlen) == 0) {
+            printf("   %s\n", list[i]);
+        }
+    }
+}
+
+static void cmdcompl_start(const char *text, int length) {
+    // TODO: clean up everything that was allocated from previous completions
+
+    if (length <= 0) return;
+    
+    printf("Matches:\n");
+
+    cmdcompl_add_matches(list_internal_commands, sizeof(list_internal_commands) / sizeof(const char *), text, length);
+    cmdcompl_add_matches((const char **)list_external_commands, external_commands_cap, text, length);
+}
+
+void cmdcompl_complete(const char *text, int length) {
+    if (length > MAX_COMPLETION_REQUEST_LENGTH) {
+        //TODO: reset completions
+        return;
+    }
+
+    //TODO: if the last completion request was a prefix of this completion request
+    // - and the completion directory is the same
+    // - and last completion set was complete
+    // then just filter the partial results
+    cmdcompl_start(text, length);
 }
