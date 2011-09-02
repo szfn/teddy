@@ -11,6 +11,10 @@
 #define MAX_COMPLETION_REQUEST_LENGTH 256
 #define MAX_NUMBER_OF_COMPLETIONS 128
 
+const char *found_completions[MAX_NUMBER_OF_COMPLETIONS];
+int num_found_completions;
+int found_completions_is_incomplete;
+
 const char *list_internal_commands[] = {
     // tcl default commands (and redefined tcl default commands)
     "error", "lappend", "platform", 
@@ -144,6 +148,9 @@ void cmdcompl_init(void) {
         exit(EXIT_FAILURE);
     }
 
+    num_found_completions = 0;
+    found_completions_is_incomplete = 0;
+
     cmdcompl_rehash();
 }
 
@@ -159,25 +166,35 @@ static void cmdcompl_add_matches(const char **list, int listlen, const char *tex
     int i;
     for (i = 0; i < listlen; ++i) {
         if (strncmp(list[i], text, textlen) == 0) {
-            printf("   %s\n", list[i]);
+            if (num_found_completions >= MAX_NUMBER_OF_COMPLETIONS) {
+                found_completions_is_incomplete = 1;
+            }
+            found_completions[num_found_completions++] = list[i];
         }
     }
 }
 
-static void cmdcompl_start(const char *text, int length) {
+static void cmdcompl_reset(void) {
+    num_found_completions = 0;
+    found_completions_is_incomplete = 0;
+
     // TODO: clean up everything that was allocated from previous completions
+}
+
+static void cmdcompl_start(const char *text, int length) {
+    cmdcompl_reset();
 
     if (length <= 0) return;
-    
-    printf("Matches:\n");
 
     cmdcompl_add_matches(list_internal_commands, sizeof(list_internal_commands) / sizeof(const char *), text, length);
-    cmdcompl_add_matches((const char **)list_external_commands, external_commands_cap, text, length);
+    if (num_found_completions < MAX_NUMBER_OF_COMPLETIONS) {
+        cmdcompl_add_matches((const char **)list_external_commands, external_commands_cap, text, length);
+    }
 }
 
 void cmdcompl_complete(const char *text, int length) {
     if (length > MAX_COMPLETION_REQUEST_LENGTH) {
-        //TODO: reset completions
+        cmdcompl_reset();
         return;
     }
 

@@ -384,8 +384,8 @@ static gboolean entry_autocomplete_callback(GtkWidget *widget, GdkEventKey *even
     //printf("Completion start %d end %d\n", i+1, end);
 
     cmdcompl_complete(text+i+1, end-i-1);
-    
-    //TODO: autocompletion on TAB
+
+    //TODO: show autocompletion window
     
     g_value_reset(&cursor_position);
     return TRUE;
