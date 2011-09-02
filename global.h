@@ -46,5 +46,6 @@ extern config_item_t cfg_posbox_fg_color;
 
 void global_init();
 void setcfg(config_item_t *ci, const char *val);
+char *unrealpath(char *absolute_path, const char *relative_path);
 
 #endif

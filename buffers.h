@@ -21,8 +21,6 @@ int buffers_close_all(GtkWidget *window);
 
 void buffers_show_window(editor_t *editor);
 
-char *unrealpath(char *absolute_path, const char *relative_path);
-
 buffer_t *buffers_find_buffer_from_path(const char *path);
 
 #endif
