@@ -407,12 +407,14 @@ static gboolean entry_focusout_callback(GtkWidget *widget, GdkEventFocus *event,
     editor->search_mode = FALSE;
     g_signal_handler_disconnect(editor->entry, editor->current_entry_handler_id);
     editor->current_entry_handler_id = g_signal_connect(editor->entry, "key-release-event", G_CALLBACK(entry_default_insert_callback), editor);
+    focus_can_follow_mouse = 1;
     return FALSE;
 }
 
 static gboolean entry_focusin_callback(GtkWidget *widget, GdkEventFocus *event, gpointer data) {
     editor_t *editor = (editor_t*)data;
     gtk_entry_set_text(GTK_ENTRY(editor->entry), "");
+    focus_can_follow_mouse = 0;
     return FALSE;
 }
 
@@ -737,7 +739,7 @@ static gboolean motion_callback(GtkWidget *widget, GdkEventMotion *event, editor
     }
 
     // focus follows mouse
-    if (cfg_focus_follows_mouse.intval) {
+    if ((cfg_focus_follows_mouse.intval) && focus_can_follow_mouse) {
         if (!gtk_widget_is_focus(editor->drar)) {
             gtk_widget_grab_focus(editor->drar);
             gtk_widget_queue_draw(editor->drar);

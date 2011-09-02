@@ -21,6 +21,8 @@ config_item_t cfg_posbox_border_color;
 config_item_t cfg_posbox_bg_color;
 config_item_t cfg_posbox_fg_color;
 
+int focus_can_follow_mouse = 1;
+
 void setcfg(config_item_t *ci, const char *val) {
     strcpy(ci->strval, val);
     ci->intval = atoi(val);
