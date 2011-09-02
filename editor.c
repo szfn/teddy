@@ -331,6 +331,7 @@ static gboolean entry_default_insert_callback(GtkWidget *widget, GdkEventKey *ev
     enum deferred_action da;
 
     if (event->keyval == GDK_KEY_Escape) {
+        gtk_entry_set_text(GTK_ENTRY(editor->entry), "");
         gtk_widget_grab_focus(editor->drar);
         return TRUE;
     }
@@ -384,8 +385,13 @@ static gboolean entry_autocomplete_callback(GtkWidget *widget, GdkEventKey *even
     //printf("Completion start %d end %d\n", i+1, end);
 
     cmdcompl_complete(text+i+1, end-i-1);
+    cmdcompl_show(editor, i+1);
 
-    //TODO: show autocompletion window
+    //TODO:
+    // - if there is only one autocompletion just complete
+    // - up/down arrow move across completions
+    // - tab/enter complete text
+    // - any other key should hide completion window
     
     g_value_reset(&cursor_position);
     return TRUE;
@@ -399,11 +405,11 @@ void editor_switch_buffer(editor_t *editor, buffer_t *buffer) {
     gtk_widget_queue_draw(editor->drar);
 }
 
-static gboolean entry_focusout_callback(GtkWidget *widget, GdkEventFocus *event, gpointer data) {
-    editor_t *editor = (editor_t*)data;
+static gboolean entry_focusout_callback(GtkWidget *widget, GdkEventFocus *event, editor_t *editor) {
     editor->label_state = "cmd";
     set_label_text(editor);
-    gtk_entry_set_text(GTK_ENTRY(editor->entry), "");
+    if (editor->search_mode)
+        gtk_entry_set_text(GTK_ENTRY(editor->entry), "");
     editor->search_mode = FALSE;
     g_signal_handler_disconnect(editor->entry, editor->current_entry_handler_id);
     editor->current_entry_handler_id = g_signal_connect(editor->entry, "key-release-event", G_CALLBACK(entry_default_insert_callback), editor);
@@ -411,9 +417,7 @@ static gboolean entry_focusout_callback(GtkWidget *widget, GdkEventFocus *event,
     return FALSE;
 }
 
-static gboolean entry_focusin_callback(GtkWidget *widget, GdkEventFocus *event, gpointer data) {
-    editor_t *editor = (editor_t*)data;
-    gtk_entry_set_text(GTK_ENTRY(editor->entry), "");
+static gboolean entry_focusin_callback(GtkWidget *widget, GdkEventFocus *event, editor_t *editor) {
     focus_can_follow_mouse = 0;
     return FALSE;
 }

@@ -8,12 +8,17 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <gtk/gtk.h>
+
 #define MAX_COMPLETION_REQUEST_LENGTH 256
 #define MAX_NUMBER_OF_COMPLETIONS 128
 
-const char *found_completions[MAX_NUMBER_OF_COMPLETIONS];
 int num_found_completions;
 int found_completions_is_incomplete;
+
+GtkListStore *completions_list;
+GtkWidget *completions_tree;
+GtkWidget *completions_window;
 
 const char *list_internal_commands[] = {
     // tcl default commands (and redefined tcl default commands)
@@ -151,6 +156,31 @@ void cmdcompl_init(void) {
     num_found_completions = 0;
     found_completions_is_incomplete = 0;
 
+    completions_list = gtk_list_store_new(1, G_TYPE_STRING);
+    completions_tree = gtk_tree_view_new();
+
+    gtk_tree_view_insert_column_with_attributes(GTK_TREE_VIEW(completions_tree), -1, "Completion", gtk_cell_renderer_text_new(), "text", 0, NULL);
+    gtk_tree_view_set_model(GTK_TREE_VIEW(completions_tree), GTK_TREE_MODEL(completions_list));
+    gtk_tree_view_set_headers_visible(GTK_TREE_VIEW(completions_tree), FALSE);
+
+    completions_window = gtk_window_new(GTK_WINDOW_POPUP);
+
+    //gtk_window_set_modal(GTK_WINDOW(completions_window), TRUE);
+    gtk_window_set_decorated(GTK_WINDOW(completions_window), FALSE);
+
+    g_signal_connect(G_OBJECT(completions_window), "delete-event", G_CALLBACK(gtk_widget_hide_on_delete), NULL);
+
+    {
+        GtkWidget *scroll_view = gtk_scrolled_window_new(NULL, NULL);
+
+        gtk_container_add(GTK_CONTAINER(scroll_view), completions_tree);
+        gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(scroll_view), GTK_POLICY_NEVER, GTK_POLICY_AUTOMATIC);
+        
+        gtk_container_add(GTK_CONTAINER(completions_window), scroll_view);
+    }
+
+    gtk_window_set_default_size(GTK_WINDOW(completions_window), -1, 150);
+
     cmdcompl_rehash();
 }
 
@@ -166,10 +196,13 @@ static void cmdcompl_add_matches(const char **list, int listlen, const char *tex
     int i;
     for (i = 0; i < listlen; ++i) {
         if (strncmp(list[i], text, textlen) == 0) {
+            GtkTreeIter mah;
             if (num_found_completions >= MAX_NUMBER_OF_COMPLETIONS) {
                 found_completions_is_incomplete = 1;
             }
-            found_completions[num_found_completions++] = list[i];
+            gtk_list_store_append(completions_list, &mah);
+            gtk_list_store_set(completions_list, &mah, 0, list[i], -1);
+            ++num_found_completions;
         }
     }
 }
@@ -177,8 +210,7 @@ static void cmdcompl_add_matches(const char **list, int listlen, const char *tex
 static void cmdcompl_reset(void) {
     num_found_completions = 0;
     found_completions_is_incomplete = 0;
-
-    // TODO: clean up everything that was allocated from previous completions
+    gtk_list_store_clear(completions_list);
 }
 
 static void cmdcompl_start(const char *text, int length) {
@@ -203,4 +235,38 @@ void cmdcompl_complete(const char *text, int length) {
     // - and last completion set was complete
     // then just filter the partial results
     cmdcompl_start(text, length);
+}
+
+void cmdcompl_show(editor_t *editor, int cursor_position) {
+    if (num_found_completions <= 0) return;
+
+    gtk_window_set_transient_for(GTK_WINDOW(completions_window), GTK_WINDOW(editor->window));
+
+    {
+        PangoLayout *layout = gtk_entry_get_layout(GTK_ENTRY(editor->entry));
+        PangoRectangle real_pos;
+        gint layout_offset_x, layout_offset_y;
+        gint final_x, final_y;
+        GtkAllocation allocation;
+        gint wpos_x, wpos_y;
+
+        gtk_widget_get_allocation(editor->entry, &allocation);
+        //gtk_window_get_position(GTK_WINDOW(editor->window), &wpos_x, &wpos_y);
+        gdk_window_get_position(gtk_widget_get_window(editor->window), &wpos_x, &wpos_y);
+        gtk_entry_get_layout_offsets(GTK_ENTRY(editor->entry), &layout_offset_x, &layout_offset_y);
+
+        pango_layout_get_cursor_pos(layout, gtk_entry_text_index_to_layout_index(GTK_ENTRY(editor->entry), cursor_position), &real_pos, NULL);
+
+        pango_extents_to_pixels(NULL, &real_pos);
+
+        final_y = wpos_y + allocation.y + allocation.height;
+        final_x = wpos_x + allocation.x + layout_offset_x + real_pos.x;
+
+        printf("Layout offset: %d,%d\n", layout_offset_x, layout_offset_y);
+        printf("Cursor positoin %d, %d\n", final_x, final_y);
+
+        gtk_widget_set_uposition(completions_window, final_x, final_y);
+    }
+
+    gtk_widget_show_all(completions_window);
 }
