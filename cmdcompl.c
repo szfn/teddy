@@ -15,6 +15,7 @@
 
 int num_found_completions;
 int found_completions_is_incomplete;
+int cmdcompl_visible;
 
 GtkListStore *completions_list;
 GtkWidget *completions_tree;
@@ -181,6 +182,8 @@ void cmdcompl_init(void) {
 
     gtk_window_set_default_size(GTK_WINDOW(completions_window), -1, 150);
 
+    cmdcompl_visible = 0;
+
     cmdcompl_rehash();
 }
 
@@ -268,5 +271,17 @@ void cmdcompl_show(editor_t *editor, int cursor_position) {
         gtk_widget_set_uposition(completions_window, final_x, final_y);
     }
 
+    //TODO: select first completion
+
     gtk_widget_show_all(completions_window);
+    cmdcompl_visible = 1;
+}
+
+void cmdcompl_hide(void) {
+    gtk_widget_hide(completions_window);
+    cmdcompl_visible = 0;
+}
+
+int cmdcompl_isvisible(void) {
+    return cmdcompl_visible;
 }

@@ -362,39 +362,60 @@ static gboolean entry_autocomplete_callback(GtkWidget *widget, GdkEventKey *even
     int end, i;
     
     if (editor->search_mode) return FALSE;
-    if (event->keyval != GDK_KEY_Tab) return FALSE;
 
-    g_value_init(&cursor_position, G_TYPE_UINT);
-    g_object_get_property(G_OBJECT(editor->entry), "cursor-position", &cursor_position);
+    if (cmdcompl_visible()) {
+        switch (event->keyval) {
+        case GDK_KEY_Escape:
+            cmdcompl_hide();
+            return TRUE;
+        case GDK_KEY_Up:
+            //TODO: move to previous completion
+            return TRUE;
+        case GDK_KEY_Down:
+            //TODO: move to next completion
+            return TRUE;
+        case GDK_KEY_Tab:
+        case GDK_KEY_Return:
+            //TODO: complete
+            return TRUE;
+        default:
+            cmdcompl_hide();
+            return FALSE;
+        }
+    } else {
+        if (event->keyval != GDK_KEY_Tab) {
+            cmdcompl_hide();
+            return FALSE;
+        }
+        
+        g_value_init(&cursor_position, G_TYPE_UINT);
+        g_object_get_property(G_OBJECT(editor->entry), "cursor-position", &cursor_position);
+        
+        text = gtk_entry_get_text(GTK_ENTRY(editor->entry));
+        
+        end = g_value_get_uint(&cursor_position);
+        
+        for (i = end-1; i >= 0; --i) {
+            if (u_isalnum(text[i])) continue;
+            if (text[i] == '-') continue;
+            if (text[i] == '_') continue;
+            if (text[i] == '/') continue;
+            if (text[i] == '~') continue;
+            if (text[i] == ':') continue;
+            //printf("Breaking on [%c] %d (text: %s)\n", text[i], i, text);
+            break;
+        }
+        
+        //printf("Completion start %d end %d\n", i+1, end);
+        
+        cmdcompl_complete(text+i+1, end-i-1);
+        cmdcompl_show(editor, i+1);
 
-    text = gtk_entry_get_text(GTK_ENTRY(editor->entry));
-
-    end = g_value_get_uint(&cursor_position);
-
-    for (i = end-1; i >= 0; --i) {
-        if (u_isalnum(text[i])) continue;
-        if (text[i] == '-') continue;
-        if (text[i] == '_') continue;
-        if (text[i] == '/') continue;
-        if (text[i] == '~') continue;
-        if (text[i] == ':') continue;
-        //printf("Breaking on [%c] %d (text: %s)\n", text[i], i, text);
-        break;
+        // TODO: if there is only one autocompletion just complete
+        
+        g_value_reset(&cursor_position);
+        return TRUE;
     }
-
-    //printf("Completion start %d end %d\n", i+1, end);
-
-    cmdcompl_complete(text+i+1, end-i-1);
-    cmdcompl_show(editor, i+1);
-
-    //TODO:
-    // - if there is only one autocompletion just complete
-    // - up/down arrow move across completions
-    // - tab/enter complete text
-    // - any other key should hide completion window
-    
-    g_value_reset(&cursor_position);
-    return TRUE;
 }
 
 

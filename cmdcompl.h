@@ -12,5 +12,7 @@ void cmdcompl_init(void);
 void cmdcompl_free(void);
 void cmdcompl_complete(const char *text, int length);
 void cmdcompl_show(editor_t *editor, int cursor_position);
+void cmdcompl_hide(void);
+int cmdcompl_isvisible(void);
 
 #endif

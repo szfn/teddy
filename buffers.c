@@ -192,6 +192,7 @@ void buffers_init(void) {
         GtkWidget *vbox = gtk_vbox_new(FALSE, 2);
         GtkWidget *label = gtk_label_new("Buffers:");
         GtkWidget *label2 = gtk_label_new("Press <Enter> to focus buffer, <Del> to delete buffer,\n<Esc> to close");
+        GtkWidget *scroll = gtk_scrolled_window_new(NULL, NULL);
 
         buffers_list = gtk_list_store_new(2, G_TYPE_INT, G_TYPE_STRING);
         buffers_tree = gtk_tree_view_new();
@@ -202,8 +203,10 @@ void buffers_init(void) {
         gtk_tree_view_set_headers_visible(GTK_TREE_VIEW(buffers_tree), FALSE);
         gtk_tree_view_set_search_column(GTK_TREE_VIEW(buffers_tree), 1);
 
+        gtk_container_add(GTK_CONTAINER(scroll), buffers_tree);
+
         gtk_container_add(GTK_CONTAINER(vbox), label);
-        gtk_container_add(GTK_CONTAINER(vbox), buffers_tree);
+        gtk_container_add(GTK_CONTAINER(vbox), scroll);
         gtk_container_add(GTK_CONTAINER(vbox), label2);
 
         gtk_box_set_child_packing(GTK_BOX(vbox), label, FALSE, FALSE, 2, GTK_PACK_START);
