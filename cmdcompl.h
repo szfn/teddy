@@ -18,4 +18,6 @@ int cmdcompl_isvisible(void);
 void cmdcompl_move_to_prev(void);
 void cmdcompl_move_to_next(void);
 
+char *cmdcompl_get_completion(const char *text, int *point);
+
 #endif

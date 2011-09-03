@@ -327,44 +327,13 @@ void editor_close_editor(editor_t *editor) {
     gtk_widget_grab_focus(editor->drar);
 }
 
+
 static gboolean entry_default_insert_callback(GtkWidget *widget, GdkEventKey *event, editor_t *editor) {
-    enum deferred_action da;
-
-    if (event->keyval == GDK_KEY_Escape) {
-        gtk_entry_set_text(GTK_ENTRY(editor->entry), "");
-        gtk_widget_grab_focus(editor->drar);
-        return TRUE;
-    }
-
-    if (event->keyval == GDK_KEY_Return) {
-        da = interp_eval(editor, gtk_entry_get_text(GTK_ENTRY(editor->entry)));
-        switch(da) {
-        case FOCUS_ALREADY_SWITCHED:
-            break;
-        case CLOSE_EDITOR:
-            editor_close_editor(editor);
-            break;
-        default:
-            gtk_widget_grab_focus(editor->drar);
-        }
-        return TRUE;
-    }
-
-    //TODO: history search on Ctrl-R
-    //TODO: history scan with up, down - arrow keys
-
-    return FALSE;
-}
-
-static gboolean entry_autocomplete_callback(GtkWidget *widget, GdkEventKey *event, editor_t *editor) {
-    GValue cursor_position = {0};
-    const char *text;
-    int end, i;
-    
-    if (editor->search_mode) return FALSE;
-
     if (cmdcompl_isvisible()) {
         switch (event->keyval) {
+        case GDK_KEY_Escape:
+            cmdcompl_hide();
+            return TRUE;
         case GDK_KEY_Up:
             cmdcompl_move_to_prev();
             return TRUE;
@@ -373,7 +342,14 @@ static gboolean entry_autocomplete_callback(GtkWidget *widget, GdkEventKey *even
             return TRUE;
         case GDK_KEY_Tab:
         case GDK_KEY_Return:
-            //TODO: complete
+            {
+                int point = gtk_editable_get_position(GTK_EDITABLE(editor->entry));
+                char *nt = cmdcompl_get_completion(gtk_entry_get_text(GTK_ENTRY(editor->entry)), &point);
+                gtk_entry_set_text(GTK_ENTRY(editor->entry), nt);
+                gtk_editable_set_position(GTK_EDITABLE(editor->entry), point);
+                free(nt);
+                cmdcompl_hide();
+            }
             return TRUE;
         default:
             cmdcompl_hide();
@@ -382,36 +358,70 @@ static gboolean entry_autocomplete_callback(GtkWidget *widget, GdkEventKey *even
     } else {
         if (event->keyval != GDK_KEY_Tab) {
             cmdcompl_hide();
-            return FALSE;
         }
-        
-        g_value_init(&cursor_position, G_TYPE_UINT);
-        g_object_get_property(G_OBJECT(editor->entry), "cursor-position", &cursor_position);
-        
-        text = gtk_entry_get_text(GTK_ENTRY(editor->entry));
-        
-        end = g_value_get_uint(&cursor_position);
-        
-        for (i = end-1; i >= 0; --i) {
-            if (u_isalnum(text[i])) continue;
-            if (text[i] == '-') continue;
-            if (text[i] == '_') continue;
-            if (text[i] == '/') continue;
-            if (text[i] == '~') continue;
-            if (text[i] == ':') continue;
-            //printf("Breaking on [%c] %d (text: %s)\n", text[i], i, text);
-            break;
-        }
-        
-        //printf("Completion start %d end %d\n", i+1, end);
-        
-        cmdcompl_complete(text+i+1, end-i-1);
-        cmdcompl_show(editor, i+1);
 
-        // TODO: if there is only one autocompletion just complete
+        if (event->keyval == GDK_KEY_Escape) {
+            gtk_entry_set_text(GTK_ENTRY(editor->entry), "");
+            gtk_widget_grab_focus(editor->drar);
+            return TRUE;
+        }
+
+        if (event->keyval == GDK_KEY_Return) {
+            enum deferred_action da = interp_eval(editor, gtk_entry_get_text(GTK_ENTRY(editor->entry)));
+            gtk_entry_set_text(GTK_ENTRY(editor->entry), "");
+            switch(da) {
+            case FOCUS_ALREADY_SWITCHED:
+                break;
+            case CLOSE_EDITOR:
+                editor_close_editor(editor);
+                break;
+            default:
+                gtk_widget_grab_focus(editor->drar);
+            }
+            return TRUE;
+        }
+            
+        if (event->keyval == GDK_KEY_Tab) {
+            const char *text;
+            int end, i;
+
+            end = gtk_editable_get_position(GTK_EDITABLE(editor->entry));
+            text = gtk_entry_get_text(GTK_ENTRY(editor->entry));
         
-        g_value_reset(&cursor_position);
+            for (i = end-1; i >= 0; --i) {
+                if (u_isalnum(text[i])) continue;
+                if (text[i] == '-') continue;
+                if (text[i] == '_') continue;
+                if (text[i] == '/') continue;
+                if (text[i] == '~') continue;
+                if (text[i] == ':') continue;
+                //printf("Breaking on [%c] %d (text: %s)\n", text[i], i, text);
+                break;
+            }
+        
+            //printf("Completion start %d end %d\n", i+1, end);
+        
+            cmdcompl_complete(text+i+1, end-i-1);
+            cmdcompl_show(editor, i+1);
+
+            // TODO: if there is only one autocompletion just complete
+            return TRUE;
+        }
+    }
+
+    //TODO: history search on Ctrl-R
+    //TODO: history scan with up, down - arrow keys
+
+    return FALSE;
+}
+static gboolean entry_key_press_callback(GtkWidget *widget, GdkEventKey *event, editor_t *editor) {
+    switch(event->keyval) {
+    case GDK_KEY_Tab:
+    case GDK_KEY_Up:
+    case GDK_KEY_Down:
         return TRUE;
+    default:
+        return FALSE;
     }
 }
 
@@ -1139,7 +1149,7 @@ editor_t *new_editor(GtkWidget *window, column_t *column, buffer_t *buffer) {
         gtk_widget_modify_font(r->label, elements_font_description);
 
         r->current_entry_handler_id = g_signal_connect(r->entry, "key-release-event", G_CALLBACK(entry_default_insert_callback), r);
-        g_signal_connect(r->entry, "key-press-event", G_CALLBACK(entry_autocomplete_callback), r);
+        g_signal_connect(r->entry, "key-press-event", G_CALLBACK(entry_key_press_callback), r);
 
         r->label_state = "cmd";
         set_label_text(r);

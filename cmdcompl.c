@@ -16,6 +16,7 @@
 int num_found_completions;
 int found_completions_is_incomplete;
 int cmdcompl_visible;
+char *last_complete_request;
 
 GtkListStore *completions_list;
 GtkWidget *completions_tree;
@@ -183,6 +184,7 @@ void cmdcompl_init(void) {
     gtk_window_set_default_size(GTK_WINDOW(completions_window), -1, 150);
 
     cmdcompl_visible = 0;
+    last_complete_request = NULL;
 
     cmdcompl_rehash();
 }
@@ -214,12 +216,24 @@ static void cmdcompl_reset(void) {
     num_found_completions = 0;
     found_completions_is_incomplete = 0;
     gtk_list_store_clear(completions_list);
+    if (last_complete_request != NULL) {
+        free(last_complete_request);
+        last_complete_request = NULL;
+    }
 }
 
 static void cmdcompl_start(const char *text, int length) {
     cmdcompl_reset();
 
     if (length <= 0) return;
+
+    last_complete_request = malloc(sizeof(char) * (length+1));
+    if (!last_complete_request) {
+        perror("Out of memory");
+        exit(EXIT_FAILURE);
+    }
+    strncpy(last_complete_request, text, length);
+    last_complete_request[length] = '\0';
 
     cmdcompl_add_matches(list_internal_commands, sizeof(list_internal_commands) / sizeof(const char *), text, length);
     if (num_found_completions < MAX_NUMBER_OF_COMPLETIONS) {
@@ -312,4 +326,47 @@ void cmdcompl_move_to_next(void) {
     }
     gtk_tree_view_set_cursor(GTK_TREE_VIEW(completions_tree), path, gtk_tree_view_get_column(GTK_TREE_VIEW(completions_tree), 0), FALSE);
     gtk_tree_path_free(path);
+}
+
+char *cmdcompl_get_completion(const char *text, int *point) {
+    GValue value = {0};
+    const char *pick;
+    const char *compl;
+    char *r;
+
+    {
+        GtkTreePath *focus_path;
+        GtkTreeIter iter;
+        
+        gtk_tree_view_get_cursor(GTK_TREE_VIEW(completions_tree), &focus_path, NULL);
+        if (focus_path == NULL) return NULL;
+        
+        gtk_tree_model_get_iter(GTK_TREE_MODEL(completions_list), &iter, focus_path);
+        gtk_tree_model_get_value(GTK_TREE_MODEL(completions_list), &iter, 0, &value);
+        
+        pick = g_value_get_string(&value);
+
+        gtk_tree_path_free(focus_path);
+
+        if (pick == NULL) return NULL;
+    }
+
+    compl = pick + strlen(last_complete_request);
+
+    r = malloc(sizeof(char) * (strlen(text) + strlen(compl) + 1));
+    if (!r) {
+        perror("Out of memory");
+        exit(EXIT_FAILURE);
+    }
+    strncpy(r, text, *point);
+    strcpy(r+(*point), compl);
+    strcat(r, text+(*point));
+
+    printf("Comppleted: [%s]\n", r);
+
+    *point += strlen(compl);
+    
+    g_value_unset(&value);
+    
+    return r;
 }
