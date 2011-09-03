@@ -241,17 +241,62 @@ static void cmdcompl_start(const char *text, int length) {
     }
 }
 
+static int cmdcompl_can_filter(const char *text, int length) {
+    if (last_complete_request == NULL) return 0;
+    if (found_completions_is_incomplete) return 0;
+    if (length < strlen(last_complete_request)) return 0;
+    if (strncmp(text, last_complete_request, strlen(last_complete_request)) != 0) return 0;
+
+    //TODO: check directory too
+
+    return 1;
+}
+
+static void cmdcompl_filter(const char *text, int length) {
+    GtkTreeIter iter;
+    gboolean valid;
+
+    free(last_complete_request);
+    last_complete_request = malloc(sizeof(char) * (length+1));
+    if (!last_complete_request) {
+        perror("Out of memory");
+        exit(EXIT_FAILURE);
+    }
+    strncpy(last_complete_request, text, length);
+    last_complete_request[length] = '\0';
+
+    printf("Filtering existing list\n");
+
+    valid = gtk_tree_model_get_iter_first(GTK_TREE_MODEL(completions_list), &iter);
+    while (valid) {
+        GValue value = {0};
+        const char *curstr;
+        gtk_tree_model_get_value(GTK_TREE_MODEL(completions_list), &iter, 0, &value);
+        
+        curstr = g_value_get_string(&value);
+
+        if (strncmp(curstr, text, length) != 0) {
+            valid = gtk_list_store_remove(completions_list, &iter);
+            --num_found_completions;
+        } else {
+            valid = gtk_tree_model_iter_next(GTK_TREE_MODEL(completions_list), &iter);
+        }
+
+        g_value_unset(&value);
+    }
+}
+
 void cmdcompl_complete(const char *text, int length) {
     if (length > MAX_COMPLETION_REQUEST_LENGTH) {
         cmdcompl_reset();
         return;
     }
 
-    //TODO: if the last completion request was a prefix of this completion request
-    // - and the completion directory is the same
-    // - and last completion set was complete
-    // then just filter the partial results
-    cmdcompl_start(text, length);
+    if (cmdcompl_can_filter(text, length)) {
+        cmdcompl_filter(text, length);
+    } else {
+        cmdcompl_start(text, length);
+    }
 }
 
 void cmdcompl_show(editor_t *editor, int cursor_position) {
