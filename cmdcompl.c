@@ -271,7 +271,11 @@ void cmdcompl_show(editor_t *editor, int cursor_position) {
         gtk_widget_set_uposition(completions_window, final_x, final_y);
     }
 
-    //TODO: select first completion
+    {
+        GtkTreePath *path_to_first = gtk_tree_path_new_first();
+        gtk_tree_view_set_cursor(GTK_TREE_VIEW(completions_tree), path_to_first, gtk_tree_view_get_column(GTK_TREE_VIEW(completions_tree), 0), FALSE);
+        gtk_tree_path_free(path_to_first);
+    }
 
     gtk_widget_show_all(completions_window);
     cmdcompl_visible = 1;
@@ -284,4 +288,28 @@ void cmdcompl_hide(void) {
 
 int cmdcompl_isvisible(void) {
     return cmdcompl_visible;
+}
+
+void cmdcompl_move_to_prev(void) {
+    GtkTreePath *path;
+    gtk_tree_view_get_cursor(GTK_TREE_VIEW(completions_tree), &path, NULL);
+    if (path == NULL) {
+        path = gtk_tree_path_new_first();
+    } else {
+        gtk_tree_path_prev(path);
+    }
+    gtk_tree_view_set_cursor(GTK_TREE_VIEW(completions_tree), path, gtk_tree_view_get_column(GTK_TREE_VIEW(completions_tree), 0), FALSE);
+    gtk_tree_path_free(path);
+}
+
+void cmdcompl_move_to_next(void) {
+    GtkTreePath *path;
+    gtk_tree_view_get_cursor(GTK_TREE_VIEW(completions_tree), &path, NULL);
+    if (path == NULL) {
+        path = gtk_tree_path_new_first();
+    } else {
+        gtk_tree_path_next(path);
+    }
+    gtk_tree_view_set_cursor(GTK_TREE_VIEW(completions_tree), path, gtk_tree_view_get_column(GTK_TREE_VIEW(completions_tree), 0), FALSE);
+    gtk_tree_path_free(path);
 }

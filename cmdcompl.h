@@ -15,4 +15,7 @@ void cmdcompl_show(editor_t *editor, int cursor_position);
 void cmdcompl_hide(void);
 int cmdcompl_isvisible(void);
 
+void cmdcompl_move_to_prev(void);
+void cmdcompl_move_to_next(void);
+
 #endif

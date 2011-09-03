@@ -363,16 +363,13 @@ static gboolean entry_autocomplete_callback(GtkWidget *widget, GdkEventKey *even
     
     if (editor->search_mode) return FALSE;
 
-    if (cmdcompl_visible()) {
+    if (cmdcompl_isvisible()) {
         switch (event->keyval) {
-        case GDK_KEY_Escape:
-            cmdcompl_hide();
-            return TRUE;
         case GDK_KEY_Up:
-            //TODO: move to previous completion
+            cmdcompl_move_to_prev();
             return TRUE;
         case GDK_KEY_Down:
-            //TODO: move to next completion
+            cmdcompl_move_to_next();
             return TRUE;
         case GDK_KEY_Tab:
         case GDK_KEY_Return:
