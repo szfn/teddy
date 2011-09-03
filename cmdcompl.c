@@ -286,7 +286,7 @@ static void cmdcompl_filter(const char *text, int length) {
     }
 }
 
-void cmdcompl_complete(const char *text, int length) {
+int cmdcompl_complete(const char *text, int length) {
     if (length > MAX_COMPLETION_REQUEST_LENGTH) {
         cmdcompl_reset();
         return;
@@ -297,6 +297,8 @@ void cmdcompl_complete(const char *text, int length) {
     } else {
         cmdcompl_start(text, length);
     }
+    
+    return num_found_completions;
 }
 
 void cmdcompl_show(editor_t *editor, int cursor_position) {

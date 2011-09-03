@@ -401,8 +401,14 @@ static gboolean entry_default_insert_callback(GtkWidget *widget, GdkEventKey *ev
         
             //printf("Completion start %d end %d\n", i+1, end);
         
-            cmdcompl_complete(text+i+1, end-i-1);
-            cmdcompl_show(editor, i+1);
+            if (cmdcompl_complete(text+i+1, end-i-1) == 1) {
+                char *nt = cmdcompl_get_completion(gtk_entry_get_text(GTK_ENTRY(editor->entry)), &end);
+                gtk_entry_set_text(GTK_ENTRY(editor->entry), nt);
+                gtk_editable_set_position(GTK_EDITABLE(editor->entry), end);
+                free(nt);
+            } else {
+                cmdcompl_show(editor, i+1);
+            }
 
             // TODO: if there is only one autocompletion just complete
             return TRUE;
