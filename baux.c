@@ -85,4 +85,5 @@ void buffer_indent_newline(buffer_t *buffer, char *r) {
             break;
         }
     }
+    r[i+1] = '\0';
 }
