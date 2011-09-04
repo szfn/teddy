@@ -1,4 +1,3 @@
-- autocompletion on commandline
 - history on commandline (separate history for searches)
 - double click -> select word (and movement will also select words)
 - triple click -> select lines (and movement will also select lines)

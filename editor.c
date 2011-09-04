@@ -335,10 +335,7 @@ static gboolean entry_default_insert_callback(GtkWidget *widget, GdkEventKey *ev
             cmdcompl_hide();
             return TRUE;
         case GDK_KEY_Up:
-            cmdcompl_move_to_prev();
-            return TRUE;
         case GDK_KEY_Down:
-            cmdcompl_move_to_next();
             return TRUE;
         case GDK_KEY_Tab:
         case GDK_KEY_Return:
@@ -401,16 +398,17 @@ static gboolean entry_default_insert_callback(GtkWidget *widget, GdkEventKey *ev
         
             //printf("Completion start %d end %d\n", i+1, end);
         
-            if (cmdcompl_complete(text+i+1, end-i-1) == 1) {
+            if (cmdcompl_complete(text+i+1, end-i-1, editor->buffer->wd) == 1) {
                 char *nt = cmdcompl_get_completion(gtk_entry_get_text(GTK_ENTRY(editor->entry)), &end);
-                gtk_entry_set_text(GTK_ENTRY(editor->entry), nt);
-                gtk_editable_set_position(GTK_EDITABLE(editor->entry), end);
-                free(nt);
+                if (nt != NULL) {
+                    gtk_entry_set_text(GTK_ENTRY(editor->entry), nt);
+                    gtk_editable_set_position(GTK_EDITABLE(editor->entry), end);
+                    free(nt);
+                }
             } else {
                 cmdcompl_show(editor, i+1);
             }
 
-            // TODO: if there is only one autocompletion just complete
             return TRUE;
         }
     }
@@ -423,8 +421,16 @@ static gboolean entry_default_insert_callback(GtkWidget *widget, GdkEventKey *ev
 static gboolean entry_key_press_callback(GtkWidget *widget, GdkEventKey *event, editor_t *editor) {
     switch(event->keyval) {
     case GDK_KEY_Tab:
+        return TRUE;
     case GDK_KEY_Up:
+        if (cmdcompl_isvisible()) {
+            cmdcompl_move_to_prev();
+        }
+        return TRUE;
     case GDK_KEY_Down:
+        if (cmdcompl_isvisible()) {
+            cmdcompl_move_to_next();
+        }
         return TRUE;
     default:
         return FALSE;
@@ -448,6 +454,7 @@ static gboolean entry_focusout_callback(GtkWidget *widget, GdkEventFocus *event,
     g_signal_handler_disconnect(editor->entry, editor->current_entry_handler_id);
     editor->current_entry_handler_id = g_signal_connect(editor->entry, "key-release-event", G_CALLBACK(entry_default_insert_callback), editor);
     focus_can_follow_mouse = 1;
+    cmdcompl_hide();
     return FALSE;
 }
 

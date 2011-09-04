@@ -8,6 +8,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "global.h"
+
 #include <gtk/gtk.h>
 
 #define MAX_COMPLETION_REQUEST_LENGTH 256
@@ -17,6 +19,7 @@ int num_found_completions;
 int found_completions_is_incomplete;
 int cmdcompl_visible;
 char *last_complete_request;
+int last_complete_request_rightmost_slash;
 
 GtkListStore *completions_list;
 GtkWidget *completions_tree;
@@ -94,8 +97,7 @@ void cmdcompl_rehash(void) {
 
                     if (S_ISREG(den_stat.st_mode) && (den_stat.st_mode & (S_IXUSR | S_IXGRP | S_IXOTH))) {
                         char *d_name_copy;
-                        asprintf(&d_name_copy, "%s", den->d_name);
-                        if (external_commands_cap >= external_commands_allocated) {
+                        asprintf(&d_name_copy, "%s", den->d_name);                        if (external_commands_cap >= external_commands_allocated) {
                             external_commands_allocated *= 2;
                             list_external_commands = realloc(list_external_commands, sizeof(char *) * external_commands_allocated);
                             if (list_external_commands == NULL) {
@@ -185,6 +187,7 @@ void cmdcompl_init(void) {
 
     cmdcompl_visible = 0;
     last_complete_request = NULL;
+    last_complete_request_rightmost_slash = -1;
 
     cmdcompl_rehash();
 }
@@ -216,17 +219,14 @@ static void cmdcompl_reset(void) {
     num_found_completions = 0;
     found_completions_is_incomplete = 0;
     gtk_list_store_clear(completions_list);
+    last_complete_request_rightmost_slash = -1;
     if (last_complete_request != NULL) {
         free(last_complete_request);
         last_complete_request = NULL;
     }
 }
 
-static void cmdcompl_start(const char *text, int length) {
-    cmdcompl_reset();
-
-    if (length <= 0) return;
-
+static void cmdcompl_update_last_request(const char *text, int length) {
     last_complete_request = malloc(sizeof(char) * (length+1));
     if (!last_complete_request) {
         perror("Out of memory");
@@ -234,20 +234,113 @@ static void cmdcompl_start(const char *text, int length) {
     }
     strncpy(last_complete_request, text, length);
     last_complete_request[length] = '\0';
+}
 
+static int cmdcompl_find_rightmost_slash(const char *text, int length) {
+    int rlidx;
+    for (rlidx = length-1; rlidx >= 0; --rlidx) {
+        if (text[rlidx] == '/') break;
+    }
+    return rlidx;
+}
+
+static void cmdcompl_start(const char *text, int length, char *working_directory) {
+    cmdcompl_reset();
+
+    if (length <= 0) return;
+
+    cmdcompl_update_last_request(text, length);
+
+    // internal commands
     cmdcompl_add_matches(list_internal_commands, sizeof(list_internal_commands) / sizeof(const char *), text, length);
+
+    // external commands
     if (num_found_completions < MAX_NUMBER_OF_COMPLETIONS) {
         cmdcompl_add_matches((const char **)list_external_commands, external_commands_cap, text, length);
+    }
+
+    // directory access
+    if (num_found_completions < MAX_NUMBER_OF_COMPLETIONS) {
+        char *reldir = NULL;
+        char *partial_filename = NULL;
+        char *absdir = NULL;
+        DIR *dh;
+        int rlidx = cmdcompl_find_rightmost_slash(text, length);
+        if (rlidx != -1) {
+            reldir = malloc(sizeof(char) * (rlidx + 2));
+            last_complete_request_rightmost_slash = rlidx;
+            strncpy(reldir, text, rlidx+1);
+            reldir[rlidx+1] = '\0';
+
+            partial_filename = malloc(sizeof(char) * (length - rlidx + 1));
+            strncpy(partial_filename, text+rlidx+1, length - rlidx - 1);
+            partial_filename[length - rlidx - 1] = '\0';
+            
+            printf("Relative directory [%s]\n", reldir);
+            printf("Partial filename [%s]\n", partial_filename);
+        }
+
+        if (reldir != NULL) {
+            absdir = unrealpath(working_directory, reldir);
+        } else {
+            reldir = malloc(sizeof(char));
+            *reldir = '\0';
+            absdir = malloc(sizeof(char) * strlen(working_directory));
+            strcpy(absdir, working_directory);
+            partial_filename = malloc(sizeof(char) * (length + 1));
+            strncpy(partial_filename, text, length);
+            partial_filename[length] = '\0';
+        }
+
+        printf("Completions for directory [%s]:\n", absdir);
+        dh = opendir(absdir);
+        if (dh != NULL) {
+            struct dirent *den;            
+            for (den = readdir(dh); den != NULL; den = readdir(dh)) {
+                if (den->d_name[0] != '.') {
+                    if (strncmp(den->d_name, partial_filename, strlen(partial_filename)) == 0) {
+                        GtkTreeIter mah;
+                        char *relname = malloc(sizeof(char) * (strlen(reldir) + strlen(den->d_name) + 2));
+
+                        strcat(relname, reldir);
+                        strcat(relname, den->d_name);
+                        if (den->d_type == DT_DIR) {
+                            strcat(relname, "/");
+                        }
+                        
+                        gtk_list_store_append(completions_list, &mah);
+                        gtk_list_store_set(completions_list, &mah, 0, relname, -1);
+                        
+                        free(relname);
+                        
+                        ++num_found_completions;
+                        if (num_found_completions >= MAX_NUMBER_OF_COMPLETIONS) {
+                            found_completions_is_incomplete = 1;
+                            break;
+                        }
+                   }
+                }
+            }
+            closedir(dh);
+        }
+
+        free(absdir);
+        free(reldir);
     }
 }
 
 static int cmdcompl_can_filter(const char *text, int length) {
+    int rlidx;
+    
     if (last_complete_request == NULL) return 0;
     if (found_completions_is_incomplete) return 0;
     if (length < strlen(last_complete_request)) return 0;
     if (strncmp(text, last_complete_request, strlen(last_complete_request)) != 0) return 0;
 
-    //TODO: check directory too
+    // if all the above is false AND the position of the rightmost slash is the same
+    // then we are asking stuff about the same directory, otherwise we can not filter
+    rlidx = cmdcompl_find_rightmost_slash(text, length);
+    if (last_complete_request_rightmost_slash != rlidx) return 0;
 
     return 1;
 }
@@ -256,14 +349,7 @@ static void cmdcompl_filter(const char *text, int length) {
     GtkTreeIter iter;
     gboolean valid;
 
-    free(last_complete_request);
-    last_complete_request = malloc(sizeof(char) * (length+1));
-    if (!last_complete_request) {
-        perror("Out of memory");
-        exit(EXIT_FAILURE);
-    }
-    strncpy(last_complete_request, text, length);
-    last_complete_request[length] = '\0';
+    cmdcompl_update_last_request(text, length);
 
     printf("Filtering existing list\n");
 
@@ -272,11 +358,14 @@ static void cmdcompl_filter(const char *text, int length) {
         GValue value = {0};
         const char *curstr;
         gtk_tree_model_get_value(GTK_TREE_MODEL(completions_list), &iter, 0, &value);
-        
+
         curstr = g_value_get_string(&value);
+
+        printf("   curstr: [%s]\n", curstr);
 
         if (strncmp(curstr, text, length) != 0) {
             valid = gtk_list_store_remove(completions_list, &iter);
+            printf("      Removing\n");
             --num_found_completions;
         } else {
             valid = gtk_tree_model_iter_next(GTK_TREE_MODEL(completions_list), &iter);
@@ -286,16 +375,16 @@ static void cmdcompl_filter(const char *text, int length) {
     }
 }
 
-int cmdcompl_complete(const char *text, int length) {
+int cmdcompl_complete(const char *text, int length, char *working_directory) {
     if (length > MAX_COMPLETION_REQUEST_LENGTH) {
         cmdcompl_reset();
-        return;
+        return 0;
     }
 
     if (cmdcompl_can_filter(text, length)) {
         cmdcompl_filter(text, length);
     } else {
-        cmdcompl_start(text, length);
+        cmdcompl_start(text, length, working_directory);
     }
     
     return num_found_completions;
@@ -386,14 +475,22 @@ char *cmdcompl_get_completion(const char *text, int *point) {
         GtkTreeIter iter;
         
         gtk_tree_view_get_cursor(GTK_TREE_VIEW(completions_tree), &focus_path, NULL);
-        if (focus_path == NULL) return NULL;
+        if (focus_path == NULL) {
+            gboolean valid = gtk_tree_model_get_iter_first(GTK_TREE_MODEL(completions_list), &iter);
+            if (!valid) {
+                return NULL;
+            }
+        } else {
+            gtk_tree_model_get_iter(GTK_TREE_MODEL(completions_list), &iter, focus_path);
+        }
         
-        gtk_tree_model_get_iter(GTK_TREE_MODEL(completions_list), &iter, focus_path);
         gtk_tree_model_get_value(GTK_TREE_MODEL(completions_list), &iter, 0, &value);
         
         pick = g_value_get_string(&value);
 
-        gtk_tree_path_free(focus_path);
+        if (focus_path != NULL) {
+            gtk_tree_path_free(focus_path);
+        }
 
         if (pick == NULL) return NULL;
     }
