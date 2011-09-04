@@ -4,6 +4,7 @@
 #include "editor.h"
 #include "column.h"
 #include "buffer.h"
+#include "history.h"
 
 #include <gtk/gtk.h>
 #include <ft2build.h>
@@ -45,6 +46,9 @@ extern config_item_t cfg_posbox_bg_color;
 extern config_item_t cfg_posbox_fg_color;
 
 extern int focus_can_follow_mouse;
+
+extern history_t *search_history;
+extern history_t *command_history;
 
 void global_init();
 void setcfg(config_item_t *ci, const char *val);

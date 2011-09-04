@@ -1,4 +1,5 @@
 - history on commandline (separate history for searches)
+- bug "~/Dropbox/di." + tab doesn't show completions
 - double click -> select word (and movement will also select words)
 - triple click -> select lines (and movement will also select lines)
 - right click -> search/open file

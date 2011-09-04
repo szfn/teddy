@@ -21,6 +21,10 @@ config_item_t cfg_posbox_border_color;
 config_item_t cfg_posbox_bg_color;
 config_item_t cfg_posbox_fg_color;
 
+
+history_t *search_history;
+history_t *command_history;
+
 int focus_can_follow_mouse = 1;
 
 void setcfg(config_item_t *ci, const char *val) {
@@ -62,6 +66,9 @@ void global_init() {
     setcfg(&cfg_posbox_fg_color, "0");
 
     keybindings = g_hash_table_new(g_str_hash, streq);
+
+    search_history = history_new();
+    command_history = history_new();
 }
 
 void global_free() {

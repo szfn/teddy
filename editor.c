@@ -203,38 +203,21 @@ void editor_insert_paste(editor_t *editor, GtkClipboard *clipboard) {
     g_free(text);
 }
 
-static gboolean entry_search_insert_callback(GtkWidget *widget, GdkEventKey *event, gpointer data) {
-    editor_t *editor = (editor_t*)data;
-    int shift = event->state & GDK_SHIFT_MASK;
-    int ctrl = event->state & GDK_CONTROL_MASK;
-    int alt = event->state & GDK_MOD1_MASK;
-    int super = event->state & GDK_SUPER_MASK;
-
+static void move_search_forward(editor_t *editor, gboolean ctrl_g_invoked) {
     const gchar *text = gtk_entry_get_text(GTK_ENTRY(editor->entry));
     int len = strlen(text);    
+    
     uint32_t *needle = malloc(len*sizeof(uint32_t));
-    int i, dst;
+    
     real_line_t *search_line;
     int search_glyph;
-    gboolean ctrl_g_invoked = FALSE;
 
-    if ((event->keyval == GDK_KEY_Escape) || (event->keyval == GDK_KEY_Return)) {
-        buffer_unset_mark(editor->buffer);
-        gtk_widget_queue_draw(editor->drar);
-        gtk_widget_grab_focus(editor->drar);
-        return TRUE;
-    }
-
-    if (!shift && ctrl && !alt && !super) {
-        if ((event->keyval == GDK_KEY_g) || (event->keyval == GDK_KEY_f)) {
-            ctrl_g_invoked = TRUE;
-        }
-    }
+    int dst, i;
 
     for (i = 0, dst = 0; i < len; ) {
         needle[dst++] = utf8_to_utf32(text, &i, len);
     }
-
+    
     /*
     printf("Searching [");
     for (i = 0; i < dst; ++i) {
@@ -285,6 +268,39 @@ static gboolean entry_search_insert_callback(GtkWidget *widget, GdkEventKey *eve
     free(needle);
 
     editor_center_on_cursor(editor);
+}
+
+static gboolean entry_search_insert_callback(GtkWidget *widget, GdkEventKey *event, gpointer data) {
+    editor_t *editor = (editor_t*)data;
+    int shift = event->state & GDK_SHIFT_MASK;
+    int ctrl = event->state & GDK_CONTROL_MASK;
+    int alt = event->state & GDK_MOD1_MASK;
+    int super = event->state & GDK_SUPER_MASK;
+
+    gboolean ctrl_g_invoked = FALSE;
+
+    if ((event->keyval == GDK_KEY_Escape) || (event->keyval == GDK_KEY_Return)) {
+        buffer_unset_mark(editor->buffer);
+        gtk_widget_queue_draw(editor->drar);
+        gtk_widget_grab_focus(editor->drar);
+        return TRUE;
+    }
+
+    if (!shift && ctrl && !alt && !super) {
+        if ((event->keyval == GDK_KEY_g) || (event->keyval == GDK_KEY_f)) {
+            ctrl_g_invoked = TRUE;
+        }
+    }
+
+    
+    if (ctrl && (event->keyval == GDK_KEY_r)) {
+        history_pick(command_history, editor);
+        //TODO: replace current text with entry
+        return TRUE;
+    }
+
+
+    move_search_forward(editor, ctrl_g_invoked);
 
     if (ctrl_g_invoked) {
         return TRUE;
@@ -296,6 +312,7 @@ static gboolean entry_search_insert_callback(GtkWidget *widget, GdkEventKey *eve
 void editor_start_search(editor_t *editor) {
     buffer_set_mark_at_cursor(editor->buffer);
     editor->label_state = "search";
+    gtk_entry_set_text(GTK_ENTRY(editor->entry), "");
     set_label_text(editor);
     gtk_widget_grab_focus(editor->entry);
     g_signal_handler_disconnect(editor->entry, editor->current_entry_handler_id);
@@ -329,6 +346,13 @@ void editor_close_editor(editor_t *editor) {
 
 
 static gboolean entry_default_insert_callback(GtkWidget *widget, GdkEventKey *event, editor_t *editor) {
+    /*
+    int shift = event->state & GDK_SHIFT_MASK;
+    int alt = event->state & GDK_MOD1_MASK;
+    int super = event->state & GDK_SUPER_MASK;*/
+
+    int ctrl = event->state & GDK_CONTROL_MASK;
+        
     if (cmdcompl_isvisible()) {
         switch (event->keyval) {
         case GDK_KEY_Escape:
@@ -357,6 +381,12 @@ static gboolean entry_default_insert_callback(GtkWidget *widget, GdkEventKey *ev
             cmdcompl_hide();
         }
 
+        if (ctrl && (event->keyval == GDK_KEY_r)) {
+            history_pick(command_history, editor);
+            //TODO: replace current text with entry
+            return TRUE;
+        }
+
         if (event->keyval == GDK_KEY_Escape) {
             gtk_entry_set_text(GTK_ENTRY(editor->entry), "");
             gtk_widget_grab_focus(editor->drar);
@@ -364,7 +394,9 @@ static gboolean entry_default_insert_callback(GtkWidget *widget, GdkEventKey *ev
         }
 
         if (event->keyval == GDK_KEY_Return) {
-            enum deferred_action da = interp_eval(editor, gtk_entry_get_text(GTK_ENTRY(editor->entry)));
+            const char *command = gtk_entry_get_text(GTK_ENTRY(editor->entry));
+            enum deferred_action da = interp_eval(editor, command);
+            history_add(command_history, command);
             gtk_entry_set_text(GTK_ENTRY(editor->entry), "");
             switch(da) {
             case FOCUS_ALREADY_SWITCHED:
@@ -448,8 +480,10 @@ void editor_switch_buffer(editor_t *editor, buffer_t *buffer) {
 static gboolean entry_focusout_callback(GtkWidget *widget, GdkEventFocus *event, editor_t *editor) {
     editor->label_state = "cmd";
     set_label_text(editor);
-    if (editor->search_mode)
+    if (editor->search_mode) {
+        history_add(search_history, gtk_entry_get_text(GTK_ENTRY(editor->entry)));
         gtk_entry_set_text(GTK_ENTRY(editor->entry), "");
+    }
     editor->search_mode = FALSE;
     g_signal_handler_disconnect(editor->entry, editor->current_entry_handler_id);
     editor->current_entry_handler_id = g_signal_connect(editor->entry, "key-release-event", G_CALLBACK(entry_default_insert_callback), editor);
