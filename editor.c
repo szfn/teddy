@@ -432,6 +432,7 @@ static gboolean entry_default_insert_callback(GtkWidget *widget, GdkEventKey *ev
                 if (text[i] == '/') continue;
                 if (text[i] == '~') continue;
                 if (text[i] == ':') continue;
+                if (text[i] == '.') continue;
                 //printf("Breaking on [%c] %d (text: %s)\n", text[i], i, text);
                 break;
             }

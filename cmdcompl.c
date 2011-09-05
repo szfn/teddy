@@ -340,7 +340,9 @@ static int cmdcompl_can_filter(const char *text, int length) {
     // if all the above is false AND the position of the rightmost slash is the same
     // then we are asking stuff about the same directory, otherwise we can not filter
     rlidx = cmdcompl_find_rightmost_slash(text, length);
-    if (last_complete_request_rightmost_slash != rlidx) return 0;
+    if (last_complete_request_rightmost_slash != rlidx) {
+        return 0;
+    }
 
     return 1;
 }
@@ -351,8 +353,6 @@ static void cmdcompl_filter(const char *text, int length) {
 
     cmdcompl_update_last_request(text, length);
 
-    printf("Filtering existing list\n");
-
     valid = gtk_tree_model_get_iter_first(GTK_TREE_MODEL(completions_list), &iter);
     while (valid) {
         GValue value = {0};
@@ -361,11 +361,11 @@ static void cmdcompl_filter(const char *text, int length) {
 
         curstr = g_value_get_string(&value);
 
-        printf("   curstr: [%s]\n", curstr);
+        //printf("   curstr: [%s]\n", curstr);
 
         if (strncmp(curstr, text, length) != 0) {
             valid = gtk_list_store_remove(completions_list, &iter);
-            printf("      Removing\n");
+            //printf("      Removing\n");
             --num_found_completions;
         } else {
             valid = gtk_tree_model_iter_next(GTK_TREE_MODEL(completions_list), &iter);
@@ -373,6 +373,8 @@ static void cmdcompl_filter(const char *text, int length) {
 
         g_value_unset(&value);
     }
+
+    //printf("Found completions after filtering: %d\n", num_found_completions);
 }
 
 int cmdcompl_complete(const char *text, int length, char *working_directory) {
@@ -381,11 +383,16 @@ int cmdcompl_complete(const char *text, int length, char *working_directory) {
         return 0;
     }
 
+    //printf("Complete called\n");
+
     if (cmdcompl_can_filter(text, length)) {
         cmdcompl_filter(text, length);
     } else {
+        //printf("Restarting complete\n");
         cmdcompl_start(text, length, working_directory);
     }
+
+    //printf("\n\n");
     
     return num_found_completions;
 }
@@ -415,8 +422,9 @@ void cmdcompl_show(editor_t *editor, int cursor_position) {
         final_y = wpos_y + allocation.y + allocation.height;
         final_x = wpos_x + allocation.x + layout_offset_x + real_pos.x;
 
+        /*
         printf("Layout offset: %d,%d\n", layout_offset_x, layout_offset_y);
-        printf("Cursor positoin %d, %d\n", final_x, final_y);
+        printf("Cursor positoin %d, %d\n", final_x, final_y);*/
 
         gtk_widget_set_uposition(completions_window, final_x, final_y);
     }
@@ -506,7 +514,7 @@ char *cmdcompl_get_completion(const char *text, int *point) {
     strcpy(r+(*point), compl);
     strcat(r, text+(*point));
 
-    printf("Comppleted: [%s]\n", r);
+    //printf("Completed: [%s]\n", r);
 
     *point += strlen(compl);
     

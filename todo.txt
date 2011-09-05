@@ -1,9 +1,9 @@
-- history on commandline (separate history for searches)
-- bug "~/Dropbox/di." + tab doesn't show completions
-- persistence of history
+- execution of external commands
 - double click -> select word (and movement will also select words)
 - triple click -> select lines (and movement will also select lines)
-- right click -> search/open file
+- right click -> search/open file (special algorithm implemented in tcl to match an area to open/search)
+- up/down arrows move through history
+- persistence of history
 - command to reload buffer contents from disk
 - auto-reloading buffers when there is no change and the file on disk was changed
 - note: left button click does search/open, middle click does primary paste
