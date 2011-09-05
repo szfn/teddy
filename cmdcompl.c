@@ -301,6 +301,7 @@ static void cmdcompl_start(const char *text, int length, char *working_directory
                     if (strncmp(den->d_name, partial_filename, strlen(partial_filename)) == 0) {
                         GtkTreeIter mah;
                         char *relname = malloc(sizeof(char) * (strlen(reldir) + strlen(den->d_name) + 2));
+                        relname[0] = '\0';
 
                         strcat(relname, reldir);
                         strcat(relname, den->d_name);
