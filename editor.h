@@ -29,6 +29,8 @@ typedef struct _editor_t {
     guint timeout_id;
     gboolean search_failed;
 
+    gboolean ignore_next_entry_keyrelease;
+
     struct _column_t *column;
 } editor_t;
 

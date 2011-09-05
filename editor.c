@@ -277,6 +277,11 @@ static gboolean entry_search_insert_callback(GtkWidget *widget, GdkEventKey *eve
     int alt = event->state & GDK_MOD1_MASK;
     int super = event->state & GDK_SUPER_MASK;
 
+    if (editor->ignore_next_entry_keyrelease) {
+        editor->ignore_next_entry_keyrelease = 0;
+        return TRUE;
+    }
+    
     gboolean ctrl_g_invoked = FALSE;
 
     if ((event->keyval == GDK_KEY_Escape) || (event->keyval == GDK_KEY_Return)) {
@@ -291,14 +296,12 @@ static gboolean entry_search_insert_callback(GtkWidget *widget, GdkEventKey *eve
             ctrl_g_invoked = TRUE;
         }
     }
-
     
     if (ctrl && (event->keyval == GDK_KEY_r)) {
         history_pick(command_history, editor);
-        //TODO: replace current text with entry
+        editor->ignore_next_entry_keyrelease = 1;
         return TRUE;
     }
-
 
     move_search_forward(editor, ctrl_g_invoked);
 
@@ -352,7 +355,12 @@ static gboolean entry_default_insert_callback(GtkWidget *widget, GdkEventKey *ev
     int super = event->state & GDK_SUPER_MASK;*/
 
     int ctrl = event->state & GDK_CONTROL_MASK;
-        
+
+    if (editor->ignore_next_entry_keyrelease) {
+        editor->ignore_next_entry_keyrelease = 0;
+        return TRUE;
+    }
+
     if (cmdcompl_isvisible()) {
         switch (event->keyval) {
         case GDK_KEY_Escape:
@@ -383,7 +391,7 @@ static gboolean entry_default_insert_callback(GtkWidget *widget, GdkEventKey *ev
 
         if (ctrl && (event->keyval == GDK_KEY_r)) {
             history_pick(command_history, editor);
-            //TODO: replace current text with entry
+            editor->ignore_next_entry_keyrelease = 1;
             return TRUE;
         }
 
@@ -1138,6 +1146,7 @@ editor_t *new_editor(GtkWidget *window, column_t *column, buffer_t *buffer) {
     r->cursor_visible = TRUE;
     r->initialization_ended = 0;
     r->mouse_marking = 0;
+    r->ignore_next_entry_keyrelease = 0;
 
     r->search_mode = FALSE;
     r->search_failed = FALSE;

@@ -15,7 +15,7 @@ typedef struct _history_t {
 
 history_t *history_new(void);
 void history_add(history_t *history, const char *text);
-const char *history_pick(history_t *history, struct _editor_t *editor);
+void history_pick(history_t *history, struct _editor_t *editor);
 
 /*
 void history_reset(history_t *history);
