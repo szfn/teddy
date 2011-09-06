@@ -8,8 +8,10 @@
 #include "columns.h"
 #include "interp.h"
 #include "cmdcompl.h"
+#include "jobs.h"
 
 static gboolean delete_callback(GtkWidget *widget, GdkEvent *event, gpointer data) {
+    //TODO: terminate all processes
     if (buffers_close_all(widget)) return FALSE;
     return TRUE;
 }
@@ -28,7 +30,8 @@ int main(int argc, char *argv[]) {
     interp_init();
 
     read_conf();
-    
+
+    jobs_init();
     buffers_init();
 
     for (i = 1; i < argc; ++i) {

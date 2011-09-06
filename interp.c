@@ -1,6 +1,7 @@
 #include "interp.h"
 
 #include <tcl.h>
+#include <errno.h>
 
 #include "global.h"
 #include "columns.h"
@@ -8,6 +9,7 @@
 #include "column.h"
 #include "go.h"
 #include "baux.h"
+#include "jobs.h"
 
 #define INITFILE ".teddy"
 
@@ -351,6 +353,102 @@ static int teddy_gohome_command(ClientData client_data, Tcl_Interp *interp, int 
     return TCL_OK;
 }
 
+static int teddy_bg_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
+    pid_t child;
+    int pipe_to_child[2];
+    int pipe_from_child[2];
+    int pipe_err_child[2];
+    
+    if (context_editor == NULL) {
+        Tcl_AddErrorInfo(interp, "No editor open, can not execute 'bg' command");
+        return TCL_ERROR;
+    }
+
+    if (argc != 2) {
+        Tcl_AddErrorInfo(interp, "Wrong number of arguments to 'bg' command");
+        return TCL_ERROR;
+    }
+
+    //TODO: stdin/stout/stderr pipe to child
+
+    if (pipe(pipe_to_child) != 0) {
+        Tcl_AddErrorInfo(interp, "Pipe (to_child) failed");
+        return TCL_ERROR;
+    }
+
+    if (pipe(pipe_from_child) != 0) {
+        Tcl_AddErrorInfo(interp, "Pipe (form_child) failed");
+        return TCL_ERROR;
+    }
+
+    if (pipe(pipe_err_child) != 0) {
+        Tcl_AddErrorInfo(interp, "Pipe (err_child) failed");
+        return TCL_ERROR;
+    }
+
+    child = fork();
+    if (child == -1) {
+        Tcl_AddErrorInfo(interp, "Fork failed");
+        return TCL_ERROR;
+    } else if (child != 0) {
+        /* parent code */
+
+        close(pipe_from_child[1]);
+        close(pipe_err_child[1]);
+        close(pipe_to_child[0]);
+
+        //TODO: allocate a buffer
+
+        if (!jobs_register(child, pipe_from_child[0], pipe_to_child[1], pipe_err_child[0])) {
+            Tcl_AddErrorInfo(interp, "Registering job failed, probably exceeded the maximum number of jobs available");
+            return TCL_ERROR;
+        }
+        
+        return TCL_OK;
+    }
+
+    /* child code here */
+    printf("Child started %d\n", STDOUT_FILENO);
+
+    close(pipe_to_child[1]);
+    close(pipe_from_child[0]);
+    close(pipe_err_child[0]);
+
+    close(STDIN_FILENO);
+
+    if (dup2(pipe_to_child[0], STDIN_FILENO) == -1) {
+        perror("Stdin redirection failed");
+        exit(10);
+    }
+
+    close(pipe_to_child[0]);
+
+    close(STDOUT_FILENO);
+
+    if (dup2(pipe_from_child[1], STDOUT_FILENO) == -1) {
+        fprintf(stderr, "Error: %d %d\n", errno, EAGAIN);
+        perror("Stdout redirection failed");
+        exit(11);
+    }
+
+    close(pipe_from_child[1]);
+
+    close(STDERR_FILENO);
+
+    if (dup2(pipe_err_child[1], STDERR_FILENO) == -1) {
+        perror("Stderr redirection failed");
+        exit(12);
+    }
+
+    close(pipe_err_child[1]);
+
+
+    Tcl_Eval(interp, argv[1]);
+    //TODO: capture the return value
+
+    exit(0); // the child's life end's here
+}
+
 void interp_init(void) {
     interp = Tcl_CreateInterp();
     if (interp == NULL) {
@@ -388,6 +486,8 @@ void interp_init(void) {
 
     Tcl_CreateCommand(interp, "move", &teddy_move_command, (ClientData)NULL, NULL);
     Tcl_CreateCommand(interp, "gohome", &teddy_gohome_command, (ClientData)NULL, NULL);
+
+    Tcl_CreateCommand(interp, "bg", &teddy_bg_command, (ClientData)NULL, NULL);
 }
 
 void interp_free(void) {
