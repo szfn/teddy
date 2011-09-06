@@ -31,3 +31,13 @@ bindkey Ctrl-Home {go 0}
 bindkey Ctrl-End {go -1}
 
 bindkey Ctrl-Backspace {move prev wnwa del}
+
+proc kill_line {} {
+   go 0
+   mark
+   go $
+   #TODO: here we should check if we moved and if we didn't just delete one character
+   cb cut
+}
+
+bindkey Ctrl-k kill_line
