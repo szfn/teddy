@@ -123,7 +123,5 @@ int jobs_register(pid_t child_pid, int pipe_from_child, int pipe_to_child, int p
 
     jobs[i].child_source_id = g_child_watch_add(child_pid, (GChildWatchFunc)jobs_child_watch_function, jobs+i);
 
-    //TODO: add pid watch
-
     return 1;
 }

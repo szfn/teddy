@@ -452,9 +452,9 @@ static int teddy_bg_command(ClientData client_data, Tcl_Interp *interp, int argc
 
     close(pipe_err_child[1]);
 
+    //TODO: bind realexec, fd* tools and shell in interp here
 
     Tcl_Eval(interp, argv[1]);
-    //TODO: capture the return value
 
     exit(0); // the child's life end's here
 }

@@ -13,10 +13,6 @@ column_t *active_column = NULL;
 
 //static int columns_exposed = 0;
 
-/* TODO:
-   - user column resizing
- */
-
 void columns_init(GtkWidget *window) {
     int i;
     

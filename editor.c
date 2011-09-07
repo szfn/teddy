@@ -454,7 +454,6 @@ static gboolean entry_default_insert_callback(GtkWidget *widget, GdkEventKey *ev
         }
     }
 
-    //TODO: history search on Ctrl-R
     //TODO: history scan with up, down - arrow keys
 
     return FALSE;
