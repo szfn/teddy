@@ -10,6 +10,7 @@
 #include "go.h"
 #include "baux.h"
 #include "jobs.h"
+#include "shell.h"
 
 #define INITFILE ".teddy"
 
@@ -452,11 +453,30 @@ static int teddy_bg_command(ClientData client_data, Tcl_Interp *interp, int argc
 
     close(pipe_err_child[1]);
 
-    //TODO: bind realexec, fd* tools and shell in interp here
+    Tcl_CreateCommand(interp, "fdopen", &teddy_fdopen_command, (ClientData)NULL, NULL);
+    Tcl_CreateCommand(interp, "fdclose", &teddy_fdclose_command, (ClientData)NULL, NULL);
+    Tcl_CreateCommand(interp, "fddup2", &teddy_fddup2_command, (ClientData)NULL, NULL);
+    Tcl_CreateCommand(interp, "fdpipe", &teddy_fdpipe_command, (ClientData)NULL, NULL);
+    Tcl_CreateCommand(interp, "posixfork", &teddy_posixfork_command, (ClientData)NULL, NULL);
+    Tcl_CreateCommand(interp, "posixexec", &teddy_posixexec_command, (ClientData)NULL, NULL);
+    Tcl_CreateCommand(interp, "posixwaitpid", &teddy_posixwaitpid_command, (ClientData)NULL, NULL);
 
-    Tcl_Eval(interp, argv[1]);
+    {
+        int code = Tcl_Eval(interp, argv[1]);
+        if (code  != TCL_OK) {
+            Tcl_Obj *options = Tcl_GetReturnOptions(interp, code);  
+            Tcl_Obj *key = Tcl_NewStringObj("-errorinfo", -1);
+            Tcl_Obj *stackTrace;
+            Tcl_IncrRefCount(key);
+            Tcl_DictObjGet(NULL, options, key, &stackTrace);
+            Tcl_DecrRefCount(key);
+            
+            fprintf(stderr, "TCL Exception: %s\n", Tcl_GetString(stackTrace));
+            exit(EXIT_FAILURE);
+        }
+    }
 
-    exit(0); // the child's life end's here
+    exit(EXIT_SUCCESS); // the child's life end's here (if we didn't exec something before)
 }
 
 void interp_init(void) {
