@@ -4,10 +4,13 @@
 #include <unistd.h>
 #include <glib.h>
 
+struct _buffer_t;
+
 typedef struct _job_t {
     int used;
     pid_t child_pid;
     int pipe_to_child;
+    struct _buffer_t *buffer;
     
     GIOChannel *pipe_from_child;
     GIOChannel *pipe_err_child;
@@ -22,6 +25,6 @@ typedef struct _job_t {
 job_t jobs[MAX_JOBS];
 
 void jobs_init(void);
-int jobs_register(pid_t child_pid, int pipe_from_child, int pipe_to_child, int pipe_err_child);
+int jobs_register(pid_t child_pid, int pipe_from_child, int pipe_to_child, int pipe_err_child, struct _buffer_t *buffer);
 
 #endif

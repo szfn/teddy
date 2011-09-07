@@ -18,6 +18,8 @@ GtkListStore *buffers_list;
 GtkWidget *buffers_tree;
 editor_t *buffers_selector_focus_editor;
 
+int process_buffers_counter = 0;
+
 buffer_t *null_buffer(void) {
     return buffers[0];
 }
@@ -165,6 +167,8 @@ int buffers_close(buffer_t *buffer, GtkWidget *window) {
 }
 
 void buffers_init(void) {
+    process_buffers_counter = 0;
+    
     {
         int i;
         buffers_allocated = 10;
@@ -356,3 +360,32 @@ buffer_t *buffers_find_buffer_from_path(const char *urp) {
     free(rp);
     return r;
 }
+
+buffer_t *buffers_get_buffer_for_process(void) {
+    buffer_t *buffer;
+    int i;
+    // look for a buffer with a name starting by +bg/ that doesn't have a process
+    for (i = 0; i < buffers_allocated; ++i) {
+        if (buffers[i] == NULL) continue;
+        if (strncmp(buffers[i]->name, "+bg/", 4) != 0) continue;
+        if (buffers[i]->job != NULL) continue;
+        break;
+    }
+
+    if (i >= buffers_allocated) {
+        buffer = buffer_create(&library);
+        load_empty(buffer);
+        if (buffer->name != NULL) {
+            free(buffer->name);
+        }
+
+        asprintf(&(buffer->name), "+bg/%d+", process_buffers_counter);
+        ++process_buffers_counter;
+        buffers_add(buffer);
+    } else {
+        buffer = buffers[i];
+    }
+
+    return buffer;
+}
+

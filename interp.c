@@ -358,6 +358,7 @@ static int teddy_bg_command(ClientData client_data, Tcl_Interp *interp, int argc
     int pipe_to_child[2];
     int pipe_from_child[2];
     int pipe_err_child[2];
+    buffer_t *buffer;
     
     if (context_editor == NULL) {
         Tcl_AddErrorInfo(interp, "No editor open, can not execute 'bg' command");
@@ -368,8 +369,6 @@ static int teddy_bg_command(ClientData client_data, Tcl_Interp *interp, int argc
         Tcl_AddErrorInfo(interp, "Wrong number of arguments to 'bg' command");
         return TCL_ERROR;
     }
-
-    //TODO: stdin/stout/stderr pipe to child
 
     if (pipe(pipe_to_child) != 0) {
         Tcl_AddErrorInfo(interp, "Pipe (to_child) failed");
@@ -386,6 +385,12 @@ static int teddy_bg_command(ClientData client_data, Tcl_Interp *interp, int argc
         return TCL_ERROR;
     }
 
+    buffer = buffers_get_buffer_for_process();
+    buffer_cd(buffer, context_editor->buffer->wd);
+    
+    go_to_buffer(context_editor, buffer);
+
+
     child = fork();
     if (child == -1) {
         Tcl_AddErrorInfo(interp, "Fork failed");
@@ -393,17 +398,22 @@ static int teddy_bg_command(ClientData client_data, Tcl_Interp *interp, int argc
     } else if (child != 0) {
         /* parent code */
 
+        char *msg;
+
         close(pipe_from_child[1]);
         close(pipe_err_child[1]);
         close(pipe_to_child[0]);
 
-        //TODO: allocate a buffer
+        asprintf(&msg, "~ Executing {%s} on PID %d\n\n", argv[1], child);
+        buffer_append(buffer, msg, strlen(msg), TRUE);
+        free(msg);
 
-        if (!jobs_register(child, pipe_from_child[0], pipe_to_child[1], pipe_err_child[0])) {
+        if (!jobs_register(child, pipe_from_child[0], pipe_to_child[1], pipe_err_child[0], buffer)) {
             Tcl_AddErrorInfo(interp, "Registering job failed, probably exceeded the maximum number of jobs available");
             return TCL_ERROR;
         }
-        
+
+
         return TCL_OK;
     }
 

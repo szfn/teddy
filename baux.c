@@ -87,3 +87,26 @@ void buffer_indent_newline(buffer_t *buffer, char *r) {
     }
     r[i+1] = '\0';
 }
+
+void buffer_append(buffer_t *buffer, const char *msg, int length, int on_new_line) {
+    char *text;
+
+    buffer_unset_mark(buffer);
+    
+    for (; buffer->cursor_line->next != NULL; buffer->cursor_line = buffer->cursor_line->next);
+    buffer->cursor_glyph = buffer->cursor_line->cap;
+
+    if (on_new_line) {
+        if (buffer->cursor_glyph != 0) {
+            buffer_replace_selection(buffer, "\n");
+        }
+    }
+
+    text = malloc(sizeof(char) * (length + 1));
+    strncpy(text, msg, length);
+    text[length] = '\0';
+
+    buffer_replace_selection(buffer, text);
+    
+    free(text);
+}

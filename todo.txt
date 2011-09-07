@@ -1,7 +1,8 @@
-- execution of external commands
+- implement tcl tools to reimplement exec
 - double click -> select word (and movement will also select words)
 - triple click -> select lines (and movement will also select lines)
 - right click -> search/open file (special algorithm implemented in tcl to match an area to open/search)
+- appending to a buffer that was never displayed doesn't work (for some reason), tons of valgrind exceptions are generated. There is a valid use case for starting commands on an invisible buffer
 - find a way to implement emacs's ctrl-k
 - up/down arrows move through history
 - persistence of history

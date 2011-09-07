@@ -543,6 +543,16 @@ void load_empty(buffer_t *buffer) {
     buffer->cursor_glyph = 0;
 }
 
+void buffer_cd(buffer_t *buffer, const char *wd) {
+    if (buffer->has_filename) return;
+
+    if (buffer->path != NULL) free(buffer->path);
+    asprintf(&(buffer->path), "%s", wd);
+
+    if (buffer->wd != NULL) free(buffer->wd);
+    asprintf(&(buffer->wd), "%s", wd);
+}
+
 int load_text_file(buffer_t *buffer, const char *filename) {
     FILE *fin = fopen(filename, "r");
     char ch;
@@ -829,6 +839,7 @@ buffer_t *buffer_create(FT_Library *library) {
     buffer->library = library;
     buffer->modified = 0;
     buffer->editable = 1;
+    buffer->job = NULL;
 
     asprintf(&(buffer->name), "+unnamed");
     buffer->path = NULL;

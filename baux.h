@@ -22,4 +22,7 @@ void buffer_aux_wnwa_prev(buffer_t *buffer);
 /* writes in r the indent of cursor_line + a newline and the 0 byte */
 void buffer_indent_newline(buffer_t *buffer, char *r);
 
+/* adds text to the end of the buffer */
+void buffer_append(buffer_t *buffer, const char *msg, int length, int on_new_line);
+
 #endif

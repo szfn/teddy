@@ -9,6 +9,7 @@
 
 #include "font.h"
 #include "undo.h"
+#include "jobs.h"
 
 typedef struct _my_glyph_info_t {
     double kerning_correction;
@@ -36,6 +37,8 @@ typedef struct _buffer_t {
     int has_filename;
     int modified;
     int editable;
+
+    job_t *job;
     
     /* Font face stuff */
     FT_Library *library;
@@ -88,6 +91,11 @@ void load_empty(buffer_t *buffer);
 
 // save the buffer to its file (if exists, otherwise fails)
 void save_to_text_file(buffer_t *buffer);
+
+/*
+  Sets working directory for the buffer (only works if there is no associated file
+ */
+void buffer_cd(buffer_t *buffer, const char *wd);
 
 /*
   Mark management
