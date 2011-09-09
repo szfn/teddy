@@ -755,6 +755,16 @@ static void move_cursor_to_mouse(editor_t *editor, double x, double y) {
     buffer_move_cursor_to_position(editor->buffer, x, y);
 }
 
+static void mouse_open_action(editor_t *editor, real_line_t *selstart_line, int selstart_glyph, real_line_t *selend_line, int selend_glyph) {
+    if (selstart_line != selend_line) {
+        char *r = buffer_lines_to_text(editor->buffer, selstart_line, selend_line, selstart_glyph, selend_glyph);
+        interp_eval(editor, r);
+        free(r);
+    } else {
+        //TODO: go or search action
+    }
+}
+
 static gboolean button_press_callback(GtkWidget *widget, GdkEventButton *event, editor_t *editor) {
     if (selection_target_buffer != NULL) {
         editor_switch_buffer(editor, selection_target_buffer);
@@ -775,7 +785,39 @@ static gboolean button_press_callback(GtkWidget *widget, GdkEventButton *event, 
         buffer_unset_mark(editor->buffer);
         editor_complete_move(editor, TRUE);
         editor_insert_paste(editor, selection_clipboard);
-    } 
+    } else if (event->button == 3) {
+        real_line_t *selstart_line, *selend_line;
+        int selstart_glyph, selend_glyph;
+        
+        buffer_get_selection(editor->buffer, &selstart_line, &selstart_glyph, &selend_line, &selend_glyph);
+
+        buffer_unset_mark(editor->buffer);
+        move_cursor_to_mouse(editor, event->x, event->y);
+        editor_complete_move(editor, TRUE);
+
+        if (selstart_line == selend_line) {
+            if ((editor->buffer->cursor_line == selstart_line) &&
+                (editor->buffer->cursor_glyph >= selstart_glyph) &&
+                (editor->buffer->cursor_glyph <= selend_glyph)) {
+                mouse_open_action(editor, selstart_line, selstart_glyph, selend_line, selend_glyph);
+            }
+        } else {
+            if (editor->buffer->cursor_line == selstart_line) {
+                if (editor->buffer->cursor_glyph >= selstart_glyph) {
+                    mouse_open_action(editor, selstart_line, selstart_glyph, selend_line, selend_glyph);
+                } 
+            } else if (editor->buffer->cursor_line == selend_line) {
+                if (editor->buffer->cursor_glyph <= selend_glyph) {
+                    mouse_open_action(editor, selstart_line, selstart_glyph, selend_line, selend_glyph);
+                }
+            } else {
+                if ((editor->buffer->cursor_line->lineno > selstart_line->lineno) &&
+                    (editor->buffer->cursor_line->lineno < selend_line->lineno)) {
+                    mouse_open_action(editor, selstart_line, selstart_glyph, selend_line, selend_glyph);
+                }
+            }
+        }
+    }
 
     return TRUE;
 }
