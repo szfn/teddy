@@ -212,3 +212,14 @@ int teddy_posixwaitpid_command(ClientData client_data, Tcl_Interp *interp, int a
     
     return TCL_OK;
 }
+
+int teddy_posixexit_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
+    if (argc != 2) {
+        Tcl_AddErrorInfo(interp, "Wrong number of arguments ot 'posixwaitpid' command");
+        return TCL_ERROR;
+    }
+
+    exit(atoi(argv[1]));
+
+    return TCL_OK;
+}

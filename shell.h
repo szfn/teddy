@@ -10,6 +10,6 @@ int teddy_fdpipe_command(ClientData client_data, Tcl_Interp *interp, int argc, c
 int teddy_posixfork_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]);
 int teddy_posixexec_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]);
 int teddy_posixwaitpid_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]);
-
+int teddy_posixexit_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]);
 
 #endif

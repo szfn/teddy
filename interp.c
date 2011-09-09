@@ -460,6 +460,7 @@ static int teddy_bg_command(ClientData client_data, Tcl_Interp *interp, int argc
     Tcl_CreateCommand(interp, "posixfork", &teddy_posixfork_command, (ClientData)NULL, NULL);
     Tcl_CreateCommand(interp, "posixexec", &teddy_posixexec_command, (ClientData)NULL, NULL);
     Tcl_CreateCommand(interp, "posixwaitpid", &teddy_posixwaitpid_command, (ClientData)NULL, NULL);
+    Tcl_CreateCommand(interp, "posixexit", &teddy_posixexit_command, (ClientData)NULL, NULL);
 
     {
         int code = Tcl_Eval(interp, argv[1]);
