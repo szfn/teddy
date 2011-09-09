@@ -50,7 +50,7 @@ proc shell_perform_redirection {redirection} {
    switch -exact $open_direction {
       ">" {
          if {$redirected_descriptor eq ""} {set redirected_descriptor 1}
-         puts "Sending $redirected_descriptor to $target"
+         #puts "Sending $redirected_descriptor to $target"
          set fd [fdopen -wronly $target]
          fddup2 $fd $redirected_descriptor
          fdclose $fd
@@ -79,7 +79,9 @@ proc shell_perform_redirection {redirection} {
 }
 
 proc shell {args} {
-   #TODO: fail immediately if we aren't backgrounded
+   if {!$backgrounded} {
+      error "shell called on a non backgrounded interpreter"
+   }
 
    set special {}
    set normal {}
@@ -101,21 +103,21 @@ proc shell {args} {
    
    if {$pid != 0} {
       # parent code, wait and exit
-      puts "waiting for $pid"
+      #puts "waiting for $pid"
       set r [posixwaitpid $pid]
-      puts "wait ended"
+      #puts "wait ended"
       posixexit [lindex $r 1]
    }
    
    # child code, make redirects and exec
    
-   puts "message from child code"
+   #puts "message from child code"
    
    for {set i 0} {$i < [llength $special]} {incr i} {
       shell_perform_redirection [lindex $special $i]
    }
    
-   puts "Executing $normal"
+   #puts "Executing $normal"
    posixexec {*}$normal
    
    posixexit -1

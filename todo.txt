@@ -1,5 +1,3 @@
-- implement shell command (simple commands)
-- bug: newline insertion doesn't seem to reposition editor on cursor anymore
 - reposition editor on cursor when appending to buffer (if the buffer is visible)
 - bug: incremental search sometimes doesn't highlight (but other than that seems to work ok)
 - bug: line "   #   ", deleting the "#" doesn't set the width of spaces after it correctly
