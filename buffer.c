@@ -316,7 +316,7 @@ static int buffer_line_insert_utf8_text(buffer_t *buffer, real_line_t *line, con
         
     }
 
-    buffer_line_fix_spaces(buffer, line);
+    //buffer_line_fix_spaces(buffer, line);
 
     cairo_ft_scaled_font_unlock_face(buffer->main_font.cairofont);
 
@@ -387,6 +387,8 @@ static void buffer_line_adjust_glyphs(buffer_t *buffer, real_line_t *line, doubl
     
     line->start_y = y;
     line->end_y = y;
+
+    buffer_line_fix_spaces(buffer, line);    
 
     //printf("setting type\n");
     for (i = 0; i < line->cap; ++i) {
