@@ -285,7 +285,7 @@ static void cmdcompl_start(const char *text, int length, char *working_directory
         } else {
             reldir = malloc(sizeof(char));
             *reldir = '\0';
-            absdir = malloc(sizeof(char) * strlen(working_directory));
+            absdir = malloc(sizeof(char) * (strlen(working_directory) + 1));
             strcpy(absdir, working_directory);
             partial_filename = malloc(sizeof(char) * (length + 1));
             strncpy(partial_filename, text, length);
