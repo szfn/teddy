@@ -64,10 +64,52 @@ proc shell {args} {
    }
    
    if {$pid != 0} {
-      
+      # parent code, wait and exit
+      puts "waiting for $pid"
+      set r [posixwaitpid $pid]
+      puts "wait ended"
+      posixexit [lindex $r 1]
    }
-   # TODO: 
-   # - fork
-   # - in parent waitpid
-   # - in child make redirections indicated in special and then exec normal
+   
+   # child code, make redirects and exec
+   
+   puts "message from child code"
+   
+   for {set i 0} {$i < [llength $special]} {incr i} {
+      set cur [lindex $special $i]
+      set redirected_descriptor [dict get $cur redirected_descriptor]
+      set open_direction [dict get $cur open_direction]
+      set target [dict get $cur target]
+      
+      switch -exact $open_direction {
+         ">" { 
+            if {$redirected_descriptor eq ""} {set redirected_descriptor 1}
+            puts "Redirecting $redirected_descriptor to file $target"
+         }
+         ">&" { 
+            if {$redirected_descriptor eq ""} {set redirected_descriptor 1}
+            puts "Redirecting $redirected_descriptor to descriptor $target"
+         }
+         "<" { 
+            if {$redirected_descriptor eq ""} {set redirected_descriptor 0}
+            puts "Redirecting $redirected_descriptor from file $target"
+         }
+         "<&" { 
+            if {$redirected_descriptor eq ""} {set redirected_descriptor 0}
+            puts "Redirecting $redirected_descriptor from descriptor $target"
+         }
+         ">>" { 
+            if {$redirected_descriptor eq ""} {set redirected_descriptor 1}
+            puts "Redirecting $redirected_descriptor to append to file $target"
+         }
+      }
+      
+      #TODO: actually redirect
+   }
+   
+   #TODO: actually execute
+   
+   puts "executing $normal"
+   
+   #posixexit -1
 }
