@@ -1,5 +1,9 @@
-- implement tcl tools to implement shell
+- implement posixwaitpid for tcl
 - implement shell itself in tcl
+- implement autoglobbing in shell command
+- Ctrl-o move to next editor (keep a stack of editors like windows' windows)
+- bug: newline insertion doesn't seem to reposition editor on cursor anymore
+- reposition editor on cursor when appending to buffer (if the buffer is visible)
 - normally bind unknown to shell + bg, but on the backgrounded interpreter rebind it to its normal value
 - reimplement forking for client with forkpty :(
 - double click -> select word (and movement will also select words)

@@ -33,7 +33,7 @@ bindkey Ctrl-End {go -1}
 bindkey Ctrl-Backspace {move prev wnwa del}
 
 proc kill_line {} {
-   go 0
+   go :0
    mark
    go $
    #TODO: here we should check if we moved and if we didn't just delete one character
@@ -43,7 +43,31 @@ proc kill_line {} {
 bindkey Ctrl-k kill_line
 
 proc shell {args} {
+   #TODO: fail immediately if we aren't backgrounded
+
+   set special {}
+   set normal {}
+   
    for {set i 0} {$i < [llength $args]} {incr i} {
-       puts "$i -> [lindex $args $i]\n"
+      set cur [lindex $args $i]
+      set isspecial [regexp {^([0-9]*)(>|>&|<&|<|>>)(.*)$} $cur -> redirected_descriptor open_direction target]
+      if {$isspecial} {
+         lappend special [dict create redirected_descriptor $redirected_descriptor open_direction $open_direction target $target]
+      } else {
+         lappend normal $cur
+      }
    }
+   
+   set pid [posixfork]
+   if {$pid < 0} {
+      error "fork failed in 'shell'"
+   }
+   
+   if {$pid != 0} {
+      
+   }
+   # TODO: 
+   # - fork
+   # - in parent waitpid
+   # - in child make redirections indicated in special and then exec normal
 }
