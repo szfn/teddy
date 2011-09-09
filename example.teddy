@@ -41,3 +41,9 @@ proc kill_line {} {
 }
 
 bindkey Ctrl-k kill_line
+
+proc shell {args} {
+   for {set i 0} {$i < [llength $args]} {incr i} {
+       puts "$i -> [lindex $args $i]\n"
+   }
+}

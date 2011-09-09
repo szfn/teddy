@@ -1,3 +1,4 @@
+- right click on region runs go (and #! does evaluation)
 - implement tcl tools to implement shell
 - implement shell itself in tcl
 - normally bind unknown to shell + bg, but on the backgrounded interpreter rebind it to its normal value
