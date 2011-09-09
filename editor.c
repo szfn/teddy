@@ -269,6 +269,7 @@ static void move_search_forward(editor_t *editor, gboolean ctrl_g_invoked) {
     free(needle);
 
     editor_center_on_cursor(editor);
+    gtk_widget_queue_draw(editor->drar);
 }
 
 static gboolean entry_search_insert_callback(GtkWidget *widget, GdkEventKey *event, gpointer data) {
