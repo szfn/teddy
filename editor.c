@@ -52,8 +52,22 @@ void editor_center_on_cursor(editor_t *editor) {
     if ((translated_y < 0) || (translated_y > allocation.height)) {
         gtk_adjustment_set_value(GTK_ADJUSTMENT(editor->adjustment), y - allocation.height / 2);
     }
+}
 
-    return;
+static void editor_include_cursor(editor_t *editor) {
+    double x, y;
+    double translated_y;
+    GtkAllocation allocation;
+
+    gtk_widget_get_allocation(editor->drar, &allocation);
+    buffer_cursor_position(editor->buffer, &x, &y);
+    translated_y = y - gtk_adjustment_get_value(GTK_ADJUSTMENT(editor->adjustment));
+
+    if ((translated_y - editor->buffer->line_height) < 0) {
+        gtk_adjustment_set_value(GTK_ADJUSTMENT(editor->adjustment), gtk_adjustment_get_value(GTK_ADJUSTMENT(editor->adjustment)) + (translated_y - editor->buffer->line_height));
+    } else if (translated_y > allocation.height) {
+        gtk_adjustment_set_value(GTK_ADJUSTMENT(editor->adjustment), gtk_adjustment_get_value(GTK_ADJUSTMENT(editor->adjustment)) + (translated_y - allocation.height));
+    }
 }
 
 static void copy_selection_to_clipboard(editor_t *editor, GtkClipboard *clipboard) {
@@ -865,7 +879,8 @@ static gboolean motion_callback(GtkWidget *widget, GdkEventMotion *event, editor
     if (editor->mouse_marking) {
         move_cursor_to_mouse(editor, event->x, event->y);
         copy_selection_to_clipboard(editor, selection_clipboard);
-        editor_center_on_cursor(editor);
+        //editor_center_on_cursor(editor);
+        editor_include_cursor(editor);
         gtk_widget_queue_draw(editor->drar);
     }
 
