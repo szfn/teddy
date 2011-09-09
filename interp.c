@@ -461,7 +461,7 @@ static int teddy_bg_command(ClientData client_data, Tcl_Interp *interp, int argc
     Tcl_CreateCommand(interp, "posixexec", &teddy_posixexec_command, (ClientData)NULL, NULL);
     Tcl_CreateCommand(interp, "posixwaitpid", &teddy_posixwaitpid_command, (ClientData)NULL, NULL);
     Tcl_CreateCommand(interp, "posixexit", &teddy_posixexit_command, (ClientData)NULL, NULL);
-    Tcl_SetVar(interp, "backgrounded", "1", TCL_GLOBAL_ONLY);
+    Tcl_SetVar(interp, "backgrounded", "1", 0);
 
     {
         int code = Tcl_Eval(interp, argv[1]);
@@ -488,7 +488,7 @@ void interp_init(void) {
         exit(EXIT_FAILURE);
     }
 
-    Tcl_SetVar(interp, "backgrounded", "0", TCL_GLOBAL_ONLY);
+    Tcl_SetVar(interp, "backgrounded", "0", 0);
     Tcl_HideCommand(interp, "after", "hidden_after");
     Tcl_HideCommand(interp, "cd", "hidden_cd");
     Tcl_HideCommand(interp, "tcl_endOfWord", "hidden_tcl_endOfWord");

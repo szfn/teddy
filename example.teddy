@@ -79,8 +79,9 @@ proc shell_perform_redirection {redirection} {
 }
 
 proc shell {args} {
+   global backgrounded
    if {!$backgrounded} {
-      error "shell called on a non backgrounded interpreter"
+      error "shell called on a non backgrounded interpreter"   
    }
 
    set special {}
