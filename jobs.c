@@ -8,6 +8,8 @@
 
 #include "buffer.h"
 #include "baux.h"
+#include "editor.h"
+#include "columns.h"
 
 #define JOBS_READ_BUFFER_SIZE 128
 
@@ -58,6 +60,12 @@ static gboolean jobs_input_watch_function(GIOChannel *source, GIOCondition condi
     }
 
     buffer_append(job->buffer, buf, (size_t)bytes_read, 0);
+    {
+        editor_t *editor = columns_get_buffer(job->buffer);
+        if (editor != NULL) {
+            editor_center_on_cursor(editor);
+        }
+    }
 
     switch (r) {
     case G_IO_STATUS_NORMAL:

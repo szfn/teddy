@@ -1,4 +1,3 @@
-- reposition editor on cursor when appending to buffer (if the buffer is visible)
 - bug: line "   #   ", deleting the "#" doesn't set the width of spaces after it correctly
 - bug: scrolling while selecting with mouse happens too fast
 - implement && and || for shell
