@@ -5,6 +5,8 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <string.h>
+#include <sys/wait.h>
+#include <sys/types.h>
 
 int teddy_fdopen_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
     int i;
@@ -52,6 +54,9 @@ int teddy_fdopen_command(ClientData client_data, Tcl_Interp *interp, int argc, c
             flags |= O_WRONLY;
         } else if (strcmp(argv[i], "-rdwr") == 0) {
             flags |= O_RDWR;
+        } else {
+            Tcl_AddErrorInfo(interp, "Unknown option passed to 'fdopen' command");
+            return TCL_ERROR;
         }
     }
 
@@ -140,11 +145,70 @@ int teddy_posixfork_command(ClientData client_data, Tcl_Interp *interp, int argc
 }
 
 int teddy_posixexec_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
-    //TODO: implement
+    // first argument passed to this command is the name of this command (i.e. the string "posixexec") this needs to be discarded before calling execvp and a NULL needs to be appended to argv as a terminator
+
+    int i;
+    char ** newargv = malloc(sizeof(char *) * argc);
+    
+    for (i = 1; i < argc; ++i) {
+        newargv[i-1] = (char *)argv[i];
+    }
+    newargv[argc-1] = NULL;
+
+    execvp(newargv[0], newargv);
+    
     return TCL_OK;
 }
 
 int teddy_posixwaitpid_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
-    //TODO: implement
+    int i;
+    int status, options = 0;
+    pid_t r;
+    pid_t pid;
+    Tcl_Obj *retval[2], *retlist;
+
+    if (argc < 2) {
+        Tcl_AddErrorInfo(interp, "Wrong number of arguments ot 'posixwaitpid' command");
+        return TCL_ERROR;
+    }
+
+    for (i = 1; i < argc; ++i) {
+        if (argv[i][0] != '-') break;
+        if (strcmp(argv[i], "-wexited") == 0) {
+            options |= WEXITED;
+        } else if (strcmp(argv[i], "-wstopped") == 0) {
+            options |= WSTOPPED;
+        } else if (strcmp(argv[i], "-wcontinued") == 0) {
+            options |= WCONTINUED;
+        } else if (strcmp(argv[i], "-wnohang") == 0) {
+            options |= WNOHANG;
+        } else if (strcmp(argv[i], "-wnowait") == 0) {
+            options |= WNOWAIT;
+        } else {
+            Tcl_AddErrorInfo(interp, "Unknown option passed to 'posixwaitpid' command");
+            return TCL_ERROR;
+        }
+    }
+    
+    if (i != argc - 1) {
+        Tcl_AddErrorInfo(interp, "Extraneous arguments given to 'posixwaitpid' command");
+        return TCL_ERROR;
+    }
+
+    pid = atoi(argv[i]);
+
+    r = waitpid(pid, &status, options);
+
+    retval[0] = Tcl_NewIntObj(r);
+    Tcl_IncrRefCount(retval[0]);
+    retval[1] = Tcl_NewIntObj(status);
+    Tcl_IncrRefCount(retval[1]);
+    
+    retlist = Tcl_NewListObj(2, retval);
+    Tcl_DecrRefCount(retval[1]);
+    Tcl_DecrRefCount(retval[1]);
+    
+    Tcl_SetObjResult(interp, retlist);
+    
     return TCL_OK;
 }
