@@ -42,6 +42,42 @@ proc kill_line {} {
 
 bindkey Ctrl-k kill_line
 
+proc shell_perform_redirection {redirection} {
+   set redirected_descriptor [dict get $redirection redirected_descriptor]
+   set open_direction [dict get $redirection open_direction]
+   set target [dict get $redirection target]
+      
+   switch -exact $open_direction {
+      ">" {
+         if {$redirected_descriptor eq ""} {set redirected_descriptor 1}
+         puts "Sending $redirected_descriptor to $target"
+         set fd [fdopen -wronly $target]
+         fddup2 $fd $redirected_descriptor
+         fdclose $fd
+      }
+      ">&" {
+         if {$redirected_descriptor eq ""} {set redirected_descriptor 1}
+         fddup2 $target $redirected_descriptor
+      }
+      "<" {
+         if {$redirected_descriptor eq ""} {set redirected_descriptor 0}
+         set fd [fdopen -rdonly $target]
+         fddup2 $fd $redirected_descriptor
+         fdclose $fd
+      }
+      "<&" {
+         if {$redirected_descriptor eq ""} {set redirected_descriptor 0}
+         fddup2 $target $redirected_descriptor
+      }
+      ">>" {
+         if {$redirected_descriptor eq ""} {set redirected_descriptor 1}
+         set fd [fdopen -wronly -append $target]
+         fddup2 $fd $redirected_descriptor
+         fdclose $fd
+      }
+   }
+}
+
 proc shell {args} {
    #TODO: fail immediately if we aren't backgrounded
 
@@ -76,40 +112,11 @@ proc shell {args} {
    puts "message from child code"
    
    for {set i 0} {$i < [llength $special]} {incr i} {
-      set cur [lindex $special $i]
-      set redirected_descriptor [dict get $cur redirected_descriptor]
-      set open_direction [dict get $cur open_direction]
-      set target [dict get $cur target]
-      
-      switch -exact $open_direction {
-         ">" { 
-            if {$redirected_descriptor eq ""} {set redirected_descriptor 1}
-            puts "Redirecting $redirected_descriptor to file $target"
-         }
-         ">&" { 
-            if {$redirected_descriptor eq ""} {set redirected_descriptor 1}
-            puts "Redirecting $redirected_descriptor to descriptor $target"
-         }
-         "<" { 
-            if {$redirected_descriptor eq ""} {set redirected_descriptor 0}
-            puts "Redirecting $redirected_descriptor from file $target"
-         }
-         "<&" { 
-            if {$redirected_descriptor eq ""} {set redirected_descriptor 0}
-            puts "Redirecting $redirected_descriptor from descriptor $target"
-         }
-         ">>" { 
-            if {$redirected_descriptor eq ""} {set redirected_descriptor 1}
-            puts "Redirecting $redirected_descriptor to append to file $target"
-         }
-      }
-      
-      #TODO: actually redirect
+      shell_perform_redirection [lindex $special $i]
    }
    
-   #TODO: actually execute
+   puts "Executing $normal"
+   posixexec {*}$normal
    
-   puts "executing $normal"
-   
-   #posixexit -1
+   posixexit -1
 }
