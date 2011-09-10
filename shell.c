@@ -199,13 +199,15 @@ int teddy_posixwaitpid_command(ClientData client_data, Tcl_Interp *interp, int a
 
     r = waitpid(pid, &status, options);
 
+    //printf("WAITPID output: %d %d\n", r, status);
+
     retval[0] = Tcl_NewIntObj(r);
     Tcl_IncrRefCount(retval[0]);
     retval[1] = Tcl_NewIntObj(status);
     Tcl_IncrRefCount(retval[1]);
     
     retlist = Tcl_NewListObj(2, retval);
-    Tcl_DecrRefCount(retval[1]);
+    Tcl_DecrRefCount(retval[0]);
     Tcl_DecrRefCount(retval[1]);
     
     Tcl_SetObjResult(interp, retlist);

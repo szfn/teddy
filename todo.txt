@@ -1,9 +1,13 @@
 - implement && and || for shell
 - implement shell pipes
 - implement autoglobbing in shell command
+- reimplement forking for client with forkpty :(
 - Ctrl-o move to next editor (keep a stack of editors like windows' windows)
 - normally bind unknown to shell + bg, but on the backgrounded interpreter rebind it to its normal value
-- reimplement forking for client with forkpty :(
+- clear buffer command
+- command to indent selection/everything by fixed number of spaces/tabs
+- implement | command that filters selected content through external command
+- make easy way to reindent
 - double click -> select word (and movement will also select words)
 - triple click -> select lines (and movement will also select lines)
 - right click -> search/open file (special algorithm implemented in tcl to match an area to open/search)
@@ -24,20 +28,13 @@
 - reimplement hbox/vbox to not be broken on resize
   - column_adjust_size just takes the last row and uses all the empty space or 40% if there isn't any empty space
   - put the columns_hbox insite a single custom container that returns a requested size of { 0, 0 } and on allocation just resizes everything maintaining proportions
-- highlighting della parentesi associata
+- highlighting of matching parenthesis
 
-- go command improvements:
-  - a ':' at the end of the 'go' argument should be always ignored
-  - '(' and ')' should be treated as '[' and ']'
-  - line number and column can also be separated by ','
-
-- word selection is longest sequence around point consisting of:
+- word selection for open action is longest sequence around point consisting of:
   - letters
   - numbers
-  - [-_/.]
-  - if has at least one / treat as filename
-  - if after the end a colon is found treat as filename
-  - stuff after filename is optionally enclosed in [] and separed by either ":" or "," at most two numbers
+  - [-_/.(),:[]]
+- open action will first run a tcl implemented parser
 
 - tcl commands to disable:
   - unknown <- if it's a command in the path execute it as if it was specified in exec (but also expand all the words containing a * or a ?)

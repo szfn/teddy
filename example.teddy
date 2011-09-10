@@ -78,17 +78,14 @@ proc shell_perform_redirection {redirection} {
    }
 }
 
-proc shell {args} {
-   global backgrounded
-   if {!$backgrounded} {
-      error "shell called on a non backgrounded interpreter"   
-   }
-
+proc shell_eat {args i specialVarName normalVarName} {
    set special {}
    set normal {}
    
-   for {set i 0} {$i < [llength $args]} {incr i} {
+   for {} {$i < [llength $args]} {incr i} {
       set cur [lindex $args $i]
+      if {$cur eq "&&"} { break }
+      if {$cur eq "||"} { break }
       set isspecial [regexp {^([0-9]*)(>|>&|<&|<|>>)(.*)$} $cur -> redirected_descriptor open_direction target]
       if {$isspecial} {
          lappend special [dict create redirected_descriptor $redirected_descriptor open_direction $open_direction target $target]
@@ -97,19 +94,15 @@ proc shell {args} {
       }
    }
    
-   set pid [posixfork]
-   if {$pid < 0} {
-      error "fork failed in 'shell'"
-   }
-   
-   if {$pid != 0} {
-      # parent code, wait and exit
-      #puts "waiting for $pid"
-      set r [posixwaitpid $pid]
-      #puts "wait ended"
-      posixexit [lindex $r 1]
-   }
-   
+   upvar $specialVarName specialVar
+   upvar $normalVarName normalVar
+   set specialVar $special
+   set normalVar $normal
+      
+   return $i
+}
+
+proc shell_child_code {special normal} {
    # child code, make redirects and exec
    
    #puts "message from child code"
@@ -122,4 +115,62 @@ proc shell {args} {
    posixexec {*}$normal
    
    posixexit -1
+}
+
+proc shell {args} {
+   global backgrounded
+   if {!$backgrounded} {
+      error "shell called on a non backgrounded interpreter"   
+   }
+   
+   set i 0
+ 
+   while {$i < [llength $args]} {
+      set i [shell_eat $args $i special normal]
+   
+      puts "New value of i: $i"
+   
+      set pid [posixfork]
+      if {$pid < 0} {
+         error "fork failed in 'shell'"
+      }
+      
+      if {$pid == 0} {
+         shell_child_code $special $normal
+      }
+   
+      # parent code, wait and exit
+         
+      if {$i >= [llength $args]} {
+         #puts "waiting for $pid"
+         set r [posixwaitpid $pid]
+         puts "wait ended $r"
+         posixexit [lindex $r 1]
+      }
+      
+      switch -exact [lindex $args $i] {
+         "&&" {
+            puts "Processing AND $pid"
+            set r [posixwaitpid $pid]
+            puts "Child returned [lindex $r 1]"
+            if {[lindex $r 1] != 0} {
+               # can not continue because last execution failed
+               posixexit [lindex $r 1]
+            }
+         }
+         "||" {
+            set r [posixwaitpid $pid]
+            if {[lindex $r 1] == 0} {
+               # should not continue because last execution succeeded
+               posixexit [lindex $r 1]
+            }
+         }
+         "|" {
+            #TODO: implement piping
+         }
+      }
+      
+      # skipping separator
+      incr i
+   }
 }
