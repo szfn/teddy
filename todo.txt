@@ -1,9 +1,8 @@
-- implement && and || for shell
-- implement shell pipes
 - implement autoglobbing in shell command
+- normally bind unknown to shell + bg, but on the backgrounded interpreter it should be bound only to shell. Also bg should be bound to something that only sends to background in an already backgrounded shell
+- fd* and posix* should check their output and raise an error on error (possibly checking errno too)
 - reimplement forking for client with forkpty :(
 - Ctrl-o move to next editor (keep a stack of editors like windows' windows)
-- normally bind unknown to shell + bg, but on the backgrounded interpreter rebind it to its normal value
 - clear buffer command
 - command to indent selection/everything by fixed number of spaces/tabs
 - implement | command that filters selected content through external command

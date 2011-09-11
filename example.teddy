@@ -86,6 +86,7 @@ proc shell_eat {args i specialVarName normalVarName} {
       set cur [lindex $args $i]
       if {$cur eq "&&"} { break }
       if {$cur eq "||"} { break }
+      if {$cur eq "|"} { break }
       set isspecial [regexp {^([0-9]*)(>|>&|<&|<|>>)(.*)$} $cur -> redirected_descriptor open_direction target]
       if {$isspecial} {
          lappend special [dict create redirected_descriptor $redirected_descriptor open_direction $open_direction target $target]
@@ -102,10 +103,17 @@ proc shell_eat {args i specialVarName normalVarName} {
    return $i
 }
 
-proc shell_child_code {special normal} {
+proc shell_child_code {special normal pipe} {
    # child code, make redirects and exec
    
    #puts "message from child code"
+   
+   if {$pipe ne ""} {
+      # default ouput of this process will be pipe's output side
+      fdclose [lindex $pipe 0]
+      fddup2 [lindex $pipe 1] 1
+      fdclose [lindex $pipe 1]
+   }
    
    for {set i 0} {$i < [llength $special]} {incr i} {
       shell_perform_redirection [lindex $special $i]
@@ -129,6 +137,13 @@ proc shell {args} {
       set i [shell_eat $args $i special normal]
    
       puts "New value of i: $i"
+      
+      set pipe ""
+      if {$i < [llength $args]} {
+         if {[lindex $args $i] eq "|"} {
+            set pipe [fdpipe]
+         }
+      }
    
       set pid [posixfork]
       if {$pid < 0} {
@@ -136,10 +151,17 @@ proc shell {args} {
       }
       
       if {$pid == 0} {
-         shell_child_code $special $normal
+         shell_child_code $special $normal $pipe
       }
    
       # parent code, wait and exit
+      
+      if {$pipe ne ""} {
+         # new default standard input is pipe's input side
+         fdclose [lindex $pipe 1]
+         fddup2 [lindex $pipe 0] 0
+         fdclose [lindex $pipe 0]
+      }
          
       if {$i >= [llength $args]} {
          #puts "waiting for $pid"
@@ -166,7 +188,7 @@ proc shell {args} {
             }
          }
          "|" {
-            #TODO: implement piping
+            # Nothing to do here
          }
       }
       
