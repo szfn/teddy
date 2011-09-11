@@ -90,7 +90,12 @@ proc shell_eat {args i specialVarName normalVarName} {
       if {$isspecial} {
          lappend special [dict create redirected_descriptor $redirected_descriptor open_direction $open_direction target $target]
       } else {
-         lappend normal $cur
+         if {[string first * $cur] >= 0} {
+            # Perform autoglobbing
+            lappend normal {*}[glob $cur]
+         } else {
+            lappend normal $cur
+         }
       }
    }
    

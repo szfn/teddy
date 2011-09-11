@@ -1,8 +1,9 @@
-- implement autoglobbing in shell command
 - normally bind unknown to shell + bg, but on the backgrounded interpreter it should be bound only to shell. Also bg should be bound to something that only sends to background in an already backgrounded shell
 - fd* and posix* should check their output and raise an error on error (possibly checking errno too)
 - reimplement forking for client with forkpty :(
 - Implement rgbcolor tcl command to make easier to set colors in configuration
+- implement send to stdin command ('<')
+- move builtin commands code from example.teddy into a tcl file and change Makefile and interp.c so it's compiled in and loaded automatically
 - Ctrl-o move to next editor (keep a stack of editors like windows' windows)
 - clear buffer command
 - command to indent selection/everything by fixed number of spaces/tabs
