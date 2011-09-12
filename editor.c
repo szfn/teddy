@@ -1109,7 +1109,7 @@ static gboolean expose_event_callback(GtkWidget *widget, GdkEventExpose *event, 
         free(posbox_text);
     }
 
-    gtk_adjustment_set_upper(GTK_ADJUSTMENT(editor->adjustment), editor->buffer->rendered_height);
+    gtk_adjustment_set_upper(GTK_ADJUSTMENT(editor->adjustment), editor->buffer->rendered_height + (allocation.height / 2));
     gtk_adjustment_set_page_size(GTK_ADJUSTMENT(editor->adjustment), allocation.height);
     gtk_adjustment_set_page_increment(GTK_ADJUSTMENT(editor->adjustment), allocation.height/2);
     gtk_adjustment_set_step_increment(GTK_ADJUSTMENT(editor->adjustment), editor->buffer->line_height);
