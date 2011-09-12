@@ -421,6 +421,21 @@ static int teddy_backgrounded_bg_command(ClientData client_data, Tcl_Interp *int
     exit(EXIT_SUCCESS); // the child's life end's here (if we didn't exec something before)
 }
 
+static int teddy_setenv_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
+    if (argc != 3) {
+        Tcl_AddErrorInfo(interp, "Wrong number of arguments to 'setenv' command");
+        return TCL_ERROR;
+    }
+
+    if (setenv(argv[1], argv[2], 1) == -1) {
+        Tcl_AddErrorInfo(interp, "Error executing 'setenv' command");
+        return TCL_ERROR;
+    } else {
+        return TCL_OK;
+    }
+    
+}
+
 static int teddy_bg_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
     pid_t child;
     int masterfd;
@@ -470,6 +485,10 @@ static int teddy_bg_command(ClientData client_data, Tcl_Interp *interp, int argc
 
     /* child code here */
 
+    setenv("TERM", "ansi", 1);
+    setenv("PAGER", "", 1);
+    setenv("SHELL", "teddy", 1);
+
     Tcl_CreateCommand(interp, "fdopen", &teddy_fdopen_command, (ClientData)NULL, NULL);
     Tcl_CreateCommand(interp, "fdclose", &teddy_fdclose_command, (ClientData)NULL, NULL);
     Tcl_CreateCommand(interp, "fddup2", &teddy_fddup2_command, (ClientData)NULL, NULL);
@@ -479,6 +498,7 @@ static int teddy_bg_command(ClientData client_data, Tcl_Interp *interp, int argc
     Tcl_CreateCommand(interp, "posixwaitpid", &teddy_posixwaitpid_command, (ClientData)NULL, NULL);
     Tcl_CreateCommand(interp, "posixexit", &teddy_posixexit_command, (ClientData)NULL, NULL);
     Tcl_SetVar(interp, "backgrounded", "1", TCL_GLOBAL_ONLY);
+    Tcl_CreateCommand(interp, "setenv", &teddy_setenv_command, (ClientData)NULL, NULL);
 
     Tcl_HideCommand(interp, "unknown", "_non_backgrounded_unknown");
     Tcl_Eval(interp, "rename backgrounded_unknown unknown");
