@@ -53,5 +53,6 @@ extern history_t *command_history;
 void global_init();
 void setcfg(config_item_t *ci, const char *val);
 char *unrealpath(char *absolute_path, const char *relative_path);
+gboolean streq(gconstpointer a, gconstpointer b);
 
 #endif

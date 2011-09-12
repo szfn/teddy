@@ -9,6 +9,7 @@
 #include "interp.h"
 #include "cmdcompl.h"
 #include "jobs.h"
+#include "colors.h"
 
 static gboolean delete_callback(GtkWidget *widget, GdkEvent *event, gpointer data) {
     //TODO: terminate all processes
@@ -25,6 +26,7 @@ int main(int argc, char *argv[]) {
     gtk_init(&argc, &argv);
 
     global_init();
+    init_colors();
 
     cmdcompl_init();
     interp_init();

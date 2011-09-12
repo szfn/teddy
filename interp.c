@@ -16,6 +16,7 @@
 #include "baux.h"
 #include "jobs.h"
 #include "shell.h"
+#include "colors.h"
 
 #define INITFILE ".teddy"
 
@@ -530,6 +531,24 @@ static int teddy_bg_command(ClientData client_data, Tcl_Interp *interp, int argc
     exit(EXIT_SUCCESS); // the child's life end's here (if we didn't exec something before)
 }
 
+static int teddy_rgbcolor_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
+    switch(argc) {
+    case 2: {
+        int ret = (long int)g_hash_table_lookup(x11colors, argv[1]);
+        Tcl_SetObjResult(interp, Tcl_NewIntObj(ret));
+        return TCL_OK;
+    }
+    case 4: {
+        int ret = atoi(argv[3]) + (atoi(argv[2]) << 8) + (atoi(argv[1]) << 16);
+        Tcl_SetObjResult(interp, Tcl_NewIntObj(ret));
+        return TCL_OK;
+    }
+    default:
+        Tcl_AddErrorInfo(interp, "Wrong number of arguments to 'rgbcolor' command");
+        return TCL_ERROR;
+    }
+}
+
 void interp_init(void) {
     interp = Tcl_CreateInterp();
     if (interp == NULL) {
@@ -570,6 +589,8 @@ void interp_init(void) {
     Tcl_CreateCommand(interp, "gohome", &teddy_gohome_command, (ClientData)NULL, NULL);
 
     Tcl_CreateCommand(interp, "bg", &teddy_bg_command, (ClientData)NULL, NULL);
+
+    Tcl_CreateCommand(interp, "rgbcolor", &teddy_rgbcolor_command, (ClientData)NULL, NULL);
 }
 
 void interp_free(void) {

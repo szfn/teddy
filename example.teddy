@@ -3,8 +3,12 @@ setcfg posbox_font Arial-8
 
 setcfg focus_follows_mouse 1
 
-setcfg editor_bg_color 255
-setcfg editor_fg_color 16777215
+#setcfg editor_bg_color 255
+setcfg editor_bg_color [rgbcolor "antique white"]
+
+#setcfg editor_fg_color 16777215
+setcfg editor_fg_color [rgbcolor black]
+
 setcfg posbox_border_color 0
 setcfg posbox_bg_color 15654274
 setcfg posbox_fg_color 0
