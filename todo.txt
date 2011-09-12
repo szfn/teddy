@@ -1,5 +1,3 @@
-- Implement setenv command
-- bug: C-b + selecting current buffer results in no focus (it should focus the selected frame)
 - Implement rgbcolor tcl command to make easier to set colors in configuration
 - implement send to stdin command ('<')
 - move builtin commands code from example.teddy into a tcl file and change Makefile and interp.c so it's compiled in and loaded automatically

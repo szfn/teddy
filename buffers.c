@@ -61,8 +61,11 @@ static gboolean buffers_key_press_callback(GtkWidget *widget, GdkEventKey *event
         case GDK_KEY_Return: {
             int idx = get_selected_idx();
             if (idx < 0) return TRUE;
+            gtk_widget_hide(buffers_window);            
             go_to_buffer(buffers_selector_focus_editor, buffers[idx]);
-            gtk_widget_hide(buffers_window);
+            /*
+            gtk_widget_grab_focus(buffers_selector_focus_editor->drar);
+            gtk_widget_grab_focus(buffers_selector_focus_editor->window);*/
             return TRUE;
         }
         case GDK_KEY_Escape:
@@ -220,6 +223,7 @@ void buffers_init(void) {
         gtk_label_set_justify(GTK_LABEL(label2), GTK_JUSTIFY_LEFT);
         
         buffers_window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
+        gtk_window_set_decorated(GTK_WINDOW(buffers_window), TRUE);
 
         gtk_container_add(GTK_CONTAINER(buffers_window), vbox);
 
