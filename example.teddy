@@ -171,7 +171,7 @@ proc shell {args} {
          #puts "waiting for $pid"
          set r [posixwaitpid $pid]
          puts "wait ended $r"
-         posixexit [lindex $r 1]
+         return [lindex $r 1]
       }
       
       switch -exact [lindex $args $i] {
@@ -181,14 +181,14 @@ proc shell {args} {
             puts "Child returned [lindex $r 1]"
             if {[lindex $r 1] != 0} {
                # can not continue because last execution failed
-               posixexit [lindex $r 1]
+               return [lindex $r 1]
             }
          }
          "||" {
             set r [posixwaitpid $pid]
             if {[lindex $r 1] == 0} {
                # should not continue because last execution succeeded
-               posixexit [lindex $r 1]
+               return [lindex $r 1]
             }
          }
          "|" {
@@ -199,4 +199,14 @@ proc shell {args} {
       # skipping separator
       incr i
    }
+}
+
+proc unknown {args} {
+   set margs shell
+   lappend margs {*}$args
+   bg $margs
+}
+
+proc backgrounded_unknown {args} {
+   shell {*}$args
 }

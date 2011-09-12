@@ -66,6 +66,10 @@ int teddy_fdopen_command(ClientData client_data, Tcl_Interp *interp, int argc, c
     }
 
     r = Tcl_NewIntObj(open(argv[i], flags));
+    if (r == -1) {
+        Tcl_AddErrorInfo(interp, "Error executing fdopen");
+        return TCL_ERROR;
+    }
     Tcl_SetObjResult(interp, r);
     
     return TCL_OK;
@@ -80,6 +84,10 @@ int teddy_fdclose_command(ClientData client_data, Tcl_Interp *interp, int argc, 
     }
 
     r = Tcl_NewIntObj(close(atoi(argv[1])));
+    if (r == -1) {
+        Tcl_AddErrorInfo(interp, "Error executing fdclose");
+        return TCL_ERROR;
+    }
     Tcl_SetObjResult(interp, r);
     
     return TCL_OK;
@@ -94,6 +102,10 @@ int teddy_fddup2_command(ClientData client_data, Tcl_Interp *interp, int argc, c
     }
 
     r = Tcl_NewIntObj(dup2(atoi(argv[1]), atoi(argv[2])));
+    if (r == -1) {
+        Tcl_AddErrorInfo(interp, "Error executing fddup2");
+        return TCL_ERROR;
+    }
     Tcl_SetObjResult(interp, r);
     
     return TCL_OK;
@@ -112,7 +124,7 @@ int teddy_fdpipe_command(ClientData client_data, Tcl_Interp *interp, int argc, c
     ret = pipe(pipefd);
 
     if (ret < 0) {
-        Tcl_AddErrorInfo(interp, "Pipe command failed");
+        Tcl_AddErrorInfo(interp, "Error executing fdpipe command");
         return TCL_ERROR;
     }
 
@@ -139,6 +151,10 @@ int teddy_posixfork_command(ClientData client_data, Tcl_Interp *interp, int argc
     }
 
     r = Tcl_NewIntObj(fork());
+    if (r == -1) {
+        Tcl_AddErrorInfo(interp, "Error executing posixfork command");
+        return TCL_ERROR;
+    }
     Tcl_SetObjResult(interp, r);
     
     return TCL_OK;
@@ -155,7 +171,10 @@ int teddy_posixexec_command(ClientData client_data, Tcl_Interp *interp, int argc
     }
     newargv[argc-1] = NULL;
 
-    execvp(newargv[0], newargv);
+    if (execvp(newargv[0], newargv) == -1) {
+        Tcl_AddErrorInfo(interp, "Error executing posixexec command");
+        return TCL_ERROR;
+    }
     
     return TCL_OK;
 }
@@ -198,6 +217,11 @@ int teddy_posixwaitpid_command(ClientData client_data, Tcl_Interp *interp, int a
     pid = atoi(argv[i]);
 
     r = waitpid(pid, &status, options);
+    
+    if (r == -1) {
+        Tcl_AddErrorInfo(interp, "Error executing waitpid command");
+        return TCL_ERROR;
+    }
 
     //printf("WAITPID output: %d %d\n", r, status);
 

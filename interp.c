@@ -2,6 +2,8 @@
 
 #include <tcl.h>
 #include <errno.h>
+#include <sys/wait.h>
+#include <sys/types.h>
 
 #include "global.h"
 #include "columns.h"
@@ -361,6 +363,61 @@ static int teddy_gohome_command(ClientData client_data, Tcl_Interp *interp, int 
     return TCL_OK;
 }
 
+static void waitall(void) {
+    for (;;) {
+        int status;
+        pid_t done = wait(&status);
+        if (done == -1) {
+            if (errno == ECHILD) break; // no more child processes
+        } else {
+            if (!WIFEXITED(status) || WEXITSTATUS(status) != 0) {
+                fprintf(stderr, "pid %d failed\n", done);
+                break;
+            }
+        }
+    }
+}
+
+static int teddy_backgrounded_bg_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
+    pid_t child;
+    
+    if (argc != 2) {
+        Tcl_AddErrorInfo(interp, "Wrong number of arguments to 'bg' command");
+        return TCL_ERROR;
+    }
+
+    child = fork();
+    if (child == -1) {
+        Tcl_AddErrorInfo(interp, "Fork failed");
+        return TCL_ERROR;
+    } else if (child != 0) {
+        /* parent code */
+
+        return TCL_OK;
+    }
+
+    {
+        int code = Tcl_Eval(interp, argv[1]);
+        if (code != TCL_OK) {
+            Tcl_Obj *options = Tcl_GetReturnOptions(interp, code);  
+            Tcl_Obj *key = Tcl_NewStringObj("-errorinfo", -1);
+            Tcl_Obj *stackTrace;
+            Tcl_IncrRefCount(key);
+            Tcl_DictObjGet(NULL, options, key, &stackTrace);
+            Tcl_DecrRefCount(key);
+            
+            fprintf(stderr, "TCL Exception: %s\n", Tcl_GetString(stackTrace));
+            waitall();
+            exit(EXIT_FAILURE);
+        } else {
+            waitall();
+            exit(atoi(Tcl_GetStringResult(interp)));
+        }
+    }
+
+    exit(EXIT_SUCCESS); // the child's life end's here (if we didn't exec something before)
+}
+
 static int teddy_bg_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
     pid_t child;
     int pipe_to_child[2];
@@ -398,7 +455,6 @@ static int teddy_bg_command(ClientData client_data, Tcl_Interp *interp, int argc
     
     go_to_buffer(context_editor, buffer);
 
-
     child = fork();
     if (child == -1) {
         Tcl_AddErrorInfo(interp, "Fork failed");
@@ -420,7 +476,6 @@ static int teddy_bg_command(ClientData client_data, Tcl_Interp *interp, int argc
             Tcl_AddErrorInfo(interp, "Registering job failed, probably exceeded the maximum number of jobs available");
             return TCL_ERROR;
         }
-
 
         return TCL_OK;
     }
@@ -468,11 +523,16 @@ static int teddy_bg_command(ClientData client_data, Tcl_Interp *interp, int argc
     Tcl_CreateCommand(interp, "posixexec", &teddy_posixexec_command, (ClientData)NULL, NULL);
     Tcl_CreateCommand(interp, "posixwaitpid", &teddy_posixwaitpid_command, (ClientData)NULL, NULL);
     Tcl_CreateCommand(interp, "posixexit", &teddy_posixexit_command, (ClientData)NULL, NULL);
-    Tcl_SetVar(interp, "backgrounded", "1", 0);
+    Tcl_SetVar(interp, "backgrounded", "1", TCL_GLOBAL_ONLY);
+
+    Tcl_HideCommand(interp, "unknown", "_non_backgrounded_unknown");
+    Tcl_Eval(interp, "rename backgrounded_unknown unknown");
+    Tcl_HideCommand(interp, "bg", "_non_backgrounded_bg");
+    Tcl_CreateCommand(interp, "bg", &teddy_backgrounded_bg_command, (ClientData)NULL, NULL);
 
     {
         int code = Tcl_Eval(interp, argv[1]);
-        if (code  != TCL_OK) {
+        if (code != TCL_OK) {
             Tcl_Obj *options = Tcl_GetReturnOptions(interp, code);  
             Tcl_Obj *key = Tcl_NewStringObj("-errorinfo", -1);
             Tcl_Obj *stackTrace;
@@ -481,7 +541,11 @@ static int teddy_bg_command(ClientData client_data, Tcl_Interp *interp, int argc
             Tcl_DecrRefCount(key);
             
             fprintf(stderr, "TCL Exception: %s\n", Tcl_GetString(stackTrace));
+            waitall();
             exit(EXIT_FAILURE);
+        } else {
+            waitall();
+            exit(atoi(Tcl_GetStringResult(interp)));
         }
     }
 

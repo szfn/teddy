@@ -1,5 +1,3 @@
-- normally bind unknown to shell + bg, but on the backgrounded interpreter it should be bound only to shell. Also bg should be bound to something that only sends to background in an already backgrounded shell
-- fd* and posix* should check their output and raise an error on error (possibly checking errno too)
 - reimplement forking for client with forkpty :(
 - Implement rgbcolor tcl command to make easier to set colors in configuration
 - implement send to stdin command ('<')
