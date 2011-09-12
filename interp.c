@@ -4,6 +4,9 @@
 #include <errno.h>
 #include <sys/wait.h>
 #include <sys/types.h>
+#include <termios.h>
+#include <unistd.h>
+#include <pty.h>
 
 #include "global.h"
 #include "columns.h"
@@ -420,10 +423,9 @@ static int teddy_backgrounded_bg_command(ClientData client_data, Tcl_Interp *int
 
 static int teddy_bg_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
     pid_t child;
-    int pipe_to_child[2];
-    int pipe_from_child[2];
-    int pipe_err_child[2];
+    int masterfd;
     buffer_t *buffer;
+    struct termios term;
     
     if (context_editor == NULL) {
         Tcl_AddErrorInfo(interp, "No editor open, can not execute 'bg' command");
@@ -435,27 +437,18 @@ static int teddy_bg_command(ClientData client_data, Tcl_Interp *interp, int argc
         return TCL_ERROR;
     }
 
-    if (pipe(pipe_to_child) != 0) {
-        Tcl_AddErrorInfo(interp, "Pipe (to_child) failed");
-        return TCL_ERROR;
-    }
-
-    if (pipe(pipe_from_child) != 0) {
-        Tcl_AddErrorInfo(interp, "Pipe (form_child) failed");
-        return TCL_ERROR;
-    }
-
-    if (pipe(pipe_err_child) != 0) {
-        Tcl_AddErrorInfo(interp, "Pipe (err_child) failed");
-        return TCL_ERROR;
-    }
-
     buffer = buffers_get_buffer_for_process();
-    buffer_cd(buffer, context_editor->buffer->wd);
+    if (context_editor->buffer != buffer)
+        buffer_cd(buffer, context_editor->buffer->wd);
     
     go_to_buffer(context_editor, buffer);
 
-    child = fork();
+    bzero(&term, sizeof(struct termios));
+
+    term.c_iflag = IGNCR | IUTF8;
+    term.c_oflag = ONLRET;
+
+    child = forkpty(&masterfd, NULL, &term, NULL);
     if (child == -1) {
         Tcl_AddErrorInfo(interp, "Fork failed");
         return TCL_ERROR;
@@ -463,16 +456,11 @@ static int teddy_bg_command(ClientData client_data, Tcl_Interp *interp, int argc
         /* parent code */
 
         char *msg;
-
-        close(pipe_from_child[1]);
-        close(pipe_err_child[1]);
-        close(pipe_to_child[0]);
-
         asprintf(&msg, "~ Executing {%s} on PID %d\n\n", argv[1], child);
         buffer_append(buffer, msg, strlen(msg), TRUE);
         free(msg);
 
-        if (!jobs_register(child, pipe_from_child[0], pipe_to_child[1], pipe_err_child[0], buffer)) {
+        if (!jobs_register(child, masterfd, buffer)) {
             Tcl_AddErrorInfo(interp, "Registering job failed, probably exceeded the maximum number of jobs available");
             return TCL_ERROR;
         }
@@ -481,39 +469,6 @@ static int teddy_bg_command(ClientData client_data, Tcl_Interp *interp, int argc
     }
 
     /* child code here */
-    printf("Child started %d\n", STDOUT_FILENO);
-
-    close(pipe_to_child[1]);
-    close(pipe_from_child[0]);
-    close(pipe_err_child[0]);
-
-    close(STDIN_FILENO);
-
-    if (dup2(pipe_to_child[0], STDIN_FILENO) == -1) {
-        perror("Stdin redirection failed");
-        exit(10);
-    }
-
-    close(pipe_to_child[0]);
-
-    close(STDOUT_FILENO);
-
-    if (dup2(pipe_from_child[1], STDOUT_FILENO) == -1) {
-        fprintf(stderr, "Error: %d %d\n", errno, EAGAIN);
-        perror("Stdout redirection failed");
-        exit(11);
-    }
-
-    close(pipe_from_child[1]);
-
-    close(STDERR_FILENO);
-
-    if (dup2(pipe_err_child[1], STDERR_FILENO) == -1) {
-        perror("Stderr redirection failed");
-        exit(12);
-    }
-
-    close(pipe_err_child[1]);
 
     Tcl_CreateCommand(interp, "fdopen", &teddy_fdopen_command, (ClientData)NULL, NULL);
     Tcl_CreateCommand(interp, "fdclose", &teddy_fdclose_command, (ClientData)NULL, NULL);
@@ -529,6 +484,9 @@ static int teddy_bg_command(ClientData client_data, Tcl_Interp *interp, int argc
     Tcl_Eval(interp, "rename backgrounded_unknown unknown");
     Tcl_HideCommand(interp, "bg", "_non_backgrounded_bg");
     Tcl_CreateCommand(interp, "bg", &teddy_backgrounded_bg_command, (ClientData)NULL, NULL);
+
+    // Without this tcl screws up the newline character on its own output, it tries to output cr + lf and the terminal converts lf again, resulting in an output of cr + cr + lf, other c programs seem to behave correctly
+    Tcl_Eval(interp, "fconfigure stdin -translation binary; fconfigure stdout -translation binary; fconfigure stderr -translation binary");
 
     {
         int code = Tcl_Eval(interp, argv[1]);

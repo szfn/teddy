@@ -134,7 +134,7 @@ proc shell {args} {
    if {!$backgrounded} {
       error "shell called on a non backgrounded interpreter"   
    }
-   
+
    set i 0
  
    while {$i < [llength $args]} {
@@ -170,7 +170,7 @@ proc shell {args} {
       if {$i >= [llength $args]} {
          #puts "waiting for $pid"
          set r [posixwaitpid $pid]
-         puts "wait ended $r"
+         puts "wait ended <$r>"
          return [lindex $r 1]
       }
       

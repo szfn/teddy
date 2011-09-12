@@ -9,7 +9,7 @@
 #include <sys/types.h>
 
 int teddy_fdopen_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
-    int i;
+    int i, intr;
     int flags = 0;
     Tcl_Obj *r;
     
@@ -65,8 +65,9 @@ int teddy_fdopen_command(ClientData client_data, Tcl_Interp *interp, int argc, c
         return TCL_ERROR;
     }
 
-    r = Tcl_NewIntObj(open(argv[i], flags));
-    if (r == -1) {
+    intr = open(argv[i], flags);
+    r = Tcl_NewIntObj(intr);
+    if (intr == -1) {
         Tcl_AddErrorInfo(interp, "Error executing fdopen");
         return TCL_ERROR;
     }
@@ -77,14 +78,16 @@ int teddy_fdopen_command(ClientData client_data, Tcl_Interp *interp, int argc, c
 
 int teddy_fdclose_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
     Tcl_Obj *r;
+    int intr;
 
     if (argc != 2) {
         Tcl_AddErrorInfo(interp, "Wrong number of arguments to 'fdclose' command");
         return TCL_ERROR;
     }
 
-    r = Tcl_NewIntObj(close(atoi(argv[1])));
-    if (r == -1) {
+    intr = close(atoi(argv[1]));
+    r = Tcl_NewIntObj(intr);
+    if (intr == -1) {
         Tcl_AddErrorInfo(interp, "Error executing fdclose");
         return TCL_ERROR;
     }
@@ -95,14 +98,16 @@ int teddy_fdclose_command(ClientData client_data, Tcl_Interp *interp, int argc, 
 
 int teddy_fddup2_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
     Tcl_Obj *r;
+    int intr;
     
     if (argc != 3) {
         Tcl_AddErrorInfo(interp, "Wrong number of arguments to 'fddup2' command");
         return TCL_ERROR;
     }
 
-    r = Tcl_NewIntObj(dup2(atoi(argv[1]), atoi(argv[2])));
-    if (r == -1) {
+    intr = dup2(atoi(argv[1]), atoi(argv[2]));
+    r = Tcl_NewIntObj(intr);
+    if (intr == -1) {
         Tcl_AddErrorInfo(interp, "Error executing fddup2");
         return TCL_ERROR;
     }
@@ -144,14 +149,16 @@ int teddy_fdpipe_command(ClientData client_data, Tcl_Interp *interp, int argc, c
 
 int teddy_posixfork_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
     Tcl_Obj *r;
+    int intr;
     
     if (argc != 1) {
         Tcl_AddErrorInfo(interp, "Wrong number of arguments to posixfork command");
         return TCL_ERROR;
     }
 
-    r = Tcl_NewIntObj(fork());
-    if (r == -1) {
+    intr = fork();
+    r = Tcl_NewIntObj(intr);
+    if (intr == -1) {
         Tcl_AddErrorInfo(interp, "Error executing posixfork command");
         return TCL_ERROR;
     }
