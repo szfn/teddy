@@ -168,7 +168,9 @@ static real_line_t *new_real_line(int lineno) {
 
 static real_line_t *buffer_copy_line(buffer_t *buffer, real_line_t *real_line, int start, int size) {
     real_line_t *r = new_real_line(-1);
-    
+
+    //printf("buffer_copy_line start: %d, cap: %d, size to copy: %d\n", start, real_line->cap, size);
+
     grow_line(r, 0, size);
 
     memcpy(r->glyphs, real_line->glyphs+start, size * sizeof(cairo_glyph_t));
@@ -345,8 +347,7 @@ static void buffer_insert_multiline_text(buffer_t *buffer, real_line_t *line, in
                 //printf("%c", text[end]);
             }
             //printf("]\n");
-            buffer_line_insert_utf8_text(buffer, line, text+start, end-start, glyph);
-            glyph += (end-start);
+            glyph += buffer_line_insert_utf8_text(buffer, line, text+start, end-start, glyph);
             start = end;
         }
     }
