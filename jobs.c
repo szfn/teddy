@@ -117,3 +117,13 @@ int jobs_register(pid_t child_pid, int masterfd, struct _buffer_t *buffer) {
 
     return 1;
 }
+
+int write_all(int fd, const char *str) {
+    while (*str != '\0') {
+        int r = write(fd, str, strlen(str));
+        if (r < 0) return -1;
+        str += r;
+    }
+    return 0;
+}
+

@@ -24,5 +24,6 @@ job_t jobs[MAX_JOBS];
 
 void jobs_init(void);
 int jobs_register(pid_t child_pid, int masterfd, struct _buffer_t *buffer);
+int write_all(int fd, const char *str);
 
 #endif

@@ -549,6 +549,51 @@ static int teddy_rgbcolor_command(ClientData client_data, Tcl_Interp *interp, in
     }
 }
 
+static int teddy_sendinput_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
+    job_t *job;
+    int i;
+    
+    if (context_editor == NULL) {
+        Tcl_AddErrorInfo(interp, "No editor open, can not execute '<' command");
+        return TCL_ERROR;
+    }
+
+    
+    if (argc < 2) {
+        Tcl_AddErrorInfo(interp, "Wrong number of arguments to '<' command");
+        return TCL_ERROR;
+    }
+
+    job = context_editor->buffer->job;
+
+    if (job == NULL) {
+        Tcl_AddErrorInfo(interp, "No job associated with this buffer, can not send input");
+        return TCL_ERROR;
+    }
+
+    for (i = 1; i < argc; ++i) {
+        if (write_all(job->masterfd, argv[i]) < 0) {
+            Tcl_AddErrorInfo(interp, "Error sending input to process");
+            return TCL_ERROR;
+        }
+        buffer_append(context_editor->buffer, argv[i], strlen(argv[i]), 0);
+        if (i != argc-1) {
+            if (write_all(job->masterfd, " ") < 0) {
+                Tcl_AddErrorInfo(interp, "Error sending input to process");
+                return TCL_ERROR;
+            }
+            buffer_append(context_editor->buffer, " ", strlen(" "), 0);            
+        }
+    }
+    if (write_all(job->masterfd, "\n") < 0) {
+        Tcl_AddErrorInfo(interp, "Error sending input to process");
+        return TCL_ERROR;
+    }
+    buffer_append(context_editor->buffer, "\n", strlen("\n"), 0);
+
+    return TCL_OK;
+}
+
 void interp_init(void) {
     interp = Tcl_CreateInterp();
     if (interp == NULL) {
@@ -591,6 +636,8 @@ void interp_init(void) {
     Tcl_CreateCommand(interp, "bg", &teddy_bg_command, (ClientData)NULL, NULL);
 
     Tcl_CreateCommand(interp, "rgbcolor", &teddy_rgbcolor_command, (ClientData)NULL, NULL);
+
+    Tcl_CreateCommand(interp, "<", &teddy_sendinput_command, (ClientData)NULL, NULL);
 }
 
 void interp_free(void) {
