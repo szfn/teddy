@@ -35,6 +35,14 @@ static void job_destroy(job_t *job) {
     job->used = 0;
 }
 
+static void jobs_child_watch_function(GPid pid, gint status, job_t *job) {
+    char *msg;
+    asprintf(&msg, "~ Process PID %d ended (status: %d)\n", job->child_pid, status);
+    buffer_append(job->buffer, msg, strlen(msg), 1);
+    free(msg);
+    job_destroy(job);
+}
+
 static gboolean jobs_input_watch_function(GIOChannel *source, GIOCondition condition, job_t *job) {
     char buf[JOBS_READ_BUFFER_SIZE];
     char *msg;
@@ -69,14 +77,22 @@ static gboolean jobs_input_watch_function(GIOChannel *source, GIOCondition condi
     case G_IO_STATUS_NORMAL:
         return TRUE;
     case G_IO_STATUS_ERROR:
-        asprintf(&msg, "~ Error for PID %d\n", job->child_pid);
-        buffer_append(job->buffer, msg, strlen(msg), 1);
-        free(msg);
+        if (condition & G_IO_HUP) {
+            asprintf(&msg, "~ HUP for PID %d\n", job->child_pid);
+            buffer_append(job->buffer, msg, strlen(msg), 1);
+            free(msg);
+        } else {
+            asprintf(&msg, "~ Error for PID %d\n", job->child_pid);
+            buffer_append(job->buffer, msg, strlen(msg), 1);
+            free(msg);
+        }
+        job->child_source_id = g_child_watch_add(job->child_pid, (GChildWatchFunc)jobs_child_watch_function, job);
         return FALSE;
     case G_IO_STATUS_EOF:
         asprintf(&msg, "~ EOF for PID %d\n", job->child_pid);
         buffer_append(job->buffer, msg, strlen(msg), 1);
         free(msg);
+        job->child_source_id = g_child_watch_add(job->child_pid, (GChildWatchFunc)jobs_child_watch_function, job);
         return FALSE;
     case G_IO_STATUS_AGAIN:
         return TRUE;
@@ -86,14 +102,6 @@ static gboolean jobs_input_watch_function(GIOChannel *source, GIOCondition condi
         free(msg);
         return FALSE;
     }
-}
-
-static void jobs_child_watch_function(GPid pid, gint status, job_t *job) {
-    char *msg;
-    asprintf(&msg, "~ Process PID %d ended (status: %d)\n", job->child_pid, status);
-    buffer_append(job->buffer, msg, strlen(msg), 1);
-    free(msg);
-    job_destroy(job);
 }
 
 int jobs_register(pid_t child_pid, int masterfd, struct _buffer_t *buffer) {
@@ -120,8 +128,6 @@ int jobs_register(pid_t child_pid, int masterfd, struct _buffer_t *buffer) {
     }
 
     jobs[i].pipe_from_child_source_id = g_io_add_watch(jobs[i].pipe_from_child, G_IO_IN|G_IO_HUP, (GIOFunc)(jobs_input_watch_function), jobs+i);
-    
-    jobs[i].child_source_id = g_child_watch_add(child_pid, (GChildWatchFunc)jobs_child_watch_function, jobs+i);
 
     return 1;
 }
