@@ -1,3 +1,5 @@
+- change go to start line numbers from 1
+- bug "go <filename>:<linenumber>" doesn't seem to change linenumber
 - implement stayoncmd flag for buffers (set it by default for +bg+ buffers)
 - implement lockcmd command that changes the command line of a buffer to always send a specific command
 - move builtin commands code from example.teddy into a tcl file and change Makefile and interp.c so it's compiled in and loaded automatically

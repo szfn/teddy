@@ -83,17 +83,17 @@ static gboolean reshandle_button_release_callback(GtkWidget *widget, GdkEventBut
         double cur_height;
         double prev_height;
 
-        gtk_widget_get_allocation(reshandle->editor->table, &allocation);
+        gtk_widget_get_allocation(reshandle->editor->container, &allocation);
         cur_height = allocation.height - changey;
 
-        gtk_widget_get_allocation(prev_editor->table, &allocation);
+        gtk_widget_get_allocation(prev_editor->container, &allocation);
         prev_height = allocation.height + changey;
 
         if (cur_height < 50) cur_height = 50;
         if (prev_height < 50) prev_height = 50;
 
-        gtk_widget_set_size_request(reshandle->editor->table, -1, cur_height);
-        gtk_widget_set_size_request(prev_editor->table, -1, prev_height);
+        gtk_widget_set_size_request(reshandle->editor->container, -1, cur_height);
+        gtk_widget_set_size_request(prev_editor->container, -1, prev_height);
         gtk_widget_queue_draw(reshandle->column->editors_vbox);
     }
 

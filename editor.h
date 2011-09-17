@@ -19,7 +19,7 @@ typedef struct _editor_t {
     int initialization_ended;
     int mouse_marking;
 
-    GtkWidget *table;
+    GtkWidget *container;
     reshandle_t *reshandle;
     GtkWidget *label;
     GtkWidget *entry;

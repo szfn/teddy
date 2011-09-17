@@ -1257,8 +1257,11 @@ editor_t *new_editor(GtkWidget *window, column_t *column, buffer_t *buffer) {
         GtkWidget *tag = gtk_hbox_new(FALSE, 0);
         GtkBorder bor = { 0, 0, 0, 0 };
         GtkWidget *event_box = gtk_event_box_new();
-
-        r->table = gtk_table_new(0, 0, FALSE);
+        GtkWidget *table = gtk_table_new(0, 0, FALSE);
+        
+        r->container = gtk_frame_new(NULL);
+        
+        gtk_container_add(GTK_CONTAINER(r->container), table);
 
         r->reshandle = reshandle_new(column, r);
         r->label = gtk_label_new("");
@@ -1294,10 +1297,10 @@ editor_t *new_editor(GtkWidget *window, column_t *column, buffer_t *buffer) {
         gtk_box_set_child_packing(GTK_BOX(tag), event_box, FALSE, FALSE, 0, GTK_PACK_START);
         gtk_box_set_child_packing(GTK_BOX(tag), r->entry, TRUE, TRUE, 0, GTK_PACK_END);
 
-        gtk_table_attach(GTK_TABLE(r->table), tag, 0, 2, 0, 1, GTK_EXPAND | GTK_FILL, 0, 0, 0);
-        gtk_table_attach(GTK_TABLE(r->table), r->drar, 0, 1, 1, 2, GTK_EXPAND | GTK_FILL, GTK_EXPAND | GTK_FILL, 0, 0);
-        gtk_table_attach(GTK_TABLE(r->table), drarscroll, 1, 2, 1, 2, 0, GTK_EXPAND|GTK_FILL, 0, 0);
-        gtk_table_attach(GTK_TABLE(r->table), r->drarhscroll, 0, 1, 2, 3, GTK_EXPAND|GTK_FILL, 0, 0, 0);
+        gtk_table_attach(GTK_TABLE(table), tag, 0, 2, 0, 1, GTK_EXPAND | GTK_FILL, 0, 0, 0);
+        gtk_table_attach(GTK_TABLE(table), r->drar, 0, 1, 1, 2, GTK_EXPAND | GTK_FILL, GTK_EXPAND | GTK_FILL, 0, 0);
+        gtk_table_attach(GTK_TABLE(table), drarscroll, 1, 2, 1, 2, 0, GTK_EXPAND|GTK_FILL, 0, 0);
+        gtk_table_attach(GTK_TABLE(table), r->drarhscroll, 0, 1, 2, 3, GTK_EXPAND|GTK_FILL, 0, 0, 0);
 
 
         g_signal_connect(G_OBJECT(drarscroll), "value_changed", G_CALLBACK(scrolled_callback), (gpointer)r);

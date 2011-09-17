@@ -457,7 +457,7 @@ editor_t *heuristic_new_frame(editor_t *spawning_editor, buffer_t *buffer) {
     if (buffer != null_buffer()) {
         printf("   Taking over current editor\n");
         editor_switch_buffer(spawning_editor, buffer);
-        gtk_widget_queue_draw(spawning_editor->table);
+        gtk_widget_queue_draw(spawning_editor->container);
         retval = spawning_editor;
         goto heuristic_new_frame_exit;
     }
