@@ -327,23 +327,66 @@ static int buffer_line_insert_utf8_text(buffer_t *buffer, real_line_t *line, con
 
 static void buffer_insert_multiline_text(buffer_t *buffer, real_line_t *line, int glyph, const char *text) {
     int start = 0;
+    int end = 0;
 
     //printf("Inserting multiline text [[%s]]\n\n", text);
-    
+
+    while (end < strlen(text)) {
+        if ((text[end] == '\n') || (text[end] == '\r')) {
+            glyph += buffer_line_insert_utf8_text(buffer, line, text+start, end-start, glyph);
+            buffer_split_line(buffer, line, glyph);
+            
+            assert(line->next != NULL);
+            line = line->next;
+            glyph = 0;
+            
+            ++end;
+            start = end;
+        } else {
+            if (buffer->job != NULL) {
+                if (text[end] == 0x08) {
+                    if (end == 0) {
+                        // if this the very first character delete one character from the buffer
+                        if (buffer->cursor_line->cap > 0) --(buffer->cursor_line->cap);
+                    } else {
+                        glyph += buffer_line_insert_utf8_text(buffer, line, text+start, end-start-1, glyph);
+                    }
+                    ++end;
+                    start = end;
+                } else {
+                    ++end;
+                }
+            } else {
+                ++end;
+            }
+        }
+    }
+
+    if (start < end) {
+        glyph += buffer_line_insert_utf8_text(buffer, line, text+start, end-start, glyph);
+        ++end;
+        start = end;
+    }
+
+#ifdef OLD_IMPLEMENTATION_COMMENTED_OUT
     while (start < strlen(text)) {
-        if (text[start] == '\n') {
+        if ((text[start] == '\n') || (text[start] == '\r')) {
             printf("   Split line at %d\n", glyph);
-            /* this is the code that does the line renumbering, it's fine that this is the only thing doing it here */
+            //  this is the code that does the line renumbering, it's fine that this is the only thing doing it here 
             buffer_split_line(buffer, line, glyph);
             assert(line->next != NULL);
             line = line->next;
             glyph = 0;
             ++start;
+        } else if (text[start] == 0x08) {
+            if (buffer->cursor_line->cap > 0) --(buffer->cursor_line->cap);
         } else {
             int end;
             //printf("   Inserting line: [");            
             for (end = start; end < strlen(text); ++end) {
                 if (text[end] == '\n') break;
+                if (text[end] == '\r') break;
+                if (text[end] == 0x08) break;
                 //printf("%c", text[end]);
             }
             //printf("]\n");
@@ -351,6 +394,7 @@ static void buffer_insert_multiline_text(buffer_t *buffer, real_line_t *line, in
             start = end;
         }
     }
+#endif
 
     buffer->cursor_line = line;
     buffer->cursor_glyph = glyph;

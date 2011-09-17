@@ -45,7 +45,11 @@ static gboolean jobs_input_watch_function(GIOChannel *source, GIOCondition condi
     buf[bytes_read] = '\0';
 
     for (i = 0; i < bytes_read; ++i) {
-        printf("%d ", buf[i]);
+        printf("%c", buf[i]);
+    }
+    printf("\t");
+    for (i = 0; i < bytes_read; ++i) {
+        printf("%2x ", buf[i]);
     }
     printf("\n");
 

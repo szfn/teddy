@@ -143,8 +143,6 @@ proc shell {args} {
  
    while {$i < [llength $args]} {
       set i [shell_eat $args $i special normal]
-   
-      puts "New value of i: $i"
       
       set pipe ""
       if {$i < [llength $args]} {
