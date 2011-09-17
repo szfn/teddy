@@ -32,7 +32,7 @@ void buffer_aux_go_char(buffer_t *buffer, int n) {
 void buffer_aux_go_line(buffer_t *buffer, int n) {
     real_line_t *cur, *prev;
     for (cur = buffer->real_line; cur != NULL; cur = cur->next) {
-        if (cur->lineno == n) {
+        if (cur->lineno+1 == n) {
             buffer->cursor_line = cur;
             buffer->cursor_glyph = 0;
             return;

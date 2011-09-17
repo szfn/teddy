@@ -1,5 +1,5 @@
-- change go to start line numbers from 1
 - bug "go <filename>:<linenumber>" doesn't seem to change linenumber
+- implement right click search/go
 - implement stayoncmd flag for buffers (set it by default for +bg+ buffers)
 - implement lockcmd command that changes the command line of a buffer to always send a specific command
 - move builtin commands code from example.teddy into a tcl file and change Makefile and interp.c so it's compiled in and loaded automatically
@@ -10,18 +10,15 @@
 - command to indent selection/everything by fixed number of spaces/tabs
 - implement | command that filters selected content through external command
 - make easy way to reindent
-- add black borders to editing frames
 - double click -> select word (and movement will also select words)
 - triple click -> select lines (and movement will also select lines)
 - right click -> search/open file (special algorithm implemented in tcl to match an area to open/search)
 - scrolling during mouse selection must be made slower (possibly hook into the cursor redraw timer?)
 - appending to a buffer that was never displayed doesn't work (for some reason), tons of valgrind exceptions are generated. There is a valid use case for starting commands on an invisible buffer
-- find a way to implement emacs's ctrl-k
 - up/down arrows move through history
 - persistence of history
 - command to reload buffer contents from disk
 - auto-reloading buffers when there is no change and the file on disk was changed
-- note: left button click does search/open, middle click does primary paste
 - tabs
 - smart search: search for exact case match only if there is at least one upcase letter in the input
 - highlighting
