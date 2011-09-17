@@ -1163,7 +1163,12 @@ static gboolean label_button_press_callback(GtkWidget *widget, GdkEventButton *e
     }
 
     if ((event->type == GDK_BUTTON_PRESS) && (event->button == 3)) {
-        heuristic_new_frame(editor, null_buffer());
+        editor_t *new_editor = column_new_editor(editor->column, null_buffer());
+        if (new_editor == NULL) {
+            heuristic_new_frame(editor, null_buffer());
+        } else {
+           gtk_widget_grab_focus(new_editor->drar);
+        }
         return TRUE;
     }
 

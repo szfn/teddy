@@ -1,4 +1,4 @@
-- manage control codes (at least backspace should work)
+- writing to a +bg+ buffer (by the job) should not create undo information
 - implement stayoncmd flag for buffers (set it by default for +bg+ buffers)
 - implement lockcmd command that changes the command line of a buffer to always send a specific command
 - move builtin commands code from example.teddy into a tcl file and change Makefile and interp.c so it's compiled in and loaded automatically
@@ -9,6 +9,7 @@
 - command to indent selection/everything by fixed number of spaces/tabs
 - implement | command that filters selected content through external command
 - make easy way to reindent
+- add black borders to editing frames
 - double click -> select word (and movement will also select words)
 - triple click -> select lines (and movement will also select lines)
 - right click -> search/open file (special algorithm implemented in tcl to match an area to open/search)
