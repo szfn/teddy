@@ -333,7 +333,9 @@ static void buffer_insert_multiline_text(buffer_t *buffer, real_line_t *line, in
 
     while (end < strlen(text)) {
         if ((text[end] == '\n') || (text[end] == '\r')) {
+            //printf("line cap: %d glyph %d\n", line->cap, glyph);
             glyph += buffer_line_insert_utf8_text(buffer, line, text+start, end-start, glyph);
+            //printf("    line cap: %d glyph: %d\n", line->cap, glyph);
             buffer_split_line(buffer, line, glyph);
             
             assert(line->next != NULL);
@@ -347,9 +349,14 @@ static void buffer_insert_multiline_text(buffer_t *buffer, real_line_t *line, in
                 if (text[end] == 0x08) {
                     if (end == 0) {
                         // if this the very first character delete one character from the buffer
-                        if (buffer->cursor_line->cap > 0) --(buffer->cursor_line->cap);
+                        if (buffer->cursor_line->cap > 0) {
+                            --(buffer->cursor_line->cap);
+                            --glyph;
+                        }
                     } else {
+                        //printf("(bs) line cap: %d glyph: %d\n", line->cap, glyph);
                         glyph += buffer_line_insert_utf8_text(buffer, line, text+start, end-start-1, glyph);
+                        //printf("    line cap: %d glyph: %d\n", line->cap, glyph);
                     }
                     ++end;
                     start = end;
@@ -364,8 +371,7 @@ static void buffer_insert_multiline_text(buffer_t *buffer, real_line_t *line, in
 
     if (start < end) {
         glyph += buffer_line_insert_utf8_text(buffer, line, text+start, end-start, glyph);
-        ++end;
-        start = end;
+        //printf("(end) line cap: %d glyph: %d\n", line->cap, glyph);
     }
 
 #ifdef OLD_IMPLEMENTATION_COMMENTED_OUT
@@ -467,30 +473,37 @@ void buffer_replace_selection(buffer_t *buffer, const char *new_text) {
     real_line_t *start_line, *end_line;
     int start_glyph, end_glyph;
     undo_node_t *undo_node;
+    
+    //printf("buffer_replace_selection (call): %d %d\n", buffer->cursor_line->cap, buffer->cursor_glyph);
 
     if (!(buffer->editable)) return;
 
     buffer->modified = 1;
 
-    undo_node = malloc(sizeof(undo_node_t));
+    if (buffer->job == NULL)
+        undo_node = malloc(sizeof(undo_node_t));
 
     buffer_get_selection(buffer, &start_line, &start_glyph, &end_line, &end_glyph);
 
-    freeze_selection(buffer, &(undo_node->before_selection), start_line, start_glyph, end_line, end_glyph);
+    if (buffer->job == NULL)
+       freeze_selection(buffer, &(undo_node->before_selection), start_line, start_glyph, end_line, end_glyph);
     
     buffer_remove_selection(buffer, start_line, start_glyph, end_line, end_glyph);
 
     start_line = buffer->cursor_line;
     start_glyph = buffer->cursor_glyph;
-    
+
+    //printf("buffer_replace_selection: %d %d\n", buffer->cursor_line->cap, buffer->cursor_glyph);    
     buffer_insert_multiline_text(buffer, buffer->cursor_line, buffer->cursor_glyph, new_text);
 
     end_line = buffer->cursor_line;
     end_glyph = buffer->cursor_glyph;
 
-    freeze_selection(buffer, &(undo_node->after_selection), start_line, start_glyph, end_line, end_glyph);
+    if (buffer->job == NULL)
+        freeze_selection(buffer, &(undo_node->after_selection), start_line, start_glyph, end_line, end_glyph);
 
-    undo_push(&(buffer->undo), undo_node);
+    if (buffer->job == NULL)
+        undo_push(&(buffer->undo), undo_node);
 
     buffer_typeset_from(buffer, start_line);
     
@@ -519,6 +532,7 @@ void buffer_undo(buffer_t *buffer) {
     undo_node_t *undo_node; 
 
     if (!(buffer->editable)) return;
+    if (buffer->job != NULL) return;
 
     undo_node = undo_pop(&(buffer->undo));
 

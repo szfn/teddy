@@ -39,19 +39,23 @@ static gboolean jobs_input_watch_function(GIOChannel *source, GIOCondition condi
     char buf[JOBS_READ_BUFFER_SIZE];
     char *msg;
     gsize bytes_read;
-    int i;
     GIOStatus r = g_io_channel_read_chars(source, buf, JOBS_READ_BUFFER_SIZE-1, &bytes_read, NULL);
 
     buf[bytes_read] = '\0';
 
-    for (i = 0; i < bytes_read; ++i) {
-        printf("%c", buf[i]);
+#ifdef PRINT_STUFF_HERE_COMMENTED
+    {
+        int i;
+        for (i = 0; i < bytes_read; ++i) {
+             printf("%c", buf[i]);
+        }
+        printf("\t");
+        for (i = 0; i < bytes_read; ++i) {
+            printf("%2x ", buf[i]);
+        }
+        printf("\n");
     }
-    printf("\t");
-    for (i = 0; i < bytes_read; ++i) {
-        printf("%2x ", buf[i]);
-    }
-    printf("\n");
+#endif
 
     buffer_append(job->buffer, buf, (size_t)bytes_read, 0);
     {

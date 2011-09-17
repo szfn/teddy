@@ -95,6 +95,7 @@ void buffer_append(buffer_t *buffer, const char *msg, int length, int on_new_lin
     
     for (; buffer->cursor_line->next != NULL; buffer->cursor_line = buffer->cursor_line->next);
     buffer->cursor_glyph = buffer->cursor_line->cap;
+    //printf("buffer_append %d %d\n", buffer->cursor_glyph, buffer->cursor_line->cap);
 
     if (on_new_line) {
         if (buffer->cursor_glyph != 0) {
