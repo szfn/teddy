@@ -895,20 +895,30 @@ static gboolean motion_callback(GtkWidget *widget, GdkEventMotion *event, editor
     return TRUE;
 }
 
+static void set_color_cfg(cairo_t *cr, int color) {
+    uint8_t blue = (uint8_t)color;
+    uint8_t red = (uint8_t)(color >> 8);
+    uint8_t green = (uint8_t)(color >> 16);
+
+    cairo_set_source_rgb(cr, red/255.0, green/255.0, blue/255.0);
+}
+
 static void draw_selection(editor_t *editor, double width, cairo_t *cr) {
     real_line_t *selstart_line, *selend_line;
     int selstart_glyph, selend_glyph;
     double selstart_y, selend_y;
     double selstart_x, selend_x;
-    
+
     if (editor->buffer->mark_glyph == -1) return;
-    
+
     buffer_get_selection(editor->buffer, &selstart_line, &selstart_glyph, &selend_line, &selend_glyph);
 
     if ((selstart_line == selend_line) && (selstart_glyph == selend_glyph)) return;
 
     line_get_glyph_coordinates(editor->buffer, selstart_line, selstart_glyph, &selstart_x, &selstart_y);
     line_get_glyph_coordinates(editor->buffer, selend_line, selend_glyph, &selend_x, &selend_y);
+
+    set_color_cfg(cr, cfg_editor_sel_color.intval);
 
     if (fabs(selstart_y - selend_y) < 0.001) {
         cairo_set_operator(cr, CAIRO_OPERATOR_DIFFERENCE);
@@ -932,6 +942,8 @@ static void draw_selection(editor_t *editor, double width, cairo_t *cr) {
         
         cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
     }
+
+    set_color_cfg(cr, cfg_editor_fg_color.intval);
 }
 
 static gboolean cursor_blinker(editor_t *editor) {
@@ -949,14 +961,6 @@ static gboolean cursor_blinker(editor_t *editor) {
     }
     
     return TRUE;
-}
-
-static void set_color_cfg(cairo_t *cr, int color) {
-    uint8_t blue = (uint8_t)color;
-    uint8_t red = (uint8_t)(color >> 8);
-    uint8_t green = (uint8_t)(color >> 16);
-
-    cairo_set_source_rgb(cr, red/255.0, green/255.0, blue/255.0);
 }
 
 static gboolean expose_event_callback(GtkWidget *widget, GdkEventExpose *event, editor_t *editor) {

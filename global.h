@@ -41,6 +41,7 @@ extern config_item_t cfg_default_autoindent;
 
 extern config_item_t cfg_editor_bg_color;
 extern config_item_t cfg_editor_fg_color;
+extern config_item_t cfg_editor_sel_color;
 extern config_item_t cfg_posbox_border_color;
 extern config_item_t cfg_posbox_bg_color;
 extern config_item_t cfg_posbox_fg_color;
