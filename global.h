@@ -45,6 +45,7 @@ extern config_item_t cfg_editor_sel_color;
 extern config_item_t cfg_posbox_border_color;
 extern config_item_t cfg_posbox_bg_color;
 extern config_item_t cfg_posbox_fg_color;
+extern config_item_t cfg_border_color;
 
 extern int focus_can_follow_mouse;
 

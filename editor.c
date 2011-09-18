@@ -963,6 +963,20 @@ static gboolean cursor_blinker(editor_t *editor) {
     return TRUE;
 }
 
+static gboolean expose_frame(GtkWidget *widget, GdkEventExpose *event, editor_t *editor) {
+    cairo_t *cr = gdk_cairo_create(widget->window);
+    GtkAllocation allocation;
+    
+    gtk_widget_get_allocation(widget, &allocation);
+    
+    set_color_cfg(cr, cfg_border_color.intval);
+    cairo_rectangle(cr, 0, 0, allocation.width, allocation.height);
+    cairo_fill(cr);
+    cairo_destroy(cr);
+    
+    return TRUE;
+}
+
 static gboolean expose_event_callback(GtkWidget *widget, GdkEventExpose *event, editor_t *editor) {
     cairo_t *cr = gdk_cairo_create(widget->window);
     GtkAllocation allocation;
@@ -1259,9 +1273,11 @@ editor_t *new_editor(GtkWidget *window, column_t *column, buffer_t *buffer) {
         GtkWidget *event_box = gtk_event_box_new();
         GtkWidget *table = gtk_table_new(0, 0, FALSE);
         
-        r->container = gtk_frame_new(NULL);
+        /*r->container = gtk_frame_new(NULL);
         
-        gtk_container_add(GTK_CONTAINER(r->container), table);
+        gtk_container_add(GTK_CONTAINER(r->container), table);*/
+        
+        r->container = table;
 
         r->reshandle = reshandle_new(column, r);
         r->label = gtk_label_new("");
@@ -1297,11 +1313,24 @@ editor_t *new_editor(GtkWidget *window, column_t *column, buffer_t *buffer) {
         gtk_box_set_child_packing(GTK_BOX(tag), event_box, FALSE, FALSE, 0, GTK_PACK_START);
         gtk_box_set_child_packing(GTK_BOX(tag), r->entry, TRUE, TRUE, 0, GTK_PACK_END);
 
-        gtk_table_attach(GTK_TABLE(table), tag, 0, 2, 0, 1, GTK_EXPAND | GTK_FILL, 0, 0, 0);
-        gtk_table_attach(GTK_TABLE(table), r->drar, 0, 1, 1, 2, GTK_EXPAND | GTK_FILL, GTK_EXPAND | GTK_FILL, 0, 0);
-        gtk_table_attach(GTK_TABLE(table), drarscroll, 1, 2, 1, 2, 0, GTK_EXPAND|GTK_FILL, 0, 0);
-        gtk_table_attach(GTK_TABLE(table), r->drarhscroll, 0, 1, 2, 3, GTK_EXPAND|GTK_FILL, 0, 0, 0);
+        {        
+            GtkWidget *frame_top = gtk_drawing_area_new();
+            GtkWidget *frame_right = gtk_drawing_area_new();
+            
+            gtk_widget_set_size_request(frame_top, -1, 1);
+            gtk_widget_set_size_request(frame_right, 1, -1);
+            
+            g_signal_connect(G_OBJECT(frame_top), "expose-event", G_CALLBACK(expose_frame), NULL);
+            g_signal_connect(G_OBJECT(frame_right), "expose-event", G_CALLBACK(expose_frame), NULL);
+            
+            gtk_table_attach(GTK_TABLE(table), frame_top, 0, 2, 0, 1, GTK_EXPAND|GTK_FILL, 0, 0, 0);
+            gtk_table_attach(GTK_TABLE(table), frame_right, 2, 3, 0, 4, 0, GTK_EXPAND|GTK_FILL, 0, 0);
+        }
 
+        gtk_table_attach(GTK_TABLE(table), tag, 0, 2, 1, 2, GTK_EXPAND | GTK_FILL, 0, 0, 0);
+        gtk_table_attach(GTK_TABLE(table), r->drar, 0, 1, 2, 3, GTK_EXPAND | GTK_FILL, GTK_EXPAND | GTK_FILL, 0, 0);
+        gtk_table_attach(GTK_TABLE(table), drarscroll, 1, 2, 2, 3, 0, GTK_EXPAND|GTK_FILL, 0, 0);
+        gtk_table_attach(GTK_TABLE(table), r->drarhscroll, 0, 1, 3, 4, GTK_EXPAND|GTK_FILL, 0, 0, 0);
 
         g_signal_connect(G_OBJECT(drarscroll), "value_changed", G_CALLBACK(scrolled_callback), (gpointer)r);
         g_signal_connect(G_OBJECT(r->drarhscroll), "value_changed", G_CALLBACK(hscrolled_callback), (gpointer)r);

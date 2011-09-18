@@ -127,6 +127,8 @@ static int teddy_setcfg_command(ClientData client_data, Tcl_Interp *interp, int 
         ci = &cfg_posbox_fg_color;
     } else if (strcmp(argv[1], "editor_sel_color") == 0) {
         ci = &cfg_editor_sel_color;
+    } else if (strcmp(argv[1], "border_color") == 0) {
+        ci = &cfg_border_color;
     }
 
     if (ci == NULL) {

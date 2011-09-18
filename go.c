@@ -194,7 +194,7 @@ int exec_go(const char *specifier) {
 
 int teddy_go_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
     if (argc != 2) {
-        Tcl_AddErrorInfo(interp, "Wrong number of arguments to 'go', usage: 'go [<filename>][\":[\"[\"][<line-specifier>][\":\"][<column-specifier][\"]\"]]");
+        Tcl_AddErrorInfo(interp, "Wrong number of arguments to 'go', usage: 'go [<filename>]:[<position-specifier>]");
         return TCL_ERROR;
     }
 

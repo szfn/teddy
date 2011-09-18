@@ -29,7 +29,7 @@ column_t *column_new(GtkWidget *window) {
         column->editors[i] = NULL;
     }
 
-    column->editors_vbox = gtk_vbox_new(FALSE, 1);
+    column->editors_vbox = gtk_vbox_new(FALSE, 0);
     g_signal_connect(G_OBJECT(column->editors_vbox), "expose-event", G_CALLBACK(editors_expose_event_callback), (gpointer)column);
 
     column->editors_window = window;

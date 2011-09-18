@@ -26,7 +26,7 @@ void columns_init(GtkWidget *window) {
         columns[i] = NULL;
     }
 
-    columns_hbox = gtk_hbox_new(FALSE, 1);
+    columns_hbox = gtk_hbox_new(FALSE, 0);
     columns_window = window;
 
     gtk_container_add(GTK_CONTAINER(window), columns_hbox);

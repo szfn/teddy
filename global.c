@@ -21,7 +21,7 @@ config_item_t cfg_editor_sel_color;
 config_item_t cfg_posbox_border_color;
 config_item_t cfg_posbox_bg_color;
 config_item_t cfg_posbox_fg_color;
-
+config_item_t cfg_border_color;
 
 history_t *search_history;
 history_t *command_history;
@@ -66,6 +66,7 @@ void global_init() {
     setcfg(&cfg_posbox_border_color, "0");
     setcfg(&cfg_posbox_bg_color, "15654274");
     setcfg(&cfg_posbox_fg_color, "0");
+    setcfg(&cfg_border_color, "0");
 
     keybindings = g_hash_table_new(g_str_hash, streq);
 
