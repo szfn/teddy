@@ -1,5 +1,5 @@
-- implement right click search/go
 - change order of suggestions, files should come first
+- implement right click search/go
 - refactoring: all places that have a line/glyph combination should be replaced with a point structure
 - implement stayoncmd flag for buffers
 - implement lockcmd command that changes the command line of a buffer to always send a specific command

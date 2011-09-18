@@ -30,6 +30,11 @@ typedef struct _real_line_t {
     struct _real_line_t *next;
 } real_line_t;
 
+typedef struct _lpoint_t {
+    real_line_t *line;
+    int glyph;
+} lpoint_t;
+
 typedef struct _buffer_t {
     char *name;
     char *path;
@@ -59,13 +64,9 @@ typedef struct _buffer_t {
     double rendered_height;
     double rendered_width;
 
-    /* Cursor */
-    real_line_t *cursor_line;
-    int cursor_glyph;
-
-    /* Mark */
-    real_line_t *mark_line;
-    int mark_glyph;
+    /* Cursor and mark*/
+    lpoint_t cursor;
+    lpoint_t mark;
 
     /* Undo information */
     undo_t undo;
@@ -78,6 +79,9 @@ typedef struct _buffer_t {
 
 // utility function to convert first codepoint in utf8 stream into an utf32 codepoint
 uint32_t utf8_to_utf32(const char *text, int *src, int len);
+
+// makes dst be the same point as src
+void copy_lpoint(lpoint_t *dst, lpoint_t *src);
 
 buffer_t *buffer_create(FT_Library *library);
 void buffer_free(buffer_t *buffer);
@@ -112,10 +116,10 @@ void buffer_replace_selection(buffer_t *buffer, const char *new_text);
 void buffer_undo(buffer_t *buffer);
 
 // returns current selection
-void buffer_get_selection(buffer_t *buffer, real_line_t **start_line, int *start_glyph, real_line_t **end_line, int *end_glyph);
+void buffer_get_selection(buffer_t *buffer, lpoint_t *start, lpoint_t *end);
 
 // converts a selection of line from this buffer into text
-char *buffer_lines_to_text(buffer_t *buffer, real_line_t *start_line, real_line_t *end_line, int start_glyph, int end_glyph);
+char *buffer_lines_to_text(buffer_t *buffer, lpoint_t *start, lpoint_t *end);
 
 // moves cursor by one glyph
 void buffer_move_cursor(buffer_t *buffer, int direction);
@@ -125,7 +129,7 @@ void buffer_typeset_maybe(buffer_t *buffer, double width);
 
 // functions to get screen coordinates of things (yes, I have no idea anymore what the hell they do or are used for)
 void buffer_cursor_position(buffer_t *buffer, double *x, double *y);
-void line_get_glyph_coordinates(buffer_t *buffer, real_line_t *line, int glyph, double *x, double *y);
+void line_get_glyph_coordinates(buffer_t *buffer, lpoint_t *point, double *x, double *y);
 void buffer_move_cursor_to_position(buffer_t *buffer, double x, double y);
 
 int buffer_real_line_count(buffer_t *buffer);

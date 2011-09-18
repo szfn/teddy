@@ -71,16 +71,15 @@ static void editor_include_cursor(editor_t *editor) {
 }
 
 static void copy_selection_to_clipboard(editor_t *editor, GtkClipboard *clipboard) {
-    real_line_t *start_line, *end_line;
-    int start_glyph, end_glyph;
+    lpoint_t start, end;
     char *r = NULL;
     
-    buffer_get_selection(editor->buffer, &start_line, &start_glyph, &end_line, &end_glyph);
+    buffer_get_selection(editor->buffer, &start, &end);
  
-    if (start_line == NULL) return;
-    if (end_line == NULL) return;
+    if (start.line == NULL) return;
+    if (end.line == NULL) return;
 
-    r  = buffer_lines_to_text(editor->buffer, start_line, end_line, start_glyph, end_glyph);    
+    r  = buffer_lines_to_text(editor->buffer, &start, &end);
 
     gtk_clipboard_set_text(clipboard, r, -1);
 
@@ -106,31 +105,31 @@ void editor_move_cursor(editor_t *editor, int delta_line, int delta_char, enum M
 
     if (delta_line > 0) {
         for (i = 0; i < delta_line; ++i) {
-            if (editor->buffer->cursor_glyph < editor->buffer->cursor_line->cap) {
+            if (editor->buffer->cursor.glyph < editor->buffer->cursor.line->cap) {
                 int j = 0;
                 int found = 0;
-                double cury = editor->buffer->cursor_line->glyphs[editor->buffer->cursor_glyph].y;
-                double wantedx = editor->buffer->cursor_line->glyphs[editor->buffer->cursor_glyph].x;
-                for (j = editor->buffer->cursor_glyph; j < editor->buffer->cursor_line->cap; ++j) {
-                    if (fabs(cury - editor->buffer->cursor_line->glyphs[j].y) > 0.001) {
-                        //printf("Actually found %g %g\n", cury, buffer->cursor_line->glyphs[j].y);
-                        editor->buffer->cursor_glyph = j;
-                        cury = editor->buffer->cursor_line->glyphs[j].y;
+                double cury = editor->buffer->cursor.line->glyphs[editor->buffer->cursor.glyph].y;
+                double wantedx = editor->buffer->cursor.line->glyphs[editor->buffer->cursor.glyph].x;
+                for (j = editor->buffer->cursor.glyph; j < editor->buffer->cursor.line->cap; ++j) {
+                    if (fabs(cury - editor->buffer->cursor.line->glyphs[j].y) > 0.001) {
+                        //printf("Actually found %g %g\n", cury, buffer->cursor.line->glyphs[j].y);
+                        editor->buffer->cursor.glyph = j;
+                        cury = editor->buffer->cursor.line->glyphs[j].y;
                         found = 1;
                         break;
                     }
                 }
                 if (found) {
-                    for ( ; editor->buffer->cursor_glyph < editor->buffer->cursor_line->cap; ++(editor->buffer->cursor_glyph)) {
-                        double diff = wantedx - editor->buffer->cursor_line->glyphs[editor->buffer->cursor_glyph].x;
-                        if (fabs(cury - editor->buffer->cursor_line->glyphs[editor->buffer->cursor_glyph].y) > 0.001) {
-                            --(editor->buffer->cursor_glyph);
+                    for ( ; editor->buffer->cursor.glyph < editor->buffer->cursor.line->cap; ++(editor->buffer->cursor.glyph)) {
+                        double diff = wantedx - editor->buffer->cursor.line->glyphs[editor->buffer->cursor.glyph].x;
+                        if (fabs(cury - editor->buffer->cursor.line->glyphs[editor->buffer->cursor.glyph].y) > 0.001) {
+                            --(editor->buffer->cursor.glyph);
                             break;
                         }
 
                         if (diff <= 0) {
                             if (fabs(diff) > editor->buffer->em_advance/2) {
-                                --(editor->buffer->cursor_glyph);
+                                --(editor->buffer->cursor.glyph);
                             }
                             break;
                         }
@@ -139,10 +138,10 @@ void editor_move_cursor(editor_t *editor, int delta_line, int delta_char, enum M
                 }
             }
 
-            if (editor->buffer->cursor_line->next == NULL) break;
-            editor->buffer->cursor_line = editor->buffer->cursor_line->next;
-            if (editor->buffer->cursor_glyph > editor->buffer->cursor_line->cap)
-                editor->buffer->cursor_glyph = editor->buffer->cursor_line->cap;
+            if (editor->buffer->cursor.line->next == NULL) break;
+            editor->buffer->cursor.line = editor->buffer->cursor.line->next;
+            if (editor->buffer->cursor.glyph > editor->buffer->cursor.line->cap)
+                editor->buffer->cursor.glyph = editor->buffer->cursor.line->cap;
         }
     }
 
@@ -151,26 +150,26 @@ void editor_move_cursor(editor_t *editor, int delta_line, int delta_char, enum M
             int j = 0;
             int found = 0;
             double cury, wantedx;
-            line_get_glyph_coordinates(editor->buffer, editor->buffer->cursor_line, editor->buffer->cursor_glyph, &wantedx, &cury);
-            for (j = editor->buffer->cursor_glyph-1; j >= 0; --j) {
-                if (fabs(cury - editor->buffer->cursor_line->glyphs[j].y) > 0.001) {
-                    editor->buffer->cursor_glyph = j;
-                    cury = editor->buffer->cursor_line->glyphs[j].y;
+            line_get_glyph_coordinates(editor->buffer, &(editor->buffer->cursor), &wantedx, &cury);
+            for (j = editor->buffer->cursor.glyph-1; j >= 0; --j) {
+                if (fabs(cury - editor->buffer->cursor.line->glyphs[j].y) > 0.001) {
+                    editor->buffer->cursor.glyph = j;
+                    cury = editor->buffer->cursor.line->glyphs[j].y;
                     found = 1;
                     break;
                 }
             }
 
             if (found) {
-                for ( ; editor->buffer->cursor_glyph > 0; --(editor->buffer->cursor_glyph)) {
-                    double diff  = wantedx - editor->buffer->cursor_line->glyphs[editor->buffer->cursor_glyph].x;
-                    if (fabs(cury - editor->buffer->cursor_line->glyphs[editor->buffer->cursor_glyph].y) > 0.001) {
-                        ++(editor->buffer->cursor_glyph);
+                for ( ; editor->buffer->cursor.glyph > 0; --(editor->buffer->cursor.glyph)) {
+                    double diff  = wantedx - editor->buffer->cursor.line->glyphs[editor->buffer->cursor.glyph].x;
+                    if (fabs(cury - editor->buffer->cursor.line->glyphs[editor->buffer->cursor.glyph].y) > 0.001) {
+                        ++(editor->buffer->cursor.glyph);
                         break;
                     }
                     if (diff >= 0) {
                         if (fabs(diff) < editor->buffer->em_advance/2) {
-                            ++(editor->buffer->cursor_glyph);
+                            ++(editor->buffer->cursor.glyph);
                         }
                         break;
                     }
@@ -179,23 +178,23 @@ void editor_move_cursor(editor_t *editor, int delta_line, int delta_char, enum M
             }
             
 
-            if (editor->buffer->cursor_line->prev == NULL) break;
-            editor->buffer->cursor_line = editor->buffer->cursor_line->prev;
-            if (editor->buffer->cursor_glyph > editor->buffer->cursor_line->cap)
-                editor->buffer->cursor_glyph = editor->buffer->cursor_line->cap;
+            if (editor->buffer->cursor.line->prev == NULL) break;
+            editor->buffer->cursor.line = editor->buffer->cursor.line->prev;
+            if (editor->buffer->cursor.glyph > editor->buffer->cursor.line->cap)
+                editor->buffer->cursor.glyph = editor->buffer->cursor.line->cap;
         }
     }
 
     if ((delta_char != 0) || (special != MOVE_NORMAL)) {
-        editor->buffer->cursor_glyph += delta_char;
+        editor->buffer->cursor.glyph += delta_char;
 
-        if (editor->buffer->cursor_glyph < 0) editor->buffer->cursor_glyph = 0;
-        if (editor->buffer->cursor_glyph > editor->buffer->cursor_line->cap) editor->buffer->cursor_glyph = editor->buffer->cursor_line->cap;
+        if (editor->buffer->cursor.glyph < 0) editor->buffer->cursor.glyph = 0;
+        if (editor->buffer->cursor.glyph > editor->buffer->cursor.line->cap) editor->buffer->cursor.glyph = editor->buffer->cursor.line->cap;
 
         if (special == MOVE_LINE_START) {
-            editor->buffer->cursor_glyph = 0;
+            editor->buffer->cursor.glyph = 0;
         } else if (special == MOVE_LINE_END) {
-            editor->buffer->cursor_glyph = editor->buffer->cursor_line->cap;
+            editor->buffer->cursor.glyph = editor->buffer->cursor.line->cap;
         }
     }
 
@@ -240,15 +239,15 @@ static void move_search_forward(editor_t *editor, gboolean ctrl_g_invoked) {
     }
     printf("]\n");*/
 
-    if ((editor->buffer->mark_line == NULL) || editor->search_failed) {
+    if ((editor->buffer->mark.line == NULL) || editor->search_failed) {
         search_line = editor->buffer->real_line;
         search_glyph = 0;
     } else if (ctrl_g_invoked) {
-        search_line = editor->buffer->cursor_line;
-        search_glyph = editor->buffer->cursor_glyph;
+        search_line = editor->buffer->cursor.line;
+        search_glyph = editor->buffer->cursor.glyph;
     } else {
-        search_line = editor->buffer->mark_line;
-        search_glyph = editor->buffer->mark_glyph;
+        search_line = editor->buffer->mark.line;
+        search_glyph = editor->buffer->mark.glyph;
     }
 
     for ( ; search_line != NULL; search_line = search_line->next) {
@@ -267,10 +266,10 @@ static void move_search_forward(editor_t *editor, gboolean ctrl_g_invoked) {
 
         if (j >= dst) {
             // search was successful            
-            editor->buffer->mark_line = search_line;
-            editor->buffer->mark_glyph = i - j;
-            editor->buffer->cursor_line = search_line;
-            editor->buffer->cursor_glyph = i;
+            editor->buffer->mark.line = search_line;
+            editor->buffer->mark.glyph = i - j;
+            editor->buffer->cursor.line = search_line;
+            editor->buffer->cursor.glyph = i;
             break;
         }
     }
@@ -574,7 +573,7 @@ static const char *keyevent_to_string(guint keyval) {
 }
 
 void editor_mark_action(editor_t *editor) {
-    if (editor->buffer->mark_line == NULL) {
+    if (editor->buffer->mark.line == NULL) {
         buffer_set_mark_at_cursor(editor->buffer);
     } else {
         buffer_unset_mark(editor->buffer);
@@ -583,7 +582,7 @@ void editor_mark_action(editor_t *editor) {
 }
 
 void editor_copy_action(editor_t *editor) {
-    if (editor->buffer->mark_line != NULL) {
+    if (editor->buffer->mark.line != NULL) {
         copy_selection_to_clipboard(editor, default_clipboard);
         buffer_unset_mark(editor->buffer);
         gtk_widget_queue_draw(editor->drar);
@@ -591,7 +590,7 @@ void editor_copy_action(editor_t *editor) {
 }
 
 void editor_cut_action(editor_t *editor) {
-    if (editor->buffer->mark_line != NULL) {
+    if (editor->buffer->mark.line != NULL) {
         copy_selection_to_clipboard(editor, default_clipboard);
         editor_replace_selection(editor, "");
         gtk_widget_queue_draw(editor->drar);
@@ -665,7 +664,7 @@ static gboolean key_press_callback(GtkWidget *widget, GdkEventKey *event, editor
             return TRUE;
 
         case GDK_KEY_Delete:
-            if (editor->buffer->mark_line == NULL) {
+            if (editor->buffer->mark.line == NULL) {
                 buffer_set_mark_at_cursor(editor->buffer);
                 buffer_move_cursor(editor->buffer, +1);
                 editor_replace_selection(editor, "");
@@ -674,7 +673,7 @@ static gboolean key_press_callback(GtkWidget *widget, GdkEventKey *event, editor
             }
             return TRUE;
         case GDK_KEY_BackSpace:
-            if (editor->buffer->mark_line == NULL) {
+            if (editor->buffer->mark.line == NULL) {
                 buffer_set_mark_at_cursor(editor->buffer);
                 buffer_move_cursor(editor->buffer, -1);
                 editor_replace_selection(editor, "");
@@ -683,7 +682,7 @@ static gboolean key_press_callback(GtkWidget *widget, GdkEventKey *event, editor
             }
             return TRUE;
         case GDK_KEY_Return: {
-            char *r = alloca(sizeof(char) * (editor->buffer->cursor_line->cap + 2));
+            char *r = alloca(sizeof(char) * (editor->buffer->cursor.line->cap + 2));
             if (cfg_default_autoindent.intval) {
                 buffer_indent_newline(editor->buffer, r);
             } else {
@@ -778,9 +777,9 @@ static void move_cursor_to_mouse(editor_t *editor, double x, double y) {
     buffer_move_cursor_to_position(editor->buffer, x, y);
 }
 
-static void mouse_open_action(editor_t *editor, real_line_t *selstart_line, int selstart_glyph, real_line_t *selend_line, int selend_glyph) {
-    if (selstart_line != selend_line) {
-        char *r = buffer_lines_to_text(editor->buffer, selstart_line, selend_line, selstart_glyph, selend_glyph);
+static void mouse_open_action(editor_t *editor, lpoint_t *start, lpoint_t *end) {
+    if (end->line != start->line) {
+        char *r = buffer_lines_to_text(editor->buffer, start, end);
         interp_eval(editor, r);
         free(r);
     } else {
@@ -812,37 +811,36 @@ static gboolean button_press_callback(GtkWidget *widget, GdkEventButton *event, 
         editor_complete_move(editor, TRUE);
         editor_insert_paste(editor, selection_clipboard);
     } else if (event->button == 3) {
-        real_line_t *selstart_line, *selend_line;
-        int selstart_glyph, selend_glyph;
+        lpoint_t start, end;
         
-        buffer_get_selection(editor->buffer, &selstart_line, &selstart_glyph, &selend_line, &selend_glyph);
+        buffer_get_selection(editor->buffer, &start, &end);
 
         buffer_unset_mark(editor->buffer);
         move_cursor_to_mouse(editor, event->x, event->y);
         editor_complete_move(editor, TRUE);
 
         // here we check if the new cursor position (the one we created by clicking with the mouse) is inside the old selection area, in that case we do execute the mouse_open_action function on the selection. If no selection was active then we create one around the cursor and execute the mouse_open_action function on that
-        if (selstart_line == NULL) {
+        if (start.line == NULL) {
             // TODO: select around mouse and call mouse_open_action
-        } else if (selstart_line == selend_line) {
-            if ((editor->buffer->cursor_line == selstart_line) &&
-                (editor->buffer->cursor_glyph >= selstart_glyph) &&
-                (editor->buffer->cursor_glyph <= selend_glyph)) {
-                mouse_open_action(editor, selstart_line, selstart_glyph, selend_line, selend_glyph);
+        } else if (start.line == end.line) {
+            if ((editor->buffer->cursor.line == start.line) &&
+                (editor->buffer->cursor.glyph >= start.glyph) &&
+                (editor->buffer->cursor.glyph <= end.glyph)) {
+                mouse_open_action(editor, &start, &end);
             }
         } else {
-            if (editor->buffer->cursor_line == selstart_line) {
-                if (editor->buffer->cursor_glyph >= selstart_glyph) {
-                    mouse_open_action(editor, selstart_line, selstart_glyph, selend_line, selend_glyph);
+            if (editor->buffer->cursor.line == start.line) {
+                if (editor->buffer->cursor.glyph >= start.glyph) {
+                    mouse_open_action(editor, &start, &end);
                 } 
-            } else if (editor->buffer->cursor_line == selend_line) {
-                if (editor->buffer->cursor_glyph <= selend_glyph) {
-                    mouse_open_action(editor, selstart_line, selstart_glyph, selend_line, selend_glyph);
+            } else if (editor->buffer->cursor.line == end.line) {
+                if (editor->buffer->cursor.glyph <= end.glyph) {
+                    mouse_open_action(editor, &start, &end);
                 }
             } else {
-                if ((editor->buffer->cursor_line->lineno > selstart_line->lineno) &&
-                    (editor->buffer->cursor_line->lineno < selend_line->lineno)) {
-                    mouse_open_action(editor, selstart_line, selstart_glyph, selend_line, selend_glyph);
+                if ((editor->buffer->cursor.line->lineno > start.line->lineno) &&
+                    (editor->buffer->cursor.line->lineno < end.line->lineno)) {
+                    mouse_open_action(editor, &start, &end);
                 }
             }
         }
@@ -856,9 +854,9 @@ static gboolean button_release_callback(GtkWidget *widget, GdkEventButton *event
 
     editor->mouse_marking = 0;
 
-    if ((editor->buffer->mark_line == editor->buffer->cursor_line) && (editor->buffer->mark_glyph == editor->buffer->cursor_glyph)) {
-        editor->buffer->mark_line = NULL;
-        editor->buffer->mark_glyph = -1;
+    if ((editor->buffer->mark.line == editor->buffer->cursor.line) && (editor->buffer->mark.glyph == editor->buffer->cursor.glyph)) {
+        editor->buffer->mark.line = NULL;
+        editor->buffer->mark.glyph = -1;
         gtk_widget_queue_draw(editor->drar);
     }
 
@@ -917,19 +915,18 @@ static void set_color_cfg(cairo_t *cr, int color) {
 }
 
 static void draw_selection(editor_t *editor, double width, cairo_t *cr) {
-    real_line_t *selstart_line, *selend_line;
-    int selstart_glyph, selend_glyph;
+    lpoint_t start, end;
     double selstart_y, selend_y;
     double selstart_x, selend_x;
 
-    if (editor->buffer->mark_glyph == -1) return;
+    if (editor->buffer->mark.glyph == -1) return;
 
-    buffer_get_selection(editor->buffer, &selstart_line, &selstart_glyph, &selend_line, &selend_glyph);
+    buffer_get_selection(editor->buffer, &start, &end);
 
-    if ((selstart_line == selend_line) && (selstart_glyph == selend_glyph)) return;
+    if ((start.line == end.line) && (start.glyph == end.glyph)) return;
 
-    line_get_glyph_coordinates(editor->buffer, selstart_line, selstart_glyph, &selstart_x, &selstart_y);
-    line_get_glyph_coordinates(editor->buffer, selend_line, selend_glyph, &selend_x, &selend_y);
+    line_get_glyph_coordinates(editor->buffer, &start, &selstart_x, &selstart_y);
+    line_get_glyph_coordinates(editor->buffer, &end, &selend_x, &selend_y);
 
     set_color_cfg(cr, cfg_editor_sel_color.intval);
 
@@ -1037,23 +1034,23 @@ static gboolean expose_event_callback(GtkWidget *widget, GdkEventExpose *event, 
         int i;
         double cury;
 
-        if (line == editor->buffer->mark_line) {
+        if (line == editor->buffer->mark.line) {
             if (mark_mode) {
-                end_selection_at_glyph = editor->buffer->mark_glyph;
+                end_selection_at_glyph = editor->buffer->mark.glyph;
                 mark_mode = 0;
             } else {
-                start_selection_at_glyph = editor->buffer->mark_glyph;
+                start_selection_at_glyph = editor->buffer->mark.glyph;
                 mark_mode = 1;
             }
         }
 
-        if (mark_mode || (editor->buffer->mark_line != NULL)) {
-            if (line == editor->buffer->cursor_line) {
+        if (mark_mode || (editor->buffer->mark.line != NULL)) {
+            if (line == editor->buffer->cursor.line) {
                 if (mark_mode) {
-                    end_selection_at_glyph = editor->buffer->cursor_glyph;
+                    end_selection_at_glyph = editor->buffer->cursor.glyph;
                     mark_mode = 0;
                 } else {
-                    start_selection_at_glyph = editor->buffer->cursor_glyph;
+                    start_selection_at_glyph = editor->buffer->cursor.glyph;
                     mark_mode = 1;
                 }
             }
@@ -1114,7 +1111,7 @@ static gboolean expose_event_callback(GtkWidget *widget, GdkEventExpose *event, 
 
     {
         char *posbox_text;
-        asprintf(&posbox_text, " %d,%d %0.0f%%", editor->buffer->cursor_line->lineno, editor->buffer->cursor_glyph, (100.0 * editor->buffer->cursor_line->lineno / count));
+        asprintf(&posbox_text, " %d,%d %0.0f%%", editor->buffer->cursor.line->lineno, editor->buffer->cursor.glyph, (100.0 * editor->buffer->cursor.line->lineno / count));
         cairo_text_extents_t posbox_ext;
         double x, y;
 

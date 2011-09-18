@@ -3,79 +3,79 @@
 #include <unicode/uchar.h>
 
 void buffer_aux_go_first_nonws_or_0(buffer_t *buffer) {
-    int old_cursor_glyph = buffer->cursor_glyph;
+    int old_cursor_glyph = buffer->cursor.glyph;
     buffer_aux_go_first_nonws(buffer);
-    if (old_cursor_glyph == buffer->cursor_glyph) {
-        buffer->cursor_glyph = 0;
+    if (old_cursor_glyph == buffer->cursor.glyph) {
+        buffer->cursor.glyph = 0;
     }
 }
 
 void buffer_aux_go_first_nonws(buffer_t *buffer) {
     int i;
-    for (i = 0; i < buffer->cursor_line->cap; ++i) {
-        uint32_t code = buffer->cursor_line->glyph_info[i].code;
+    for (i = 0; i < buffer->cursor.line->cap; ++i) {
+        uint32_t code = buffer->cursor.line->glyph_info[i].code;
         if ((code != 0x20) && (code != 0x09)) break;
     }
-    buffer->cursor_glyph = i;
+    buffer->cursor.glyph = i;
 }
 
 void buffer_aux_go_end(buffer_t *buffer) {
-    buffer->cursor_glyph = buffer->cursor_line->cap;
+    buffer->cursor.glyph = buffer->cursor.line->cap;
 }
 
 void buffer_aux_go_char(buffer_t *buffer, int n) {
-    buffer->cursor_glyph = n;
-    if (buffer->cursor_glyph > buffer->cursor_line->cap) buffer->cursor_glyph = buffer->cursor_line->cap;
-    if (buffer->cursor_glyph < 0) buffer->cursor_glyph = 0;
+    buffer->cursor.glyph = n;
+    if (buffer->cursor.glyph > buffer->cursor.line->cap) buffer->cursor.glyph = buffer->cursor.line->cap;
+    if (buffer->cursor.glyph < 0) buffer->cursor.glyph = 0;
 }
 
 void buffer_aux_go_line(buffer_t *buffer, int n) {
     real_line_t *cur, *prev;
     for (cur = buffer->real_line; cur != NULL; cur = cur->next) {
         if (cur->lineno+1 == n) {
-            buffer->cursor_line = cur;
-            buffer->cursor_glyph = 0;
+            buffer->cursor.line = cur;
+            buffer->cursor.glyph = 0;
             return;
         }
         prev = cur;
     }
     if (cur == NULL) {
-        buffer->cursor_line = prev;
-        buffer->cursor_glyph = 0;
+        buffer->cursor.line = prev;
+        buffer->cursor.glyph = 0;
     }
 }
 
 void buffer_aux_wnwa_next(buffer_t *buffer) {
     UBool searching_alnum;
-    if (buffer->cursor_glyph >= buffer->cursor_line->cap) return;
+    if (buffer->cursor.glyph >= buffer->cursor.line->cap) return;
 
-    searching_alnum = !u_isalnum(buffer->cursor_line->glyph_info[buffer->cursor_glyph].code);
+    searching_alnum = !u_isalnum(buffer->cursor.line->glyph_info[buffer->cursor.glyph].code);
 
-    for ( ; buffer->cursor_glyph < buffer->cursor_line->cap; ++(buffer->cursor_glyph)) {
-        if (u_isalnum(buffer->cursor_line->glyph_info[buffer->cursor_glyph].code) == searching_alnum) break;
+    for ( ; buffer->cursor.glyph < buffer->cursor.line->cap; ++(buffer->cursor.glyph)) {
+        if (u_isalnum(buffer->cursor.line->glyph_info[buffer->cursor.glyph].code) == searching_alnum) break;
     }
 }
 
 void buffer_aux_wnwa_prev(buffer_t *buffer) {
     UBool searching_alnum;
-    if (buffer->cursor_glyph <= 0) return;
+    if (buffer->cursor.glyph <= 0) return;
 
-    --(buffer->cursor_glyph);
+    --(buffer->cursor.glyph);
 
-    searching_alnum = !u_isalnum(buffer->cursor_line->glyph_info[buffer->cursor_glyph].code);
+    searching_alnum = !u_isalnum(buffer->cursor.line->glyph_info[buffer->cursor.glyph].code);
 
-    for ( ; buffer->cursor_glyph >= 0; --(buffer->cursor_glyph)) {
-        if (u_isalnum(buffer->cursor_line->glyph_info[buffer->cursor_glyph].code) == searching_alnum) break;
+    for ( ; buffer->cursor.glyph >= 0; --(buffer->cursor.glyph)) {
+        if (u_isalnum(buffer->cursor.line->glyph_info[buffer->cursor.glyph].code) == searching_alnum) break;
     }
 
-    ++(buffer->cursor_glyph);
+    ++(buffer->cursor.glyph);
 }
 
 void buffer_indent_newline(buffer_t *buffer, char *r) {
     int i = 0;
     r[0] = '\n';
-    for ( ; i < buffer->cursor_line->cap; ++i) {
-        uint32_t code = buffer->cursor_line->glyph_info[i].code;
+    for ( ; i < buffer->cursor.line->cap; ++i) {
+        uint32_t code = buffer->cursor.line->glyph_info[i].code;
         if (code == 0x20) {
             r[i+1] = ' ';
         } else if (code == 0x09) {
@@ -93,12 +93,12 @@ void buffer_append(buffer_t *buffer, const char *msg, int length, int on_new_lin
 
     buffer_unset_mark(buffer);
     
-    for (; buffer->cursor_line->next != NULL; buffer->cursor_line = buffer->cursor_line->next);
-    buffer->cursor_glyph = buffer->cursor_line->cap;
-    //printf("buffer_append %d %d\n", buffer->cursor_glyph, buffer->cursor_line->cap);
+    for (; buffer->cursor.line->next != NULL; buffer->cursor.line = buffer->cursor.line->next);
+    buffer->cursor.glyph = buffer->cursor.line->cap;
+    //printf("buffer_append %d %d\n", buffer->cursor.glyph, buffer->cursor.line->cap);
 
     if (on_new_line) {
-        if (buffer->cursor_glyph != 0) {
+        if (buffer->cursor.glyph != 0) {
             buffer_replace_selection(buffer, "\n");
         }
     }

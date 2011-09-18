@@ -323,9 +323,9 @@ static int teddy_move_command(ClientData client_data, Tcl_Interp *interp, int ar
         editor_move_cursor(context_editor, next ? 1 : -1, 0, MOVE_NORMAL, TRUE);
     } else if (strcmp(argv[2], "line") == 0) {
         real_line_t *n = NULL;
-        n = next ? context_editor->buffer->cursor_line->next : context_editor->buffer->cursor_line->prev;
+        n = next ? context_editor->buffer->cursor.line->next : context_editor->buffer->cursor.line->prev;
         if (n != NULL) {
-            context_editor->buffer->cursor_line = n;
+            context_editor->buffer->cursor.line = n;
             editor_complete_move(context_editor, TRUE);
         }
     } else if (strcmp(argv[2], "wnwa") == 0) {
