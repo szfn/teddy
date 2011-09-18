@@ -1,6 +1,5 @@
 - implement right click search/go
 - bug: copy/paste primary selection doesn't seem to work anymore
-- change position indicator to start line numbering from 1
 - implement search & replace
 - implement stayoncmd flag for buffers
 - implement lockcmd command that changes the command line of a buffer to always send a specific command

@@ -348,8 +348,7 @@ void quick_message(editor_t *editor, const char *title, const char *msg) {
     GtkWidget *content_area = gtk_dialog_get_content_area(GTK_DIALOG(dialog));
     GtkWidget *label = gtk_label_new(msg);
 
-    g_signal_connect_swapped(dialog, "response",
-                             G_CALLBACK(gtk_widget_destroy), dialog);
+    g_signal_connect_swapped(dialog, "response", G_CALLBACK(gtk_widget_destroy), dialog);
     
     gtk_container_add(GTK_CONTAINER(content_area), label);
     gtk_widget_show_all(dialog);
@@ -1115,7 +1114,7 @@ static gboolean expose_event_callback(GtkWidget *widget, GdkEventExpose *event, 
 
     {
         char *posbox_text;
-        asprintf(&posbox_text, " %d,%d %0.0f%%", editor->buffer->cursor.line->lineno, editor->buffer->cursor.glyph, (100.0 * editor->buffer->cursor.line->lineno / count));
+        asprintf(&posbox_text, " %d,%d %0.0f%%", editor->buffer->cursor.line->lineno+1, editor->buffer->cursor.glyph, (100.0 * editor->buffer->cursor.line->lineno / count));
         cairo_text_extents_t posbox_ext;
         double x, y;
 
@@ -1130,7 +1129,6 @@ static gboolean expose_event_callback(GtkWidget *widget, GdkEventExpose *event, 
         cairo_rectangle(cr, x-1.0, y-1.0, posbox_ext.x_advance+4.0, posbox_ext.height+4.0);
         cairo_fill(cr);
         set_color_cfg(cr, cfg_posbox_bg_color.intval);
-        //cairo_set_source_rgb(cr, 238.0/255, 221.0/255, 130.0/255);
         cairo_rectangle(cr, x, y, posbox_ext.x_advance + 2.0, posbox_ext.height + 2.0);
         cairo_fill(cr);
 
