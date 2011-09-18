@@ -48,7 +48,7 @@ void editor_copy_action(editor_t *editor);
 void editor_insert_paste(editor_t *editor, GtkClipboard *clipboard); /* default_clipboard, selection_clipboard */
 void editor_cut_action(editor_t *editor);
 void editor_save_action(editor_t *editor);
-void editor_start_search(editor_t *editor);
+void editor_start_search(editor_t *editor, const char *initial_search_term);
 void editor_undo_action(editor_t *editor);
 
 enum MoveCursorSpecial {

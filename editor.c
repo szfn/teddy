@@ -327,16 +327,20 @@ static gboolean entry_search_insert_callback(GtkWidget *widget, GdkEventKey *eve
     }
 }
 
-void editor_start_search(editor_t *editor) {
+void editor_start_search(editor_t *editor, const char *initial_search_term) {
     buffer_set_mark_at_cursor(editor->buffer);
     editor->label_state = "search";
-    gtk_entry_set_text(GTK_ENTRY(editor->entry), "");
+    gtk_entry_set_text(GTK_ENTRY(editor->entry), (initial_search_term == NULL) ? "" : initial_search_term);
     set_label_text(editor);
     gtk_widget_grab_focus(editor->entry);
     g_signal_handler_disconnect(editor->entry, editor->current_entry_handler_id);
     editor->current_entry_handler_id = g_signal_connect(G_OBJECT(editor->entry), "key-release-event", G_CALLBACK(entry_search_insert_callback), editor);
     editor->search_failed = FALSE;
     editor->search_mode = TRUE;
+    
+    /* not needed gtk_entry_set_text seems to generate a move_search_forward through the event automatically
+    if (initial_search_term != NULL) move_search_forward(editor, TRUE);
+    */
 }
 
 void quick_message(editor_t *editor, const char *title, const char *msg) {
@@ -732,7 +736,7 @@ static gboolean key_press_callback(GtkWidget *widget, GdkEventKey *event, editor
     strcat(pressed, converted);
 
     command = g_hash_table_lookup(keybindings, pressed);
-    printf("Keybinding [%s] -> {%s}\n", pressed, command);
+    //printf("Keybinding [%s] -> {%s}\n", pressed, command);
 
     if (command != NULL) {
         interp_eval(editor, command);

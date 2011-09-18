@@ -17,6 +17,7 @@
 #include "jobs.h"
 #include "shell.h"
 #include "colors.h"
+#include "history.h"
 
 #define INITFILE ".teddy"
 
@@ -255,12 +256,12 @@ static int teddy_search_command(ClientData client_data, Tcl_Interp *interp, int 
         return TCL_ERROR;
     }
 
-    if (argc != 1) {
+    if (argc > 2) {
         Tcl_AddErrorInfo(interp, "Wrong number of arguments to 'search' command");
         return TCL_ERROR;
     }
 
-    editor_start_search(context_editor);
+    editor_start_search(context_editor, (argc == 1) ? NULL : argv[1]);
 
     return TCL_OK;
 }
@@ -642,6 +643,8 @@ void interp_init(void) {
     Tcl_CreateCommand(interp, "rgbcolor", &teddy_rgbcolor_command, (ClientData)NULL, NULL);
 
     Tcl_CreateCommand(interp, "<", &teddy_sendinput_command, (ClientData)NULL, NULL);
+    
+    Tcl_CreateCommand(interp, "teddyhistory", &teddy_history_command, (ClientData)NULL, NULL);
 }
 
 void interp_free(void) {

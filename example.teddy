@@ -26,6 +26,7 @@ bindkey Ctrl-s save
 bindkey Ctrl-b bufman
 
 bindkey Ctrl-f search
+bindkey Ctrl-g {search [teddyhistory search 1]}
 
 bindkey Ctrl-a gohome
 bindkey Ctrl-e {go $}

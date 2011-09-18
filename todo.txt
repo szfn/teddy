@@ -1,5 +1,6 @@
-- Ctrl-G starts search with last searched term
 - implement right click search/go
+- bug: copy/paste primary selection doesn't seem to work anymore
+- change position indicator to start line numbering from 1
 - implement search & replace
 - implement stayoncmd flag for buffers
 - implement lockcmd command that changes the command line of a buffer to always send a specific command
@@ -11,6 +12,7 @@
 - command to change buffer font to fixed width (start +bg buffers on fixed width by default)
 - ansi sequences processing
 - clear buffer command
+- minimum size of an editor should be its tag alone, and there should be a simple way to minimize an editor
 - command to indent selection/everything by fixed number of spaces/tabs
 - implement | command that filters selected content through external command
 - make easy way to reindent

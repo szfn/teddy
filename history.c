@@ -3,6 +3,8 @@
 #include <stdlib.h>
 
 #include "editor.h"
+#include "interp.h"
+#include "global.h"
 
 static gboolean history_select_callback(GtkTreeView *widget, GtkTreePath *path, GtkTreeViewColumn *column, history_t *history) {
     gtk_dialog_response(GTK_DIALOG(history->history_window), 10);
@@ -36,6 +38,62 @@ void history_add(history_t *history, const char *text) {
     GtkTreeIter mah;
     gtk_list_store_insert(history->history_list, &mah, 0);
     gtk_list_store_set(history->history_list, &mah, 0, text, -1);
+}
+
+int teddy_history_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
+    history_t *history;
+    int idx, i;
+    gboolean valid;
+    GtkTreeIter iter;
+    
+    if (context_editor == NULL) {
+        Tcl_AddErrorInfo(interp, "Can not call 'teddyhistory' command without a current editor");
+        return TCL_ERROR;
+    }
+    
+    if (argc != 3) {
+        Tcl_AddErrorInfo(interp, "Wrong number of arguments to 'teddyhistory' command");
+        return TCL_ERROR;
+    }
+    
+    if (strcmp(argv[1], "cmd") == 0) {
+        history = command_history;
+    } else if (strcmp(argv[1], "search") == 0) {
+        history = search_history;
+    } else {
+        Tcl_AddErrorInfo(interp, "Wrong first argument for 'teddyhistory' command, must be 'cmd' or 'search'");
+        return TCL_ERROR;
+    }
+    
+    idx = atoi(argv[2]);
+    
+    valid = gtk_tree_model_get_iter_first(GTK_TREE_MODEL(history->history_list), &iter);
+    
+    for (i = 1; i < idx; ++i) {
+       if (!valid) break;
+       valid = gtk_tree_model_iter_next(GTK_TREE_MODEL(history->history_list), &iter);
+    }
+    
+    if (valid) {
+        GValue value = {0};
+        const char *pick;
+        
+        gtk_tree_model_get_value(GTK_TREE_MODEL(history->history_list), &iter, 0, &value);
+        
+        pick = g_value_get_string(&value);
+        
+        if (pick != NULL) {
+           Tcl_SetResult(interp, pick, TCL_VOLATILE);
+        } else {
+           Tcl_SetResult(interp, "", TCL_VOLATILE);
+        }
+        
+        g_value_unset(&value);
+    } else {
+        Tcl_SetResult(interp, "", TCL_VOLATILE);
+    }
+    
+    return TCL_OK;
 }
 
 void history_pick(history_t *history, editor_t *editor) {
@@ -73,5 +131,7 @@ void history_pick(history_t *history, editor_t *editor) {
         if (focus_path != NULL) {
             gtk_tree_path_free(focus_path);
         }
+        
+        g_value_unset(&value);
     }
 }
