@@ -784,7 +784,10 @@ static void mouse_open_action(editor_t *editor, real_line_t *selstart_line, int 
         interp_eval(editor, r);
         free(r);
     } else {
-        //TODO: go or search action
+        //TODO: 
+        // - run go_preprocessing_hook
+        // - execute go on the result
+        // - if go fails then start search
     }
 }
 
@@ -818,7 +821,10 @@ static gboolean button_press_callback(GtkWidget *widget, GdkEventButton *event, 
         move_cursor_to_mouse(editor, event->x, event->y);
         editor_complete_move(editor, TRUE);
 
-        if (selstart_line == selend_line) {
+        // here we check if the new cursor position (the one we created by clicking with the mouse) is inside the old selection area, in that case we do execute the mouse_open_action function on the selection. If no selection was active then we create one around the cursor and execute the mouse_open_action function on that
+        if (selstart_line == NULL) {
+            // TODO: select around mouse and call mouse_open_action
+        } else if (selstart_line == selend_line) {
             if ((editor->buffer->cursor_line == selstart_line) &&
                 (editor->buffer->cursor_glyph >= selstart_glyph) &&
                 (editor->buffer->cursor_glyph <= selend_glyph)) {

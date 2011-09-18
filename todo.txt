@@ -1,5 +1,6 @@
 - implement right click search/go
 - change order of suggestions, files should come first
+- refactoring: all places that have a line/glyph combination should be replaced with a point structure
 - implement stayoncmd flag for buffers
 - implement lockcmd command that changes the command line of a buffer to always send a specific command
 - implement disable horizontal scrollbar
@@ -32,6 +33,9 @@
   - column_adjust_size just takes the last row and uses all the empty space or 40% if there isn't any empty space
   - put the columns_hbox insite a single custom container that returns a requested size of { 0, 0 } and on allocation just resizes everything maintaining proportions
 - highlighting of matching parenthesis
+- Ctrl-G starts search with last searched term
+- move mouse cursor when grabbing focus to an editor
+- move mouse cursor when searching
 
 - word selection for open action is longest sequence around point consisting of:
   - letters
