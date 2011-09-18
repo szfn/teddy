@@ -251,14 +251,6 @@ static void cmdcompl_start(const char *text, int length, char *working_directory
 
     cmdcompl_update_last_request(text, length);
 
-    // internal commands
-    cmdcompl_add_matches(list_internal_commands, sizeof(list_internal_commands) / sizeof(const char *), text, length);
-
-    // external commands
-    if (num_found_completions < MAX_NUMBER_OF_COMPLETIONS) {
-        cmdcompl_add_matches((const char **)list_external_commands, external_commands_cap, text, length);
-    }
-
     // directory access
     if (num_found_completions < MAX_NUMBER_OF_COMPLETIONS) {
         char *reldir = NULL;
@@ -327,6 +319,14 @@ static void cmdcompl_start(const char *text, int length, char *working_directory
 
         free(absdir);
         free(reldir);
+    }
+      
+    // internal commands
+    cmdcompl_add_matches(list_internal_commands, sizeof(list_internal_commands) / sizeof(const char *), text, length);
+
+    // external commands
+    if (num_found_completions < MAX_NUMBER_OF_COMPLETIONS) {
+        cmdcompl_add_matches((const char **)list_external_commands, external_commands_cap, text, length);
     }
 }
 
