@@ -1,5 +1,3 @@
-- change order of suggestions, files should come first
-- bug: ctrl-home doesn't work anymore
 - Ctrl-G starts search with last searched term
 - implement right click search/go
 - implement search & replace

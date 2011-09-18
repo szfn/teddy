@@ -31,7 +31,7 @@ bindkey Ctrl-a gohome
 bindkey Ctrl-e {go $}
 bindkey Ctrl-Left {move prev wnwa}
 bindkey Ctrl-Right {move next wnwa}
-bindkey Ctrl-Home {go 0}
+bindkey Ctrl-Home {go 1}
 bindkey Ctrl-End {go -1}
 
 bindkey Ctrl-Backspace {move prev wnwa del}
