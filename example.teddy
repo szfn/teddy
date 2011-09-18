@@ -172,15 +172,15 @@ proc shell {args} {
       if {$i >= [llength $args]} {
          #puts "waiting for $pid"
          set r [posixwaitpid $pid]
-         puts "wait ended <$r>"
+         #puts "wait ended <$r>"
          return [lindex $r 1]
       }
       
       switch -exact [lindex $args $i] {
          "&&" {
-            puts "Processing AND $pid"
+            #puts "Processing AND $pid"
             set r [posixwaitpid $pid]
-            puts "Child returned [lindex $r 1]"
+            #puts "Child returned [lindex $r 1]"
             if {[lindex $r 1] != 0} {
                # can not continue because last execution failed
                return [lindex $r 1]
