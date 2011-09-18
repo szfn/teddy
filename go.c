@@ -68,7 +68,7 @@ static int exec_go_position(const char *specifier, editor_t *context_editor) {
     
     if (isnumber(specifier)) {
         n1 = strtol(specifier, NULL, 10);        
-        printf("Line\n");
+        //printf("Line\n");
         buffer_aux_go_line(context_editor->buffer, (int)n1);
         editor_complete_move(context_editor, TRUE);
         return 1;
@@ -175,7 +175,8 @@ int exec_go(const char *specifier) {
     editor = go_to_buffer(context_editor, buffer);
 
     if (editor != NULL) {
-        tok = strtok_r(sc, ":", &saveptr);
+        tok = strtok_r(NULL, ":", &saveptr);
+        //printf("possible position token: %s\n", tok);
         if (tok == NULL) { retval = 1; goto exec_go_cleanup; }
         if (strlen(tok) == 0) { retval = 1; goto exec_go_cleanup; }
         

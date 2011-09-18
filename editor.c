@@ -497,6 +497,13 @@ static gboolean entry_key_press_callback(GtkWidget *widget, GdkEventKey *event, 
 void editor_switch_buffer(editor_t *editor, buffer_t *buffer) {
     editor->buffer = buffer;
     set_label_text(editor);
+    
+    {
+        GtkAllocation allocation;
+        gtk_widget_get_allocation(editor->drar, &allocation);
+        buffer_typeset_maybe(editor->buffer, allocation.width);
+    }
+    
     editor_center_on_cursor(editor);
     gtk_widget_queue_draw(editor->drar);
 }
