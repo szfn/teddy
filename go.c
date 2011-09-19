@@ -2,6 +2,7 @@
 
 #include <gtk/gtk.h>
 #include <gdk/gdkkeysyms.h>
+#include <stdbool.h>
 
 #include "interp.h"
 #include "baux.h"
@@ -304,4 +305,58 @@ void go_init(GtkWidget *window) {
     gtk_container_add(GTK_CONTAINER(gtk_dialog_get_content_area(GTK_DIALOG(go_switch_window))), vbox);
 
     gtk_window_set_default_size(GTK_WINDOW(go_switch_window), 200, 100);
+}
+
+void mouse_open_action(editor_t *editor, lpoint_t *start, lpoint_t *end) {
+    bool auto_selection = false;
+    lpoint_t changed_end;
+    lpoint_t cursor;
+    
+    copy_lpoint(&cursor, start);
+    
+    if (end == NULL) {
+        auto_selection = true;
+        int start_glyph, end_glyph;
+
+        for (int i = start->glyph; i > 0; --i) {
+            uint32_t code = start->line->glyph_info[i].code;
+            if ((code == 0x20) || (code == 0x09)) {
+                start_glyph = i+1;
+            }
+        }
+        
+        for (int i = start->glyph; i < start->line->cap; ++i) {
+            uint32_t code = start->line->glyph_info[i].code;
+            if ((code == 0x20) || (code == 0x09)) {
+                end_glyph = i-1;
+            }
+        }
+        
+        if (start_glyph > end_glyph) {
+            return;
+        }
+        
+        end = &changed_end;
+        end->line = start->line;
+        start->glyph = start_glyph;
+        end->glyph = end_glyph;
+        
+        return;
+    }
+
+    if (end->line != start->line) {
+        char *r = buffer_lines_to_text(editor->buffer, start, end);
+        interp_eval(editor, r);
+        free(r);
+        return;
+    }
+
+    char *text = buffer_lines_to_text(editor->buffer, start, end);
+    printf("Open or search on selection [%s]\n", text);
+    free(text);
+    
+    //TODO: 
+    // - run go_preprocessing_hook
+    // - execute go on the result
+    // - if go fails then start search
 }

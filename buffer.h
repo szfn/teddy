@@ -76,6 +76,7 @@ typedef struct _buffer_t {
 // utility function to convert first codepoint in utf8 stream into an utf32 codepoint
 uint32_t utf8_to_utf32(const char *text, int *src, int len);
 
+
 buffer_t *buffer_create(FT_Library *library);
 void buffer_free(buffer_t *buffer);
 
@@ -113,6 +114,9 @@ void buffer_get_selection(buffer_t *buffer, lpoint_t *start, lpoint_t *end);
 
 // converts a selection of line from this buffer into text
 char *buffer_lines_to_text(buffer_t *buffer, lpoint_t *start, lpoint_t *end);
+
+// converts a line from this buffer into text
+char *buffer_line_to_text(buffer_t *buffer, real_line_t *line);
 
 // moves cursor by one glyph
 void buffer_move_cursor(buffer_t *buffer, int direction);

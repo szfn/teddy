@@ -21,6 +21,6 @@ void copy_lpoint(lpoint_t *dst, lpoint_t *src);
 // copies lpoint into a point
 void freeze_point(point_t *dst, lpoint_t *src);
 
-bool inbetween_lpoint(lpoint *start, lpoint *x, lpoint *end);
+bool inbetween_lpoint(lpoint_t *start, lpoint_t *x, lpoint_t *end);
 
 #endif

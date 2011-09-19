@@ -658,6 +658,14 @@ int load_text_file(buffer_t *buffer, const char *filename) {
     return 0;
 }
 
+char *buffer_line_to_text(buffer_t *buffer, real_line_t *line) {
+    lpoint_t start, end;
+    start.line = end.line = line; 
+    start.glyph = 0;
+    end.glyph = line->cap;
+    return buffer_lines_to_text(buffer, &start, &end);
+}
+
 char *buffer_lines_to_text(buffer_t *buffer, lpoint_t *startp, lpoint_t *endp) {
     real_line_t *line;
     int allocated = 0;

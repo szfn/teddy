@@ -11,9 +11,9 @@ void freeze_point(point_t *dst, lpoint_t *src) {
     dst->glyph = src->glyph;
 }
 
-bool inbetween_lpoint(lpoint *start, lpoint *x, lpoint *end) {
+bool inbetween_lpoint(lpoint_t *start, lpoint_t *x, lpoint_t *end) {
     if (start->line == end->line) {
-        return ((x->line == start->line) && (x->glyph >= start.glyph) && (x->glyph <= end.glyph));
+        return ((x->line == start->line) && (x->glyph >= start->glyph) && (x->glyph <= end->glyph));
     } else {
         if (x->line == start->line) {
             return (x->glyph >= start->glyph);

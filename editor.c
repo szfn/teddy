@@ -17,6 +17,7 @@
 #include "reshandle.h"
 #include "baux.h"
 #include "cmdcompl.h"
+#include "go.h"
 
 void set_label_text(editor_t *editor) {
     char *labeltxt;
@@ -781,25 +782,6 @@ static void move_cursor_to_mouse(editor_t *editor, double x, double y) {
     buffer_move_cursor_to_position(editor->buffer, x, y);
 }
 
-static void mouse_open_action(editor_t *editor, lpoint_t *start, lpoint_t *end) {
-    if (end == NULL) {
-        //TODO:
-        // -create a selection around the cursor and continue
-        return;
-    }
-
-    if (end->line != start->line) {
-        char *r = buffer_lines_to_text(editor->buffer, start, end);
-        interp_eval(editor, r);
-        free(r);
-    } else {
-        //TODO: 
-        // - run go_preprocessing_hook
-        // - execute go on the result
-        // - if go fails then start search
-    }
-}
-
 static gboolean button_press_callback(GtkWidget *widget, GdkEventButton *event, editor_t *editor) {
     if (selection_target_buffer != NULL) {
         editor_switch_buffer(editor, selection_target_buffer);
@@ -833,7 +815,7 @@ static gboolean button_press_callback(GtkWidget *widget, GdkEventButton *event, 
         if (start.line == NULL) {
             copy_lpoint(&start, &(editor->buffer->cursor));
             mouse_open_action(editor, &start, NULL);
-        } else if (inbetween_lpoint(&start, &(editor->buffer->cursor), &end) {
+        } else if (inbetween_lpoint(&start, &(editor->buffer->cursor), &end)) {
             mouse_open_action(editor, &start, &end);
         }
     }
