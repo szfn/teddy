@@ -83,7 +83,7 @@ int teddy_history_command(ClientData client_data, Tcl_Interp *interp, int argc, 
         pick = g_value_get_string(&value);
         
         if (pick != NULL) {
-           Tcl_SetResult(interp, pick, TCL_VOLATILE);
+           Tcl_SetResult(interp, (char *)pick, TCL_VOLATILE);
         } else {
            Tcl_SetResult(interp, "", TCL_VOLATILE);
         }

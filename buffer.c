@@ -7,11 +7,6 @@
 
 #include "global.h"
 
-void copy_lpoint(lpoint_t *dst, lpoint_t *src) {
-    dst->line = src->line;
-    dst->glyph = src->glyph;
-}
-
 void buffer_set_mark_at_cursor(buffer_t *buffer) {
     copy_lpoint(&(buffer->mark), &(buffer->cursor));
     //printf("Mark set @ %d,%d\n", buffer->mark_line->lineno, buffer->mark_glyph);
@@ -380,11 +375,6 @@ static void buffer_insert_multiline_text(buffer_t *buffer, lpoint_t *start_point
     }
 
     copy_lpoint(&(buffer->cursor), &point);
-}
-
-static void freeze_point(point_t *dst, lpoint_t *src) {
-    dst->lineno = src->line->lineno;
-    dst->glyph = src->glyph;
 }
 
 static void freeze_selection(buffer_t *buffer, selection_t *selection, lpoint_t *start, lpoint_t *end) {

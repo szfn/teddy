@@ -10,6 +10,7 @@
 #include "font.h"
 #include "undo.h"
 #include "jobs.h"
+#include "point.h"
 
 typedef struct _my_glyph_info_t {
     double kerning_correction;
@@ -29,11 +30,6 @@ typedef struct _real_line_t {
     struct _real_line_t *prev;
     struct _real_line_t *next;
 } real_line_t;
-
-typedef struct _lpoint_t {
-    real_line_t *line;
-    int glyph;
-} lpoint_t;
 
 typedef struct _buffer_t {
     char *name;
@@ -79,9 +75,6 @@ typedef struct _buffer_t {
 
 // utility function to convert first codepoint in utf8 stream into an utf32 codepoint
 uint32_t utf8_to_utf32(const char *text, int *src, int len);
-
-// makes dst be the same point as src
-void copy_lpoint(lpoint_t *dst, lpoint_t *src);
 
 buffer_t *buffer_create(FT_Library *library);
 void buffer_free(buffer_t *buffer);

@@ -1,10 +1,7 @@
 #ifndef __UNDO_H__
 #define __UNDO_H__
 
-typedef struct _point_t {
-    int lineno;
-    int glyph;
-} point_t;
+#include "point.h"
 
 typedef struct _selection_t {
     point_t start;

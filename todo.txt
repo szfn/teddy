@@ -1,5 +1,6 @@
 - implement right click search/go
 - bug: copy/paste primary selection doesn't seem to work anymore
+- bug: jobs appending text to a buffer should explicitly trigger an editor redraw somehow
 - implement search & replace
 - implement stayoncmd flag for buffers
 - implement lockcmd command that changes the command line of a buffer to always send a specific command

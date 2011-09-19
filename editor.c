@@ -3,6 +3,7 @@
 
 #include <math.h>
 #include <assert.h>
+#include <stdbool.h>
 
 #include <tcl.h>
 #include <gdk/gdkkeysyms.h>
@@ -781,6 +782,12 @@ static void move_cursor_to_mouse(editor_t *editor, double x, double y) {
 }
 
 static void mouse_open_action(editor_t *editor, lpoint_t *start, lpoint_t *end) {
+    if (end == NULL) {
+        //TODO:
+        // -create a selection around the cursor and continue
+        return;
+    }
+
     if (end->line != start->line) {
         char *r = buffer_lines_to_text(editor->buffer, start, end);
         interp_eval(editor, r);
@@ -824,28 +831,10 @@ static gboolean button_press_callback(GtkWidget *widget, GdkEventButton *event, 
 
         // here we check if the new cursor position (the one we created by clicking with the mouse) is inside the old selection area, in that case we do execute the mouse_open_action function on the selection. If no selection was active then we create one around the cursor and execute the mouse_open_action function on that
         if (start.line == NULL) {
-            // TODO: select around mouse and call mouse_open_action
-        } else if (start.line == end.line) {
-            if ((editor->buffer->cursor.line == start.line) &&
-                (editor->buffer->cursor.glyph >= start.glyph) &&
-                (editor->buffer->cursor.glyph <= end.glyph)) {
-                mouse_open_action(editor, &start, &end);
-            }
-        } else {
-            if (editor->buffer->cursor.line == start.line) {
-                if (editor->buffer->cursor.glyph >= start.glyph) {
-                    mouse_open_action(editor, &start, &end);
-                } 
-            } else if (editor->buffer->cursor.line == end.line) {
-                if (editor->buffer->cursor.glyph <= end.glyph) {
-                    mouse_open_action(editor, &start, &end);
-                }
-            } else {
-                if ((editor->buffer->cursor.line->lineno > start.line->lineno) &&
-                    (editor->buffer->cursor.line->lineno < end.line->lineno)) {
-                    mouse_open_action(editor, &start, &end);
-                }
-            }
+            copy_lpoint(&start, &(editor->buffer->cursor));
+            mouse_open_action(editor, &start, NULL);
+        } else if (inbetween_lpoint(&start, &(editor->buffer->cursor), &end) {
+            mouse_open_action(editor, &start, &end);
         }
     }
 
@@ -1114,10 +1103,11 @@ static gboolean expose_event_callback(GtkWidget *widget, GdkEventExpose *event, 
 
     {
         char *posbox_text;
-        asprintf(&posbox_text, " %d,%d %0.0f%%", editor->buffer->cursor.line->lineno+1, editor->buffer->cursor.glyph, (100.0 * editor->buffer->cursor.line->lineno / count));
         cairo_text_extents_t posbox_ext;
         double x, y;
-
+        
+        asprintf(&posbox_text, " %d,%d %0.0f%%", editor->buffer->cursor.line->lineno+1, editor->buffer->cursor.glyph, (100.0 * editor->buffer->cursor.line->lineno / count));
+        
         cairo_set_scaled_font(cr, editor->buffer->posbox_font.cairofont);
 
         cairo_text_extents(cr, posbox_text, &posbox_ext);
