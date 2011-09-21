@@ -213,3 +213,37 @@ proc unknown {args} {
 proc backgrounded_unknown {args} {
    shell {*}$args
 }
+
+set parenthesis_list {"(" ")" "{" "}" "[" "]" "<" ">"}
+
+proc mgph_remove_trailing_nonalnum {text} {
+   global parenthesis_list
+   while {![string is alnum [string index $text end]] && [string index $text end] ni $parenthesis_list} {
+      set text [string range $text 0 end-1]
+   }
+   return $text
+}
+
+proc mgph_trim_parenthesis {text} {
+   global parenthesis_list
+   
+   set first_char [string index $text 0]
+   set last_char [string index $text end]
+   
+   if {$first_char ni $parenthesis_list || $last_char ni $parenthesis_list} { return $text }
+   
+   return [string range $text 1 end-1]
+}
+
+# test strings:
+# include <test.h>
+# bla.c:8:78:
+
+proc mouse_go_preprocessing_hook {text} {
+   set text [mgph_remove_trailing_nonalnum $text]
+   set text [mgph_trim_parenthesis $text]
+   
+   puts "Text is <$text>\n"
+   
+   return $text
+}

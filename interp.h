@@ -3,6 +3,8 @@
 
 #include "editor.h"
 
+#include <tcl.h>
+
 enum deferred_action {
     NOTHING,
     CLOSE_EDITOR,
@@ -10,6 +12,7 @@ enum deferred_action {
 };
 
 extern enum deferred_action deferred_action_to_return;
+extern Tcl_Interp *interp;
 
 void interp_init(void);
 void interp_free(void);

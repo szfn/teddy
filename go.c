@@ -307,6 +307,37 @@ void go_init(GtkWidget *window) {
     gtk_window_set_default_size(GTK_WINDOW(go_switch_window), 200, 100);
 }
 
+static bool mouse_open_select_like_file(editor_t *editor, lpoint_t *cursor, lpoint_t *start, lpoint_t *end) {
+    start->glyph = 0; 
+    end->glyph = cursor->line->cap;
+    
+    start->line = cursor->line;
+    end->line = cursor->line;
+
+    for (int i = cursor->glyph-1; i > 0; --i) {
+        uint32_t code = start->line->glyph_info[i].code;
+        if ((code == 0x20) || (code == 0x09)) {
+            start->glyph = i+1;
+            break;
+        }
+    }
+        
+    for (int i = cursor->glyph; i < start->line->cap; ++i) {
+        uint32_t code = start->line->glyph_info[i].code;
+        if ((code == 0x20) || (code == 0x09)) {
+            end->glyph = i;
+            break;
+        }
+    }
+        
+    printf("start_glyph: %d end_glyph: %d\n", start->glyph, end->glyph);
+    if (start->glyph > end->glyph) {
+        return false;
+    }
+    
+    return true;
+}
+
 void mouse_open_action(editor_t *editor, lpoint_t *start, lpoint_t *end) {
     bool auto_selection = false;
     lpoint_t changed_end;
@@ -314,34 +345,12 @@ void mouse_open_action(editor_t *editor, lpoint_t *start, lpoint_t *end) {
     
     copy_lpoint(&cursor, start);
     
+    printf("start_glyph: %d\n", start->glyph);
+    
     if (end == NULL) {
-        auto_selection = true;
-        int start_glyph, end_glyph;
-
-        for (int i = start->glyph; i > 0; --i) {
-            uint32_t code = start->line->glyph_info[i].code;
-            if ((code == 0x20) || (code == 0x09)) {
-                start_glyph = i+1;
-            }
-        }
-        
-        for (int i = start->glyph; i < start->line->cap; ++i) {
-            uint32_t code = start->line->glyph_info[i].code;
-            if ((code == 0x20) || (code == 0x09)) {
-                end_glyph = i-1;
-            }
-        }
-        
-        if (start_glyph > end_glyph) {
-            return;
-        }
-        
         end = &changed_end;
-        end->line = start->line;
-        start->glyph = start_glyph;
-        end->glyph = end_glyph;
-        
-        return;
+        auto_selection = true;
+        if (!mouse_open_select_like_file(editor, &cursor, start, end)) return;
     }
 
     if (end->line != start->line) {
@@ -352,8 +361,29 @@ void mouse_open_action(editor_t *editor, lpoint_t *start, lpoint_t *end) {
     }
 
     char *text = buffer_lines_to_text(editor->buffer, start, end);
+    
     printf("Open or search on selection [%s]\n", text);
-    free(text);
+    
+    if (text == NULL) return;
+    
+    const char *eval_argv[] = { "mouse_go_preprocessing_hook", text };
+    
+    int code = Tcl_Eval(interp, Tcl_Merge(2, eval_argv));
+
+    free(text); 
+    
+    if (code == TCL_OK) {
+        printf("After processing hook: [%s]\n", Tcl_GetStringResult(interp));
+    } else {
+        Tcl_Obj *options = Tcl_GetReturnOptions(interp, code);  
+        Tcl_Obj *key = Tcl_NewStringObj("-errorinfo", -1);
+        Tcl_Obj *stackTrace;
+        Tcl_IncrRefCount(key);
+        Tcl_DictObjGet(NULL, options, key, &stackTrace);
+        Tcl_DecrRefCount(key);
+        
+        fprintf(stderr, "TCL Exception: %s\n", Tcl_GetString(stackTrace));
+    }
     
     //TODO: 
     // - run go_preprocessing_hook
