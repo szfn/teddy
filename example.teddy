@@ -235,15 +235,30 @@ proc mgph_trim_parenthesis {text} {
    return [string range $text 1 end-1]
 }
 
-# test strings:
-# include <test.h>
-# bla.c:8:78:
+# examples:
+#  include <index.h>
+#  bim/bam/bla.c:
+#  bim/bam/bla.c:7,32: bang
+#  bim/bam/bla.c(2:2): sprac
+#  bim/bam/bla.c:[2,3]: sproc
+#  bim/bam/bla.c[2:3]
+#  bim/bam/bla.c:2: bloc
+#  bim/bam/bla.c(2)
+#  bim/bam/bla.c:[2]
 
 proc mouse_go_preprocessing_hook {text} {
    set text [mgph_remove_trailing_nonalnum $text]
    set text [mgph_trim_parenthesis $text]
    
    puts "Text is <$text>\n"
+   
+   if {[regexp {^([^:]*)(?::|(?::?[\(\[]))([[:digit:]]+)[,:]([[:digit:]]+)(?:[\]\)])?$} $text -> filename lineno colno]} {
+       return "$filename:$lineno:$colno"
+   }
+   
+   if {[regexp {^([^:]*)(?::|(?::?[\(\[]))([[:digit:]]+)(?:[\]\)])?$} $text -> filename lineno]} {
+       return "$filename:$lineno:0"
+   }
    
    return $text
 }

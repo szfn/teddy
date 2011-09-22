@@ -383,10 +383,18 @@ void mouse_open_action(editor_t *editor, lpoint_t *start, lpoint_t *end) {
         Tcl_DecrRefCount(key);
         
         fprintf(stderr, "TCL Exception: %s\n", Tcl_GetString(stackTrace));
+        return;
     }
     
-    //TODO: 
-    // - run go_preprocessing_hook
-    // - execute go on the result
-    // - if go fails then start search
+    const char *go_arg = Tcl_GetStringResult(interp);
+    
+    if (exec_go(go_arg) != 0) {
+        // if this succeeded we could open the file at the specified line and we are done
+        // otherwise the following code runs, we restrict the selection to a word around
+        // the cursor and call search on that
+
+        //TODO:
+        // - select word around cursor
+        // - call search        
+    }
 }
