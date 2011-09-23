@@ -35,10 +35,20 @@ static void job_destroy(job_t *job) {
     job->used = 0;
 }
 
+static void job_append(job_t *job, const char *msg, int len, int on_new_line) {
+    buffer_append(job->buffer, msg, len, on_new_line);
+    
+    editor_t *editor = columns_get_buffer(job->buffer);
+    if (editor != NULL) {
+        editor_center_on_cursor(editor);
+        gtk_widget_queue_draw(editor->drar);
+    }
+}
+
 static void jobs_child_watch_function(GPid pid, gint status, job_t *job) {
     char *msg;
     asprintf(&msg, "~ Process PID %d ended (status: %d)\n", job->child_pid, status);
-    buffer_append(job->buffer, msg, strlen(msg), 1);
+    job_append(job, msg, strlen(msg), 1);
     free(msg);
     job_destroy(job);
 }
@@ -65,13 +75,7 @@ static gboolean jobs_input_watch_function(GIOChannel *source, GIOCondition condi
     }
 #endif
 
-    buffer_append(job->buffer, buf, (size_t)bytes_read, 0);
-    {
-        editor_t *editor = columns_get_buffer(job->buffer);
-        if (editor != NULL) {
-            editor_center_on_cursor(editor);
-        }
-    }
+    job_append(job, buf, (size_t)bytes_read, 0);
 
     switch (r) {
     case G_IO_STATUS_NORMAL:
@@ -79,18 +83,18 @@ static gboolean jobs_input_watch_function(GIOChannel *source, GIOCondition condi
     case G_IO_STATUS_ERROR:
         if (condition & G_IO_HUP) {
             asprintf(&msg, "~ HUP for PID %d\n", job->child_pid);
-            buffer_append(job->buffer, msg, strlen(msg), 1);
+            job_append(job, msg, strlen(msg), 1);
             free(msg);
         } else {
             asprintf(&msg, "~ Error for PID %d\n", job->child_pid);
-            buffer_append(job->buffer, msg, strlen(msg), 1);
+            job_append(job, msg, strlen(msg), 1);
             free(msg);
         }
         job->child_source_id = g_child_watch_add(job->child_pid, (GChildWatchFunc)jobs_child_watch_function, job);
         return FALSE;
     case G_IO_STATUS_EOF:
         asprintf(&msg, "~ EOF for PID %d\n", job->child_pid);
-        buffer_append(job->buffer, msg, strlen(msg), 1);
+        job_append(job, msg, strlen(msg), 1);
         free(msg);
         job->child_source_id = g_child_watch_add(job->child_pid, (GChildWatchFunc)jobs_child_watch_function, job);
         return FALSE;
@@ -98,7 +102,7 @@ static gboolean jobs_input_watch_function(GIOChannel *source, GIOCondition condi
         return TRUE;
     default:
         asprintf(&msg, "~ Unexpected error for PID %d (%d)\n", job->child_pid, r);
-        buffer_append(job->buffer, msg, strlen(msg), 1);
+        job_append(job, msg, strlen(msg), 1);
         free(msg);
         return FALSE;
     }
