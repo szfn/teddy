@@ -245,6 +245,7 @@ proc mgph_trim_parenthesis {text} {
 #  bim/bam/bla.c:2: bloc
 #  bim/bam/bla.c(2)
 #  bim/bam/bla.c:[2]
+# go.c
 
 proc mouse_go_preprocessing_hook {text} {
    set text [mgph_remove_trailing_nonalnum $text]

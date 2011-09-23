@@ -185,10 +185,11 @@ int exec_go(const char *specifier) {
         if (tok[strlen(tok)-1] == ']') tok[strlen(tok)-1] = '\0';
         
         exec_go_position(tok, editor);
+        retval = 1;
+    } else {
+        retval = 0;
     }
-
-    retval = 1;
-
+    
  exec_go_cleanup:
     if (sc != NULL) free(sc);
     return retval;
@@ -343,6 +344,8 @@ void mouse_open_action(editor_t *editor, lpoint_t *start, lpoint_t *end) {
     lpoint_t changed_end;
     lpoint_t cursor;
     
+    context_editor = editor;
+    
     copy_lpoint(&cursor, start);
     
     printf("start_glyph: %d\n", start->glyph);
@@ -388,13 +391,25 @@ void mouse_open_action(editor_t *editor, lpoint_t *start, lpoint_t *end) {
     
     const char *go_arg = Tcl_GetStringResult(interp);
     
-    if (exec_go(go_arg) != 0) {
+    if (!exec_go(go_arg)) {
         // if this succeeded we could open the file at the specified line and we are done
         // otherwise the following code runs, we restrict the selection to a word around
         // the cursor and call search on that
-
-        //TODO:
-        // - select word around cursor
-        // - call search        
+        
+        copy_lpoint(start, &cursor);
+        copy_lpoint(end, &cursor);
+        
+        buffer_aux_wnwa_prev_ex(start);
+        buffer_aux_wnwa_next_ex(end);
+        
+        // artifact of how wnwa_prev works
+        /*++(start->glyph);
+        if (start->glyph > start->line->cap) start->glyph = start->line->cap;*/
+        
+        char *wordsel = buffer_lines_to_text(editor->buffer, start, end);
+        editor_start_search(context_editor, wordsel);
+        free(wordsel);
     }
+    
+    context_editor = NULL;
 }

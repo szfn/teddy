@@ -45,30 +45,42 @@ void buffer_aux_go_line(buffer_t *buffer, int n) {
     }
 }
 
-void buffer_aux_wnwa_next(buffer_t *buffer) {
+static UBool u_isalnum_or_underscore(uint32_t code) {
+    return u_isalnum(code) || (code == 0x5f);
+}
+
+void buffer_aux_wnwa_next_ex(lpoint_t *point) {
     UBool searching_alnum;
-    if (buffer->cursor.glyph >= buffer->cursor.line->cap) return;
+    if (point->glyph >= point->line->cap) return;
 
-    searching_alnum = !u_isalnum(buffer->cursor.line->glyph_info[buffer->cursor.glyph].code);
+    searching_alnum = !u_isalnum_or_underscore(point->line->glyph_info[point->glyph].code);
 
-    for ( ; buffer->cursor.glyph < buffer->cursor.line->cap; ++(buffer->cursor.glyph)) {
-        if (u_isalnum(buffer->cursor.line->glyph_info[buffer->cursor.glyph].code) == searching_alnum) break;
+    for ( ; point->glyph < point->line->cap; ++(point->glyph)) {
+        if (u_isalnum_or_underscore(point->line->glyph_info[point->glyph].code) == searching_alnum) break;
     }
 }
 
-void buffer_aux_wnwa_prev(buffer_t *buffer) {
+void buffer_aux_wnwa_next(buffer_t *buffer) {
+    buffer_aux_wnwa_next_ex(&(buffer->cursor));
+}
+
+void buffer_aux_wnwa_prev_ex(lpoint_t *point) {
     UBool searching_alnum;
-    if (buffer->cursor.glyph <= 0) return;
+    if (point->glyph <= 0) return;
 
-    --(buffer->cursor.glyph);
+    --(point->glyph);
 
-    searching_alnum = !u_isalnum(buffer->cursor.line->glyph_info[buffer->cursor.glyph].code);
+    searching_alnum = !u_isalnum_or_underscore(point->line->glyph_info[point->glyph].code);
 
-    for ( ; buffer->cursor.glyph >= 0; --(buffer->cursor.glyph)) {
-        if (u_isalnum(buffer->cursor.line->glyph_info[buffer->cursor.glyph].code) == searching_alnum) break;
+    for ( ; point->glyph >= 0; --(point->glyph)) {
+        if (u_isalnum_or_underscore(point->line->glyph_info[point->glyph].code) == searching_alnum) break;
     }
 
-    ++(buffer->cursor.glyph);
+    ++(point->glyph);
+}
+
+void buffer_aux_wnwa_prev(buffer_t *buffer) {
+    buffer_aux_wnwa_prev_ex(&(buffer->cursor));
 }
 
 void buffer_indent_newline(buffer_t *buffer, char *r) {

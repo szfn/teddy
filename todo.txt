@@ -1,4 +1,3 @@
-- implement right click search/go
 - bug: jobs appending text to a buffer should explicitly trigger an editor redraw somehow
 - bug: closing the buffer associated to an editor doesn't refresh the tag
 - remove ~ files after successful save
