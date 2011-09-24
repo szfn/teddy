@@ -397,6 +397,9 @@ editor_t *heuristic_new_frame(editor_t *spawning_editor, buffer_t *buffer) {
             if (allocation.height > best_column_last_editor_height) {
                 best_column_last_editor_height = allocation.height;
                 best_column = ordered_columns[i];
+                if (allocation.height > (MAX_LINES_HEIGHT_REQUEST / 2) * buffer->line_height) {
+                    break;
+                }
             }
         }
         
