@@ -1,6 +1,5 @@
 - ratelimiting appends to buffers by jobs (over some quota on some amount of time just starts skipping)
 - disable HUP message
-- when old buffers are reopened they don't center around the cursor because the center on cursor function is called before they are drawn, it should be called immediately after
 - interactivearg command to complete a command by asking for an argument on the command line
 - coalesce typed text on the undo list
 - implement search & replace

@@ -30,6 +30,7 @@ typedef struct _editor_t {
     gboolean search_failed;
 
     gboolean ignore_next_entry_keyrelease;
+    gboolean center_on_cursor_after_next_expose;
 
     struct _column_t *column;
 } editor_t;

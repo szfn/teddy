@@ -255,7 +255,7 @@ int teddy_go_command(ClientData client_data, Tcl_Interp *interp, int argc, const
 		free(urp);
 		return TCL_OK;
     } else {
-        editor_center_on_cursor(context_editor);
+        context_editor->center_on_cursor_after_next_expose = TRUE;
         gtk_widget_queue_draw(context_editor->drar);
         return TCL_OK;
     }

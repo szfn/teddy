@@ -507,8 +507,8 @@ void editor_switch_buffer(editor_t *editor, buffer_t *buffer) {
         gtk_widget_get_allocation(editor->drar, &allocation);
         buffer_typeset_maybe(editor->buffer, allocation.width);
     }
-    
-    editor_center_on_cursor(editor);
+
+    editor->center_on_cursor_after_next_expose = TRUE;    
     gtk_widget_queue_draw(editor->drar);
 }
 
@@ -1129,6 +1129,11 @@ static gboolean expose_event_callback(GtkWidget *widget, GdkEventExpose *event, 
     cairo_destroy(cr);
 
     editor->initialization_ended = 1;
+    
+    if (editor->center_on_cursor_after_next_expose) {
+        editor->center_on_cursor_after_next_expose = FALSE;
+        editor_center_on_cursor(editor);
+    }
   
     return TRUE;
 }
@@ -1212,7 +1217,8 @@ editor_t *new_editor(GtkWidget *window, column_t *column, buffer_t *buffer) {
     r->cursor_visible = TRUE;
     r->initialization_ended = 0;
     r->mouse_marking = 0;
-    r->ignore_next_entry_keyrelease = 0;
+    r->ignore_next_entry_keyrelease = FALSE;
+    r->center_on_cursor_after_next_expose = FALSE;
 
     r->search_mode = FALSE;
     r->search_failed = FALSE;
