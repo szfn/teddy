@@ -1,5 +1,4 @@
-- ratelimiting appends to buffers by jobs (over some quota on some amount of time just starts skipping)
-- disable HUP message
+- mouse open/search heuristic improvement: discard quotes around selected words before attempting to call go
 - due to the new change in heuristic a new +bg+ buffer doesn't go to the right column
 - interactivearg command to complete a command by asking for an argument on the command line
 - coalesce typed text on the undo list

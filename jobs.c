@@ -75,16 +75,31 @@ static gboolean jobs_input_watch_function(GIOChannel *source, GIOCondition condi
     }
 #endif
 
-    job_append(job, buf, (size_t)bytes_read, 0);
+    if (!job->ratelimit_silenced) {
+        job_append(job, buf, (size_t)bytes_read, 0);
+        
+        if (job->current_ratelimit_bucket_start - time(NULL) > RATELIMIT_BUCKET_DURATION_SECS) {
+            if (job->current_ratelimit_bucket_size > RATELIMIT_MAX_BYTES) {
+                const char *msg = "~ Process silenced due to excessive spam\n";
+                job_append(job, msg, strlen(msg), 1);
+                job->ratelimit_silenced = true;
+            }
+            job->current_ratelimit_bucket_start = time(NULL);
+            job->current_ratelimit_bucket_size = 0;
+        }
+        
+        job->current_ratelimit_bucket_size += bytes_read;
+    }
 
     switch (r) {
     case G_IO_STATUS_NORMAL:
         return TRUE;
     case G_IO_STATUS_ERROR:
         if (condition & G_IO_HUP) {
-            asprintf(&msg, "~ HUP for PID %d\n", job->child_pid);
+            // we don't say nothing here, just wait for death
+            /*asprintf(&msg, "~ HUP for PID %d\n", job->child_pid);
             job_append(job, msg, strlen(msg), 1);
-            free(msg);
+            free(msg);*/
         } else {
             asprintf(&msg, "~ Error for PID %d\n", job->child_pid);
             job_append(job, msg, strlen(msg), 1);
@@ -123,6 +138,10 @@ int jobs_register(pid_t child_pid, int masterfd, struct _buffer_t *buffer) {
     jobs[i].buffer->job = jobs+i;
 
     jobs[i].pipe_from_child = g_io_channel_unix_new(masterfd);
+    
+    jobs[i].ratelimit_silenced = false;
+    jobs[i].current_ratelimit_bucket_start = 0;
+    jobs[i].current_ratelimit_bucket_size = 0;
 
     {
         GError *error = NULL;
