@@ -1,4 +1,3 @@
-- remove ~ files after successful save
 - heuristic should pick the column with the biggest ending frame
 - trailing spaces should be cleared by default
 - ratelimiting appends to buffers by jobs (over some quota on some amount of time just starts skipping)

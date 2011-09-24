@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <math.h>
 #include <assert.h>
+#include <unistd.h>
 
 #include "global.h"
 
@@ -791,7 +792,11 @@ void save_to_text_file(buffer_t *buffer) {
     asprintf(&cmd, "diff %s %s~", buffer->path, buffer->path);
     system(cmd);
     free(cmd);
-
+    
+    asprintf(&cmd, "%s~", buffer->path);
+    unlink(cmd); // we ignore the return value, too bad if we couldn't delete it
+    free(cmd);
+    
     buffer->modified = 0;
 }
 
