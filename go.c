@@ -181,10 +181,22 @@ int exec_go(const char *specifier) {
         if (tok == NULL) { retval = 1; goto exec_go_cleanup; }
         if (strlen(tok) == 0) { retval = 1; goto exec_go_cleanup; }
         
-        if (tok[0] == '[') ++tok;
-        if (tok[strlen(tok)-1] == ']') tok[strlen(tok)-1] = '\0';
+        char *tok2 = strtok_r(NULL, ":", &saveptr);
+        char *specifier;
         
-        exec_go_position(tok, editor);
+        if (tok2 != NULL) {
+            asprintf(&specifier, "%s:%s", tok, tok2);
+        } else {
+            asprintf(&specifier, "%s", tok);
+        }
+        
+        if (specifier[0] == '[') ++tok;
+        if (specifier[strlen(specifier)-1] == ']') specifier[strlen(specifier)-1] = '\0';
+        
+        exec_go_position(specifier, editor);
+        
+        free(specifier);
+        
         retval = 1;
     } else {
         retval = 0;

@@ -1,5 +1,4 @@
-- mouse_open_or_search doesn't go to the specified line number (and doesn't focus the buffer if it's already open)
-- trailing spaces should be cleared by default
+- trailing spaces should be cleared by default (both when going to end of line and on save) -- this should be controlled by a setting
 - ratelimiting appends to buffers by jobs (over some quota on some amount of time just starts skipping)
 - disable HUP message
 - interactivearg command to complete a command by asking for an argument on the command line
