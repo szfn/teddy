@@ -29,7 +29,7 @@ static void buffer_set_to_real(buffer_t *buffer, lpoint_t *real_point) {
     if (buffer->cursor.glyph > buffer->cursor.line->cap) buffer->cursor.glyph = buffer->cursor.line->cap;
 }
 
-static void grow_line(real_line_t *line, int insertion_point, int size) { 
+static void grow_line(real_line_t *line, int insertion_point, int size) {
     /*printf("cap: %d allocated: %d\n", line->glyphs_cap, line->allocated_glyphs);*/
    
     while (line->cap + size >= line->allocated) {
@@ -53,7 +53,7 @@ static void grow_line(real_line_t *line, int insertion_point, int size) {
         memmove(line->glyphs+insertion_point+size, line->glyphs+insertion_point, sizeof(cairo_glyph_t)*(line->cap - insertion_point));
         memmove(line->glyph_info+insertion_point+size, line->glyph_info+insertion_point, sizeof(my_glyph_info_t)*(line->cap - insertion_point));
         line->cap += size;
-    } 
+    }
 }
 
 static void buffer_join_lines(buffer_t *buffer, real_line_t *line1, real_line_t *line2) {
@@ -271,7 +271,7 @@ static int buffer_line_insert_utf8_text(buffer_t *buffer, real_line_t *line, con
             glyph_index = FT_Get_Char_Index(scaledface, 0x20);
         }
 
-        grow_line(line, dst, 1); 
+        grow_line(line, dst, 1);
 
         line->glyph_info[dst].code = code;
 
@@ -407,7 +407,7 @@ static void buffer_line_adjust_glyphs(buffer_t *buffer, real_line_t *line, doubl
     line->start_y = y;
     line->end_y = y;
 
-    buffer_line_fix_spaces(buffer, line);    
+    buffer_line_fix_spaces(buffer, line);
 
     //printf("setting type\n");
     for (i = 0; i < line->cap; ++i) {
@@ -459,7 +459,7 @@ void buffer_replace_selection(buffer_t *buffer, const char *new_text) {
 
     copy_lpoint(&start_point, &(buffer->cursor));
 
-    //printf("buffer_replace_selection: %d %d\n", buffer->cursor_line->cap, buffer->cursor_glyph);    
+    //printf("buffer_replace_selection: %d %d\n", buffer->cursor_line->cap, buffer->cursor_glyph);
     buffer_insert_multiline_text(buffer, &(buffer->cursor), new_text);
 
     copy_lpoint(&end_point, &(buffer->cursor));
@@ -494,7 +494,7 @@ static void buffer_thaw_selection(buffer_t *buffer, selection_t *selection, lpoi
 void buffer_undo(buffer_t *buffer) {
     lpoint_t start_point, end_point;
     real_line_t *typeset_start_line;
-    undo_node_t *undo_node; 
+    undo_node_t *undo_node;
 
     if (!(buffer->editable)) return;
     if (buffer->job != NULL) return;
@@ -662,7 +662,7 @@ int load_text_file(buffer_t *buffer, const char *filename) {
 
 char *buffer_line_to_text(buffer_t *buffer, real_line_t *line) {
     lpoint_t start, end;
-    start.line = end.line = line; 
+    start.line = end.line = line;
     start.glyph = 0;
     end.glyph = line->cap;
     return buffer_lines_to_text(buffer, &start, &end);
@@ -1068,6 +1068,12 @@ void buffer_line_clean_trailing_spaces(buffer_t *buffer, real_line_t *line) {
         line->cap = cap_save;
     } else {
         buffer->modified = 1;
+        if (buffer->cursor.line == line) {
+            if (buffer->cursor.glyph > line->cap) buffer->cursor.glyph = line->cap;
+        }
+        if (buffer->mark.line == line) {
+            if (buffer->mark.glyph > line->cap) buffer->mark.glyph = line->cap;
+        }
         editor_t *editor = columns_get_buffer(buffer);
         if (editor != NULL) {
             gtk_widget_queue_draw(editor->label);

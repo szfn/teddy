@@ -1,5 +1,6 @@
 - ratelimiting appends to buffers by jobs (over some quota on some amount of time just starts skipping)
 - disable HUP message
+- due to the new change in heuristic a new +bg+ buffer doesn't go to the right column
 - interactivearg command to complete a command by asking for an argument on the command line
 - coalesce typed text on the undo list
 - implement search & replace
@@ -14,6 +15,7 @@
 - implement disable horizontal scrollbar
 - implement ability to switch a buffer's main font
 - implement +bg+ buffer setup hook, set as defaults: stayoncmd, disable horzontal scrollbar, switch font to monospaced
+- possible bug: selecting and scrolling doesn't work
 - open problem: you want man pages open in a new bg buffer, not on the existing one (because it's probably small)
 - move builtin commands code from example.teddy into a tcl file and change Makefile and interp.c so it's compiled in and loaded automatically
 - Ctrl-o move to next editor (keep a stack of editors like windows' windows)
