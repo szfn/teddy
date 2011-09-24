@@ -193,7 +193,7 @@ void column_replace_buffer(column_t *column, buffer_t *buffer) {
     for (i = 0; i < column->editors_allocated; ++i) {
         if (column->editors[i] == NULL) continue;
         if (column->editors[i]->buffer == buffer) {
-            column->editors[i]->buffer = null_buffer();
+            editor_switch_buffer(column->editors[i], null_buffer());
         }
     }
 }

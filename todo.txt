@@ -1,7 +1,10 @@
-- bug: closing the buffer associated to an editor doesn't refresh the tag
 - remove ~ files after successful save
 - heuristic should pick the column with the biggest ending frame
 - trailing spaces should be cleared by default
+- ratelimiting appends to buffers by jobs (over some quota on some amount of time just starts skipping)
+- disable HUP message
+- interactivearg command to complete a command by asking for an argument on the command line
+- coalesce typed text on the undo list
 - opening directories
 - command to refresh an open directory
 - open current directory on startup
