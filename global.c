@@ -14,6 +14,7 @@ config_item_t cfg_main_font;
 config_item_t cfg_posbox_font;
 config_item_t cfg_focus_follows_mouse;
 config_item_t cfg_default_autoindent;
+config_item_t cfg_default_spaceman;
 
 config_item_t cfg_editor_bg_color;
 config_item_t cfg_editor_fg_color;
@@ -59,6 +60,7 @@ void global_init() {
     setcfg(&cfg_focus_follows_mouse, "1");
 
     setcfg(&cfg_default_autoindent, "1");
+    setcfg(&cfg_default_spaceman, "1");
     
     setcfg(&cfg_editor_bg_color, "255");
     setcfg(&cfg_editor_fg_color, "16777215"); // white

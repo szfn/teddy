@@ -7,6 +7,7 @@
 #include <unistd.h>
 
 #include "global.h"
+#include "columns.h"
 
 void buffer_set_mark_at_cursor(buffer_t *buffer) {
     copy_lpoint(&(buffer->mark), &(buffer->cursor));
@@ -763,6 +764,12 @@ void save_to_text_file(buffer_t *buffer) {
         perror("Couldn't write to file");
         return;
     }
+    
+    if (cfg_default_spaceman.intval) {
+        for (real_line_t *line = buffer->real_line; line != NULL; line = line->next) {
+            buffer_line_clean_trailing_spaces(buffer, line);
+        }
+    }
 
     {
         lpoint_t startp = { buffer->real_line, 0 };
@@ -1044,5 +1051,26 @@ void buffer_typeset_maybe(buffer_t *buffer, double width) {
     for (line = buffer->real_line; line != NULL; line = line->next) {
         buffer_line_adjust_glyphs(buffer, line, y);
         y += line->y_increment;
+    }
+}
+
+void buffer_line_clean_trailing_spaces(buffer_t *buffer, real_line_t *line) {
+    int cap_save = line->cap;
+    while (line->cap > 0) {
+        uint32_t code_before_cap = line->glyph_info[line->cap-1].code;
+        if ((code_before_cap != 0x20) && (code_before_cap != 0x09)) {
+            break;
+        }
+        --(line->cap);
+    }
+    
+    if (line->cap == 0) {
+        line->cap = cap_save;
+    } else {
+        buffer->modified = 1;
+        editor_t *editor = columns_get_buffer(buffer);
+        if (editor != NULL) {
+            gtk_widget_queue_draw(editor->label);
+        }
     }
 }

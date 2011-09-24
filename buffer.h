@@ -131,4 +131,7 @@ void buffer_move_cursor_to_position(buffer_t *buffer, double x, double y);
 
 int buffer_real_line_count(buffer_t *buffer);
 
+// removes trailing spaces from line unless line is exclusively made out of spaces
+void buffer_line_clean_trailing_spaces(buffer_t *buffer, real_line_t *line);
+
 #endif

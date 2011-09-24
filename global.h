@@ -38,6 +38,7 @@ extern config_item_t cfg_main_font;
 extern config_item_t cfg_posbox_font;
 extern config_item_t cfg_focus_follows_mouse;
 extern config_item_t cfg_default_autoindent;
+extern config_item_t cfg_default_spaceman;
 
 extern config_item_t cfg_editor_bg_color;
 extern config_item_t cfg_editor_fg_color;
