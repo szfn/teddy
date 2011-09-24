@@ -214,6 +214,20 @@ editor_t *column_get_first_editor(column_t *column) {
     return r;
 }
 
+editor_t *column_get_last_editor(column_t *column) {
+    editor_t *r = NULL;
+    GList *list = gtk_container_get_children(GTK_CONTAINER(column->editors_vbox));
+    for (GList *cur = list; cur != NULL; cur = cur->next) {
+        if (cur->next == NULL) {
+            int new_idx = editors_editor_from_table(column, cur->data);
+            r = (new_idx != -1) ? column->editors[new_idx] : NULL;
+            break;
+        }
+    }
+    g_list_free(list);
+    return r;
+}
+
 editor_t *column_remove(column_t *column, editor_t *editor) {
     int idx = editors_find_editor(column, editor);
     

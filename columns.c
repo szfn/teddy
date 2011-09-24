@@ -384,7 +384,32 @@ editor_t *heuristic_new_frame(editor_t *spawning_editor, buffer_t *buffer) {
         
         printf("   No large column to split\n");
     }
+    
+    { // search for the column with the most space on the bottom editor
+        column_t *best_column = NULL;
+        int best_column_last_editor_height = 50;
+        
+        for (int i = 0; i < numcol; ++i) {
+            GtkAllocation allocation;
+            editor_t *editor = column_get_last_editor(ordered_columns[i]);
+            gtk_widget_get_allocation(editor->drar, &allocation);
+            
+            if (allocation.height > best_column_last_editor_height) {
+                best_column_last_editor_height = allocation.height;
+                best_column = ordered_columns[i];
+            }
+        }
+        
+        if (best_column != NULL) {
+            editor_t *editor = column_new_editor(best_column, buffer);
+            if (editor != NULL) {
+                retval = editor;
+                goto heuristic_new_frame_exit;
+            }
+        }
+    }
 
+#ifdef DISABLED_PIECE_OF_HEURISTIC_PICKING_A_COLUMN_WITH_SOME_EMPTY_SPACE
     { // search for a column with some empty space
         int i = garbage ? numcol-1 : 0;
 
@@ -408,6 +433,7 @@ editor_t *heuristic_new_frame(editor_t *spawning_editor, buffer_t *buffer) {
 
         printf("   No column with empty space found\n");
     }
+#endif
 
     // try to create a new frame inside the active column (column of last edit operation)
     if (active_column != NULL) {
