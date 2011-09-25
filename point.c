@@ -24,3 +24,7 @@ bool inbetween_lpoint(lpoint_t *start, lpoint_t *x, lpoint_t *end) {
         }
     }
 }
+
+bool points_equal(point_t *a, point_t *b) {
+    return (a->lineno == b->lineno) && (a->glyph == b->glyph);
+}

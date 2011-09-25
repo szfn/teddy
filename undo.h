@@ -3,6 +3,10 @@
 
 #include "point.h"
 
+#include <time.h>
+
+#define TYPING_FUSION_INTERVAL 2
+
 typedef struct _selection_t {
     point_t start;
     point_t end;
@@ -15,10 +19,12 @@ typedef struct _undo_node_t {
 
     struct _undo_node_t *prev;
     struct _undo_node_t *next;
+    
+    time_t time;
 } undo_node_t;
 
 typedef struct _undo_t {
-    /* head of the undo stack, in other words, the very last undo node added to the list */    
+    /* head of the undo stack, in other words, the very last undo node added to the list */
     undo_node_t *head;
 } undo_t;
 
