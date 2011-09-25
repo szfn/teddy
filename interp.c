@@ -49,7 +49,7 @@ static int teddy_new_command(ClientData client_data, Tcl_Interp *interp, int arg
     if (argc == 1) {
         editor_t *n = heuristic_new_frame(context_editor, null_buffer());
         if (n != NULL) {
-            gtk_widget_grab_focus(n->drar);
+            editor_grab_focus(n);
             deferred_action_to_return = FOCUS_ALREADY_SWITCHED;
         }
         return TCL_OK;
@@ -58,18 +58,18 @@ static int teddy_new_command(ClientData client_data, Tcl_Interp *interp, int arg
     if (strcmp(argv[1], "row") == 0) {
         editor_t *n = column_new_editor(context_editor->column, null_buffer());
         if (n != NULL) {
-            gtk_widget_grab_focus(n->drar);
+            editor_grab_focus(n);
             deferred_action_to_return = FOCUS_ALREADY_SWITCHED;
         }
         return TCL_OK;
     } else if (strcmp(argv[1], "col") == 0) {
         editor_t *n = columns_new(null_buffer());
         if (n != NULL) {
-            gtk_widget_grab_focus(n->drar);
+            editor_grab_focus(n);
             deferred_action_to_return = FOCUS_ALREADY_SWITCHED;
         }
         return TCL_OK;
-    } 
+    }
     
     {
         char *msg;
@@ -132,6 +132,8 @@ static int teddy_setcfg_command(ClientData client_data, Tcl_Interp *interp, int 
         ci = &cfg_editor_sel_color;
     } else if (strcmp(argv[1], "border_color") == 0) {
         ci = &cfg_border_color;
+    } else if (strcmp(argv[1], "warp_mouse") == 0) {
+        ci = &cfg_warp_mouse;
     }
 
     if (ci == NULL) {
@@ -338,7 +340,7 @@ static int teddy_move_command(ClientData client_data, Tcl_Interp *interp, int ar
             buffer_aux_wnwa_prev(context_editor->buffer);
         editor_complete_move(context_editor, TRUE);
     } else {
-        if (operation != TMCO_NONE) 
+        if (operation != TMCO_NONE)
         Tcl_AddErrorInfo(interp, "Unknown argument to 'move' command");
         return TCL_ERROR;
     }
@@ -410,7 +412,7 @@ static int teddy_backgrounded_bg_command(ClientData client_data, Tcl_Interp *int
     {
         int code = Tcl_Eval(interp, argv[1]);
         if (code != TCL_OK) {
-            Tcl_Obj *options = Tcl_GetReturnOptions(interp, code);  
+            Tcl_Obj *options = Tcl_GetReturnOptions(interp, code);
             Tcl_Obj *key = Tcl_NewStringObj("-errorinfo", -1);
             Tcl_Obj *stackTrace;
             Tcl_IncrRefCount(key);
@@ -519,7 +521,7 @@ static int teddy_bg_command(ClientData client_data, Tcl_Interp *interp, int argc
     {
         int code = Tcl_Eval(interp, argv[1]);
         if (code != TCL_OK) {
-            Tcl_Obj *options = Tcl_GetReturnOptions(interp, code);  
+            Tcl_Obj *options = Tcl_GetReturnOptions(interp, code);
             Tcl_Obj *key = Tcl_NewStringObj("-errorinfo", -1);
             Tcl_Obj *stackTrace;
             Tcl_IncrRefCount(key);
@@ -589,7 +591,7 @@ static int teddy_sendinput_command(ClientData client_data, Tcl_Interp *interp, i
                 Tcl_AddErrorInfo(interp, "Error sending input to process");
                 return TCL_ERROR;
             }
-            buffer_append(context_editor->buffer, " ", strlen(" "), 0);            
+            buffer_append(context_editor->buffer, " ", strlen(" "), 0);
         }
     }
     if (write_all(job->masterfd, "\n") < 0) {
@@ -664,7 +666,7 @@ enum deferred_action interp_eval(editor_t *editor, const char *command) {
     code = Tcl_Eval(interp, command);
         
     if (code != TCL_OK) {
-        Tcl_Obj *options = Tcl_GetReturnOptions(interp, code);  
+        Tcl_Obj *options = Tcl_GetReturnOptions(interp, code);
         Tcl_Obj *key = Tcl_NewStringObj("-errorinfo", -1);
         Tcl_Obj *stackTrace;
         Tcl_IncrRefCount(key);
@@ -694,7 +696,7 @@ void read_conf(void) {
     int code = Tcl_EvalFile(interp, name);
     
     if (code != TCL_OK) {
-        Tcl_Obj *options = Tcl_GetReturnOptions(interp, code);  
+        Tcl_Obj *options = Tcl_GetReturnOptions(interp, code);
         Tcl_Obj *key = Tcl_NewStringObj("-errorinfo", -1);
         Tcl_Obj *stackTrace;
         Tcl_IncrRefCount(key);

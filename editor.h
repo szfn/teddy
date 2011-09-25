@@ -31,6 +31,7 @@ typedef struct _editor_t {
 
     gboolean ignore_next_entry_keyrelease;
     gboolean center_on_cursor_after_next_expose;
+    gboolean warp_mouse_after_next_expose;
 
     struct _column_t *column;
 } editor_t;
@@ -63,5 +64,7 @@ void editor_move_cursor(editor_t *editor, int delta_line, int delta_char, enum M
 void editor_complete_move(editor_t *editor, gboolean should_move_origin);
 
 void editor_close_editor(editor_t *editor);
+
+void editor_grab_focus(editor_t *editor);
 
 #endif

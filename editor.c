@@ -30,14 +30,14 @@ void set_label_text(editor_t *editor) {
     gtk_widget_queue_draw(editor->label);
     gtk_widget_queue_draw(editor->reshandle->resdr);
 
-    free(labeltxt); 
+    free(labeltxt);
 }
 
 void editor_replace_selection(editor_t *editor, const char *new_text) {
     buffer_replace_selection(editor->buffer, new_text);
     active_column = editor->column;
     set_label_text(editor);
-    editor_center_on_cursor(editor);    
+    editor_center_on_cursor(editor);
     gtk_widget_queue_draw(editor->drar);
 }
 
@@ -221,7 +221,7 @@ void editor_insert_paste(editor_t *editor, GtkClipboard *clipboard) {
 
 static void move_search_forward(editor_t *editor, gboolean ctrl_g_invoked) {
     const gchar *text = gtk_entry_get_text(GTK_ENTRY(editor->entry));
-    int len = strlen(text);    
+    int len = strlen(text);
     
     uint32_t *needle = malloc(len*sizeof(uint32_t));
     
@@ -267,7 +267,7 @@ static void move_search_forward(editor_t *editor, gboolean ctrl_g_invoked) {
         }
 
         if (j >= dst) {
-            // search was successful            
+            // search was successful
             editor->buffer->mark.line = search_line;
             editor->buffer->mark.glyph = i - j;
             editor->buffer->cursor.line = search_line;
@@ -364,7 +364,7 @@ void editor_close_editor(editor_t *editor) {
         column_t *column = columns_remove(editor->column, editor);
         editor = column_get_first_editor(column);
     }
-    gtk_widget_grab_focus(editor->drar);
+    editor_grab_focus(editor);
 }
 
 
@@ -508,7 +508,7 @@ void editor_switch_buffer(editor_t *editor, buffer_t *buffer) {
         buffer_typeset_maybe(editor->buffer, allocation.width);
     }
 
-    editor->center_on_cursor_after_next_expose = TRUE;    
+    editor->center_on_cursor_after_next_expose = TRUE;
     gtk_widget_queue_draw(editor->drar);
 }
 
@@ -707,7 +707,7 @@ static gboolean key_press_callback(GtkWidget *widget, GdkEventKey *event, editor
     if (shift && !ctrl && !alt && !super) {
         if ((event->keyval >= 0x21) && (event->keyval <= 0x7e)) {
             goto im_context;
-        } 
+        }
     }
     
     converted = keyevent_to_string(event->keyval);
@@ -1134,6 +1134,11 @@ static gboolean expose_event_callback(GtkWidget *widget, GdkEventExpose *event, 
         editor->center_on_cursor_after_next_expose = FALSE;
         editor_center_on_cursor(editor);
     }
+    
+    if (editor->warp_mouse_after_next_expose) {
+        editor_grab_focus(editor);
+        editor->warp_mouse_after_next_expose = FALSE;
+    }
   
     return TRUE;
 }
@@ -1170,7 +1175,7 @@ static gboolean label_button_press_callback(GtkWidget *widget, GdkEventButton *e
         if (new_editor == NULL) {
             heuristic_new_frame(editor, null_buffer());
         } else {
-           gtk_widget_grab_focus(new_editor->drar);
+           editor_grab_focus(new_editor);
         }
         return TRUE;
     }
@@ -1202,7 +1207,7 @@ static gboolean label_button_release_callback(GtkWidget *widget, GdkEventButton 
             columns_swap_columns(editor->column, target_column);
         }
         return TRUE;
-    } 
+    }
     
     return FALSE;
 }
@@ -1219,6 +1224,7 @@ editor_t *new_editor(GtkWidget *window, column_t *column, buffer_t *buffer) {
     r->mouse_marking = 0;
     r->ignore_next_entry_keyrelease = FALSE;
     r->center_on_cursor_after_next_expose = FALSE;
+    r->warp_mouse_after_next_expose = FALSE;
 
     r->search_mode = FALSE;
     r->search_failed = FALSE;
@@ -1303,7 +1309,7 @@ editor_t *new_editor(GtkWidget *window, column_t *column, buffer_t *buffer) {
         gtk_box_set_child_packing(GTK_BOX(tag), event_box, FALSE, FALSE, 0, GTK_PACK_START);
         gtk_box_set_child_packing(GTK_BOX(tag), r->entry, TRUE, TRUE, 0, GTK_PACK_END);
 
-        {        
+        {
             GtkWidget *frame_top = gtk_drawing_area_new();
             GtkWidget *frame_right = gtk_drawing_area_new();
             
@@ -1346,3 +1352,22 @@ void editor_free(editor_t *editor) {
     free(editor);
 }
 
+void editor_grab_focus(editor_t *editor) {
+    gtk_widget_grab_focus(editor->drar);
+    
+    if (cfg_warp_mouse.intval) {
+        GdkDisplay *display = gdk_display_get_default();
+        GdkScreen *screen = gdk_display_get_default_screen(display);
+        GtkAllocation allocation;
+        gtk_widget_get_allocation(editor->drar, &allocation);
+        if ((allocation.x < 0) || (allocation.y < 0)) {
+            editor->warp_mouse_after_next_expose = TRUE;
+        } else {
+            gint wpos_x, wpos_y;
+            gdk_window_get_position(gtk_widget_get_window(editor->window), &wpos_x, &wpos_y);
+            
+            printf("allocation: %d,%d\n", allocation.x, allocation.y);
+            gdk_display_warp_pointer(display, screen, allocation.x+wpos_x+5, allocation.y+wpos_y+5);
+        }
+    }
+}

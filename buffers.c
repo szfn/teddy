@@ -45,7 +45,7 @@ static int get_selected_idx(void) {
     if ((idx >= buffers_allocated) || (buffers[idx] == NULL)) {
         printf("Error selecting buffer (why?) %d\n", idx);
         return -1;
-    } 
+    }
     
     return idx;
 }
@@ -61,11 +61,8 @@ static gboolean buffers_key_press_callback(GtkWidget *widget, GdkEventKey *event
         case GDK_KEY_Return: {
             int idx = get_selected_idx();
             if (idx < 0) return TRUE;
-            gtk_widget_hide(buffers_window);            
+            gtk_widget_hide(buffers_window);
             go_to_buffer(buffers_selector_focus_editor, buffers[idx]);
-            /*
-            gtk_widget_grab_focus(buffers_selector_focus_editor->drar);
-            gtk_widget_grab_focus(buffers_selector_focus_editor->window);*/
             return TRUE;
         }
         case GDK_KEY_Escape:

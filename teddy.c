@@ -63,7 +63,7 @@ int main(int argc, char *argv[]) {
 
     gtk_widget_show_all(window);
 
-    gtk_widget_grab_focus(GTK_WIDGET(editor->drar));
+    editor_grab_focus(editor);
 
     gtk_main();
 

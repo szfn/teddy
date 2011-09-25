@@ -1,4 +1,6 @@
-- due to the new change in heuristic a new +bg+ buffer doesn't go to the right column
+- bug go_to_buffer + select the position part gets executed on the current editor erroneously
+- bug: column numbers should start at 1 not 0
+- move mouse cursor when searching
 - interactivearg command to complete a command by asking for an argument on the command line
 - coalesce typed text on the undo list
 - implement search & replace
@@ -43,8 +45,7 @@
   - column_adjust_size just takes the last row and uses all the empty space or 40% if there isn't any empty space
   - put the columns_hbox insite a single custom container that returns a requested size of { 0, 0 } and on allocation just resizes everything maintaining proportions
 - highlighting of matching parenthesis
-- move mouse cursor when grabbing focus to an editor
-- move mouse cursor when searching
+
 
 - word selection for open action is longest sequence around point consisting of:
   - letters

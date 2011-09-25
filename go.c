@@ -68,7 +68,7 @@ static int exec_go_position(const char *specifier, editor_t *context_editor) {
     }
     
     if (isnumber(specifier)) {
-        n1 = strtol(specifier, NULL, 10);        
+        n1 = strtol(specifier, NULL, 10);
         //printf("Line\n");
         buffer_aux_go_line(context_editor->buffer, (int)n1);
         editor_complete_move(context_editor, TRUE);
@@ -102,7 +102,7 @@ editor_t *go_to_buffer(editor_t *editor, buffer_t *buffer) {
     int response;
     char *msg;
     if (target != NULL) {
-        gtk_widget_grab_focus(target->drar);
+        editor_grab_focus(target);
         deferred_action_to_return = FOCUS_ALREADY_SWITCHED;
         return target;
     }
@@ -129,10 +129,10 @@ editor_t *go_to_buffer(editor_t *editor, buffer_t *buffer) {
         return editor;
         
     case GO_NEW:
-    default: 
+    default:
         target = heuristic_new_frame(editor, buffer);
         if (target != NULL) {
-            gtk_widget_grab_focus(target->drar);
+            editor_grab_focus(target);
             deferred_action_to_return = FOCUS_ALREADY_SWITCHED;
         }
         return target;
@@ -169,7 +169,7 @@ int exec_go(const char *specifier) {
              buffer_free(buffer);
              retval = 0;
              goto exec_go_cleanup;
-         } 
+         }
          buffers_add(buffer);
     }
 
@@ -302,7 +302,7 @@ void go_init(GtkWidget *window) {
 
     gtk_button_set_use_underline(GTK_BUTTON(button_current), TRUE);
     gtk_button_set_use_underline(GTK_BUTTON(button_new), TRUE);
-    gtk_button_set_use_underline(GTK_BUTTON(button_select), TRUE);    
+    gtk_button_set_use_underline(GTK_BUTTON(button_select), TRUE);
 
     gtk_container_add(GTK_CONTAINER(vbox), go_switch_label);
     gtk_container_add(GTK_CONTAINER(vbox), button_current);
@@ -321,7 +321,7 @@ void go_init(GtkWidget *window) {
 }
 
 static bool mouse_open_select_like_file(editor_t *editor, lpoint_t *cursor, lpoint_t *start, lpoint_t *end) {
-    start->glyph = 0; 
+    start->glyph = 0;
     end->glyph = cursor->line->cap;
     
     start->line = cursor->line;
@@ -385,12 +385,12 @@ void mouse_open_action(editor_t *editor, lpoint_t *start, lpoint_t *end) {
     
     int code = Tcl_Eval(interp, Tcl_Merge(2, eval_argv));
 
-    free(text); 
+    free(text);
     
     if (code == TCL_OK) {
         printf("After processing hook: [%s]\n", Tcl_GetStringResult(interp));
     } else {
-        Tcl_Obj *options = Tcl_GetReturnOptions(interp, code);  
+        Tcl_Obj *options = Tcl_GetReturnOptions(interp, code);
         Tcl_Obj *key = Tcl_NewStringObj("-errorinfo", -1);
         Tcl_Obj *stackTrace;
         Tcl_IncrRefCount(key);

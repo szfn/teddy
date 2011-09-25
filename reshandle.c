@@ -58,7 +58,7 @@ static gboolean reshandle_button_press_callback(GtkWidget *widget, GdkEventButto
         if (new_editor == NULL) {
             heuristic_new_frame(reshandle->editor, null_buffer());
         } else {
-           gtk_widget_grab_focus(new_editor->drar);
+           editor_grab_focus(new_editor);
         }
         return TRUE;
     }
