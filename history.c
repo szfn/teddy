@@ -24,7 +24,11 @@ history_t *history_new(void) {
 
     r->history_window = gtk_dialog_new();
     gtk_window_set_destroy_with_parent(GTK_WINDOW(r->history_window), TRUE);
-    gtk_container_add(GTK_CONTAINER(gtk_dialog_get_content_area(GTK_DIALOG(r->history_window))), r->history_tree);
+    
+    GtkWidget *scroll_window = gtk_scrolled_window_new(NULL, NULL);
+    gtk_container_add(GTK_CONTAINER(scroll_window), r->history_tree);
+    
+    gtk_container_add(GTK_CONTAINER(gtk_dialog_get_content_area(GTK_DIALOG(r->history_window))), scroll_window);
 
     gtk_window_set_default_size(GTK_WINDOW(r->history_window), 400, 300);
 

@@ -1,5 +1,4 @@
 - bug: column numbers should start at 1 not 0
-- bug: limit length of the history window
 - move mouse cursor when searching
 - interactivearg command to complete a command by asking for an argument on the command line
 - coalesce typed text on the undo list
