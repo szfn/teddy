@@ -23,23 +23,23 @@ typedef enum _swich_window_result_t {
 
 switch_window_result_t switch_window_results[] = { GO_CURRENT, GO_NEW, GO_SELECT };
 
-static int exec_char_specifier(const char *specifier, int really_exec, editor_t *context_editor) {
+static int exec_char_specifier(const char *specifier, int really_exec, buffer_t *buffer) {
     long int n1;
     
     if ((strcmp(specifier, "^") == 0) || (strcmp(specifier, ":^") == 0)) {
-        if (really_exec) buffer_aux_go_first_nonws(context_editor->buffer);
+        if (really_exec) buffer_aux_go_first_nonws(buffer);
         return 1;
     }
     
     if ((strcmp(specifier, "$") == 0) || (strcmp(specifier, ":$") == 0)) {
-        if (really_exec) buffer_aux_go_end(context_editor->buffer);
+        if (really_exec) buffer_aux_go_end(buffer);
         return 1;
     }
     
     if (specifier[0] == ':') {
         n1 = strtol(specifier+1, NULL, 10);
         if (n1 != LONG_MIN) {
-            if (really_exec) buffer_aux_go_char(context_editor->buffer, (int)n1);
+            if (really_exec) buffer_aux_go_char(buffer, (int)n1);
             return 1;
         }
     }
@@ -58,20 +58,22 @@ static int isnumber(const char *str) {
     return 1;
 }
 
-static int exec_go_position(const char *specifier, editor_t *context_editor) {
+static int exec_go_position(const char *specifier, editor_t *context_editor, buffer_t *buffer) {
     long int n1;
     char *pos;
 
-    if (exec_char_specifier(specifier, 1, context_editor)) {
-        editor_complete_move(context_editor, TRUE);
+    if (exec_char_specifier(specifier, 1, buffer)) {
+        if (context_editor != NULL)
+            editor_complete_move(context_editor, TRUE);
         return 1;
     }
     
     if (isnumber(specifier)) {
         n1 = strtol(specifier, NULL, 10);
         //printf("Line\n");
-        buffer_aux_go_line(context_editor->buffer, (int)n1);
-        editor_complete_move(context_editor, TRUE);
+        buffer_aux_go_line(buffer, (int)n1);
+        if (context_editor != NULL)
+            editor_complete_move(context_editor, TRUE);
         return 1;
     }
 
@@ -82,11 +84,12 @@ static int exec_go_position(const char *specifier, editor_t *context_editor) {
         c[pos - specifier] = '\0';
         if (isnumber(c)) {
             n1 = strtol(c, NULL, 10);
-            if (exec_char_specifier(pos, 0, context_editor)) {
+            if (exec_char_specifier(pos, 0, buffer)) {
                 printf("Line + char\n");
-                buffer_aux_go_line(context_editor->buffer, (int)n1);
-                exec_char_specifier(pos, 1, context_editor);
-                editor_complete_move(context_editor, TRUE);
+                buffer_aux_go_line(buffer, (int)n1);
+                exec_char_specifier(pos, 1, buffer);
+                if (context_editor != NULL)
+                    editor_complete_move(context_editor, TRUE);
                 return 1;
             } else {
                 return 0;
@@ -126,7 +129,7 @@ editor_t *go_to_buffer(editor_t *editor, buffer_t *buffer) {
     case GO_SELECT:
         selection_target_buffer = buffer;
         gtk_widget_queue_draw(editor->window);
-        return editor;
+        return NULL;
         
     case GO_NEW:
     default:
@@ -149,7 +152,7 @@ int exec_go(const char *specifier) {
      editor_t *editor = NULL;
      int retval;
 
-     if (exec_go_position(specifier, context_editor)) {
+     if (exec_go_position(specifier, context_editor, context_editor->buffer)) {
          retval = 1;
          goto exec_go_cleanup;
      }
@@ -174,33 +177,30 @@ int exec_go(const char *specifier) {
     }
 
     editor = go_to_buffer(context_editor, buffer);
+    // editor will be NULL here if the user decided to select an editor
 
-    if (editor != NULL) {
-        tok = strtok_r(NULL, ":", &saveptr);
-        //printf("possible position token: %s\n", tok);
-        if (tok == NULL) { retval = 1; goto exec_go_cleanup; }
-        if (strlen(tok) == 0) { retval = 1; goto exec_go_cleanup; }
+    tok = strtok_r(NULL, ":", &saveptr);
+    //printf("possible position token: %s\n", tok);
+    if (tok == NULL) { retval = 1; goto exec_go_cleanup; }
+    if (strlen(tok) == 0) { retval = 1; goto exec_go_cleanup; }
         
-        char *tok2 = strtok_r(NULL, ":", &saveptr);
-        char *specifier;
+    char *tok2 = strtok_r(NULL, ":", &saveptr);
+    char *subspecifier;
         
-        if (tok2 != NULL) {
-            asprintf(&specifier, "%s:%s", tok, tok2);
-        } else {
-            asprintf(&specifier, "%s", tok);
-        }
-        
-        if (specifier[0] == '[') ++tok;
-        if (specifier[strlen(specifier)-1] == ']') specifier[strlen(specifier)-1] = '\0';
-        
-        exec_go_position(specifier, editor);
-        
-        free(specifier);
-        
-        retval = 1;
+    if (tok2 != NULL) {
+        asprintf(&subspecifier, "%s:%s", tok, tok2);
     } else {
-        retval = 0;
+        asprintf(&subspecifier, "%s", tok);
     }
+        
+    if (subspecifier[0] == '[') ++tok;
+    if (subspecifier[strlen(subspecifier)-1] == ']') subspecifier[strlen(subspecifier)-1] = '\0';
+        
+    exec_go_position(subspecifier, editor, buffer);
+        
+    free(subspecifier);
+        
+    retval = 1;
     
  exec_go_cleanup:
     if (sc != NULL) free(sc);
