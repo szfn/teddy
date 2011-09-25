@@ -1,4 +1,3 @@
-/* Questa e` una lunga linea inserita qui per testare il funzionamento dell'editor sulle linee lunghe, questa e` una lunga linea inserita qui per testare il funzionamento dell'editor sulle linee lunghe */
 #include "editor.h"
 
 #include <math.h>
@@ -21,8 +20,12 @@
 
 void set_label_text(editor_t *editor) {
     char *labeltxt;
-
-    asprintf(&labeltxt, " %s |  %s>", editor->buffer->name, editor->label_state);
+    
+    if ((strcmp(editor->label_state, "cmd") == 0) && (editor->locked_command_line[0] != '\0')) {
+        asprintf(&labeltxt, " %s | cmd<%s>", editor->buffer->name, editor->locked_command_line);
+    } else {
+        asprintf(&labeltxt, " %s | %s>", editor->buffer->name, editor->label_state);
+    }
 
     editor->reshandle->modified = editor->buffer->modified;
 
@@ -422,10 +425,27 @@ static gboolean entry_default_insert_callback(GtkWidget *widget, GdkEventKey *ev
         }
 
         if (event->keyval == GDK_KEY_Return) {
-            const char *command = gtk_entry_get_text(GTK_ENTRY(editor->entry));
-            enum deferred_action da = interp_eval(editor, command);
-            history_add(command_history, command);
+            enum deferred_action da;
+            if (editor->locked_command_line[0] == '\0') {
+                const char *command = gtk_entry_get_text(GTK_ENTRY(editor->entry));
+                da = interp_eval(editor, command);
+                history_add(command_history, command);
+            } else { // locked_command_line was set therefore what was specified is an argument to a pre-established command
+                const char *argument = gtk_entry_get_text(GTK_ENTRY(editor->entry));
+                if (argument[0] == '\0') {
+                    da = NOTHING;
+                } else {
+                    const char *eval_args[] = { editor->locked_command_line, argument };
+                    da = interp_eval(editor, Tcl_Merge(2, eval_args));
+                }
+            }
+            
             gtk_entry_set_text(GTK_ENTRY(editor->entry), "");
+            if (editor->locked_command_line[0] != '\0') {
+                strcpy(editor->locked_command_line, "");
+                set_label_text(editor);
+            }
+            
             switch(da) {
             case FOCUS_ALREADY_SWITCHED:
                 break;
@@ -1233,6 +1253,8 @@ editor_t *new_editor(GtkWidget *window, column_t *column, buffer_t *buffer) {
     r->drarim = gtk_im_multicontext_new();
 
     r->timeout_id = -1;
+    
+    strcpy(r->locked_command_line, "");
 
     gtk_widget_add_events(r->drar, GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK | GDK_POINTER_MOTION_MASK);
 

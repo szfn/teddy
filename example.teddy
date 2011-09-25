@@ -35,6 +35,8 @@ bindkey Ctrl-Right {move next wnwa}
 bindkey Ctrl-Home {go 1}
 bindkey Ctrl-End {go -1}
 
+bindkey Ctrl-l {interactarg go}
+
 bindkey Ctrl-Backspace {move prev wnwa del}
 
 proc kill_line {} {

@@ -566,7 +566,6 @@ static int teddy_sendinput_command(ClientData client_data, Tcl_Interp *interp, i
         Tcl_AddErrorInfo(interp, "No editor open, can not execute '<' command");
         return TCL_ERROR;
     }
-
     
     if (argc < 2) {
         Tcl_AddErrorInfo(interp, "Wrong number of arguments to '<' command");
@@ -600,6 +599,29 @@ static int teddy_sendinput_command(ClientData client_data, Tcl_Interp *interp, i
     }
     buffer_append(context_editor->buffer, "\n", strlen("\n"), 0);
 
+    return TCL_OK;
+}
+
+static int teddy_interactarg_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
+    if (context_editor == NULL) {
+        Tcl_AddErrorInfo(interp, "No editor open, can not execute 'interactarg' command");
+        return TCL_ERROR;
+    }
+    
+    if (argc != 2) {
+        Tcl_AddErrorInfo(interp, "Wrong number of arguments to 'interactarg'");
+        return TCL_ERROR;
+    }
+    
+    if (strlen(argv[1]) >= LOCKED_COMMAND_LINE_SIZE-1) {
+        Tcl_AddErrorInfo(interp, "Argument of 'interactarg' is too long");
+        return TCL_ERROR;
+    }
+    
+    strcpy(context_editor->locked_command_line, argv[1]);
+    set_label_text(context_editor);
+    gtk_widget_grab_focus(context_editor->entry);
+    deferred_action_to_return = FOCUS_ALREADY_SWITCHED;
     return TCL_OK;
 }
 
@@ -643,12 +665,13 @@ void interp_init(void) {
     Tcl_CreateCommand(interp, "gohome", &teddy_gohome_command, (ClientData)NULL, NULL);
 
     Tcl_CreateCommand(interp, "bg", &teddy_bg_command, (ClientData)NULL, NULL);
+    Tcl_CreateCommand(interp, "<", &teddy_sendinput_command, (ClientData)NULL, NULL);
 
     Tcl_CreateCommand(interp, "rgbcolor", &teddy_rgbcolor_command, (ClientData)NULL, NULL);
-
-    Tcl_CreateCommand(interp, "<", &teddy_sendinput_command, (ClientData)NULL, NULL);
     
     Tcl_CreateCommand(interp, "teddyhistory", &teddy_history_command, (ClientData)NULL, NULL);
+    
+    Tcl_CreateCommand(interp, "interactarg", &teddy_interactarg_command, (ClientData)NULL, NULL);
 }
 
 void interp_free(void) {

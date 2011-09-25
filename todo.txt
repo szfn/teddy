@@ -1,6 +1,6 @@
-- interactarg command to complete a command by asking for an argument on the command line
 - coalesce typed text on the undo list
 - implement search & replace
+- implement man command that runs the man command in background and shows it in a new editor (must be possible to implement in tcl)
 - command line autocompletion shouldn't include commands unless it's the first word con the command line
 - opening directories
 - command to refresh an open directory
@@ -13,7 +13,6 @@
 - implement ability to switch a buffer's main font
 - implement +bg+ buffer setup hook, set as defaults: stayoncmd, disable horzontal scrollbar, switch font to monospaced
 - possible bug: selecting and scrolling doesn't work
-- open problem: you want man pages open in a new bg buffer, not on the existing one (because it's probably small)
 - move builtin commands code from example.teddy into a tcl file and change Makefile and interp.c so it's compiled in and loaded automatically
 - Ctrl-o move to next editor (keep a stack of editors like windows' windows)
 - command to change buffer font to fixed width (start +bg buffers on fixed width by default)

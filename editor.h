@@ -7,6 +7,8 @@
 
 #include "reshandle.h"
 
+#define LOCKED_COMMAND_LINE_SIZE 256
+
 typedef struct _editor_t {
     buffer_t *buffer;
     GtkWidget *window;
@@ -34,6 +36,8 @@ typedef struct _editor_t {
     gboolean warp_mouse_after_next_expose;
 
     struct _column_t *column;
+    
+    char locked_command_line[LOCKED_COMMAND_LINE_SIZE];
 } editor_t;
 
 editor_t *new_editor(GtkWidget *window, struct _column_t *column, buffer_t *buffer);
@@ -58,6 +62,8 @@ enum MoveCursorSpecial {
     MOVE_LINE_START,
     MOVE_LINE_END,
 };
+
+void set_label_text(editor_t *editor);
 
 void editor_move_cursor(editor_t *editor, int delta_line, int delta_char, enum MoveCursorSpecial special, gboolean should_move_origin);
 
