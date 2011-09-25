@@ -54,6 +54,7 @@ void teddy_font_init(teddy_font_t *font, FT_Library *library, const char *fontpa
     font->cairofont = cairo_scaled_font_create(font->cairoface, &(font->font_size_matrix), &(font->font_ctm), font->font_options);
 
     FcPatternDestroy(match);
+    FcPatternDestroy(pat);
 }
 
 void teddy_font_free(teddy_font_t *font) {

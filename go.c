@@ -147,7 +147,7 @@ editor_t *go_to_buffer(editor_t *editor, buffer_t *buffer) {
 int exec_go(const char *specifier) {
      char *sc = NULL;
      char *saveptr, *tok;
-     char *urp;
+     char *urp = NULL;
      buffer_t *buffer = NULL;
      editor_t *editor = NULL;
      int retval;
@@ -204,6 +204,7 @@ int exec_go(const char *specifier) {
     
  exec_go_cleanup:
     if (sc != NULL) free(sc);
+    if (urp != NULL) free(urp);
     return retval;
 }
 
