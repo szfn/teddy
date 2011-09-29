@@ -50,12 +50,15 @@ void teddy_font_init(teddy_font_t *font, FT_Library *library, const char *fontpa
     cairo_matrix_init(&(font->font_size_matrix), text_size, 0, 0, text_size, 0, 0);
     cairo_matrix_init(&(font->font_ctm), 1, 0, 0, 1, 0, 0);
     font->font_options = cairo_font_options_create();
+    
+    cairo_font_options_set_antialias(font->font_options, CAIRO_ANTIALIAS_GRAY);
+    cairo_font_options_set_hint_style(font->font_options, CAIRO_HINT_STYLE_SLIGHT);
 
     font->cairofont = cairo_scaled_font_create(font->cairoface, &(font->font_size_matrix), &(font->font_ctm), font->font_options);
 
     FcPatternDestroy(match);
     FcPatternDestroy(pat);
-}
+ }
 
 void teddy_font_free(teddy_font_t *font) {
     cairo_scaled_font_destroy(font->cairofont);

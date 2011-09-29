@@ -1,4 +1,4 @@
-setcfg main_font "Arial-11"       ;# alternative: Palatino-11, Arial-11
+setcfg main_font "Arial-11"
 setcfg posbox_font Arial-8
 
 setcfg focus_follows_mouse 1
