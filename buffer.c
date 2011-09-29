@@ -687,6 +687,7 @@ char *buffer_lines_to_text(buffer_t *buffer, lpoint_t *startp, lpoint_t *endp) {
         
         if (line == endp->line) {
             end = endp->glyph;
+            if (end > line->cap) end = line->cap;
         } else {
             end = line->cap;
         }
