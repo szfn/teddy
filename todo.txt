@@ -1,3 +1,5 @@
+- way to exit a interactarg prompt (esc)
+- refactor options (perfect hashing)
 - implement search & replace
 - implement man command that runs the man command in background and shows it in a new editor (must be possible to implement in tcl)
 - command line autocompletion shouldn't include commands unless it's the first word con the command line
