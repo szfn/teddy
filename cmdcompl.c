@@ -27,7 +27,7 @@ GtkWidget *completions_window;
 
 const char *list_internal_commands[] = {
     // tcl default commands (and redefined tcl default commands)
-    "error", "lappend", "platform", 
+    "error", "lappend", "platform",
     "append",	"eval",	"lassign",	"platform::shell",
     "apply",	"exec",	"lindex",	"proc",
     "array",	"exit",	"linsert",	"puts",
@@ -54,8 +54,9 @@ const char *list_internal_commands[] = {
     "eof",	"join",	"pkg_mkIndex",
 
     // special commands
-    "setcfg", "bindkey", "new", "pwf", "go", "mark", "cb", "save",
-    "bufman", "undo", "search", "focuscmd", "move", "gohome",
+    "setcfg", "bindkey", "new", "pwf", "pwd", "go", "mark", "cb", "save",
+    "bufman", "undo", "search", "focuscmd", "move", "gohome", "bg", "<",
+    "rgbcolor", "teddyhistory", "interactarg", "research"
 };
 
 char **list_external_commands;
@@ -79,7 +80,7 @@ void cmdcompl_rehash(void) {
     for (dir = strtok_r(path, ":", &saveptr); dir != NULL; dir = strtok_r(NULL, ":", &saveptr)) {
         DIR *dh = opendir(dir);
         if (dh == NULL) continue;
-        struct dirent *den;            
+        struct dirent *den;
         for (den = readdir(dh); den != NULL; den = readdir(dh)) {
             struct stat den_stat;
             char *den_path;
@@ -287,7 +288,7 @@ static void cmdcompl_start(const char *text, int length, char *working_directory
         printf("Completions for directory [%s]:\n", absdir);
         dh = opendir(absdir);
         if (dh != NULL) {
-            struct dirent *den;            
+            struct dirent *den;
             for (den = readdir(dh); den != NULL; den = readdir(dh)) {
                 if (den->d_name[0] != '.') {
                     if (strncmp(den->d_name, partial_filename, strlen(partial_filename)) == 0) {
