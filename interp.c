@@ -19,6 +19,7 @@
 #include "colors.h"
 #include "history.h"
 #include "cfg.h"
+#include "builtin.h"
 
 #define INITFILE ".teddy"
 
@@ -658,6 +659,19 @@ void interp_init(void) {
     Tcl_CreateCommand(interp, "teddyhistory", &teddy_history_command, (ClientData)NULL, NULL);
     
     Tcl_CreateCommand(interp, "interactarg", &teddy_interactarg_command, (ClientData)NULL, NULL);
+    
+    int code = Tcl_Eval(interp, BUILTIN_TCL_CODE);
+    if (code != TCL_OK) {
+        Tcl_Obj *options = Tcl_GetReturnOptions(interp, code);
+        Tcl_Obj *key = Tcl_NewStringObj("-errorinfo", -1);
+        Tcl_Obj *stackTrace;
+        Tcl_IncrRefCount(key);
+        Tcl_DictObjGet(NULL, options, key, &stackTrace);
+        Tcl_DecrRefCount(key);
+
+        printf("Internal TCL Error: %s\n", Tcl_GetString(stackTrace));
+        exit(EXIT_FAILURE);
+    }
 }
 
 void interp_free(void) {

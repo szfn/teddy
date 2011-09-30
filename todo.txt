@@ -1,4 +1,4 @@
-- move builtin commands code from example.teddy into a tcl file and change Makefile and interp.c so it's compiled in and loaded automatically
+- smart search: search for exact case match only if there is at least one upcase letter in the input
 - implement search & replace
 - command to indent selection/everything by fixed number of spaces/tabs
 - implement | command that filters selected content through external command
@@ -34,7 +34,6 @@
 - command to reload buffer contents from disk
 - auto-reloading buffers when there is no change and the file on disk was changed
 - tabs
-- smart search: search for exact case match only if there is at least one upcase letter in the input
 - syntax highlighting
 - left+middle -> cut
 - move mouse cursor when searching

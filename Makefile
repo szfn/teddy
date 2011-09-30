@@ -7,7 +7,7 @@ all: teddy
 clean:
 	rm $(OBJS) *.d *~ teddy cfg.c cfg.h colors.c
 
-teddy: cfg.h cfg.c colors.c $(OBJS)
+teddy: builtin.h cfg.h cfg.c colors.c $(OBJS)
 	$(CC) -o $@ $(OBJS) $(LIBS)
 	
 colors.c: rgb.txt colors-compile.pl
@@ -18,6 +18,9 @@ cfg.c: cfg.src cfg-create.pl
 
 cfg.h: cfg.src cfg-create.pl
 	perl cfg-create.pl
+	
+builtin.h: builtin.tcl builtin-create.pl
+	perl builtin-create.pl
 
 # pull in dependency info for *existing* .o files
 -include $(OBJS:.o=.d)
