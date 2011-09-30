@@ -287,7 +287,14 @@ static gboolean entry_focusout_callback(GtkWidget *widget, GdkEventFocus *event,
         history_add(search_history, gtk_entry_get_text(GTK_ENTRY(editor->entry)));
         gtk_entry_set_text(GTK_ENTRY(editor->entry), "");
     }
+    
     editor->search_mode = FALSE;
+    
+    if (editor->locked_command_line[0] != '\0') {
+        strcpy(editor->locked_command_line, "");
+        set_label_text(editor);
+    }
+    
     g_signal_handler_disconnect(editor->entry, editor->current_entry_handler_id);
     editor->current_entry_handler_id = g_signal_connect(editor->entry, "key-release-event", G_CALLBACK(entry_default_insert_callback), editor);
     focus_can_follow_mouse = 1;
