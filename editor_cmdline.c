@@ -2,10 +2,35 @@
 
 #include <gdk/gdkkeysyms.h>
 #include <unicode/uchar.h>
+#include <stdbool.h>
 
 #include "global.h"
 #include "cmdcompl.h"
 #include "interp.h"
+#include "cfg.h"
+
+static bool should_be_case_sensitive(uint32_t *needle, int len) {
+	if (config[CFG_INTERACTIVE_SEARCH_CASE_SENSITIVE].intval == 0) return false;
+	if (config[CFG_INTERACTIVE_SEARCH_CASE_SENSITIVE].intval == 1) return true;
+	
+	// smart case sensitiveness set up here
+	
+	for (int i = 0; i < len; ++i) {
+		if (u_isupper(needle[i])) return true;
+	}
+	
+	return false;
+}
+
+typedef bool uchar_match_fn(uint32_t a, uint32_t b);
+
+bool uchar_match_case_sensitive(uint32_t a, uint32_t b) {
+    return a == b;
+}
+
+bool uchar_match_case_insensitive(uint32_t a, uint32_t b) {
+    return u_tolower(a) == u_tolower(b);
+}
 
 static void move_search_forward(editor_t *editor, gboolean ctrl_g_invoked) {
     const gchar *text = gtk_entry_get_text(GTK_ENTRY(editor->entry));
@@ -22,6 +47,9 @@ static void move_search_forward(editor_t *editor, gboolean ctrl_g_invoked) {
         needle[dst++] = utf8_to_utf32(text, &i, len);
     }
     
+    bool case_sensitive = should_be_case_sensitive(needle, dst);
+    uchar_match_fn *match_fn = case_sensitive ? &uchar_match_case_sensitive : &uchar_match_case_insensitive;
+
     /*
     printf("Searching [");
     for (i = 0; i < dst; ++i) {
@@ -46,7 +74,7 @@ static void move_search_forward(editor_t *editor, gboolean ctrl_g_invoked) {
 
         for ( ; i < search_line->cap; ++i) {
             if (j >= dst) break;
-            if (search_line->glyph_info[i].code == needle[j]) {
+            if (match_fn(search_line->glyph_info[i].code, needle[j])) {
                 ++j;
             } else {
                 i -= j;

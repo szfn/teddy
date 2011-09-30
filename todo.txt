@@ -1,4 +1,3 @@
-- smart search: search for exact case match only if there is at least one upcase letter in the input
 - implement search & replace
 - command to indent selection/everything by fixed number of spaces/tabs
 - implement | command that filters selected content through external command
