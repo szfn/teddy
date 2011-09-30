@@ -40,7 +40,7 @@ bindkey Ctrl-l {interactarg go}
 bindkey Ctrl-Backspace {move prev wnwa del}
 
 proc kill_line {} {
-   go :0
+   go :1
    mark
    move next line
    cb cut

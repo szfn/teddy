@@ -39,7 +39,7 @@ static int exec_char_specifier(const char *specifier, int really_exec, buffer_t 
     if (specifier[0] == ':') {
         n1 = strtol(specifier+1, NULL, 10);
         if (n1 != LONG_MIN) {
-            if (really_exec) buffer_aux_go_char(buffer, (int)(n1+1));
+            if (really_exec) buffer_aux_go_char(buffer, (int)(n1-1));
             return 1;
         }
     }
