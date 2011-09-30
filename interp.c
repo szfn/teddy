@@ -18,6 +18,7 @@
 #include "shell.h"
 #include "colors.h"
 #include "history.h"
+#include "cfg.h"
 
 #define INITFILE ".teddy"
 
@@ -101,45 +102,30 @@ static int teddy_pwd_command(ClientData client_data, Tcl_Interp *interp, int arg
 }
 
 static int teddy_setcfg_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
-    config_item_t *ci = NULL;
-    
     if (argc != 3) {
         Tcl_AddErrorInfo(interp, "Wrong number of arguments to setcfg");
         return TCL_ERROR;
     }
-
-    if (strcmp(argv[1], "main_font") == 0) {
-        ci = &cfg_main_font;
-    } else if (strcmp(argv[1], "posbox_font") == 0) {
-        ci = &cfg_posbox_font;
-    } else if (strcmp(argv[1], "focus_follows_mouse") == 0) {
-        ci = &cfg_focus_follows_mouse;
-    } else if (strcmp(argv[1], "default_autoindent") == 0) {
-        ci = &cfg_default_autoindent;
-    } else if (strcmp(argv[1], "default_spaceman") == 0) {
-        ci = &cfg_default_spaceman;
-    } else if (strcmp(argv[1], "editor_bg_color") == 0) {
-        ci = &cfg_editor_bg_color;
-    } else if (strcmp(argv[1], "editor_fg_color") == 0) {
-        ci = &cfg_editor_fg_color;
-    } else if (strcmp(argv[1], "posbox_border_color") == 0) {
-        ci = &cfg_posbox_border_color;
-    } else if (strcmp(argv[1], "posbox_bg_color") == 0) {
-        ci = &cfg_posbox_bg_color;
-    } else if (strcmp(argv[1], "posbox_fg_color") == 0) {
-        ci = &cfg_posbox_fg_color;
-    } else if (strcmp(argv[1], "editor_sel_color") == 0) {
-        ci = &cfg_editor_sel_color;
-    } else if (strcmp(argv[1], "border_color") == 0) {
-        ci = &cfg_border_color;
-    } else if (strcmp(argv[1], "warp_mouse") == 0) {
-        ci = &cfg_warp_mouse;
+    
+    int a = 0, b = CONFIG_NUM-1, i = -1;
+    while (a <= b) {
+        i = (a + b) / 2;
+        int r = strcmp(config_names[i], argv[1]);
+        //printf("Comparing <%s> with <%s> (%d)\n", config_names[i], argv[1], r);
+        if (r == 0) break;
+        if (r > 0) {
+            b = i-1;
+        } else if (r < 0) {
+            a = i+1;
+        }
     }
-
-    if (ci == NULL) {
+    
+    if ((a > b) || (i < 0)) {
         Tcl_AddErrorInfo(interp, "Unknown configuration option specified in setcfg");
         return TCL_ERROR;
     }
+    
+    config_item_t *ci = config + i;
 
     setcfg(ci, argv[2]);
     return TCL_OK;

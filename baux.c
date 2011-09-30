@@ -3,6 +3,7 @@
 #include <unicode/uchar.h>
 
 #include "global.h"
+#include "cfg.h"
 
 void buffer_aux_go_first_nonws_or_0(buffer_t *buffer) {
     int old_cursor_glyph = buffer->cursor.glyph;
@@ -22,7 +23,7 @@ void buffer_aux_go_first_nonws(buffer_t *buffer) {
 }
 
 void buffer_aux_go_end(buffer_t *buffer) {
-    if (cfg_default_spaceman.intval) {
+    if (config[CFG_DEFAULT_SPACEMAN].intval) {
         buffer_line_clean_trailing_spaces(buffer, buffer->cursor.line);
     }
     buffer->cursor.glyph = buffer->cursor.line->cap;

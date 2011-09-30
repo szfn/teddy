@@ -7,6 +7,7 @@
 #include <unistd.h>
 
 #include "global.h"
+#include "cfg.h"
 #include "columns.h"
 
 void buffer_set_mark_at_cursor(buffer_t *buffer) {
@@ -766,7 +767,7 @@ void save_to_text_file(buffer_t *buffer) {
         return;
     }
     
-    if (cfg_default_spaceman.intval) {
+    if (config[CFG_DEFAULT_SPACEMAN].intval) {
         for (real_line_t *line = buffer->real_line; line != NULL; line = line->next) {
             buffer_line_clean_trailing_spaces(buffer, line);
         }
@@ -893,8 +894,8 @@ buffer_t *buffer_create(FT_Library *library) {
 
     undo_init(&(buffer->undo));
 
-    teddy_font_init(&(buffer->main_font), library, cfg_main_font.strval);
-    teddy_font_init(&(buffer->posbox_font), library, cfg_posbox_font.strval);
+    teddy_font_init(&(buffer->main_font), library, config[CFG_MAIN_FONT].strval);
+    teddy_font_init(&(buffer->posbox_font), library, config[CFG_POSBOX_FONT].strval);
     
     {
         cairo_text_extents_t extents;

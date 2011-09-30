@@ -1,6 +1,13 @@
-- refactor options (perfect hashing)
 - move builtin commands code from example.teddy into a tcl file and change Makefile and interp.c so it's compiled in and loaded automatically
 - implement search & replace
+- command to indent selection/everything by fixed number of spaces/tabs
+- implement | command that filters selected content through external command
+- make easy way to reindent
+- double click -> select word (and movement will also select words)
+- triple click -> select lines (and movement will also select lines)
+- scrolling during mouse selection must be made slower (possibly hook into the cursor redraw timer?)
+
+
 - implement man command that runs the man command in background and shows it in a new editor (must be possible to implement in tcl)
 - command line autocompletion shouldn't include commands unless it's the first word con the command line
 - opening directories
@@ -19,12 +26,7 @@
 - ansi sequences processing
 - clear buffer command
 - minimum size of an editor should be its tag alone, and there should be a simple way to minimize an editor
-- command to indent selection/everything by fixed number of spaces/tabs
-- implement | command that filters selected content through external command
-- make easy way to reindent
-- double click -> select word (and movement will also select words)
-- triple click -> select lines (and movement will also select lines)
-- scrolling during mouse selection must be made slower (possibly hook into the cursor redraw timer?)
+
 - sort buffer menu by buffer name?
 - appending to a buffer that was never displayed doesn't work (for some reason), tons of valgrind exceptions are generated. There is a valid use case for starting commands on an invisible buffer
 - up/down arrows move through history

@@ -16,6 +16,7 @@
 #include "baux.h"
 #include "go.h"
 #include "editor_cmdline.h"
+#include "cfg.h"
 
 void set_label_text(editor_t *editor) {
     char *labeltxt;
@@ -413,7 +414,7 @@ static gboolean key_press_callback(GtkWidget *widget, GdkEventKey *event, editor
             return TRUE;
         case GDK_KEY_Return: {
             char *r = alloca(sizeof(char) * (editor->buffer->cursor.line->cap + 2));
-            if (cfg_default_autoindent.intval) {
+            if (config[CFG_DEFAULT_AUTOINDENT].intval) {
                 buffer_indent_newline(editor->buffer, r);
             } else {
                 r[0] = '\n';
@@ -595,7 +596,7 @@ static gboolean motion_callback(GtkWidget *widget, GdkEventMotion *event, editor
     }
 
     // focus follows mouse
-    if ((cfg_focus_follows_mouse.intval) && focus_can_follow_mouse) {
+    if ((config[CFG_FOCUS_FOLLOWS_MOUSE].intval) && focus_can_follow_mouse) {
         if (!gtk_widget_is_focus(editor->drar)) {
             gtk_widget_grab_focus(editor->drar);
             gtk_widget_queue_draw(editor->drar);
@@ -627,7 +628,7 @@ static void draw_selection(editor_t *editor, double width, cairo_t *cr) {
     line_get_glyph_coordinates(editor->buffer, &start, &selstart_x, &selstart_y);
     line_get_glyph_coordinates(editor->buffer, &end, &selend_x, &selend_y);
 
-    set_color_cfg(cr, cfg_editor_sel_color.intval);
+    set_color_cfg(cr, config[CFG_EDITOR_SEL_COLOR].intval);
 
     if (fabs(selstart_y - selend_y) < 0.001) {
         cairo_set_operator(cr, CAIRO_OPERATOR_DIFFERENCE);
@@ -652,7 +653,7 @@ static void draw_selection(editor_t *editor, double width, cairo_t *cr) {
         cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
     }
 
-    set_color_cfg(cr, cfg_editor_fg_color.intval);
+    set_color_cfg(cr, config[CFG_EDITOR_FG_COLOR].intval);
 }
 
 static gboolean cursor_blinker(editor_t *editor) {
@@ -678,7 +679,7 @@ static gboolean expose_frame(GtkWidget *widget, GdkEventExpose *event, editor_t 
     
     gtk_widget_get_allocation(widget, &allocation);
     
-    set_color_cfg(cr, cfg_border_color.intval);
+    set_color_cfg(cr, config[CFG_BORDER_COLOR].intval);
     cairo_rectangle(cr, 0, 0, allocation.width, allocation.height);
     cairo_fill(cr);
     cairo_destroy(cr);
@@ -711,11 +712,11 @@ static gboolean expose_event_callback(GtkWidget *widget, GdkEventExpose *event, 
 
     /*printf("%dx%d +%dx%d (%dx%d)\n", event->area.x, event->area.y, event->area.width, event->area.height, allocation.width, allocation.height);*/
 
-    set_color_cfg(cr, cfg_editor_bg_color.intval);
+    set_color_cfg(cr, config[CFG_EDITOR_BG_COLOR].intval);
     cairo_rectangle(cr, 0, 0, allocation.width, allocation.height);
     cairo_fill(cr);
 
-    set_color_cfg(cr, cfg_editor_fg_color.intval);
+    set_color_cfg(cr, config[CFG_EDITOR_FG_COLOR].intval);
     cairo_set_scaled_font(cr, editor->buffer->main_font.cairofont);
 
     cairo_translate(cr, -gtk_adjustment_get_value(GTK_ADJUSTMENT(editor->hadjustment)), -gtk_adjustment_get_value(GTK_ADJUSTMENT(editor->adjustment)));
@@ -822,15 +823,15 @@ static gboolean expose_event_callback(GtkWidget *widget, GdkEventExpose *event, 
         y = allocation.height - posbox_ext.height - 4.0;
         x = allocation.width - posbox_ext.x_advance - 4.0;
 
-        set_color_cfg(cr, cfg_posbox_border_color.intval);
+        set_color_cfg(cr, config[CFG_POSBOX_BORDER_COLOR].intval);
         cairo_rectangle(cr, x-1.0, y-1.0, posbox_ext.x_advance+4.0, posbox_ext.height+4.0);
         cairo_fill(cr);
-        set_color_cfg(cr, cfg_posbox_bg_color.intval);
+        set_color_cfg(cr, config[CFG_POSBOX_BG_COLOR].intval);
         cairo_rectangle(cr, x, y, posbox_ext.x_advance + 2.0, posbox_ext.height + 2.0);
         cairo_fill(cr);
 
         cairo_move_to(cr, x+1.0, y+posbox_ext.height);
-        set_color_cfg(cr, cfg_posbox_fg_color.intval);
+        set_color_cfg(cr, config[CFG_POSBOX_FG_COLOR].intval);
         cairo_show_text(cr, posbox_text);
         
         free(posbox_text);
@@ -1078,7 +1079,7 @@ void editor_free(editor_t *editor) {
 void editor_grab_focus(editor_t *editor) {
     gtk_widget_grab_focus(editor->drar);
     
-    if (cfg_warp_mouse.intval) {
+    if (config[CFG_WARP_MOUSE].intval) {
         GdkDisplay *display = gdk_display_get_default();
         GdkScreen *screen = gdk_display_get_default_screen(display);
         GtkAllocation allocation;
