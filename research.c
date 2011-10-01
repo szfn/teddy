@@ -290,12 +290,12 @@ static void start_regexp_search(editor_t *editor, const char *regexp, const char
 
 int teddy_research_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
 	if (context_editor == NULL) {
-		Tcl_AddErrorInfo(interp, "No editor open, can not execute 'research' command");
+		Tcl_AddErrorInfo(interp, "No editor open, can not execute 's' command");
 		return TCL_ERROR;
 	}
 	
 	if (argc < 2) {
-		Tcl_AddErrorInfo(interp, "Wrong number of arguments to 'research' command");
+		Tcl_AddErrorInfo(interp, "Wrong number of arguments to 's' command");
 		return TCL_ERROR;
 	}
 	
@@ -306,7 +306,7 @@ int teddy_research_command(ClientData client_data, Tcl_Interp *interp, int argc,
 	}
 	
 	if ((i >= argc) || (i+2 < argc)) {
-		Tcl_AddErrorInfo(interp, "Malformed arguments to 'research' command");
+		Tcl_AddErrorInfo(interp, "Malformed arguments to 's' command");
 		return TCL_ERROR;
 	}
 	

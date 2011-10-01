@@ -44,6 +44,3 @@ proc grep {args} {
 	unknown grep -n {*}$args
 }
 
-proc s {args} {
-	research {*}$args
-}
