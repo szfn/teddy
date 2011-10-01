@@ -613,6 +613,31 @@ static int teddy_interactarg_command(ClientData client_data, Tcl_Interp *interp,
     return TCL_OK;
 }
 
+static int teddy_basicindent_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
+	if (context_editor == NULL) {
+        Tcl_AddErrorInfo(interp, "No editor open, can not execute 'bindent' command");
+        return TCL_ERROR;
+    }
+    
+    if (argc != 3) {
+        Tcl_AddErrorInfo(interp, "Wrong number of arguments to 'bindent'");
+        return TCL_ERROR;
+    }
+    
+	if (strcmp(argv[1], "incr") == 0) {
+		buffer_incr_indent(context_editor->buffer, atoi(argv[2]));
+	} else if (strcmp(argv[1], "decr") == 0) {
+		buffer_decr_indent(context_editor->buffer, atoi(argv[2]));
+	} else {
+		Tcl_AddErrorInfo(interp, "Wrong argument passed to 'bindent'");
+		return TCL_ERROR;
+	}
+	
+	editor_complete_edit(context_editor);
+	
+	return TCL_OK;
+}
+
 void interp_init(void) {
     interp = Tcl_CreateInterp();
     if (interp == NULL) {
@@ -662,6 +687,8 @@ void interp_init(void) {
     Tcl_CreateCommand(interp, "interactarg", &teddy_interactarg_command, (ClientData)NULL, NULL);
     
     Tcl_CreateCommand(interp, "s", &teddy_research_command, (ClientData)NULL, NULL);
+    
+    Tcl_CreateCommand(interp, "bindent", &teddy_basicindent_command, (ClientData)NULL, NULL);
     
     int code = Tcl_Eval(interp, BUILTIN_TCL_CODE);
     if (code != TCL_OK) {

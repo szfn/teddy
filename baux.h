@@ -29,4 +29,8 @@ void buffer_indent_newline(buffer_t *buffer, char *r);
 /* adds text to the end of the buffer */
 void buffer_append(buffer_t *buffer, const char *msg, int length, int on_new_line);
 
+/* basic indentation manipulation functions */
+void buffer_incr_indent(buffer_t *buffer, int count);
+void buffer_decr_indent(buffer_t *buffer, int count);
+
 #endif
