@@ -10,6 +10,7 @@
 #include "global.h"
 
 GtkWidget *research_window;
+GtkWidget *research_button_replace;
 editor_t *research_editor;
 pcre *research_regexp;
 pcre_extra *research_regexp_extra;
@@ -26,6 +27,7 @@ research_window_action_t research_window_results[] = { RESEARCH_REPLACE, RESEARC
 
 static int glyph_pos_to_utf8_byte_pos(const char *text, int glyph) {
 	int i = -1;
+	if (strlen(text) == 0) return 0;
 	while (glyph >= 0) {
 		++i;
 		if (i >= strlen(text)) return -1;
@@ -52,12 +54,16 @@ static void move_regexp_search_forward(void) {
 		char *text = buffer_line_to_text(research_editor->buffer, search_point.line);
 		int pos = glyph_pos_to_utf8_byte_pos(text, search_point.glyph);
 		
-		if (pos < 0) break; // just as safety check, it should never happen that the conversion fails
+		//printf("Starting search at %d / %d <%s>\n", pos, search_point.glyph, text);
+		
+		if (pos < 0) { free(text); break; } // just as safety check, it should never happen that the conversion fails
 		
 		int rc = pcre_exec(research_regexp, research_regexp_extra, text, strlen(text), pos, 0, ovector, OVECTOR_SIZE);
 		
 		if (rc >= 0) {
 			// there is a match in ovector[0], ovector[1] mark it
+			
+			//printf("Match on line <%s> at %d %d\n", text, ovector[0], ovector[1]);
 
 			int start_glyph = utf8_byte_pos_to_glyph_pos(text, ovector[0]);
 			int end_glyph = utf8_byte_pos_to_glyph_pos(text, ovector[1]);
@@ -66,12 +72,15 @@ static void move_regexp_search_forward(void) {
 				research_editor->buffer->cursor.line = research_editor->buffer->mark.line = search_point.line;
 				research_editor->buffer->mark.glyph = start_glyph;
 				research_editor->buffer->cursor.glyph = end_glyph;
+				editor_center_on_cursor(research_editor);
+				gtk_widget_queue_draw(research_editor->drar);
 			}
 			
 			free(text);
 			return;
 		} else if (rc == -1) {
 			// there was no match
+			//printf("No match on line <%s>\n", text);
 			free(text);
 			search_point.line = search_point.line->next;
 			search_point.glyph = 0;
@@ -84,7 +93,6 @@ static void move_regexp_search_forward(void) {
 			free(text);
 			return;
 		}
-		
 	}
 	
 	// if we get here no match was found and we are at the end of the buffer
@@ -105,13 +113,18 @@ static void research_stop_search(void) {
 	editor_grab_focus(research_editor);
 }
 
+static void research_replace_selection(void) {
+	if (research_subst != NULL) {
+		//TODO: check that there is a selection active
+		editor_replace_selection(research_editor, research_subst);
+	}
+	move_regexp_search_forward();
+}
+
 static void research_perform_action(research_window_action_t *action) {
 	switch (*action) {
 	case RESEARCH_REPLACE:
-		if (research_subst != NULL) {
-			editor_replace_selection(research_editor, research_subst);
-		}
-		move_regexp_search_forward();
+		research_replace_selection();
 		break;
 	case RESEARCH_NEXT:
 		move_regexp_search_forward();
@@ -130,14 +143,12 @@ static gboolean research_button_clicked(GtkButton *button, research_window_actio
 static gboolean research_key_press_callback(GtkWidget *widget, GdkEventKey *event, gpointer data) {
 	switch(event->keyval) {
 	case GDK_KEY_r:
-		if (research_subst != NULL) {
-			editor_replace_selection(research_editor, research_subst);
-		}
-		move_regexp_search_forward();
+		research_replace_selection();
 		break;
 	case GDK_KEY_n:
 		move_regexp_search_forward();
 		break;
+	case GDK_KEY_Escape:
 	case GDK_KEY_s:
 		research_stop_search();
 		break;
@@ -154,21 +165,21 @@ static gboolean research_window_close_callback(GtkWidget *widget, GdkEvent *even
 void research_init(GtkWidget *window) {
 	research_window = gtk_dialog_new_with_buttons("Regexp Search", GTK_WINDOW(window), GTK_DIALOG_MODAL|GTK_DIALOG_DESTROY_WITH_PARENT, NULL);
 	
-	GtkWidget *button_replace = gtk_button_new_with_mnemonic("_Replace");
+	research_button_replace = gtk_button_new_with_mnemonic("_Replace");
 	GtkWidget *button_next = gtk_button_new_with_mnemonic("_Next");
 	GtkWidget *button_stop = gtk_button_new_with_mnemonic("_Stop");
 
-	gtk_button_set_use_underline(GTK_BUTTON(button_replace), TRUE);
+	gtk_button_set_use_underline(GTK_BUTTON(research_button_replace), TRUE);
 	gtk_button_set_use_underline(GTK_BUTTON(button_next), TRUE);
 	gtk_button_set_use_underline(GTK_BUTTON(button_stop), TRUE);
 	
 	GtkWidget *vbox = gtk_vbox_new(FALSE, 4);
 
-	gtk_container_add(GTK_CONTAINER(vbox), button_replace);
+	gtk_container_add(GTK_CONTAINER(vbox), research_button_replace);
 	gtk_container_add(GTK_CONTAINER(vbox), button_next);
 	gtk_container_add(GTK_CONTAINER(vbox), button_stop);
 	
-	g_signal_connect(G_OBJECT(button_replace), "clicked", G_CALLBACK(research_button_clicked), research_window_results + RESEARCH_REPLACE);
+	g_signal_connect(G_OBJECT(research_button_replace), "clicked", G_CALLBACK(research_button_clicked), research_window_results + RESEARCH_REPLACE);
 	g_signal_connect(G_OBJECT(button_next), "clicked", G_CALLBACK(research_button_clicked), research_window_results + RESEARCH_NEXT);
 	g_signal_connect(G_OBJECT(button_stop), "clicked", G_CALLBACK(research_button_clicked), research_window_results + RESEARCH_STOP);
 	
@@ -220,10 +231,11 @@ static void start_regexp_search(editor_t *editor, const char *regexp, const char
 	research_regexp_extra = re_extra;
 	research_subst = subst;
 	research_next_will_wrap_around = false;
-	
-	//TODO: hide replace button if no substitution was specified
-	
+
 	gtk_widget_show_all(research_window);
+	
+	gtk_widget_set_visible(research_button_replace, research_subst != NULL);
+
 	move_regexp_search_forward();
 }
 
@@ -241,10 +253,8 @@ int teddy_research_command(ClientData client_data, Tcl_Interp *interp, int argc,
 	int i;
 	for (i = 1; i < argc; ++i) {
 		if (argv[i][0] != '-') break;
-		if (strcmp(argv[i], "--")) break;
+		if (strcmp(argv[i], "--") == 0) { ++i; break; }
 	}
-	
-	++i;
 	
 	if ((i >= argc) || (i+2 < argc)) {
 		Tcl_AddErrorInfo(interp, "Malformed arguments to 'research' command");
