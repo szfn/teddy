@@ -11,6 +11,7 @@
 #include "jobs.h"
 #include "colors.h"
 #include "cfg.h"
+#include "research.h"
 
 static gboolean delete_callback(GtkWidget *widget, GdkEvent *event, gpointer data) {
     //TODO: terminate all processes
@@ -61,6 +62,7 @@ int main(int argc, char *argv[]) {
 
     go_init(window);
     columns_init(window);
+    research_init(window);
     editor = columns_new((abuf == NULL) ? null_buffer() : abuf);
 
     gtk_widget_show_all(window);

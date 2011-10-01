@@ -1,4 +1,4 @@
-- implement search & replace
+- implement regexp search & replace
 - command to indent selection/everything by fixed number of spaces/tabs
 - implement | command that filters selected content through external command
 - make easy way to reindent
@@ -6,7 +6,7 @@
 - triple click -> select lines (and movement will also select lines)
 - scrolling during mouse selection must be made slower (possibly hook into the cursor redraw timer?)
 
-
+- cmdcompl shoul build the list of internal commands dynamically
 - implement man command that runs the man command in background and shows it in a new editor (must be possible to implement in tcl)
 - command line autocompletion shouldn't include commands unless it's the first word con the command line
 - opening directories
