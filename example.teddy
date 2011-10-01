@@ -40,3 +40,6 @@ bindkey Ctrl-l {interactarg go}
 bindkey Ctrl-Backspace {move prev wnwa del}
 bindkey Ctrl-k kill_line
 
+proc grep {args} {
+	unknown grep -n {*}$args
+}
