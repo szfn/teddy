@@ -191,6 +191,42 @@ void research_init(GtkWidget *window) {
 	gtk_window_set_default_size(GTK_WINDOW(research_window), 200, -1);
 }
 
+static char *automatic_search_and_replace(char *text, pcre *re, pcre_extra *re_extra, const char *subst) {
+	int allocation = 10;
+	char *r = malloc(allocation * sizeof(char));
+	int ovector[OVECTOR_SIZE];
+	int start = 0;
+
+	r[0] = '\0';
+	
+	while (pcre_exec(re, re_extra, text, strlen(text), start, 0, ovector, OVECTOR_SIZE) >= 0) {
+		while (strlen(r) + 1 + (ovector[0] - start) + strlen(subst) >= allocation) {
+			allocation *= 2;
+			r = realloc(r, allocation * sizeof(char));
+			if (r == NULL) {
+				perror("Out of memory");
+				exit(EXIT_FAILURE);
+			}
+		}
+		
+		strncat(r, text+start, (ovector[0] - start));
+		strcat(r, subst);
+		start = ovector[1];
+	}
+	
+	while (strlen(r) + 1 + strlen(text+start) >= allocation) {
+		allocation *= 2;
+		r = realloc(r, allocation * sizeof(char));
+		if (r == NULL) {
+			perror("Out of memory");
+			exit(EXIT_FAILURE);
+		}
+	}
+	strcat(r, text+start);
+	
+	return r;
+}
+
 static void start_regexp_search(editor_t *editor, const char *regexp, const char *subst) {
 	const char *errptr;
 	int erroffset;
@@ -222,21 +258,34 @@ static void start_regexp_search(editor_t *editor, const char *regexp, const char
 		return;
 	}
 	
-	//TODO: if a selection is active simply replace all occourences in the selection and return
-	
-	// if we get here there is no selection in the current editor's buffer and we should start an interactive search/replace
-	
-	research_editor = editor;
-	research_regexp = re;
-	research_regexp_extra = re_extra;
-	research_subst = subst;
-	research_next_will_wrap_around = false;
+	lpoint_t start, end;
+	buffer_get_selection(editor->buffer, &start, &end);
 
-	gtk_widget_show_all(research_window);
+	if ((start.line != NULL) && (end.line != NULL)) {
+		// there is an active selection, replace all occourence
+		if (subst != NULL) {
+			char *text = buffer_lines_to_text(editor->buffer, &start, &end);
+			char *newtext = automatic_search_and_replace(text, re, re_extra, subst);
+		
+			editor_replace_selection(editor, newtext);
+		
+			free(text);
+			free(newtext);
+		}
+	} else {
+		// if we get here there is no selection in the current editor's buffer and we should start an interactive search/replace
 	
-	gtk_widget_set_visible(research_button_replace, research_subst != NULL);
+		research_editor = editor;
+		research_regexp = re;
+		research_regexp_extra = re_extra;
+		research_subst = subst;
+		research_next_will_wrap_around = false;
 
-	move_regexp_search_forward();
+		gtk_widget_show_all(research_window);
+		gtk_widget_set_visible(research_button_replace, research_subst != NULL);
+
+		move_regexp_search_forward();
+	}
 }
 
 int teddy_research_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {

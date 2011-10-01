@@ -1,4 +1,3 @@
-- implement regexp search & replace
 - command to indent selection/everything by fixed number of spaces/tabs
 - implement | command that filters selected content through external command
 - make easy way to reindent

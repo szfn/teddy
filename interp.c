@@ -661,7 +661,7 @@ void interp_init(void) {
     
     Tcl_CreateCommand(interp, "interactarg", &teddy_interactarg_command, (ClientData)NULL, NULL);
     
-    Tcl_CreateCommand(interp, "research", &teddy_research_command, (ClientData)NULL, NULL);
+    Tcl_CreateCommand(interp, "s", &teddy_research_command, (ClientData)NULL, NULL);
     
     int code = Tcl_Eval(interp, BUILTIN_TCL_CODE);
     if (code != TCL_OK) {
