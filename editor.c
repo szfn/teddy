@@ -1094,7 +1094,7 @@ void editor_grab_focus(editor_t *editor) {
             gint wpos_x, wpos_y;
             gdk_window_get_position(gtk_widget_get_window(editor->window), &wpos_x, &wpos_y);
             
-            printf("allocation: %d,%d\n", allocation.x, allocation.y);
+            //printf("allocation: %d,%d\n", allocation.x, allocation.y);
             gdk_display_warp_pointer(display, screen, allocation.x+wpos_x+5, allocation.y+wpos_y+5);
         }
     }

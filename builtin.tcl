@@ -222,3 +222,32 @@ proc mouse_go_preprocessing_hook {text} {
    
    return $text
 }
+
+proc bindent {direction indentchar} {
+	selectlines
+	
+	set stored_mark [mark get]
+	set stored_cursor [cursor]
+	set text [c]
+	
+	switch -exact $direction {
+		"incr" {
+			set nt [string map [list "\n" "\n$indentchar"] $text]
+			c "$indentchar$nt"
+		}
+		"decr" {
+			set nt [string map [list "\n " "\n" "\n\t" "\n" ] $text]
+			if {[string index $nt 0] eq " " || [string index $nt 0] eq "\t"} {
+				set nt [string range $nt 1 end]
+			}
+			c $nt
+		}
+	}
+	
+	puts "Stored mark: $stored_mark"
+	puts "Stored cursor: $stored_cursor"
+	
+	go $stored_mark
+	mark
+	go $stored_cursor
+}

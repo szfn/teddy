@@ -5,7 +5,7 @@ OBJS := teddy.o buffer.o font.o editor.o buffers.o columns.o column.o interp.o g
 all: teddy
 
 clean:
-	rm $(OBJS) *.d *~ teddy cfg.c cfg.h colors.c
+	rm $(OBJS) *.d *~ teddy cfg.c cfg.h colors.c builtin.h
 
 teddy: builtin.h cfg.h cfg.c colors.c $(OBJS)
 	$(CC) -o $@ $(OBJS) $(LIBS)

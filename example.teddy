@@ -40,6 +40,9 @@ bindkey Ctrl-l {interactarg go}
 bindkey Ctrl-Backspace {move prev wnwa del}
 bindkey Ctrl-k kill_line
 
+bindkey Ctrl-, {bindent decr "\t"}
+bindkey Ctrl-. {bindent incr "\t"}
+
 proc grep {args} {
 	unknown grep -n {*}$args
 }

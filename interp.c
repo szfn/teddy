@@ -151,19 +151,52 @@ static int teddy_bindkey_command(ClientData client_data, Tcl_Interp *interp, int
     return TCL_OK;
 }
 
+static void set_tcl_result_to_lpoint(Tcl_Interp *interp, lpoint_t *point) {
+	if (point->line != NULL) {
+		char *r;
+		asprintf(&r, "%d:%d", point->line->lineno+1, point->glyph+1);
+		if (!r) {
+			perror("Out of memory");
+			exit(EXIT_FAILURE);
+		}
+		Tcl_SetResult(interp, r, TCL_VOLATILE);
+		free(r);
+	} else {
+		Tcl_SetResult(interp, "", TCL_VOLATILE);
+	}
+}
+
 static int teddy_mark_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
     if (context_editor == NULL) {
         Tcl_AddErrorInfo(interp, "No editor open, can not execute 'mark' command");
         return TCL_ERROR;
     }
 
-    if (argc != 1) {
-        Tcl_AddErrorInfo(interp, "Wrong number of arguments to 'mark' command");
+	switch (argc) {
+	case 1:
+		editor_mark_action(context_editor);
+	    return TCL_OK;
+	case 2:
+		set_tcl_result_to_lpoint(interp, &(context_editor->buffer->mark));
+		return TCL_OK;
+	default:
+	    Tcl_AddErrorInfo(interp, "Wrong number of arguments to 'mark' command");
+        return TCL_ERROR;
+	}
+}
+
+static int teddy_cursor_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
+    if (context_editor == NULL) {
+        Tcl_AddErrorInfo(interp, "No editor open, can not execute 'cursor' command");
         return TCL_ERROR;
     }
-
-    editor_mark_action(context_editor);
-
+    
+    if (argc != 1) {
+    	Tcl_AddErrorInfo(interp, "Too many arguments to 'cursor' command");
+    	return TCL_ERROR;
+    }
+    
+    set_tcl_result_to_lpoint(interp, &(context_editor->buffer->cursor));
     return TCL_OK;
 }
 
@@ -643,8 +676,28 @@ static int teddy_selectlines_command(ClientData client_data, Tcl_Interp *interp,
 }
 
 static int teddy_change_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
-	//TODO: implement
-	return TCL_OK;
+	if (context_editor == NULL) {
+        Tcl_AddErrorInfo(interp, "No editor open, can not execute 'selectlines' command");
+        return TCL_ERROR;
+    }
+    
+    switch (argc) {
+    case 1:
+    	{
+    		lpoint_t start, end;
+    		buffer_get_selection(context_editor->buffer, &start, &end);
+    		char *text = buffer_lines_to_text(context_editor->buffer, &start, &end);
+    		Tcl_SetResult(interp, text, TCL_VOLATILE);
+    		free(text);
+    		return TCL_OK;
+    	}
+    case 2:
+    	editor_replace_selection(context_editor, argv[1]);
+    	return TCL_OK;
+    default:
+    	Tcl_AddErrorInfo(interp, "Wrong number of arguments to 'selectlines'");
+        return TCL_ERROR;
+    }
 }
 
 void interp_init(void) {
@@ -676,6 +729,7 @@ void interp_init(void) {
     Tcl_CreateCommand(interp, "go", &teddy_go_command, (ClientData)NULL, NULL);
 
     Tcl_CreateCommand(interp, "mark", &teddy_mark_command, (ClientData)NULL, NULL);
+    Tcl_CreateCommand(interp, "cursor", &teddy_cursor_command, (ClientData)NULL, NULL);
     Tcl_CreateCommand(interp, "cb", &teddy_cb_command, (ClientData)NULL, NULL);
     Tcl_CreateCommand(interp, "save", &teddy_save_command, (ClientData)NULL, NULL);
     Tcl_CreateCommand(interp, "bufman", &teddy_bufman_command, (ClientData)NULL, NULL);
