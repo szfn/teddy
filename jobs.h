@@ -12,19 +12,19 @@ struct _buffer_t;
 #define RATELIMIT_MAX_BYTES 10000
 
 typedef struct _job_t {
-    int used;
-    pid_t child_pid;
-    struct _buffer_t *buffer;
-    
-    int masterfd;
-    GIOChannel *pipe_from_child;
+	int used;
+	pid_t child_pid;
+	struct _buffer_t *buffer;
+	
+	int masterfd;
+	GIOChannel *pipe_from_child;
 
-    guint child_source_id;
-    guint pipe_from_child_source_id;
+	guint child_source_id;
+	guint pipe_from_child_source_id;
 
-    bool ratelimit_silenced;
-    time_t current_ratelimit_bucket_start;
-    long current_ratelimit_bucket_size;
+	bool ratelimit_silenced;
+	time_t current_ratelimit_bucket_start;
+	long current_ratelimit_bucket_size;
 } job_t;
 
 #define MAX_JOBS 128

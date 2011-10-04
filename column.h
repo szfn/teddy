@@ -7,11 +7,11 @@
 #include "buffer.h"
 
 typedef struct _column_t {
-    editor_t **editors;
-    int editors_allocated;
-    GtkWidget *editors_window;
-    GtkWidget *editors_vbox;
-    int exposed;
+	editor_t **editors;
+	int editors_allocated;
+	GtkWidget *editors_window;
+	GtkWidget *editors_vbox;
+	int exposed;
 } column_t;
 
 column_t *column_new(GtkWidget *window);

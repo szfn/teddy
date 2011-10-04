@@ -55,10 +55,10 @@ proc shell_eat {args i specialVarName normalVarName} {
          lappend special [dict create redirected_descriptor $redirected_descriptor open_direction $open_direction target $target]
       } else {
          if {[string first * $cur] >= 0} {
-            # Perform autoglobbing
-            lappend normal {*}[glob $cur]
+			# Perform autoglobbing
+			lappend normal {*}[glob $cur]
          } else {
-            lappend normal $cur
+			lappend normal $cur
          }
       }
    }
@@ -107,7 +107,7 @@ proc shell {args} {
       set pipe ""
       if {$i < [llength $args]} {
          if {[lindex $args $i] eq "|"} {
-            set pipe [fdpipe]
+			set pipe [fdpipe]
          }
       }
    
@@ -138,23 +138,23 @@ proc shell {args} {
       
       switch -exact [lindex $args $i] {
          "&&" {
-            #puts "Processing AND $pid"
-            set r [posixwaitpid $pid]
-            #puts "Child returned [lindex $r 1]"
-            if {[lindex $r 1] != 0} {
+			#puts "Processing AND $pid"
+			set r [posixwaitpid $pid]
+			#puts "Child returned [lindex $r 1]"
+			if {[lindex $r 1] != 0} {
                # can not continue because last execution failed
                return [lindex $r 1]
-            }
+			}
          }
          "||" {
-            set r [posixwaitpid $pid]
-            if {[lindex $r 1] == 0} {
+			set r [posixwaitpid $pid]
+			if {[lindex $r 1] == 0} {
                # should not continue because last execution succeeded
                return [lindex $r 1]
-            }
+			}
          }
          "|" {
-            # Nothing to do here
+			# Nothing to do here
          }
       }
       

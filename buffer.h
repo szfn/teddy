@@ -13,64 +13,64 @@
 #include "point.h"
 
 typedef struct _my_glyph_info_t {
-    double kerning_correction;
-    double x_advance;
-    uint32_t code;
+	double kerning_correction;
+	double x_advance;
+	uint32_t code;
 } my_glyph_info_t;
 
 typedef struct _real_line_t {
-    cairo_glyph_t *glyphs;
-    my_glyph_info_t *glyph_info;
-    int allocated;
-    int cap;
-    int lineno; // real line number
-    double start_y;
-    double end_y;
-    double y_increment;
-    struct _real_line_t *prev;
-    struct _real_line_t *next;
+	cairo_glyph_t *glyphs;
+	my_glyph_info_t *glyph_info;
+	int allocated;
+	int cap;
+	int lineno; // real line number
+	double start_y;
+	double end_y;
+	double y_increment;
+	struct _real_line_t *prev;
+	struct _real_line_t *next;
 } real_line_t;
 
 typedef struct _buffer_t {
-    char *name;
-    char *path;
-    char *wd;
-    int has_filename;
-    int modified;
-    int editable;
+	char *name;
+	char *path;
+	char *wd;
+	int has_filename;
+	int modified;
+	int editable;
 
-    job_t *job;
-    
-    /* Font face stuff */
-    FT_Library *library;
-    teddy_font_t main_font;
-    teddy_font_t posbox_font;
+	job_t *job;
+	
+	/* Font face stuff */
+	FT_Library *library;
+	teddy_font_t main_font;
+	teddy_font_t posbox_font;
 
-    /* Font secondary metrics of main font */
-    double em_advance;
-    double space_advance;
-    double ex_height;
-    double line_height;
-    double ascent, descent;
+	/* Font secondary metrics of main font */
+	double em_advance;
+	double space_advance;
+	double ex_height;
+	double line_height;
+	double ascent, descent;
 
-    /* Buffer's text and glyphs */
-    real_line_t *real_line;
+	/* Buffer's text and glyphs */
+	real_line_t *real_line;
 
-    /* Buffer's secondary properties (calculated) */
-    double rendered_height;
-    double rendered_width;
+	/* Buffer's secondary properties (calculated) */
+	double rendered_height;
+	double rendered_width;
 
-    /* Cursor and mark*/
-    lpoint_t cursor;
-    lpoint_t mark;
+	/* Cursor and mark*/
+	lpoint_t cursor;
+	lpoint_t mark;
 
-    /* Undo information */
-    undo_t undo;
+	/* Undo information */
+	undo_t undo;
 
-    /* User options */
-    int tab_width;
-    double left_margin;
-    double right_margin;
+	/* User options */
+	int tab_width;
+	double left_margin;
+	double right_margin;
 } buffer_t;
 
 // utility function to convert first codepoint in utf8 stream into an utf32 codepoint

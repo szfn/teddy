@@ -6,9 +6,9 @@
 #include <tcl.h>
 
 enum deferred_action {
-    NOTHING,
-    CLOSE_EDITOR,
-    FOCUS_ALREADY_SWITCHED
+	NOTHING,
+	CLOSE_EDITOR,
+	FOCUS_ALREADY_SWITCHED
 };
 
 extern enum deferred_action deferred_action_to_return;

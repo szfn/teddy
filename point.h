@@ -4,15 +4,15 @@
 #include <stdbool.h>
 
 typedef struct _point_t {
-    int lineno;
-    int glyph;
+	int lineno;
+	int glyph;
 } point_t;
 
 struct _real_line_t;
 
 typedef struct _lpoint_t {
-    struct _real_line_t *line;
-    int glyph;
+	struct _real_line_t *line;
+	int glyph;
 } lpoint_t;
 
 // makes dst be the same point as src

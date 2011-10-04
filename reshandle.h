@@ -4,15 +4,15 @@
 #include <gtk/gtk.h>
 
 typedef struct _reshandle_t {
-    int modified;
-    GtkWidget *resdr;
+	int modified;
+	GtkWidget *resdr;
 
-    /* associated editor/column */
-    struct _column_t *column;
-    struct _editor_t *editor;
+	/* associated editor/column */
+	struct _column_t *column;
+	struct _editor_t *editor;
 
-    /* resize informations */
-    double origin_x, origin_y;
+	/* resize informations */
+	double origin_x, origin_y;
 } reshandle_t;
 
 reshandle_t *reshandle_new(struct _column_t *column, struct _editor_t *editor);

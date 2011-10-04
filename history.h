@@ -7,9 +7,9 @@
 #include "editor.h"
 
 typedef struct _history_t {
-    GtkWidget *history_window;
-    GtkWidget *history_tree;
-    GtkListStore *history_list;
+	GtkWidget *history_window;
+	GtkWidget *history_tree;
+	GtkListStore *history_list;
 } history_t;
 
 /*struct _editor_t;*/

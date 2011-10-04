@@ -58,10 +58,10 @@ proc shell_eat {args i specialVarName normalVarName} {\n\
          lappend special [dict create redirected_descriptor $redirected_descriptor open_direction $open_direction target $target]\n\
       } else {\n\
          if {[string first * $cur] >= 0} {\n\
-            # Perform autoglobbing\n\
-            lappend normal {*}[glob $cur]\n\
+			# Perform autoglobbing\n\
+			lappend normal {*}[glob $cur]\n\
          } else {\n\
-            lappend normal $cur\n\
+			lappend normal $cur\n\
          }\n\
       }\n\
    }\n\
@@ -110,7 +110,7 @@ proc shell {args} {\n\
       set pipe \"\"\n\
       if {$i < [llength $args]} {\n\
          if {[lindex $args $i] eq \"|\"} {\n\
-            set pipe [fdpipe]\n\
+			set pipe [fdpipe]\n\
          }\n\
       }\n\
    \n\
@@ -141,23 +141,23 @@ proc shell {args} {\n\
       \n\
       switch -exact [lindex $args $i] {\n\
          \"&&\" {\n\
-            #puts \"Processing AND $pid\"\n\
-            set r [posixwaitpid $pid]\n\
-            #puts \"Child returned [lindex $r 1]\"\n\
-            if {[lindex $r 1] != 0} {\n\
+			#puts \"Processing AND $pid\"\n\
+			set r [posixwaitpid $pid]\n\
+			#puts \"Child returned [lindex $r 1]\"\n\
+			if {[lindex $r 1] != 0} {\n\
                # can not continue because last execution failed\n\
                return [lindex $r 1]\n\
-            }\n\
+			}\n\
          }\n\
          \"||\" {\n\
-            set r [posixwaitpid $pid]\n\
-            if {[lindex $r 1] == 0} {\n\
+			set r [posixwaitpid $pid]\n\
+			if {[lindex $r 1] == 0} {\n\
                # should not continue because last execution succeeded\n\
                return [lindex $r 1]\n\
-            }\n\
+			}\n\
          }\n\
          \"|\" {\n\
-            # Nothing to do here\n\
+			# Nothing to do here\n\
          }\n\
       }\n\
       \n\

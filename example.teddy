@@ -47,3 +47,6 @@ proc grep {args} {
 	unknown grep -n {*}$args
 }
 
+proc gg {args} {
+	git gui {*}$args
+}
