@@ -112,6 +112,9 @@ void buffer_undo(buffer_t *buffer);
 // returns current selection
 void buffer_get_selection(buffer_t *buffer, lpoint_t *start, lpoint_t *end);
 
+// returns pointer to mark and cursor for current selection (or NULL if no selection exists)
+void buffer_get_selection_pointers(buffer_t *buffer, lpoint_t **start, lpoint_t **end);
+
 // converts a selection of line from this buffer into text
 char *buffer_lines_to_text(buffer_t *buffer, lpoint_t *start, lpoint_t *end);
 
@@ -133,5 +136,8 @@ int buffer_real_line_count(buffer_t *buffer);
 
 // removes trailing spaces from line unless line is exclusively made out of spaces
 void buffer_line_clean_trailing_spaces(buffer_t *buffer, real_line_t *line);
+
+void freeze_selection(buffer_t *buffer, selection_t *selection, lpoint_t *start, lpoint_t *end);
+void buffer_thaw_selection(buffer_t *buffer, selection_t *selection, lpoint_t *start, lpoint_t *end);
 
 #endif

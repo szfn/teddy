@@ -1,4 +1,5 @@
-- command to indent selection/everything by fixed number of spaces/tabs (aka basic indent commands)
+- implement 'c' command (replaces selection when given an argument or returns it if no argument is given)
+- basic indent command implemented in tcl
 - reindent everything with tabs
 - double click -> select word (and movement will also select words)
 - triple click -> select lines (and movement will also select lines)

@@ -380,7 +380,7 @@ static void buffer_insert_multiline_text(buffer_t *buffer, lpoint_t *start_point
     copy_lpoint(&(buffer->cursor), &point);
 }
 
-static void freeze_selection(buffer_t *buffer, selection_t *selection, lpoint_t *start, lpoint_t *end) {
+void freeze_selection(buffer_t *buffer, selection_t *selection, lpoint_t *start, lpoint_t *end) {
     if ((start->line == NULL) || (end->line == NULL)) {
         freeze_point(&(selection->start), &(buffer->cursor));
         freeze_point(&(selection->end), &(buffer->cursor));
@@ -484,7 +484,7 @@ static real_line_t *buffer_search_line(buffer_t *buffer, int lineno) {
     return real_line;
 }
 
-static void buffer_thaw_selection(buffer_t *buffer, selection_t *selection, lpoint_t *start, lpoint_t *end) {
+void buffer_thaw_selection(buffer_t *buffer, selection_t *selection, lpoint_t *start, lpoint_t *end) {
     start->line = buffer_search_line(buffer, selection->start.lineno);
     start->glyph = selection->start.glyph;
 
@@ -977,38 +977,47 @@ void debug_print_real_lines_state(buffer_t *buffer) {
     
 }
 
-void buffer_get_selection(buffer_t *buffer, lpoint_t *start, lpoint_t *end) {
+void buffer_get_selection_pointers(buffer_t *buffer, lpoint_t **start, lpoint_t **end) {
     if (buffer->mark.line == NULL) {
-        start->line = NULL;
-        start->glyph = -1;
-        end->line = NULL;
-        end->glyph = -1;
+    	*start = NULL;
+    	*end = NULL;
         return;
     }
 
     if (buffer->mark.line == buffer->cursor.line) {
-        start->line = end->line = buffer->cursor.line;
-        
         if (buffer->mark.glyph == buffer->cursor.glyph) {
-            start->glyph = end->glyph = buffer->mark.glyph;
+        	*start = &(buffer->cursor);
+        	*end = &(buffer->mark);
             return;
         } else if (buffer->mark.glyph < buffer->cursor.glyph) {
-            start->glyph = buffer->mark.glyph;
-            end->glyph = buffer->cursor.glyph;
+        	*start = &(buffer->mark);
+        	*end = &(buffer->cursor);
         } else {
-            end->glyph = buffer->mark.glyph;
-            start->glyph = buffer->cursor.glyph;
+        	*start = &(buffer->cursor);
+        	*end = &(buffer->mark);
         }
-        
     } else if (buffer->mark.line->lineno < buffer->cursor.line->lineno) {
-        copy_lpoint(start, &(buffer->mark));
-        copy_lpoint(end, &(buffer->cursor));
+    	*start = &(buffer->mark);
+    	*end = &(buffer->cursor);
     } else {
-        copy_lpoint(start, &(buffer->cursor));
-        copy_lpoint(end, &(buffer->mark));
+    	*start = &(buffer->cursor);
+    	*end = &(buffer->mark);
     }
 
     return;
+}
+
+void buffer_get_selection(buffer_t *buffer, lpoint_t *start, lpoint_t *end) {
+	lpoint_t *pstart, *pend;
+	buffer_get_selection_pointers(buffer, &pstart, &pend);
+	
+	if ((pstart == NULL) || (pend == NULL)) {
+		start->line = end->line = NULL;
+		start->glyph = end->glyph = 0;
+	} else {
+		copy_lpoint(start, pstart);
+		copy_lpoint(end, pend);
+	}
 }
 
 int buffer_real_line_count(buffer_t *buffer) {

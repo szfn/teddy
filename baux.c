@@ -129,11 +129,3 @@ void buffer_append(buffer_t *buffer, const char *msg, int length, int on_new_lin
     
     free(text);
 }
-
-void buffer_incr_indent(buffer_t *buffer, int count) {
-	//TODO: implement
-}
-
-void buffer_decr_indent(buffer_t *buffer, int count) {
-	//TODO: implement
-}
