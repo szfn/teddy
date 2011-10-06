@@ -224,7 +224,7 @@ proc mouse_go_preprocessing_hook {text} {
 }
 
 proc bindent {direction indentchar} {
-	selectlines
+	mark lines
 	
 	set stored_mark [mark get]
 	set stored_cursor [cursor]

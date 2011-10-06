@@ -56,7 +56,7 @@ const char *list_internal_commands[] = {
 	// special commands
 	"setcfg", "bindkey", "new", "pwf", "pwd", "go", "mark", "cb", "save",
 	"bufman", "undo", "search", "focuscmd", "move", "gohome", "bg", "<",
-	"rgbcolor", "teddyhistory", "interactarg", "s", "c", "selectlines", "cursor", "bindent"
+	"rgbcolor", "teddyhistory", "interactarg", "s", "c", "cursor", "bindent"
 };
 
 char **list_external_commands;
