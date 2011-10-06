@@ -171,18 +171,48 @@ static int teddy_mark_command(ClientData client_data, Tcl_Interp *interp, int ar
 		Tcl_AddErrorInfo(interp, "No editor open, can not execute 'mark' command");
 		return TCL_ERROR;
 	}
-
-	switch (argc) {
-	case 1:
+	
+	if (argc == 1) {
 		editor_mark_action(context_editor);
 	    return TCL_OK;
-	case 2:
-		set_tcl_result_to_lpoint(interp, &(context_editor->buffer->mark));
-		return TCL_OK;
-	default:
+	}
+	
+	if (argc != 2) {
 	    Tcl_AddErrorInfo(interp, "Wrong number of arguments to 'mark' command");
 		return TCL_ERROR;
 	}
+	
+	if (strcmp(argv[1], "get") == 0) {
+		set_tcl_result_to_lpoint(interp, &(context_editor->buffer->mark));
+		return TCL_OK;
+	} else if (strcmp(argv[1], "start") == 0) {
+		if (context_editor->buffer->mark.line == NULL) {
+			buffer_set_mark_at_cursor(context_editor->buffer);
+			gtk_widget_queue_draw(context_editor->drar);
+		}
+	} else if (strcmp(argv[1], "stop") == 0) {
+		if (context_editor->buffer->mark.line != NULL) {
+			buffer_unset_mark(context_editor->buffer);
+			gtk_widget_queue_draw(context_editor->drar);
+		}
+	} else if (strcmp(argv[1], "words") == 0) {
+		if (context_editor->buffer->mark.line == NULL) {
+			buffer_set_mark_at_cursor(context_editor->buffer);
+		}
+		buffer_change_select_type(context_editor->buffer, BST_WORDS);
+		editor_complete_move(context_editor, FALSE);
+	} else if (strcmp(argv[1], "lines") == 0) {
+		if (context_editor->buffer->mark.line == NULL) {
+			buffer_set_mark_at_cursor(context_editor->buffer);
+		}
+		buffer_change_select_type(context_editor->buffer, BST_LINES);
+		editor_complete_move(context_editor, FALSE);
+	} else {
+		Tcl_AddErrorInfo(interp, "Called mark command with unknown argument");
+		return TCL_ERROR;
+	}
+	
+	return TCL_OK;
 }
 
 static int teddy_cursor_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {

@@ -1,7 +1,9 @@
-- double click -> select word (and movement will also select words)
-- triple click -> select lines (and movement will also select lines)
+- selectlines -> mark lines, (and add mark words)
+- double click -> mark words
+- triple click -> mark lines
 - scrolling during mouse selection must be made slower (possibly hook into the cursor redraw timer?)
 
+- paste full lines removes should equalize indentation
 - implement | command that filters selected content through external command
 - make easy way to reindent though external filter
 - cmdcompl shoul build the list of internal commands dynamically
@@ -11,6 +13,7 @@
 - command to refresh an open directory
 - open current directory on startup
 - implement command to create a scratch buffer
+- fix mark words when used with cursor keys
 - implement commands for macro editing
 - implement stayoncmd flag for buffers
 - implement lockcmd command that changes the command line of a buffer to always send a specific command

@@ -112,6 +112,7 @@ void editor_complete_move(editor_t *editor, gboolean should_move_origin) {
 void editor_move_cursor(editor_t *editor, int delta_line, int delta_char, enum MoveCursorSpecial special, gboolean should_move_origin) {
 	int i = 0;
 
+#ifdef COMPLEX_LINE_MOVE
 	if (delta_line > 0) {
 		for (i = 0; i < delta_line; ++i) {
 			if (editor->buffer->cursor.glyph < editor->buffer->cursor.line->cap) {
@@ -193,6 +194,20 @@ void editor_move_cursor(editor_t *editor, int delta_line, int delta_char, enum M
 				editor->buffer->cursor.glyph = editor->buffer->cursor.line->cap;
 		}
 	}
+#else
+	real_line_t *to = NULL;
+	if (delta_line < 0) {
+		to = editor->buffer->cursor.line->prev;
+	} else if (delta_line > 0) {
+		to = editor->buffer->cursor.line->next;
+	}
+	
+	if (to != NULL) {
+		editor->buffer->cursor.line = to;
+		if (editor->buffer->cursor.glyph > editor->buffer->cursor.line->cap)
+			editor->buffer->cursor.glyph = editor->buffer->cursor.line->cap;
+	}
+#endif
 
 	if ((delta_char != 0) || (special != MOVE_NORMAL)) {
 		editor->buffer->cursor.glyph += delta_char;
@@ -206,6 +221,8 @@ void editor_move_cursor(editor_t *editor, int delta_line, int delta_char, enum M
 			editor->buffer->cursor.glyph = editor->buffer->cursor.line->cap;
 		}
 	}
+	
+	buffer_extend_selection_by_select_type(editor->buffer);
 
 	editor_complete_move(editor, should_move_origin);
 }
@@ -312,8 +329,8 @@ void editor_mark_action(editor_t *editor) {
 		buffer_set_mark_at_cursor(editor->buffer);
 	} else {
 		buffer_unset_mark(editor->buffer);
-		gtk_widget_queue_draw(editor->drar);
 	}
+	gtk_widget_queue_draw(editor->drar);
 }
 
 void editor_copy_action(editor_t *editor) {

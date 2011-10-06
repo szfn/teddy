@@ -9,9 +9,12 @@
 #include "global.h"
 #include "cfg.h"
 #include "columns.h"
+#include "baux.h"
 
 void buffer_set_mark_at_cursor(buffer_t *buffer) {
 	copy_lpoint(&(buffer->mark), &(buffer->cursor));
+	copy_lpoint(&(buffer->savedmark), &(buffer->cursor));
+	buffer->select_type = BST_NORMAL;
 	//printf("Mark set @ %d,%d\n", buffer->mark_line->lineno, buffer->mark_glyph);
 }
 
@@ -19,6 +22,9 @@ void buffer_unset_mark(buffer_t *buffer) {
 	if (buffer->mark.line != NULL) {
 		buffer->mark.line = NULL;
 		buffer->mark.glyph = -1;
+		
+		buffer->savedmark.line = NULL;
+		buffer->savedmark.glyph = -1;
 		//printf("Mark unset\n");
 	}
 }
@@ -877,6 +883,8 @@ void buffer_move_cursor_to_position(buffer_t *buffer, double x, double y) {
 	if (i >= line->cap) {
 		buffer->cursor.glyph = line->cap;
 	}
+	
+	buffer_extend_selection_by_select_type(buffer);
 }
 
 buffer_t *buffer_create(FT_Library *library) {
@@ -891,6 +899,7 @@ buffer_t *buffer_create(FT_Library *library) {
 	buffer->path = NULL;
 	asprintf(&(buffer->wd), "%s", getcwd(NULL, 0));
 	buffer->has_filename = 0;
+	buffer->select_type = BST_NORMAL;
 
 	undo_init(&(buffer->undo));
 
@@ -1047,6 +1056,7 @@ void buffer_move_cursor(buffer_t *buffer, int direction) {
 			buffer->cursor.glyph = buffer->cursor.line->cap;
 		}
 	}
+	buffer_extend_selection_by_select_type(buffer);
 }
 
 void buffer_typeset_maybe(buffer_t *buffer, double width) {
@@ -1089,5 +1099,35 @@ void buffer_line_clean_trailing_spaces(buffer_t *buffer, real_line_t *line) {
 		if (editor != NULL) {
 			gtk_widget_queue_draw(editor->label);
 		}
+	}
+}
+
+void buffer_change_select_type(buffer_t *buffer, enum select_type select_type) {
+	buffer->select_type = select_type;
+	buffer_extend_selection_by_select_type(buffer);
+}
+
+void buffer_extend_selection_by_select_type(buffer_t *buffer) {
+	if (buffer->select_type == BST_NORMAL) return;
+	if (buffer->mark.line == NULL) return;
+	if (buffer->savedmark.line == NULL) return;
+	if (buffer->cursor.line == NULL) return;
+	
+	lpoint_t *start, *end;
+	
+	buffer_get_selection_pointers(buffer, &start, &end);
+	
+	switch (buffer->select_type) {
+	case BST_LINES:
+		start->glyph = 0;
+		end->glyph = end->line->cap;
+		break;
+	case BST_WORDS:
+		buffer_aux_wnwa_prev_ex(start);
+		buffer_aux_wnwa_next_ex(end);
+		break;
+	default:
+		//nothing to do (is unknown)
+		break;
 	}
 }

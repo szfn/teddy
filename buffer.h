@@ -31,6 +31,8 @@ typedef struct _real_line_t {
 	struct _real_line_t *next;
 } real_line_t;
 
+enum select_type { BST_NORMAL = 0, BST_WORDS, BST_LINES };
+
 typedef struct _buffer_t {
 	char *name;
 	char *path;
@@ -63,6 +65,8 @@ typedef struct _buffer_t {
 	/* Cursor and mark*/
 	lpoint_t cursor;
 	lpoint_t mark;
+	lpoint_t savedmark;
+	enum select_type select_type;
 
 	/* Undo information */
 	undo_t undo;
@@ -99,9 +103,12 @@ void buffer_cd(buffer_t *buffer, const char *wd);
   Mark management
   buffer_set_mark_at_cursor: copies cursor point into mark point
   buffer_unset_mark: sets mark to null
+  buffer_change_select_type: change selection type
  */
 void buffer_set_mark_at_cursor(buffer_t *buffer);
 void buffer_unset_mark(buffer_t *buffer);
+void buffer_change_select_type(buffer_t *buffer, enum select_type select_type);
+void buffer_extend_selection_by_select_type(buffer_t *buffer);
 
 // replace current selection with new_text (main editing function)
 void buffer_replace_selection(buffer_t *buffer, const char *new_text);
