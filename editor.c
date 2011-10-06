@@ -613,13 +613,21 @@ static gboolean scroll_callback(GtkWidget *widget, GdkEventScroll *event, editor
 	return TRUE;
 }
 
+static void selection_move(editor_t *editor, double x, double y) {
+	move_cursor_to_mouse(editor, x, y);
+	copy_selection_to_clipboard(editor, selection_clipboard);
+	//editor_center_on_cursor(editor);
+	editor_include_cursor(editor);
+	gtk_widget_queue_draw(editor->drar);
+}
+
 static gboolean motion_callback(GtkWidget *widget, GdkEventMotion *event, editor_t *editor) {
 	if (editor->mouse_marking) {
-		move_cursor_to_mouse(editor, event->x, event->y);
-		copy_selection_to_clipboard(editor, selection_clipboard);
-		//editor_center_on_cursor(editor);
-		editor_include_cursor(editor);
-		gtk_widget_queue_draw(editor->drar);
+		GtkAllocation allocation;
+		gtk_widget_get_allocation(editor->drar, &allocation);
+		if ((event->x < allocation.width) && (event->y < allocation.height) && (event->x >= 0) && (event->y >= 0)) {
+			selection_move(editor, event->x, event->y);
+		}
 	}
 
 	// focus follows mouse
@@ -694,6 +702,15 @@ static gboolean cursor_blinker(editor_t *editor) {
 		}
 	} else {
 		editor->cursor_visible = (editor->cursor_visible + 1) % 3;
+		if (editor->mouse_marking) {
+			GtkAllocation allocation;
+			int x, y;
+			gtk_widget_get_allocation(editor->drar, &allocation);
+			gtk_widget_get_pointer(editor->drar, &x, &y);
+			if ((x > allocation.width) || (x < 0) || (y > allocation.height) || (y < 0)) {
+				selection_move(editor, x, y);
+			}
+		}
 		gtk_widget_queue_draw(editor->drar);
 	}
 	
