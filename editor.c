@@ -110,9 +110,10 @@ void editor_complete_move(editor_t *editor, gboolean should_move_origin) {
 }
 
 void editor_move_cursor(editor_t *editor, int delta_line, int delta_char, enum MoveCursorSpecial special, gboolean should_move_origin) {
-	int i = 0;
 
 #ifdef COMPLEX_LINE_MOVE
+	int i = 0;
+
 	if (delta_line > 0) {
 		for (i = 0; i < delta_line; ++i) {
 			if (editor->buffer->cursor.glyph < editor->buffer->cursor.line->cap) {
@@ -544,6 +545,11 @@ static gboolean button_press_callback(GtkWidget *widget, GdkEventButton *event, 
 		
 		editor->mouse_marking = 1;
 		buffer_set_mark_at_cursor(editor->buffer);
+		if (event->type == GDK_2BUTTON_PRESS) {
+			buffer_change_select_type(editor->buffer, BST_WORDS);
+		} else if (event->type == GDK_3BUTTON_PRESS) {
+			buffer_change_select_type(editor->buffer, BST_LINES);
+		}
 	} else if (event->button == 2) {
 		move_cursor_to_mouse(editor, event->x, event->y);
 		buffer_unset_mark(editor->buffer);

@@ -1,5 +1,3 @@
-- double click -> mark words
-- triple click -> mark lines
 - scrolling during mouse selection must be made slower (possibly hook into the cursor redraw timer?)
 
 - paste full lines removes should equalize indentation

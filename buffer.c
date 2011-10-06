@@ -1113,6 +1113,8 @@ void buffer_extend_selection_by_select_type(buffer_t *buffer) {
 	if (buffer->savedmark.line == NULL) return;
 	if (buffer->cursor.line == NULL) return;
 	
+	copy_lpoint(&(buffer->mark), &(buffer->savedmark));
+	
 	lpoint_t *start, *end;
 	
 	buffer_get_selection_pointers(buffer, &start, &end);
