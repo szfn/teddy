@@ -1076,29 +1076,40 @@ void buffer_typeset_maybe(buffer_t *buffer, double width) {
 }
 
 void buffer_line_clean_trailing_spaces(buffer_t *buffer, real_line_t *line) {
-	int cap_save = line->cap;
-	while (line->cap > 0) {
-		uint32_t code_before_cap = line->glyph_info[line->cap-1].code;
+	int i;
+	for (i = line->cap; i > 0; --i) {
+		uint32_t code_before_cap = line->glyph_info[i-1].code;
 		if ((code_before_cap != 0x20) && (code_before_cap != 0x09)) {
 			break;
 		}
-		--(line->cap);
 	}
 	
-	if (line->cap == 0) {
-		line->cap = cap_save;
-	} else {
-		buffer->modified = 1;
-		if (buffer->cursor.line == line) {
-			if (buffer->cursor.glyph > line->cap) buffer->cursor.glyph = line->cap;
-		}
-		if (buffer->mark.line == line) {
-			if (buffer->mark.glyph > line->cap) buffer->mark.glyph = line->cap;
-		}
-		editor_t *editor = columns_get_buffer(buffer);
-		if (editor != NULL) {
-			gtk_widget_queue_draw(editor->label);
-		}
+	if (i == 0) return;
+	
+	lpoint_t savedmark, savedcursor;
+	
+	copy_lpoint(&savedmark, &(buffer->mark));
+	copy_lpoint(&savedcursor, &(buffer->cursor));
+	
+	buffer->mark.line = line; buffer->mark.glyph = i;
+	buffer->cursor.line = line; buffer->cursor.glyph = line->cap;
+	
+	buffer_replace_selection(buffer, "");
+	
+	copy_lpoint(&(buffer->mark), &savedmark);
+	copy_lpoint(&(buffer->cursor), &savedcursor);
+	
+	if (buffer->mark.line == line) {
+		if (buffer->mark.glyph > line->cap) buffer->mark.glyph = line->cap;
+	}
+	
+	if (buffer->cursor.line == line) {
+		if (buffer->cursor.glyph > line->cap) buffer->cursor.glyph = line->cap;
+	}
+		
+	editor_t *editor = columns_get_buffer(buffer);
+	if (editor != NULL) {
+		gtk_widget_queue_draw(editor->label);
 	}
 }
 

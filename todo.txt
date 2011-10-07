@@ -1,3 +1,5 @@
+- minimal documentation
+
 - paste full lines removes should equalize indentation
 - implement | command that filters selected content through external command
 - make easy way to reindent though external filter
