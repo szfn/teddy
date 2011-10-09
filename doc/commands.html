@@ -1,0 +1,66 @@
+<html>
+	<head>
+		<title>Teddy &ndash; Commands reference</title>
+		<style>
+		* {
+			font-family: sans;
+		}
+		</style>
+	</head>
+	<body>
+		<h1>Teddy &ndash; Commands reference</h1>
+		
+		<p>The scripting language of teddy is tcl. Some commands have been disabled, some commands have a different meaning and quite a few commands have been added for buffer manipulation. In addition unknown commands are interpreted "shell like" as external commands, for those commands shell-style auto-globbing is performed and the resulting command line is executed in background.
+		
+		<h2>Tcl Commands that are disabled</h2>
+		<tt>after</tt>, <tt>cd</tt>, <tt>tcl_endOfWord</tt>, <tt>tcl_findLibrary</tt>, <tt>tcl_startOfPreviousWord</tt>, <tt>tcl_wordBreakAfter</tt>, <tt>tcl_wordBreakBefore</tt>.
+		
+		<h2>Tcl commands with a different meaning</h2>
+		
+		<h3>exit</h3>
+		<!-- TODO -->
+		
+		<h2>Configuration commands</h2>
+		
+		<h3>setcfg</h3>
+		<h3>bindkey</h3>
+		
+		<h2>Buffer and editing frames</h2>
+		<h3>new</h3>
+		<h3>go</h3>
+		<h3>save</h3>
+		<h3>bufman</h3>
+
+		<h2>Selections and clipboard</h2>
+		<h3>mark</h3>
+		<h3>cursor</h3>
+		<h3>cb</h3>
+		<h3>undo</h3>
+				
+		<h2>Motion</h2>
+		<h3>move</h3>
+		<h3>gohome</h3>
+		
+		<h2>Editing</h2>
+		<h3>s (search and replace)</h3>
+		<h3>c (change)</h3>
+		
+		<h2>Utilities</h2>
+		<h3>rgbcolor</h3>
+		<h3>pwf</h3>
+		<h3>pwd</h3>
+		
+		<h2>Command line</h2>
+		<h3>search</h3>
+		<h3>focuscmd</h3>
+		<h3>teddyhistory</h3>
+		<h3>interactarg</h3>
+		
+		<h2>Background buffers</h2>
+		<h3>bg</h3>
+		<h3>&lt;</h3>
+		<h3>shell</h3>
+		
+		<h2>How unknown commands are interpreted</h2>
+	</body>
+</html>

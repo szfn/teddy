@@ -1,4 +1,5 @@
 - minimal documentation
+- todo fix page-up/page-down
 
 - paste full lines removes should equalize indentation
 - implement | command that filters selected content through external command

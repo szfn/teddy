@@ -1,6 +1,11 @@
 <html>
 	<head>
 		<title>Teddy &ndash; Mouse operation</title>
+		<style>
+		* {
+			font-family: sans;
+		}
+		</style>
 	</head>
 	<body>
 		<h1>Teddy &ndash; Mouse operation<h1>
@@ -15,6 +20,7 @@
 					<li><b>Triple-click and Drag</b> to select lines
 					<li><b>Right click</b> tries to interpret the text around the cursor as a file name and attempts to open. Also understands expressions like "&lt;filename>:&lt;linenumber>", opens &lt;filename> and goes to &lt;linenumber>. If the &lt;filename> is a relative path it is resolved against the working directory of the buffer. If the specified file name can not be found it is used as the argument to <tt>search</tt> command (interactive search).
 					<li><b>Right click on a selected region</b>, same as right click if the selected region spans a single line, if it spans more than one line the region's text is evaluated as tcl.
+					<li><b>Scroll wheel</b> scrolls the editing area.
 				</ul>
 			</li>
 			<li>
