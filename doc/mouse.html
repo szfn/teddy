@@ -1,0 +1,40 @@
+<html>
+	<head>
+		<title>Teddy &ndash; Mouse operation</title>
+	</head>
+	<body>
+		<h1>Teddy &ndash; Mouse operation<h1>
+
+		<ul>
+			<li>
+				<b>Editing area</b>
+				<ul>
+					<li><b>Click</b> to position cursor
+					<li><b>Click and Drag</b> to select text
+					<li><b>Double-click and Drag</b> to select words
+					<li><b>Triple-click and Drag</b> to select lines
+					<li><b>Right click</b> tries to interpret the text around the cursor as a file name and attempts to open. Also understands expressions like "&lt;filename>:&lt;linenumber>", opens &lt;filename> and goes to &lt;linenumber>. If the &lt;filename> is a relative path it is resolved against the working directory of the buffer. If the specified file name can not be found it is used as the argument to <tt>search</tt> command (interactive search).
+					<li><b>Right click on a selected region</b>, same as right click if the selected region spans a single line, if it spans more than one line the region's text is evaluated as tcl.
+				</ul>
+			</li>
+			<li>
+				<b>Resize handle</b>
+				<ul>
+					<li><b>Click and Drag</li> resizes the frame/column
+					<li><b>Double click</b> closes all the other frames in the column. If the frame is already the only one in the column, closes all the other columns in the window.
+					<li><b>Right click</b> opens a new frame in the column, or a new frame in another column if there is no space in the current column
+					<li><b>Middle click</b> closes the frame. If the frame is the last one in the column, closes the column (unless the column is the only existing column).
+				</ul>
+			</li>
+			<li>
+				<b>Tag</b>
+				<ul>
+					<li><b>Click and Drag</b> switches the buffers of the origin and target frames
+					<li><b>Double click</b> closes all the other frames in the column. If the frame is already the only one in the column, closes all the other columns in the window.
+					<li><b>Right click</b> opens a new frame in the column, or a new frame in another column if there is no space in the current column
+					<li><b>Middle click</b> closes the frame. If the frame is the last one in the column, closes the column (unless the column is the only existing column).
+				</ul>
+			</li>
+		</ul>
+	</body>
+</html>

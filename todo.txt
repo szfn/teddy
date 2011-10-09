@@ -5,6 +5,7 @@
 - make easy way to reindent though external filter
 - cmdcompl shoul build the list of internal commands dynamically
 - implement man command that runs the man command in background and shows it in a new editor (must be possible to implement in tcl)
+- implement font replacement
 - command line autocompletion shouldn't include commands unless it's the first word con the command line
 - opening directories
 - command to refresh an open directory
