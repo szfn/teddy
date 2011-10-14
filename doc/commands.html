@@ -5,6 +5,21 @@
 		* {
 			font-family: sans;
 		}
+		.ind {
+			margin-left: 5em;
+		}
+		.code {
+			margin-left: 5em;
+			padding-bottom: 2em;
+			padding-top: 2em;
+			font-family: monospace;
+		}
+		h3 {
+			margin-left: 2.5em;
+		}
+		tt {
+			font-family: monospace;
+		}
 		</style>
 	</head>
 	<body>
@@ -18,45 +33,170 @@
 		<h2>Tcl commands with a different meaning</h2>
 		
 		<h3>exit</h3>
-		<!-- TODO -->
+		<div class="ind">
+			<p><b>Syntax:</b> <tt>exit</tt>
+			<p>Closes frame.
+		</div>
 		
 		<h2>Configuration commands</h2>
 		
 		<h3>setcfg</h3>
+		<div class="ind">
+			<p><b>Syntax:</b> <tt>setcfg <i>configuration_variable</i> <i>value</i></tt>
+			<p>Sets a configuration variable. Should be used in the <tt>~/.teddy</tt> configuratoin file.
+			<p>For color configuration options <tt>rgbcolor</tt> function should be used to compute the value.
+			<p>Available configuration options are:
+			<ul>
+				<li>cfg_main_font (defaults to Arial-11)
+				<li>cfg_posbox_font (defaults to Arial-8)
+				<li>cfg_focus_follows_mouse (defaults to 1, set to 0 if you don't want it)
+				
+				<li>cfg_default_autoindent (defaults to 1, which means when enter is pressed the intent of the current line is copied to the new line, set to 0 if you don't want this)
+				<li>cfg_default_spaceman (defaults to 1, which means that trailing spaces are removed automatically)
+				
+				<li>cfg_warp_mouse (defaults to 1, which means the mouse is moved to the top of an editing area when focus is changed in some ways)
+				
+				<li>cfg_interactive_search_case_sensitive (defaults to 2, which is "smart case sensitive", which means that interactive search is case sensitive only when the searched text contains upper case letters, 1 is case sensitive, 0 is case insensitive)
+				
+				<li>cfg_editor_bg_color
+				<li>cfg_editor_fg_color
+				<li>cfg_editor_sel_color
+				<li>cfg_posbox_border_color
+				<li>cfg_posbox_bg_color
+				<li>cfg_posbox_fg_color
+				<li>cfg_border_color
+			<ul>
+		</div>
+		
 		<h3>bindkey</h3>
+		<div class="ind">
+			<p><b>Syntax:</b> <tt>bindkey <i>key</i> <i>expression</i></tt>
+			<p>Binds <i>key</i> with <i>expression</i>: when <i>key</i> is pressed when the editing area is focused <i>expression</i> is evaluated.
+			<p>For example:
+			<div class="code">bindkey Ctrl-Shift-Space {mark lines}</div>
+			Will execute the command <tt>mark lines</tt> when Ctrl-Shift-Space is pressed.
+			<p>Available modifiers are: Super, Ctrl, Alt and Shift. They should appear in this order.
+			<p>Available keys are: all ASCII characters, Backspace, Tab, Return, Pause, Escape, Delete, Home, Left, Up, Right, Down, PageUp, PageDown, End, Insert, F&lt;number>, Space.
+			<p>Keys that have a default keybinding (including plain printable ASCII characters) can not be bound.
+		</div>
 		
 		<h2>Buffer and editing frames</h2>
+		
 		<h3>new</h3>
 		<h3>go</h3>
+		
 		<h3>save</h3>
+		<div class="ind">
+			<p><b>Syntax:</b> <tt>save</tt>
+			<p>Saves buffer to disk.
+		</div>
+		
 		<h3>bufman</h3>
+		<div class="ind">
+			<p><b>Syntax:</b> <tt>bufman</tt>
+			<p>Shows buffer manager.
+		</div>
 
 		<h2>Selections and clipboard</h2>
+		
 		<h3>mark</h3>
+		<div class="ind">
+			<p><b>Syntax:</b> <tt>mark <b>[</b> get <b>|</b> start <b>|</b> stop <b>|</b> words <b>|</b> lines <b>]</b></tt>
+			<p><ul>
+				<li><tt>mark</tt> without arguments toggle mark mode
+				<li><tt>mark get</tt> returns position of mark
+				<li><tt>mark start</tt> sets mark at cursor unless the mark is already set
+				<li><tt>mark stop</tt> unsets mark
+				<li><tt>mark words</tt> sets mark at cursor unless the mark is already set and switches to marking words mode (like double click + drag)
+				<li><tt>mark lines</tt> sets mark at cursor unless the mark is already set and seitches to marking lines mode (like triple click + drag)
+			</ul>
+		</div>
+		
 		<h3>cursor</h3>
+		<div class="ind">
+			<p><b>Syntax:</b> <tt>cursor</tt>
+			<p>Returns the current position of the cursor
+		</div>
+		
 		<h3>cb</h3>
+		<div class="ind">
+			<p><b>Syntax:</b> <tt>cb <b>[</b> copy <b>|</b> cut <b>|</b> paste <b>|</b> ppaste <b>]</b></tt>
+			<p><ul>
+				<li><tt>cb copy</tt>: copies selection to clipboard
+				<li><tt>cb cut</tt>: cuts selection to clipboard
+				<li><tt>cb paste</tt>: paste selection from clipboard
+				<li><tt>cb ppaste</tt>: paste selection from primary clipboard (there is no copy to primary clipboard because everything selected gets automatically copied to primary clipboard)
+			</ul>
+		</div>
+		
 		<h3>undo</h3>
+		<div class="ind">
+			<p><b>Syntax:</b> <tt>undo</tt>
+			<p>Undoes last action
+		</div>
 				
 		<h2>Motion</h2>
+		
 		<h3>move</h3>
 		<h3>gohome</h3>
 		
 		<h2>Editing</h2>
+		
 		<h3>s (search and replace)</h3>
 		<h3>c (change)</h3>
 		
 		<h2>Utilities</h2>
+		
 		<h3>rgbcolor</h3>
+		<div class="ind">
+			<p><b>Syntax:</b> <tt>rgbcolor <b>[</b> <i>color-name</i> <b>|</b> <i>red</i> <i>green</i> <i>blue</i> <b>]</b></tt>
+			<p>Returns the specified color. Understands X11 standard color names. Values for red, green and blue are expressed on a scale from 0 to 255.
+		</div>
+		
 		<h3>pwf</h3>
+		<div class="ind">
+			<p><b>Syntax:</b> <tt>pwf</tt>
+			<p>Returns the file of the current buffer.
+		</div>
+		
 		<h3>pwd</h3>
+		<div class="ind">
+			<p><b>Syntax:</b> <tt>pwd</tt>
+			<p>Returns the workding directory of the current buffer.
+		</div>
 		
 		<h2>Command line</h2>
+		
 		<h3>search</h3>
+		<div class="ind">
+			<p><b>Syntax:</b> <tt>search</tt>
+			<p>Starts incremental search.
+		</div>
+		
 		<h3>focuscmd</h3>
+		<div class="ind">
+			<p><b>Syntax:</b> <tt>focuscmd</tt>
+			<p>Focus the command line. This command should be bound to a keyboard shortcut to replicate the Escape key functionality.
+		</div>
+		
 		<h3>teddyhistory</h3>
+		<div class="ind">
+			<p><b>Syntax:</b> <tt>teddyhistory <b>[</b> cmd <b>|</b> search <b>]</b> <i>item number</i></tt>
+			<p>Returns an history's item. The first argument selects "cmd" history or "search" history, the second argument specifies the history's item's number, for example:
+			<div class="code">teddyhistory cmd 0</div>
+			returns the last executed command, and:
+			<div class="code">teddyhistory search 0</div>
+			Returns the last thing searched incrementally.
+		</div>
+		
 		<h3>interactarg</h3>
+		<div class="ind">
+			<p><b>Syntax:</b> <tt>interactarg <i>command</i></tt>
+			<p>Puts the prompt into argument mode for <i>command</i>.
+		</div>
 		
 		<h2>Background buffers</h2>
+		
 		<h3>bg</h3>
 		<h3>&lt;</h3>
 		<h3>shell</h3>
