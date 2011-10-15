@@ -1,5 +1,4 @@
 - extend selection scrolling by a border of one line at top and bottom
-- todo fix page-up/page-down
  
 - highlight current line
 - black borders around cmdcompl window

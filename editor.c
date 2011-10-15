@@ -196,18 +196,22 @@ void editor_move_cursor(editor_t *editor, int delta_line, int delta_char, enum M
 		}
 	}
 #else
-	real_line_t *to = NULL;
-	if (delta_line < 0) {
-		to = editor->buffer->cursor.line->prev;
-	} else if (delta_line > 0) {
-		to = editor->buffer->cursor.line->next;
+	while (delta_line < 0) {
+		real_line_t *to = editor->buffer->cursor.line->prev;
+		if (to == NULL) break;
+		editor->buffer->cursor.line = to;
+		++delta_line;
 	}
 	
-	if (to != NULL) {
+	while (delta_line > 0) {
+		real_line_t *to = editor->buffer->cursor.line->next;
+		if (to == NULL) break;
 		editor->buffer->cursor.line = to;
-		if (editor->buffer->cursor.glyph > editor->buffer->cursor.line->cap)
-			editor->buffer->cursor.glyph = editor->buffer->cursor.line->cap;
+		--delta_line;
 	}
+	
+	if (editor->buffer->cursor.glyph > editor->buffer->cursor.line->cap)
+		editor->buffer->cursor.glyph = editor->buffer->cursor.line->cap;
 #endif
 
 	if ((delta_char != 0) || (special != MOVE_NORMAL)) {
