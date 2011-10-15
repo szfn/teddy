@@ -238,9 +238,31 @@
 				<li><tt><b>[</b><i>source</i><b>]</b>&lt;&amp;<i>target</i></tt> redirects <i>source</i> file descriptor input to <i>destination</i> file descriptor. If no file descriptor is specified, 1 is used (stdin).
 				<li><tt><b>[</b><i>descriptor</i><b>]</b>>><i>file</i></tt> redirects <i>descriptor</i> to append to <i>file</i>. If no descriptor is specified, 0 is used (stdout).
 			</ul>
+			
+			<p>In addition, shell-like glob expansion is performed (i.e. <tt>*.c</tt> is expanded to all the files ending in .c, and <tt>blah?</tt> is expanded to all files starting with blah and having one other character at the end.
 		</div>
 		
 		<h2>How unknown commands are interpreted</h2>
-		<p><!-- TODO -->
+		<p>When running on the command line <tt>unknown</tt> function is defined as:
+		
+		<div class="code">
+		<pre>
+		proc unknown {args} {
+			set margs shell
+			lappend margs {*}$args
+			bg $margs
+		}
+		</pre>
+		</div>
+		
+		However when already running in background <tt>unknown</tt> is changed to:
+		
+		<div class="code">
+		<pre>
+		proc unknown {args} {
+			shell {*}$args
+		}
+		</pre>
+		</div>
 	</body>
 </html>
