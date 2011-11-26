@@ -120,7 +120,7 @@ int buffers_close(buffer_t *buffer, GtkWidget *window) {
 			save_to_text_file(buffer);
 			break;
 		case DISCARD_CHANGES_RESPONSE:
-			printf("Discarding changes to: [%s]\n", buffer->name);
+			//printf("Discarding changes to: [%s]\n", buffer->name);
 			break;
 		case CANCEL_ACTION_RESPONSE: return 0;
 		default: return 0; /* This shouldn't happen */

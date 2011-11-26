@@ -1,4 +1,3 @@
-- double click / triple click doesn't work nice with primary selection clipboard
 - change save to copy + truncate original instead of move + create
 - black borders around cmdcompl window
 - black border under command line

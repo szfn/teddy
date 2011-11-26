@@ -89,8 +89,9 @@ static void copy_selection_to_clipboard(editor_t *editor, GtkClipboard *clipboar
 	if (end.line == NULL) return;
 
 	r  = buffer_lines_to_text(editor->buffer, &start, &end);
-
-	gtk_clipboard_set_text(clipboard, r, -1);
+	
+	if (strcmp(r, "") != 0)
+		gtk_clipboard_set_text(clipboard, r, -1);
 
 	free(r);
 }
@@ -545,15 +546,17 @@ static gboolean button_press_callback(GtkWidget *widget, GdkEventButton *event, 
 
 	if (event->button == 1) {
 		move_cursor_to_mouse(editor, event->x, event->y);
-		editor_complete_move(editor, TRUE);
 		
 		editor->mouse_marking = 1;
 		buffer_set_mark_at_cursor(editor->buffer);
+		
 		if (event->type == GDK_2BUTTON_PRESS) {
 			buffer_change_select_type(editor->buffer, BST_WORDS);
 		} else if (event->type == GDK_3BUTTON_PRESS) {
 			buffer_change_select_type(editor->buffer, BST_LINES);
 		}
+		
+		editor_complete_move(editor, TRUE);
 	} else if (event->button == 2) {
 		move_cursor_to_mouse(editor, event->x, event->y);
 		buffer_unset_mark(editor->buffer);
