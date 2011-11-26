@@ -629,7 +629,7 @@ static gboolean motion_callback(GtkWidget *widget, GdkEventMotion *event, editor
 	if (editor->mouse_marking) {
 		GtkAllocation allocation;
 		gtk_widget_get_allocation(editor->drar, &allocation);
-		if ((event->x < allocation.width) && (event->y < allocation.height) && (event->x >= 0) && (event->y >= 0)) {
+		if ((event->x < (allocation.width - editor->buffer->line_height)) && (event->y < (allocation.height - editor->buffer->line_height)) && (event->x >= editor->buffer->line_height) && (event->y >= editor->buffer->line_height)) {
 			selection_move(editor, event->x, event->y);
 		}
 	}
@@ -711,8 +711,8 @@ static gboolean cursor_blinker(editor_t *editor) {
 			int x, y;
 			gtk_widget_get_allocation(editor->drar, &allocation);
 			gtk_widget_get_pointer(editor->drar, &x, &y);
-			if ((x > allocation.width) || (x < 0) || (y > allocation.height) || (y < 0)) {
-				selection_move(editor, x, y);
+			if ((x > (allocation.width - editor->buffer->line_height)) || (x < editor->buffer->line_height) || (y > (allocation.height - editor->buffer->line_height)) || (y < editor->buffer->line_height)) {
+				selection_move(editor, x, y+editor->buffer->line_height);
 			}
 		}
 		gtk_widget_queue_draw(editor->drar);

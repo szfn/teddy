@@ -920,7 +920,7 @@ buffer_t *buffer_create(FT_Library *library) {
 		buffer->space_advance = extents.x_advance;
 
 		cairo_scaled_font_extents(buffer->main_font.cairofont, &font_extents);
-		buffer->line_height = font_extents.height;
+		buffer->line_height = font_extents.height - config[CFG_MAIN_FONT_HEIGHT_REDUCTION].intval;
 		buffer->ascent = font_extents.ascent;
 		buffer->descent = font_extents.descent;
 	}

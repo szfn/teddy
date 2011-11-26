@@ -14,7 +14,7 @@ extern const char *config_names[];
 extern void cfg_init(void);
 void setcfg(config_item_t *ci, const char *val);
 
-#define CONFIG_NUM 14
+#define CONFIG_NUM 15
 
 #define CFG_BORDER_COLOR 0
 #define CFG_DEFAULT_AUTOINDENT 1
@@ -25,10 +25,11 @@ void setcfg(config_item_t *ci, const char *val);
 #define CFG_FOCUS_FOLLOWS_MOUSE 6
 #define CFG_INTERACTIVE_SEARCH_CASE_SENSITIVE 7
 #define CFG_MAIN_FONT 8
-#define CFG_POSBOX_BG_COLOR 9
-#define CFG_POSBOX_BORDER_COLOR 10
-#define CFG_POSBOX_FG_COLOR 11
-#define CFG_POSBOX_FONT 12
-#define CFG_WARP_MOUSE 13
+#define CFG_MAIN_FONT_HEIGHT_REDUCTION 9
+#define CFG_POSBOX_BG_COLOR 10
+#define CFG_POSBOX_BORDER_COLOR 11
+#define CFG_POSBOX_FG_COLOR 12
+#define CFG_POSBOX_FONT 13
+#define CFG_WARP_MOUSE 14
 
 #endif

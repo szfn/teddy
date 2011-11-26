@@ -1,14 +1,21 @@
-- extend selection scrolling by a border of one line at top and bottom
- 
-- highlight current line
+- remove debug printf
+- selection to first character of a row doesn't work properly (you need to go very high on the line to get to the first character, why?)
+- double click / triple click doesn't work nice with primary selection clipboard
+- change save to copy + truncate original instead of move + create
 - black borders around cmdcompl window
 - black border under command line
-- paste full lines removes should equalize indentation
+- text autocompletion
+- syntax highlighting
+- save is slow
+- shell should expand ~
+- bg with an argument to force use of a new buffer
+
 - implement | command that filters selected content through external command
 - make easy way to reindent though external filter
 - cmdcompl shoul build the list of internal commands dynamically
 - implement man command that runs the man command in background and shows it in a new editor (must be possible to implement in tcl)
 - implement font replacement
+- highlight current line
 - command line autocompletion shouldn't include commands unless it's the first word con the command line
 - opening directories
 - command to refresh an open directory
@@ -35,7 +42,6 @@
 - command to reload buffer contents from disk
 - auto-reloading buffers when there is no change and the file on disk was changed
 - tabs
-- syntax highlighting
 - left+middle -> cut
 - move mouse cursor when searching
 - configurability
