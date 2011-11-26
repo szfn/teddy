@@ -42,10 +42,10 @@ int main(int argc, char *argv[]) {
 	for (i = 1; i < argc; ++i) {
 		char *rp;
 		buffer_t *buf;
-		printf("Will show: %s\n", argv[i]);
+		//printf("Will show: %s\n", argv[i]);
 		buf = buffers_open(NULL, argv[i], &rp);
 		if (buf == NULL) {
-			printf("Load of [%s] failed\n", (rp == NULL) ? argv[i] : rp);
+			fprintf(stderr, "Load of [%s] failed\n", (rp == NULL) ? argv[i] : rp);
 		} else {
 			abuf = buf;
 		}

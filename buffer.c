@@ -660,7 +660,7 @@ int load_text_file(buffer_t *buffer, const char *filename) {
 
 	free(text);
 
-	printf("Loaded lines: %d (name: %s) (path: %s)\n", lineno, buffer->name, buffer->path);
+	//printf("Loaded lines: %d (name: %s) (path: %s)\n", lineno, buffer->name, buffer->path);
 	
 	fclose(fin);
 
@@ -804,9 +804,9 @@ void save_to_text_file(buffer_t *buffer) {
 
 	free(r);
 
-	asprintf(&cmd, "diff %s %s~", buffer->path, buffer->path);
+	/*asprintf(&cmd, "diff %s %s~", buffer->path, buffer->path);
 	system(cmd);
-	free(cmd);
+	free(cmd);*/
 	
 	asprintf(&cmd, "%s~", buffer->path);
 	unlink(cmd); // we ignore the return value, too bad if we couldn't delete it

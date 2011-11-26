@@ -75,7 +75,7 @@ static gboolean reshandle_button_release_callback(GtkWidget *widget, GdkEventBut
 	double changey = event->y - reshandle->origin_y;
 	double changex = event->x - reshandle->origin_x;
 
-	printf("Resizing end\n");
+	//printf("Resizing end\n");
 
 	prev_editor = column_get_editor_before(reshandle->column, reshandle->editor);
 	if (prev_editor != NULL) {

@@ -310,8 +310,6 @@ buffer_t *buffers_open(buffer_t *base_buffer, const char *filename, char **rp) {
 	buffer_t *b;
 	*rp = unrealpath((base_buffer != NULL) ? base_buffer->path : NULL, filename);
 
-	printf("Attempting to open [%s]\n", *rp);
-
 	if (rp == NULL) {
 		perror("Error resolving pathname");
 		return NULL;

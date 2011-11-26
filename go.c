@@ -85,7 +85,7 @@ static int exec_go_position(const char *specifier, editor_t *context_editor, buf
 		if (isnumber(c)) {
 			n1 = strtol(c, NULL, 10);
 			if (exec_char_specifier(pos, 0, buffer)) {
-				printf("Line + char\n");
+				//printf("Line + char\n");
 				buffer_aux_go_line(buffer, (int)n1);
 				exec_char_specifier(pos, 1, buffer);
 				if (context_editor != NULL)
@@ -118,7 +118,7 @@ editor_t *go_to_buffer(editor_t *editor, buffer_t *buffer) {
 	response = gtk_dialog_run(GTK_DIALOG(go_switch_window));
 	gtk_widget_hide(go_switch_window);
 
-	printf("Response was: %d\n", response);
+	//printf("Response was: %d\n", response);
 
 	switch(response) {
 	case GO_CURRENT:
@@ -344,7 +344,7 @@ static bool mouse_open_select_like_file(editor_t *editor, lpoint_t *cursor, lpoi
 		}
 	}
 		
-	printf("start_glyph: %d end_glyph: %d\n", start->glyph, end->glyph);
+	//printf("start_glyph: %d end_glyph: %d\n", start->glyph, end->glyph);
 	if (start->glyph > end->glyph) {
 		return false;
 	}
@@ -361,7 +361,7 @@ void mouse_open_action(editor_t *editor, lpoint_t *start, lpoint_t *end) {
 	
 	copy_lpoint(&cursor, start);
 	
-	printf("start_glyph: %d\n", start->glyph);
+	//printf("start_glyph: %d\n", start->glyph);
 	
 	if (end == NULL) {
 		end = &changed_end;
@@ -378,7 +378,7 @@ void mouse_open_action(editor_t *editor, lpoint_t *start, lpoint_t *end) {
 
 	char *text = buffer_lines_to_text(editor->buffer, start, end);
 	
-	printf("Open or search on selection [%s]\n", text);
+	//printf("Open or search on selection [%s]\n", text);
 	
 	if (text == NULL) return;
 	
@@ -389,7 +389,7 @@ void mouse_open_action(editor_t *editor, lpoint_t *start, lpoint_t *end) {
 	free(text);
 	
 	if (code == TCL_OK) {
-		printf("After processing hook: [%s]\n", Tcl_GetStringResult(interp));
+		//printf("After processing hook: [%s]\n", Tcl_GetStringResult(interp));
 	} else {
 		Tcl_Obj *options = Tcl_GetReturnOptions(interp, code);
 		Tcl_Obj *key = Tcl_NewStringObj("-errorinfo", -1);

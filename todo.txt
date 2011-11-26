@@ -1,5 +1,4 @@
-- remove debug printf
-- selection to first character of a row doesn't work properly (you need to go very high on the line to get to the first character, why?)
+- selection to first character doesn't work
 - double click / triple click doesn't work nice with primary selection clipboard
 - change save to copy + truncate original instead of move + create
 - black borders around cmdcompl window

@@ -269,8 +269,8 @@ static void cmdcompl_start(const char *text, int length, char *working_directory
 			strncpy(partial_filename, text+rlidx+1, length - rlidx - 1);
 			partial_filename[length - rlidx - 1] = '\0';
 			
-			printf("Relative directory [%s]\n", reldir);
-			printf("Partial filename [%s]\n", partial_filename);
+			/*printf("Relative directory [%s]\n", reldir);
+			printf("Partial filename [%s]\n", partial_filename);*/
 		}
 
 		if (reldir != NULL) {
@@ -285,7 +285,7 @@ static void cmdcompl_start(const char *text, int length, char *working_directory
 			partial_filename[length] = '\0';
 		}
 
-		printf("Completions for directory [%s]:\n", absdir);
+		//printf("Completions for directory [%s]:\n", absdir);
 		dh = opendir(absdir);
 		if (dh != NULL) {
 			struct dirent *den;

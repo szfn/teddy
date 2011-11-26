@@ -213,7 +213,7 @@ proc mouse_go_preprocessing_hook {text} {\n\
    set text [mgph_remove_trailing_nonalnum $text]\n\
    set text [mgph_trim_parenthesis $text]\n\
    \n\
-   puts \"Text is <$text>\\n\"\n\
+   #puts \"Text is <$text>\\n\"\n\
    \n\
    if {[regexp {^([^:]*)(?::|(?::?[\\(\\[]))([[:digit:]]+)[,:]([[:digit:]]+)(?:[\\]\\)])?$} $text -> filename lineno colno]} {\n\
        return \"$filename:$lineno:$colno\"\n\
@@ -247,8 +247,8 @@ proc bindent {direction indentchar} {\n\
 		}\n\
 	}\n\
 	\n\
-	puts \"Stored mark: $stored_mark\"\n\
-	puts \"Stored cursor: $stored_cursor\"\n\
+	#puts \"Stored mark: $stored_mark\"\n\
+	#puts \"Stored cursor: $stored_cursor\"\n\
 	\n\
 	go $stored_mark\n\
 	mark\n\
