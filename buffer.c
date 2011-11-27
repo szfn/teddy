@@ -762,7 +762,11 @@ void save_to_text_file(buffer_t *buffer) {
 	char *r;
 	size_t towrite, write_start, written;
 	
-	asprintf(&cmd, "mv -f %s %s~", buffer->path, buffer->path);
+	/*asprintf(&cmd, "mv -f %s %s~", buffer->path, buffer->path);
+	system(cmd);
+	free(cmd);*/
+	
+	asprintf(&cmd, "cp -f %s %s~", buffer->path, buffer->path);
 	system(cmd);
 	free(cmd);
 
@@ -793,14 +797,19 @@ void save_to_text_file(buffer_t *buffer) {
 	while (towrite > 0) {
 		written = fwrite(r+write_start, sizeof(char), towrite, file);
 		if (written == 0) {
+			//TODO: show message here and don't exit
 			perror("Error writing to file");
-			break;
+			return;
 		}
 		towrite -= written;
 		write_start += written;
 	}
 
-	fclose(file);
+	if (fclose(file) != 0) {
+		//TODO: show message here and don't exit
+		perror("Couldn't write to file");
+		return;
+	}
 
 	free(r);
 

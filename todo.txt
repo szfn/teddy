@@ -1,12 +1,14 @@
-- change save to copy + truncate original instead of move + create
-- black borders around cmdcompl window
-- black border under command line
+- ability to specify a font path directly instead of a fontconfig pattern
+- convert black frame borders to "alternate color"
+- "alternate color" borders around cmdcompl window
+- "alternate color" border under command line
 - text autocompletion
 - syntax highlighting
 - save is slow
 - shell should expand ~
 - bg with an argument to force use of a new buffer
 
+- change perror to show error windows
 - implement | command that filters selected content through external command
 - make easy way to reindent though external filter
 - cmdcompl shoul build the list of internal commands dynamically
