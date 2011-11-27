@@ -1,4 +1,3 @@
-- ability to specify a font path directly instead of a fontconfig pattern
 - convert black frame borders to "alternate color"
 - "alternate color" borders around cmdcompl window
 - "alternate color" border under command line
