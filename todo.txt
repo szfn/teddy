@@ -1,7 +1,7 @@
-- highlighting of matching parenthesis
-- text autocompletion
+- save is slow (speed up by only checking a radius of 100 lines around the cursor for spaces to remove at the end)
+- disable removal of extra spaces at the end outside of save
+- text autocompletion (wordlist is calculated at load and save by tokenizing a radius of 100 lines around the cursor)
 - syntax highlighting
-- save is slow
 - shell should expand ~
 - bg with an argument to force use of a new buffer
 

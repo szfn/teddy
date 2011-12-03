@@ -11,6 +11,7 @@
 #include "undo.h"
 #include "jobs.h"
 #include "point.h"
+#include "parmatch.h"
 
 typedef struct _my_glyph_info_t {
 	double kerning_correction;
@@ -67,6 +68,7 @@ typedef struct _buffer_t {
 	lpoint_t mark;
 	lpoint_t savedmark;
 	enum select_type select_type;
+	parmatch_t parmatch;
 
 	/* Undo information */
 	undo_t undo;
@@ -109,6 +111,7 @@ void buffer_set_mark_at_cursor(buffer_t *buffer);
 void buffer_unset_mark(buffer_t *buffer);
 void buffer_change_select_type(buffer_t *buffer, enum select_type select_type);
 void buffer_extend_selection_by_select_type(buffer_t *buffer);
+void buffer_update_parmatch(buffer_t *buffer);
 
 // replace current selection with new_text (main editing function)
 void buffer_replace_selection(buffer_t *buffer, const char *new_text);

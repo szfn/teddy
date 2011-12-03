@@ -192,7 +192,6 @@ void cmdcompl_init(void) {
 		gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(scroll_view), GTK_POLICY_NEVER, GTK_POLICY_AUTOMATIC);
 		
 		gtk_table_attach(GTK_TABLE(frame), scroll_view, 1, 2, 1, 2, GTK_EXPAND|GTK_FILL, GTK_EXPAND|GTK_FILL, 0, 0);
-		gtk_container_add(GTK_CONTAINER(completions_window), scroll_view);
 	}
 
 	gtk_window_set_default_size(GTK_WINDOW(completions_window), -1, 150);

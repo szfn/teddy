@@ -695,6 +695,22 @@ static void draw_selection(editor_t *editor, double width, cairo_t *cr) {
 	set_color_cfg(cr, config[CFG_EDITOR_FG_COLOR].intval);
 }
 
+static void draw_parmatch(editor_t *editor, GtkAllocation *allocation, cairo_t *cr) {
+	buffer_update_parmatch(editor->buffer);
+	
+	if (editor->buffer->parmatch.matched.line == NULL) return;
+	
+	double x, y;
+	line_get_glyph_coordinates(editor->buffer, &(editor->buffer->parmatch.matched), &x, &y);
+
+	cairo_set_operator(cr, CAIRO_OPERATOR_DIFFERENCE);
+	
+	cairo_rectangle(cr, x, y - editor->buffer->ascent, LPOINTGI(editor->buffer->parmatch.matched).x_advance, editor->buffer->ascent + editor->buffer->descent);
+	cairo_fill(cr);
+	
+	cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
+}
+
 static gboolean cursor_blinker(editor_t *editor) {
 	if (!(editor->initialization_ended)) return TRUE;
 	if (editor->cursor_visible < 0) editor->cursor_visible = 1;
@@ -793,6 +809,7 @@ static gboolean expose_event_callback(GtkWidget *widget, GdkEventExpose *event, 
 	}
 
 	draw_selection(editor, allocation.width, cr);
+	draw_parmatch(editor, &allocation, cr);
 
 	if (editor->cursor_visible && !(editor->search_mode)) {
 		double cursor_x, cursor_y;

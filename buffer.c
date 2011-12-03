@@ -896,6 +896,12 @@ void buffer_move_cursor_to_position(buffer_t *buffer, double x, double y) {
 	buffer_extend_selection_by_select_type(buffer);
 }
 
+void buffer_update_parmatch(buffer_t *buffer) {
+	if ((buffer->parmatch.cursor_cache.line == buffer->cursor.line) &&
+		(buffer->parmatch.cursor_cache.glyph == buffer->cursor.glyph)) return;
+	parmatch_find(&(buffer->parmatch), &(buffer->cursor));
+}
+
 buffer_t *buffer_create(FT_Library *library) {
 	buffer_t *buffer = malloc(sizeof(buffer_t));
 
@@ -944,6 +950,8 @@ buffer_t *buffer_create(FT_Library *library) {
 
 	buffer->mark.line = NULL;
 	buffer->mark.glyph = -1;
+	
+	parmatch_init(&(buffer->parmatch));
 
 	buffer->tab_width = 4;
 	buffer->left_margin = 4.0;
