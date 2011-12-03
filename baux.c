@@ -90,10 +90,17 @@ void buffer_aux_wnwa_prev(buffer_t *buffer) {
 }
 
 void buffer_indent_newline(buffer_t *buffer, char *r) {
-	int i = 0;
+	real_line_t *line;
+	for (line = buffer->cursor.line; line != NULL; line = line->prev) {
+		if (line->cap > 0) break;
+	}
+	
+	if (line == NULL) line = buffer->cursor.line;
+	
 	r[0] = '\n';
-	for ( ; i < buffer->cursor.line->cap; ++i) {
-		uint32_t code = buffer->cursor.line->glyph_info[i].code;
+	int i;
+	for (i = 0; i < line->cap; ++i) {
+		uint32_t code = line->glyph_info[i].code;
 		if (code == 0x20) {
 			r[i+1] = ' ';
 		} else if (code == 0x09) {

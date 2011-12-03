@@ -3,7 +3,6 @@
 - shell should expand ~
 - bg with an argument to force use of a new buffer
 
-- spaces should be removed from the end of empty lines and autoindent should copy the indentation from the first non-empty line
 - change perror to show error windows
 - implement | command that filters selected content through external command
 - make easy way to reindent though external filter

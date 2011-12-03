@@ -965,9 +965,9 @@ buffer_t *buffer_create(FT_Library *library) {
 void buffer_free(buffer_t *buffer) {
 	{
 		real_line_t *cursor;
-		
+
 		cursor = buffer->real_line;
-		
+
 		while (cursor != NULL) {
 			real_line_t *next = cursor->next;
 			free(cursor->glyphs);
@@ -1002,7 +1002,7 @@ void debug_print_real_lines_state(buffer_t *buffer) {
 	}
 
 	printf("------------------------\n");
-	
+
 }
 
 void buffer_get_selection_pointers(buffer_t *buffer, lpoint_t **start, lpoint_t **end) {
@@ -1038,7 +1038,7 @@ void buffer_get_selection_pointers(buffer_t *buffer, lpoint_t **start, lpoint_t 
 void buffer_get_selection(buffer_t *buffer, lpoint_t *start, lpoint_t *end) {
 	lpoint_t *pstart, *pend;
 	buffer_get_selection_pointers(buffer, &pstart, &pend);
-	
+
 	if ((pstart == NULL) || (pend == NULL)) {
 		start->line = end->line = NULL;
 		start->glyph = end->glyph = 0;
@@ -1081,7 +1081,7 @@ void buffer_move_cursor(buffer_t *buffer, int direction) {
 void buffer_typeset_maybe(buffer_t *buffer, double width) {
 	real_line_t *line;
 	double y = buffer->line_height + (buffer->ex_height / 2);
-	
+
 	if (fabs(width - buffer->rendered_width) < 0.001) {
 		return;
 	}
@@ -1102,30 +1102,31 @@ void buffer_line_clean_trailing_spaces(buffer_t *buffer, real_line_t *line) {
 			break;
 		}
 	}
-	
-	if (i == 0) return;
-	
+
+	if (i == line->cap) return;
+	//if (i == 0) return;
+
 	lpoint_t savedmark, savedcursor;
-	
+
 	copy_lpoint(&savedmark, &(buffer->mark));
 	copy_lpoint(&savedcursor, &(buffer->cursor));
-	
+
 	buffer->mark.line = line; buffer->mark.glyph = i;
 	buffer->cursor.line = line; buffer->cursor.glyph = line->cap;
-	
+
 	buffer_replace_selection(buffer, "");
-	
+
 	copy_lpoint(&(buffer->mark), &savedmark);
 	copy_lpoint(&(buffer->cursor), &savedcursor);
-	
+
 	if (buffer->mark.line == line) {
 		if (buffer->mark.glyph > line->cap) buffer->mark.glyph = line->cap;
 	}
-	
+
 	if (buffer->cursor.line == line) {
 		if (buffer->cursor.glyph > line->cap) buffer->cursor.glyph = line->cap;
 	}
-		
+
 	editor_t *editor = columns_get_buffer(buffer);
 	if (editor != NULL) {
 		gtk_widget_queue_draw(editor->label);
@@ -1142,13 +1143,13 @@ void buffer_extend_selection_by_select_type(buffer_t *buffer) {
 	if (buffer->mark.line == NULL) return;
 	if (buffer->savedmark.line == NULL) return;
 	if (buffer->cursor.line == NULL) return;
-	
+
 	copy_lpoint(&(buffer->mark), &(buffer->savedmark));
-	
+
 	lpoint_t *start, *end;
-	
+
 	buffer_get_selection_pointers(buffer, &start, &end);
-	
+
 	switch (buffer->select_type) {
 	case BST_LINES:
 		start->glyph = 0;

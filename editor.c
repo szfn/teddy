@@ -20,7 +20,7 @@
 
 void set_label_text(editor_t *editor) {
 	char *labeltxt;
-	
+
 	if ((strcmp(editor->label_state, "cmd") == 0) && (editor->locked_command_line[0] != '\0')) {
 		asprintf(&labeltxt, " %s | cmd<%s>", editor->buffer->name, editor->locked_command_line);
 	} else {
@@ -82,14 +82,14 @@ static void editor_include_cursor(editor_t *editor) {
 static void copy_selection_to_clipboard(editor_t *editor, GtkClipboard *clipboard) {
 	lpoint_t start, end;
 	char *r = NULL;
-	
+
 	buffer_get_selection(editor->buffer, &start, &end);
- 
+
 	if (start.line == NULL) return;
 	if (end.line == NULL) return;
 
 	r  = buffer_lines_to_text(editor->buffer, &start, &end);
-	
+
 	if (strcmp(r, "") != 0)
 		gtk_clipboard_set_text(clipboard, r, -1);
 
