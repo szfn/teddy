@@ -1,4 +1,3 @@
-- cancel to the "do you want to create a new file" dialog doesn't do anything
 - highlighting of matching parenthesis
 - text autocompletion
 - syntax highlighting

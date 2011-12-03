@@ -230,7 +230,7 @@ int teddy_go_command(ClientData client_data, Tcl_Interp *interp, int argc, const
 
 		gtk_widget_show_all(dialog);
 
-		if (gtk_dialog_run(GTK_DIALOG(dialog))) {
+		if (gtk_dialog_run(GTK_DIALOG(dialog)) == 1) {
 			FILE *f = fopen(urp, "w");
 
 			gtk_widget_hide(dialog);
