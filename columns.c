@@ -251,7 +251,7 @@ column_t *columns_get_column_from_position(double x, double y) {
 		GtkAllocation allocation;
 		if (columns[i] == NULL) continue;
 		gtk_widget_get_allocation(columns[i]->editors_vbox, &allocation);
-		printf("Comparing (%g,%g) with (%d,%d) (%d,%d)\n", x, y, allocation.x, allocation.y, allocation.x+allocation.width, allocation.y+allocation.height);
+		//printf("Comparing (%g,%g) with (%d,%d) (%d,%d)\n", x, y, allocation.x, allocation.y, allocation.x+allocation.width, allocation.y+allocation.height);
 		if ((x >= allocation.x)
 			&& (x <= allocation.x + allocation.width)
 			&& (y >= allocation.y)
