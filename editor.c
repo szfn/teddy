@@ -721,15 +721,37 @@ static gboolean cursor_blinker(editor_t *editor) {
 	return TRUE;
 }
 
+static void draw_line(editor_t *editor, GtkAllocation *allocation, cairo_t *cr, real_line_t *line) {
+	cairo_show_glyphs(cr, line->glyphs, line->cap);
+
+	double cury = line->start_y;
+
+	for (int i = 0; i < line->cap; ++i) {
+		// draws soft wrapping indicators
+		if (line->glyphs[i].y - cury > 0.001) {
+			/* draw ending tract */
+			cairo_set_line_width(cr, 4.0);
+			cairo_move_to(cr, line->glyphs[i-1].x + line->glyph_info[i-1].x_advance, cury-(editor->buffer->ex_height/2.0));
+			cairo_line_to(cr, allocation->width, cury-(editor->buffer->ex_height/2.0));
+			cairo_stroke(cr);
+			cairo_set_line_width(cr, 2.0);
+
+			cury = line->glyphs[i].y;
+
+			/* draw initial tract */
+			cairo_set_line_width(cr, 4.0);
+			cairo_move_to(cr, 0.0, cury-(editor->buffer->ex_height/2.0));
+			cairo_line_to(cr, editor->buffer->left_margin, cury-(editor->buffer->ex_height/2.0));
+			cairo_stroke(cr);
+			cairo_set_line_width(cr, 2.0);
+		}
+	}
+}
+
 static gboolean expose_event_callback(GtkWidget *widget, GdkEventExpose *event, editor_t *editor) {
 	cairo_t *cr = gdk_cairo_create(widget->window);
-	GtkAllocation allocation;
-	double originy;
-	real_line_t *line;
-	int mark_mode = 0;
-	int count = 0;
-	int drawn_lines = 0;
 
+	GtkAllocation allocation;
 	gtk_widget_get_allocation(widget, &allocation);
 
 	if (!(editor->initialization_ended)) {
@@ -744,8 +766,6 @@ static gboolean expose_event_callback(GtkWidget *widget, GdkEventExpose *event, 
 		gdk_window_set_cursor(gtk_widget_get_window(editor->drar), gdk_cursor_new(GDK_XTERM));
 	}
 
-	/*printf("%dx%d +%dx%d (%dx%d)\n", event->area.x, event->area.y, event->area.width, event->area.height, allocation.width, allocation.height);*/
-
 	set_color_cfg(cr, config[CFG_EDITOR_BG_COLOR].intval);
 	cairo_rectangle(cr, 0, 0, allocation.width, allocation.height);
 	cairo_fill(cr);
@@ -755,80 +775,24 @@ static gboolean expose_event_callback(GtkWidget *widget, GdkEventExpose *event, 
 
 	cairo_translate(cr, -gtk_adjustment_get_value(GTK_ADJUSTMENT(editor->hadjustment)), -gtk_adjustment_get_value(GTK_ADJUSTMENT(editor->adjustment)));
 
-	/*printf("DRAWING!\n");*/
-
 	buffer_typeset_maybe(editor->buffer, allocation.width);
 
 	editor->buffer->rendered_height = 0.0;
 
-	originy = gtk_adjustment_get_value(GTK_ADJUSTMENT(editor->adjustment));
+	double originy = gtk_adjustment_get_value(GTK_ADJUSTMENT(editor->adjustment));
 
-	for (line = editor->buffer->real_line; line != NULL; line = line->next) {
-		int start_selection_at_glyph = -1, end_selection_at_glyph = -1;
-		int i;
-		double cury;
-
-		if (line == editor->buffer->mark.line) {
-			if (mark_mode) {
-				end_selection_at_glyph = editor->buffer->mark.glyph;
-				mark_mode = 0;
-			} else {
-				start_selection_at_glyph = editor->buffer->mark.glyph;
-				mark_mode = 1;
-			}
-		}
-
-		if (mark_mode || (editor->buffer->mark.line != NULL)) {
-			if (line == editor->buffer->cursor.line) {
-				if (mark_mode) {
-					end_selection_at_glyph = editor->buffer->cursor.glyph;
-					mark_mode = 0;
-				} else {
-					start_selection_at_glyph = editor->buffer->cursor.glyph;
-					mark_mode = 1;
-				}
-			}
-		}
-
-		//buffer_line_adjust_glyphs(editor->buffer, line, origin_x, y, allocation.width, allocation.height, &y_increment, &line_end_width);
-
+	int count = 0;
+	for (real_line_t *line = editor->buffer->real_line; line != NULL; line = line->next) {
 		if (((line->start_y + line->y_increment - originy) > 0) && ((line->start_y - editor->buffer->ascent - originy) < allocation.height)) {
-			cairo_show_glyphs(cr, line->glyphs, line->cap);
-
-			cury = line->start_y;
-
-			for (i = 0; i < line->cap; ++i) {
-				if (line->glyphs[i].y - cury > 0.001) {
-					/* draw ending tract */
-					cairo_set_line_width(cr, 4.0);
-					cairo_move_to(cr, line->glyphs[i-1].x + line->glyph_info[i-1].x_advance, cury-(editor->buffer->ex_height/2.0));
-					cairo_line_to(cr, allocation.width, cury-(editor->buffer->ex_height/2.0));
-					cairo_stroke(cr);
-					cairo_set_line_width(cr, 2.0);
-
-					cury = line->glyphs[i].y;
-
-					/* draw initial tract */
-					cairo_set_line_width(cr, 4.0);
-					cairo_move_to(cr, 0.0, cury-(editor->buffer->ex_height/2.0));
-					cairo_line_to(cr, editor->buffer->left_margin, cury-(editor->buffer->ex_height/2.0));
-					cairo_stroke(cr);
-					cairo_set_line_width(cr, 2.0);
-				}
-			}
-			++drawn_lines;
+			draw_line(editor, &allocation, cr, line);
 		}
+		
+		++count;
 
 		editor->buffer->rendered_height += line->y_increment;
-
-		++count;
 	}
 
 	draw_selection(editor, allocation.width, cr);
-
-	//printf("Drawn lines: %d\n", drawn_lines);
-
-	//printf("Expose event final y: %g, lines: %d\n", y, count);
 
 	if (editor->cursor_visible && !(editor->search_mode)) {
 		double cursor_x, cursor_y;
