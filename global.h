@@ -36,4 +36,8 @@ void global_init();
 char *unrealpath(char *absolute_path, const char *relative_path);
 gboolean streq(gconstpointer a, gconstpointer b);
 
+void set_color_cfg(cairo_t *cr, int color);
+GtkWidget *frame_piece(gboolean horizontal);
+void place_frame_piece(GtkWidget *table, gboolean horizontal, int positoin, int length);
+
 #endif

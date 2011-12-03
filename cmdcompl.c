@@ -174,6 +174,16 @@ void cmdcompl_init(void) {
 	gtk_window_set_decorated(GTK_WINDOW(completions_window), FALSE);
 
 	g_signal_connect(G_OBJECT(completions_window), "delete-event", G_CALLBACK(gtk_widget_hide_on_delete), NULL);
+	
+	
+	GtkWidget *frame = gtk_table_new(0, 0, FALSE);
+		
+	gtk_container_add(GTK_CONTAINER(completions_window), frame);
+	
+	place_frame_piece(frame, TRUE, 0, 3); // top frame
+	place_frame_piece(frame, FALSE, 0, 3); // left frame
+	place_frame_piece(frame, FALSE, 2, 3); // right frame
+	place_frame_piece(frame, TRUE, 2, 3); // bottom frame
 
 	{
 		GtkWidget *scroll_view = gtk_scrolled_window_new(NULL, NULL);
@@ -181,6 +191,7 @@ void cmdcompl_init(void) {
 		gtk_container_add(GTK_CONTAINER(scroll_view), completions_tree);
 		gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(scroll_view), GTK_POLICY_NEVER, GTK_POLICY_AUTOMATIC);
 		
+		gtk_table_attach(GTK_TABLE(frame), scroll_view, 1, 2, 1, 2, GTK_EXPAND|GTK_FILL, GTK_EXPAND|GTK_FILL, 0, 0);
 		gtk_container_add(GTK_CONTAINER(completions_window), scroll_view);
 	}
 

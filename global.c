@@ -1,5 +1,7 @@
 #include "global.h"
 
+#include "cfg.h"
+
 FT_Library library;
 
 GtkClipboard *selection_clipboard;
@@ -89,4 +91,54 @@ char *unrealpath(char *absolute_path, const char *relative_path) {
 		strcpy(r, relative_path);
 		return r;
 	}
+}
+
+void set_color_cfg(cairo_t *cr, int color) {
+	uint8_t blue = (uint8_t)color;
+	uint8_t red = (uint8_t)(color >> 8);
+	uint8_t green = (uint8_t)(color >> 16);
+
+	cairo_set_source_rgb(cr, red/255.0, green/255.0, blue/255.0);
+}
+
+static gboolean expose_frame(GtkWidget *widget, GdkEventExpose *event, editor_t *editor) {
+	cairo_t *cr = gdk_cairo_create(widget->window);
+	GtkAllocation allocation;
+	
+	gtk_widget_get_allocation(widget, &allocation);
+	
+	set_color_cfg(cr, config[CFG_BORDER_COLOR].intval);
+	cairo_rectangle(cr, 0, 0, allocation.width, allocation.height);
+	cairo_fill(cr);
+	cairo_destroy(cr);
+	
+	return TRUE;
+}
+
+GtkWidget *frame_piece(gboolean horizontal) {
+	GtkWidget *frame = gtk_drawing_area_new();
+	
+	if (horizontal)
+		gtk_widget_set_size_request(frame, -1, +1);
+	else
+		gtk_widget_set_size_request(frame, +1, -1);
+		
+	g_signal_connect(G_OBJECT(frame), "expose_event", G_CALLBACK(expose_frame), NULL);
+	
+	return frame;
+}
+
+void place_frame_piece(GtkWidget *table, gboolean horizontal, int position, int length) {
+	if (horizontal)
+		gtk_table_attach(GTK_TABLE(table), frame_piece(TRUE),
+			0, length,
+			position, position+1,
+			GTK_EXPAND|GTK_FILL, 0,
+			0, 0);
+	else
+		gtk_table_attach(GTK_TABLE(table), frame_piece(FALSE),
+			position, position+1,
+			0, length,
+			0, GTK_EXPAND|GTK_FILL,
+			0, 0);
 }

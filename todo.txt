@@ -1,6 +1,5 @@
-- convert black frame borders to "alternate color"
-- "alternate color" borders around cmdcompl window
-- "alternate color" border under command line
+- cancel to the "do you want to create a new file" dialog doesn't do anything
+- highlighting of matching parenthesis
 - text autocompletion
 - syntax highlighting
 - save is slow
@@ -47,7 +46,7 @@
 - reimplement hbox/vbox to not be broken on resize
   - column_adjust_size just takes the last row and uses all the empty space or 40% if there isn't any empty space
   - put the columns_hbox insite a single custom container that returns a requested size of { 0, 0 } and on allocation just resizes everything maintaining proportions
-- highlighting of matching parenthesis
+
 
 - tcl commands to disable:
   - unknown <- if it's a command in the path execute it as if it was specified in exec (but also expand all the words containing a * or a ?)
