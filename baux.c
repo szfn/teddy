@@ -23,9 +23,9 @@ void buffer_aux_go_first_nonws(buffer_t *buffer) {
 }
 
 void buffer_aux_go_end(buffer_t *buffer) {
-	if (config[CFG_DEFAULT_SPACEMAN].intval) {
+	/*if (config[CFG_DEFAULT_SPACEMAN].intval) {
 		buffer_line_clean_trailing_spaces(buffer, buffer->cursor.line);
-	}
+	}*/
 	buffer->cursor.glyph = buffer->cursor.line->cap;
 }
 

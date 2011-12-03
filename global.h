@@ -27,6 +27,8 @@ extern GHashTable *keybindings;
 #define MIN_LINES_HEIGHT_REQUEST 3
 #define MIN_EM_COLUMN_SIZE_ATTEMPTED 50
 
+#define SPACEMAN_SAVE_RADIUS 150
+
 extern int focus_can_follow_mouse;
 
 extern history_t *search_history;

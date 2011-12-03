@@ -756,34 +756,40 @@ char *buffer_lines_to_text(buffer_t *buffer, lpoint_t *startp, lpoint_t *endp) {
 	return r;
 }
 
+static void buffer_spaceman_on_save(buffer_t *buffer) {
+	if (!config[CFG_DEFAULT_SPACEMAN].intval) return;
+	
+	int count = SPACEMAN_SAVE_RADIUS;
+	for (real_line_t *line = buffer->cursor.line; line != NULL; line = line->prev) {
+		 buffer_line_clean_trailing_spaces(buffer, line);
+		 --count;
+		 if (count == 0) break;
+	}
+
+	count = SPACEMAN_SAVE_RADIUS;
+	for (real_line_t *line = buffer->cursor.line; line != NULL; line = line->next) {
+		buffer_line_clean_trailing_spaces(buffer, line);
+		--count;
+		if (count == 0) break;
+	}
+}
+
 void save_to_text_file(buffer_t *buffer) {
 	char *cmd;
-	FILE *file;
-	char *r;
-	size_t towrite, write_start, written;
-	
-	/*asprintf(&cmd, "mv -f %s %s~", buffer->path, buffer->path);
-	system(cmd);
-	free(cmd);*/
-	
 	asprintf(&cmd, "cp -f %s %s~", buffer->path, buffer->path);
 	system(cmd);
 	free(cmd);
 
-	file = fopen(buffer->path, "w");
+	FILE *file = fopen(buffer->path, "w");
 
 	if (!file) {
 		perror("Couldn't write to file");
 		return;
 	}
-	
-	if (config[CFG_DEFAULT_SPACEMAN].intval) {
-		for (real_line_t *line = buffer->real_line; line != NULL; line = line->next) {
-			buffer_line_clean_trailing_spaces(buffer, line);
-		}
-	}
 
-	{
+	buffer_spaceman_on_save(buffer);
+
+	char *r; {
 		lpoint_t startp = { buffer->real_line, 0 };
 		lpoint_t endp = { NULL, -1 };
 		r = buffer_lines_to_text(buffer, &startp, &endp);
@@ -791,11 +797,11 @@ void save_to_text_file(buffer_t *buffer) {
 
 	if (r[strlen(r)-1] == '\n') r[strlen(r)-1] = '\0'; // removing spurious final newline added by loading function
 
-	towrite = strlen(r);
-	write_start = 0;
+	size_t towrite = strlen(r);
+	size_t write_start = 0;
 
 	while (towrite > 0) {
-		written = fwrite(r+write_start, sizeof(char), towrite, file);
+		size_t written = fwrite(r+write_start, sizeof(char), towrite, file);
 		if (written == 0) {
 			//TODO: show message here and don't exit
 			perror("Error writing to file");
@@ -813,10 +819,6 @@ void save_to_text_file(buffer_t *buffer) {
 
 	free(r);
 
-	/*asprintf(&cmd, "diff %s %s~", buffer->path, buffer->path);
-	system(cmd);
-	free(cmd);*/
-	
 	asprintf(&cmd, "%s~", buffer->path);
 	unlink(cmd); // we ignore the return value, too bad if we couldn't delete it
 	free(cmd);
