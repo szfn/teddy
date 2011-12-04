@@ -10,6 +10,7 @@
 #include "cfg.h"
 #include "columns.h"
 #include "baux.h"
+#include "wordcompl.h"
 
 void buffer_set_mark_at_cursor(buffer_t *buffer) {
 	copy_lpoint(&(buffer->mark), &(buffer->cursor));
@@ -22,7 +23,7 @@ void buffer_unset_mark(buffer_t *buffer) {
 	if (buffer->mark.line != NULL) {
 		buffer->mark.line = NULL;
 		buffer->mark.glyph = -1;
-		
+
 		buffer->savedmark.line = NULL;
 		buffer->savedmark.glyph = -1;
 		//printf("Mark unset\n");
@@ -38,7 +39,7 @@ static void buffer_set_to_real(buffer_t *buffer, lpoint_t *real_point) {
 
 static void grow_line(real_line_t *line, int insertion_point, int size) {
 	/*printf("cap: %d allocated: %d\n", line->glyphs_cap, line->allocated_glyphs);*/
-   
+
 	while (line->cap + size >= line->allocated) {
 		line->allocated *= 2;
 		if (line->allocated == 0) line->allocated = 10;
@@ -69,7 +70,7 @@ static void buffer_join_lines(buffer_t *buffer, real_line_t *line1, real_line_t 
 
 	if (line1 == NULL) return;
 	if (line2 == NULL) return;
-	
+
 	grow_line(line1, line1->cap, line2->cap);
 	memcpy(line1->glyphs+line1->cap, line2->glyphs, sizeof(cairo_glyph_t)*line2->cap);
 	memcpy(line1->glyph_info+line1->cap, line2->glyph_info, sizeof(my_glyph_info_t)*line2->cap);
@@ -79,7 +80,7 @@ static void buffer_join_lines(buffer_t *buffer, real_line_t *line1, real_line_t 
 
 	line1->next = line2->next;
 	if (line2->next != NULL) line2->next->prev = line1;
-	
+
 	free(line2->glyphs);
 	free(line2->glyph_info);
 	free(line2);
@@ -101,7 +102,7 @@ static void buffer_line_delete_from(buffer_t *buffer, real_line_t *real_line, in
 static void buffer_remove_selection(buffer_t *buffer, lpoint_t *start, lpoint_t *end) {
 	real_line_t *real_line;
 	int lineno;
- 
+
 	if (start->line == NULL) return;
 	if (end->line == NULL) return;
 
@@ -115,7 +116,7 @@ static void buffer_remove_selection(buffer_t *buffer, lpoint_t *start, lpoint_t 
 		buffer_set_to_real(buffer, start);
 		return;
 	}
-	
+
 	/* Remove text from first and last real lines */
 	buffer_line_delete_from(buffer, start->line, start->glyph, start->line->cap-start->glyph);
 	buffer_line_delete_from(buffer, end->line, 0, end->glyph);
@@ -544,14 +545,14 @@ static uint8_t utf8_first_byte_processing(uint8_t ch) {
 
 uint32_t utf8_to_utf32(const char *text, int *src, int len) {
 	uint32_t code;
-	
+
 	/* get next unicode codepoint in code, advance src */
 	if ((uint8_t)text[*src] > 127) {
 		code = utf8_first_byte_processing(text[*src]);
 		++(*src);
 
 		/*printf("   Next char: %02x (%02x)\n", (uint8_t)text[src], (uint8_t)text[src] & 0xC0);*/
-			
+
 		for (; (((uint8_t)text[*src] & 0xC0) == 0x80) && (*src < len); ++(*src)) {
 			code <<= 6;
 			code += (text[*src] & 0x3F);
@@ -613,7 +614,7 @@ int load_text_file(buffer_t *buffer, const char *filename) {
 			asprintf(&(buffer->name), "%s", buffer->path);
 		} else {
 			asprintf(&(buffer->name), "%s", name+1);
-			
+
 			free(buffer->wd);
 			buffer->wd = malloc(sizeof(char) * (name - buffer->path + 2));
 			strncpy(buffer->wd, buffer->path, (name - buffer->path + 1));
@@ -626,7 +627,7 @@ int load_text_file(buffer_t *buffer, const char *filename) {
 		perror("Couldn't allocate memory");
 		exit(EXIT_FAILURE);
 	}
-	
+
 	while ((ch = fgetc(fin)) != EOF) {
 		if (i >= text_allocation) {
 			text_allocation *= 2;
@@ -661,8 +662,10 @@ int load_text_file(buffer_t *buffer, const char *filename) {
 	free(text);
 
 	//printf("Loaded lines: %d (name: %s) (path: %s)\n", lineno, buffer->name, buffer->path);
-	
+
 	fclose(fin);
+
+	wordcompl_update(buffer);
 
 	return 0;
 }
@@ -683,7 +686,7 @@ char *buffer_lines_to_text(buffer_t *buffer, lpoint_t *startp, lpoint_t *endp) {
 
 	allocated = 10;
 	r = malloc(sizeof(char) * allocated);
-	
+
 	for (line = startp->line; line != NULL; line = line->next) {
 		int start, end, i;
 		if (line == startp->line) {
@@ -691,18 +694,18 @@ char *buffer_lines_to_text(buffer_t *buffer, lpoint_t *startp, lpoint_t *endp) {
 		} else {
 			start = 0;
 		}
-		
+
 		if (line == endp->line) {
 			end = endp->glyph;
 			if (end > line->cap) end = line->cap;
 		} else {
 			end = line->cap;
 		}
-	
+
 		for (i = start; i < end; ++i) {
 			uint32_t code = line->glyph_info[i].code;
 			int i, inc, first_byte_mask, first_byte_pad;
-		
+
 			if (code <= 0x7f) {
 				inc = 0;
 				first_byte_pad = 0x00;
@@ -720,23 +723,23 @@ char *buffer_lines_to_text(buffer_t *buffer, lpoint_t *startp, lpoint_t *endp) {
 				first_byte_pad = 0xf8;
 				first_byte_mask = 0x07;
 			}
-		
+
 			if (cap+inc >= allocated) {
 				allocated *= 2;
 				r = realloc(r, sizeof(char)* allocated);
 			}
-		
+
 			for (i = inc; i > 0; --i) {
 				r[cap+i] = ((uint8_t)code & 0x2f) + 0x80;
 				code >>= 6;
 			}
-		
+
 			r[cap] = ((uint8_t)code & first_byte_mask) + first_byte_pad;
-		
+
 			cap += inc + 1;
 		}
-	
-	
+
+
 		if (line == endp->line) break;
 		else {
 			if (cap >= allocated) {
@@ -758,7 +761,7 @@ char *buffer_lines_to_text(buffer_t *buffer, lpoint_t *startp, lpoint_t *endp) {
 
 static void buffer_spaceman_on_save(buffer_t *buffer) {
 	if (!config[CFG_DEFAULT_SPACEMAN].intval) return;
-	
+
 	int count = SPACEMAN_SAVE_RADIUS;
 	for (real_line_t *line = buffer->cursor.line; line != NULL; line = line->prev) {
 		 buffer_line_clean_trailing_spaces(buffer, line);
@@ -788,6 +791,7 @@ void save_to_text_file(buffer_t *buffer) {
 	}
 
 	buffer_spaceman_on_save(buffer);
+	wordcompl_update(buffer);
 
 	char *r; {
 		lpoint_t startp = { buffer->real_line, 0 };
@@ -822,7 +826,7 @@ void save_to_text_file(buffer_t *buffer) {
 	asprintf(&cmd, "%s~", buffer->path);
 	unlink(cmd); // we ignore the return value, too bad if we couldn't delete it
 	free(cmd);
-	
+
 	buffer->modified = 0;
 }
 
@@ -838,7 +842,7 @@ void line_get_glyph_coordinates(buffer_t *buffer, lpoint_t *point, double *x, do
 		*y = point->line->start_y;
 		return;
 	}
-	
+
 	if (point->glyph >= point->line->cap) {
 		*y = point->line->glyphs[point->line->cap-1].y;
 		*x = point->line->glyphs[point->line->cap-1].x + point->line->glyph_info[point->line->cap-1].x_advance;
@@ -894,7 +898,7 @@ void buffer_move_cursor_to_position(buffer_t *buffer, double x, double y) {
 	if (i >= line->cap) {
 		buffer->cursor.glyph = line->cap;
 	}
-	
+
 	buffer_extend_selection_by_select_type(buffer);
 }
 
@@ -922,11 +926,11 @@ buffer_t *buffer_create(FT_Library *library) {
 
 	teddy_font_init(&(buffer->main_font), library, config[CFG_MAIN_FONT].strval);
 	teddy_font_init(&(buffer->posbox_font), library, config[CFG_POSBOX_FONT].strval);
-	
+
 	{
 		cairo_text_extents_t extents;
 		cairo_font_extents_t font_extents;
-		
+
 		cairo_scaled_font_text_extents(buffer->main_font.cairofont, "M", &extents);
 		buffer->em_advance = extents.width;
 

@@ -12,6 +12,7 @@
 #include "colors.h"
 #include "cfg.h"
 #include "research.h"
+#include "wordcompl.h"
 
 static gboolean delete_callback(GtkWidget *widget, GdkEvent *event, gpointer data) {
 	//TODO: terminate all processes
@@ -38,6 +39,7 @@ int main(int argc, char *argv[]) {
 
 	jobs_init();
 	buffers_init();
+	wordcompl_init();
 
 	for (i = 1; i < argc; ++i) {
 		char *rp;
@@ -75,6 +77,6 @@ int main(int argc, char *argv[]) {
 	columns_free();
 	interp_free();
 	cmdcompl_free();
-	
+
 	return 0;
 }

@@ -21,6 +21,7 @@
 #include "cfg.h"
 #include "builtin.h"
 #include "research.h"
+#include "wordcompl.h"
 
 #define INITFILE ".teddy"
 
@@ -73,7 +74,7 @@ static int teddy_new_command(ClientData client_data, Tcl_Interp *interp, int arg
 		}
 		return TCL_OK;
 	}
-	
+
 	{
 		char *msg;
 		asprintf(&msg, "Unknown option to 'new': '%s'", argv[1]);
@@ -108,7 +109,7 @@ static int teddy_setcfg_command(ClientData client_data, Tcl_Interp *interp, int 
 		Tcl_AddErrorInfo(interp, "Wrong number of arguments to setcfg");
 		return TCL_ERROR;
 	}
-	
+
 	int a = 0, b = CONFIG_NUM-1, i = -1;
 	while (a <= b) {
 		i = (a + b) / 2;
@@ -121,12 +122,12 @@ static int teddy_setcfg_command(ClientData client_data, Tcl_Interp *interp, int 
 			a = i+1;
 		}
 	}
-	
+
 	if ((a > b) || (i < 0)) {
 		Tcl_AddErrorInfo(interp, "Unknown configuration option specified in setcfg");
 		return TCL_ERROR;
 	}
-	
+
 	config_item_t *ci = config + i;
 
 	setcfg(ci, argv[2]);
@@ -135,7 +136,7 @@ static int teddy_setcfg_command(ClientData client_data, Tcl_Interp *interp, int 
 
 static int teddy_bindkey_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
 	char *key, *value;
-	
+
 	if (argc != 3) {
 		Tcl_AddErrorInfo(interp, "Wrong number of arguments to setcfg");
 		return TCL_ERROR;
@@ -145,7 +146,7 @@ static int teddy_bindkey_command(ClientData client_data, Tcl_Interp *interp, int
 	strcpy(key, argv[1]);
 	value = malloc(sizeof(char) * (strlen(argv[2]) + 1));
 	strcpy(value, argv[2]);
-	
+
 	g_hash_table_replace(keybindings, key, value);
 
 	return TCL_OK;
@@ -612,12 +613,12 @@ static int teddy_rgbcolor_command(ClientData client_data, Tcl_Interp *interp, in
 static int teddy_sendinput_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
 	job_t *job;
 	int i;
-	
+
 	if (context_editor == NULL) {
 		Tcl_AddErrorInfo(interp, "No editor open, can not execute '<' command");
 		return TCL_ERROR;
 	}
-	
+
 	if (argc < 2) {
 		Tcl_AddErrorInfo(interp, "Wrong number of arguments to '<' command");
 		return TCL_ERROR;
@@ -658,17 +659,17 @@ static int teddy_interactarg_command(ClientData client_data, Tcl_Interp *interp,
 		Tcl_AddErrorInfo(interp, "No editor open, can not execute 'interactarg' command");
 		return TCL_ERROR;
 	}
-	
+
 	if (argc != 2) {
 		Tcl_AddErrorInfo(interp, "Wrong number of arguments to 'interactarg'");
 		return TCL_ERROR;
 	}
-	
+
 	if (strlen(argv[1]) >= LOCKED_COMMAND_LINE_SIZE-1) {
 		Tcl_AddErrorInfo(interp, "Argument of 'interactarg' is too long");
 		return TCL_ERROR;
 	}
-	
+
 	strcpy(context_editor->locked_command_line, argv[1]);
 	set_label_text(context_editor);
 	gtk_widget_grab_focus(context_editor->entry);
@@ -681,7 +682,7 @@ static int teddy_change_command(ClientData client_data, Tcl_Interp *interp, int 
 		Tcl_AddErrorInfo(interp, "No editor open, can not execute 'change' command");
 		return TCL_ERROR;
 	}
-	
+
 	switch (argc) {
 	case 1:
 		{
@@ -716,7 +717,7 @@ void interp_init(void) {
 	Tcl_HideCommand(interp, "tcl_startOfPreviousWord", "hidden_tcl_startOfPreviousWord");
 	Tcl_HideCommand(interp, "tcl_wordBreakAfter", "hidden_tcl_wordBreakAfter");
 	Tcl_HideCommand(interp, "tcl_wordBreakBefore", "hidden_tcl_wordBreakBefore");
-	
+
 	Tcl_HideCommand(interp, "exit", "hidden_exit");
 	Tcl_CreateCommand(interp, "exit", &teddy_exit_command, (ClientData)NULL, NULL);
 
@@ -745,14 +746,16 @@ void interp_init(void) {
 	Tcl_CreateCommand(interp, "<", &teddy_sendinput_command, (ClientData)NULL, NULL);
 
 	Tcl_CreateCommand(interp, "rgbcolor", &teddy_rgbcolor_command, (ClientData)NULL, NULL);
-	
+
 	Tcl_CreateCommand(interp, "teddyhistory", &teddy_history_command, (ClientData)NULL, NULL);
-	
+
 	Tcl_CreateCommand(interp, "interactarg", &teddy_interactarg_command, (ClientData)NULL, NULL);
-	
+
 	Tcl_CreateCommand(interp, "s", &teddy_research_command, (ClientData)NULL, NULL);
 	Tcl_CreateCommand(interp, "c", &teddy_change_command, (ClientData)NULL, NULL);
-	
+
+	Tcl_CreateCommand(interp, "wordcompl_dump", &teddy_wordcompl_dump_command, (ClientData)NULL, NULL);
+
 	int code = Tcl_Eval(interp, BUILTIN_TCL_CODE);
 	if (code != TCL_OK) {
 		Tcl_Obj *options = Tcl_GetReturnOptions(interp, code);
@@ -773,14 +776,14 @@ void interp_free(void) {
 
 enum deferred_action interp_eval(editor_t *editor, const char *command) {
 	int code;
-	
+
 	context_editor = editor;
 	deferred_action_to_return = NOTHING;
 
 	chdir(context_editor->buffer->wd);
-	
+
 	code = Tcl_Eval(interp, command);
-		
+
 	if (code != TCL_OK) {
 		Tcl_Obj *options = Tcl_GetReturnOptions(interp, code);
 		Tcl_Obj *key = Tcl_NewStringObj("-errorinfo", -1);
@@ -808,9 +811,9 @@ void read_conf(void) {
 	char *name;
 
 	asprintf(&name, "%s/%s", home, INITFILE);
-	
+
 	int code = Tcl_EvalFile(interp, name);
-	
+
 	if (code != TCL_OK) {
 		Tcl_Obj *options = Tcl_GetReturnOptions(interp, code);
 		Tcl_Obj *key = Tcl_NewStringObj("-errorinfo", -1);
@@ -822,6 +825,6 @@ void read_conf(void) {
 		printf("TCL Error: %s\n", Tcl_GetString(stackTrace));
 		exit(EXIT_FAILURE);
 	}
-	
+
 	free(name);
 }
