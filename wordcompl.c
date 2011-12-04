@@ -18,6 +18,7 @@ typedef struct _wc_entry_t {
 wc_entry_t **wordcompl_wordset;
 size_t wordcompl_wordset_cap;
 size_t wordcompl_wordset_allocated;
+int wordcompl_callcount;
 
 void wordcompl_init(void) {
 	for (uint32_t i = 0; i < 0x10000; ++i) {
@@ -37,6 +38,7 @@ void wordcompl_init(void) {
 		perror("Out of memory");
 		exit(EXIT_FAILURE);
 	}
+	wordcompl_callcount = 0;
 }
 
 static void wordcompl_wordset_grow() {
@@ -45,8 +47,20 @@ static void wordcompl_wordset_grow() {
 }
 
 static int wordcompl_wordset_cmp(wc_entry_t **ppa, wc_entry_t **ppb) {
-	//TODO: compare
-	return 0;
+	wc_entry_t *a = *ppa;
+	wc_entry_t *b = *ppb;
+
+	for (int i = 0; ; ++i) {
+		if (i >= a->len) {
+			if (i >= b->len) return 0;
+			else return -1;
+		}
+		if (i >= b->len) return +1;
+
+		int16_t d = a->word[i] - b->word[i];
+
+		if (d != 0) return d;
+	}
 }
 
 static void wordcompl_update_line(real_line_t *line) {
@@ -57,16 +71,18 @@ static void wordcompl_update_line(real_line_t *line) {
 			if (wordcompl_charset[line->glyph_info[i].code]) start = i;
 		} else {
 			if ((line->glyph_info[i].code >= 0x10000) || !wordcompl_charset[line->glyph_info[i].code]) {
-				//TODO: don't save short tokens
-				wc_entry_t *newentry = malloc(sizeof(wc_entry_t) + (sizeof(uint16_t) * (i - start)));
-				newentry->score = 1;
-				newentry->len = (i - start);
-				for (int j = 0; j < newentry->len; ++j) newentry->word[j] = line->glyph_info[j+start].code;
-				if (wordcompl_wordset_cap >= wordcompl_wordset_allocated) {
-					wordcompl_wordset_grow();
+				if (i - start >= MINIMUM_WORDCOMPL_WORD_LEN) {
+					wc_entry_t *newentry = malloc(sizeof(wc_entry_t) + (sizeof(uint16_t) * (i - start)));
+					newentry->score = 1;
+					newentry->len = (i - start);
+					for (int j = 0; j < newentry->len; ++j) newentry->word[j] = line->glyph_info[j+start].code;
+					if (wordcompl_wordset_cap >= wordcompl_wordset_allocated) {
+						wordcompl_wordset_grow();
+					}
+					wordcompl_wordset[wordcompl_wordset_cap] = newentry;
+					wordcompl_wordset_cap++;
 				}
-				wordcompl_wordset[wordcompl_wordset_cap] = newentry;
-				wordcompl_wordset_cap++;
+				start = -1;
 			}
 		}
 	}
@@ -74,6 +90,7 @@ static void wordcompl_update_line(real_line_t *line) {
 
 void wordcompl_update(buffer_t *buffer) {
 	if (buffer->cursor.line == NULL) return;
+	++wordcompl_callcount;
 
 	/* MAP */
 	int count = WORDCOMPL_UPDATE_RADIUS;
@@ -103,14 +120,23 @@ void wordcompl_update(buffer_t *buffer) {
 			free(wordcompl_wordset[src]);
 			wordcompl_wordset[src]  = NULL;
 		} else {
-			++cur_word;
-			wordcompl_wordset[cur_word] = wordcompl_wordset[src];
+			if (wordcompl_callcount % WORDCOMPL_CALLCOUNT_TRIGGER == 0) {
+				if (wordcompl_wordset[cur_word]->score > WORDCOMPL_CLEANUP_MAX) {
+					++cur_word;
+					wordcompl_wordset[cur_word] = wordcompl_wordset[src];
+				} else {
+					// time to cleanup and this word doesn't have a high enough score
+					free(wordcompl_wordset[cur_word]);
+					wordcompl_wordset[cur_word] = wordcompl_wordset[src];
+				}
+			} else {
+				++cur_word;
+				wordcompl_wordset[cur_word] = wordcompl_wordset[src];
+			}
 		}
 	}
 
 	wordcompl_wordset_cap = cur_word+1;
-
-	//TODO: remove words with low counts
 }
 
 void wordcompl_complete(buffer_t *buffer) {

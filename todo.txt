@@ -1,7 +1,10 @@
 - text autocompletion (wordlist is calculated at load and save by tokenizing a radius of 100 lines around the cursor)
-- syntax highlighting
+- simple syntax highlighting
+- word movement, word selection and tokenization should be tied to syntax analysis
 - shell should expand ~
 - bg with an argument to force use of a new buffer
+- clang syntax highlighting
+- tabs
 
 - change perror to show error windows
 - implement | command that filters selected content through external command
@@ -35,7 +38,6 @@
 - persistence of history
 - command to reload buffer contents from disk
 - auto-reloading buffers when there is no change and the file on disk was changed
-- tabs
 - left+middle -> cut
 - move mouse cursor when searching
 - configurability
@@ -47,7 +49,7 @@
 
 - tcl commands to disable:
   - unknown <- if it's a command in the path execute it as if it was specified in exec (but also expand all the words containing a * or a ?)
-  
+
 - tcl commands to add:
   - kill -> kill's current process (if one is active in the buffer), otherwise kills current buffer. If an argument is specified does the same thing as the kill command
 

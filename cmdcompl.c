@@ -56,7 +56,10 @@ const char *list_internal_commands[] = {
 	// special commands
 	"setcfg", "bindkey", "new", "pwf", "pwd", "go", "mark", "cb", "save",
 	"bufman", "undo", "search", "focuscmd", "move", "gohome", "bg", "<",
-	"rgbcolor", "teddyhistory", "interactarg", "s", "c", "cursor", "bindent"
+	"rgbcolor", "teddyhistory", "interactarg", "s", "c", "cursor", "bindent",
+
+	// debug commands
+	"wordcompl_dump"
 };
 
 char **list_external_commands;
@@ -74,7 +77,7 @@ void cmdcompl_rehash(void) {
 	char *path, *saveptr, *dir;
 
 	/*** Getting all executable names ***/
-	
+
 	asprintf(&path, "%s", getenv("PATH"));
 
 	for (dir = strtok_r(path, ":", &saveptr); dir != NULL; dir = strtok_r(NULL, ":", &saveptr)) {
@@ -87,13 +90,13 @@ void cmdcompl_rehash(void) {
 
 			if (den->d_type == DT_REG) {
 				den_path = malloc(sizeof(char) * (strlen(dir) + strlen(den->d_name) + 2));
-				
+
 				strcpy(den_path, dir);
 				strcat(den_path, "/");
 				strcat(den_path, den->d_name);
-				
+
 				memset(&den_stat, 0, sizeof(den_stat));
-				
+
 				if (stat(den_path, &den_stat) == 0) {
 
 					if (S_ISREG(den_stat.st_mode) && (den_stat.st_mode & (S_IXUSR | S_IXGRP | S_IXOTH))) {
@@ -109,7 +112,7 @@ void cmdcompl_rehash(void) {
 						list_external_commands[external_commands_cap++] = d_name_copy;
 					}
 				}
-				
+
 				free(den_path);
 			}
 		}
@@ -127,7 +130,7 @@ void cmdcompl_rehash(void) {
 	{
 		int src, dst;
 		char *last = NULL;
-		
+
 		for(src = dst = 0; src < external_commands_cap; ++src) {
 			if ((last != NULL) && (strcmp(list_external_commands[src], last) == 0)) {
 				//printf("Duplicate %s\n", list_external_commands[src]);
@@ -174,12 +177,12 @@ void cmdcompl_init(void) {
 	gtk_window_set_decorated(GTK_WINDOW(completions_window), FALSE);
 
 	g_signal_connect(G_OBJECT(completions_window), "delete-event", G_CALLBACK(gtk_widget_hide_on_delete), NULL);
-	
-	
+
+
 	GtkWidget *frame = gtk_table_new(0, 0, FALSE);
-		
+
 	gtk_container_add(GTK_CONTAINER(completions_window), frame);
-	
+
 	place_frame_piece(frame, TRUE, 0, 3); // top frame
 	place_frame_piece(frame, FALSE, 0, 3); // left frame
 	place_frame_piece(frame, FALSE, 2, 3); // right frame
@@ -190,7 +193,7 @@ void cmdcompl_init(void) {
 
 		gtk_container_add(GTK_CONTAINER(scroll_view), completions_tree);
 		gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(scroll_view), GTK_POLICY_NEVER, GTK_POLICY_AUTOMATIC);
-		
+
 		gtk_table_attach(GTK_TABLE(frame), scroll_view, 1, 2, 1, 2, GTK_EXPAND|GTK_FILL, GTK_EXPAND|GTK_FILL, 0, 0);
 	}
 
