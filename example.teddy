@@ -15,6 +15,7 @@ setcfg posbox_fg_color 0
 
 bindkey Ctrl-Space mark
 bindkey Ctrl-Shift-Space {mark lines}
+bindkey Ctrl-Tab wordcompl
 
 bindkey Ctrl-c {cb copy}
 bindkey Ctrl-v {cb paste}

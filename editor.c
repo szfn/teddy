@@ -274,7 +274,7 @@ void editor_close_editor(editor_t *editor) {
 void editor_switch_buffer(editor_t *editor, buffer_t *buffer) {
 	editor->buffer = buffer;
 	set_label_text(editor);
-	
+
 	{
 		GtkAllocation allocation;
 		gtk_widget_get_allocation(editor->drar, &allocation);
@@ -287,7 +287,7 @@ void editor_switch_buffer(editor_t *editor, buffer_t *buffer) {
 
 static const char *keyevent_to_string(guint keyval) {
 	static char ascii[2];
-	
+
 	switch (keyval) {
 	case GDK_KEY_BackSpace: return "Backspace";
 	case GDK_KEY_Tab: return "Tab";
@@ -392,7 +392,7 @@ static gboolean key_press_callback(GtkWidget *widget, GdkEventKey *event, editor
 		case GDK_KEY_Left:
 			editor_move_cursor(editor, 0, -1, MOVE_NORMAL, TRUE);
 			return TRUE;
-			
+
 		case GDK_KEY_Page_Up:
 			editor_move_cursor(editor, -(allocation.height / editor->buffer->line_height) + 2, 0, MOVE_NORMAL, TRUE);
 			//gtk_adjustment_set_value(GTK_ADJUSTMENT(editor->adjustment), gtk_adjustment_get_value(GTK_ADJUSTMENT(editor->adjustment)) - gtk_adjustment_get_page_increment(GTK_ADJUSTMENT(editor->adjustment)));
@@ -404,11 +404,11 @@ static gboolean key_press_callback(GtkWidget *widget, GdkEventKey *event, editor
 				double mv = gtk_adjustment_get_upper(GTK_ADJUSTMENT(editor->adjustment)) - gtk_adjustment_get_page_size(GTK_ADJUSTMENT(editor->adjustment));
 				if (nv > mv) nv = mv;
 				gtk_adjustment_set_value(GTK_ADJUSTMENT(editor->adjustment), nv);
-				
+
 
 				}*/
 			return TRUE;
-			
+
 		case GDK_KEY_Home:
 			buffer_aux_go_first_nonws_or_0(editor->buffer);
 			editor_complete_move(editor, TRUE);
@@ -417,9 +417,13 @@ static gboolean key_press_callback(GtkWidget *widget, GdkEventKey *event, editor
 			editor_move_cursor(editor, 0, 0, MOVE_LINE_END, TRUE);
 			return TRUE;
 
-		case GDK_KEY_Tab:
+		/*case GDK_KEY_Tab:
 			editor_replace_selection(editor, "\t");
-			return TRUE;
+			return TRUE;*/
+
+		case GDK_KEY_Tab:
+			// Tab is special cased to be the only key to be bindable without modifiers
+			break;
 
 		case GDK_KEY_Delete:
 			if (editor->buffer->mark.line == NULL) {
@@ -458,15 +462,15 @@ static gboolean key_press_callback(GtkWidget *widget, GdkEventKey *event, editor
 	}
 
 	if (shift && !ctrl && !alt && !super) {
-		if ((event->keyval >= 0x21) && (event->keyval <= 0x7e)) {
+		if ((event->keyval >= 0x21) && (event->keyval <= 0x7e) && (event->keyval != GDK_KEY_Tab)) {
 			goto im_context;
 		}
 	}
-	
+
 	converted = keyevent_to_string(event->keyval);
 
 	if (converted == NULL) goto im_context;
-	
+
 	strcpy(pressed, "");
 
 	if (super) {
@@ -501,7 +505,7 @@ static gboolean key_press_callback(GtkWidget *widget, GdkEventKey *event, editor
 	if (gtk_im_context_filter_keypress(editor->drarim, event)) {
 		return TRUE;
 	}
-	
+
 	/*printf("Unknown key sequence: %d (shift %d ctrl %d alt %d super %d)\n", event->keyval, shift, ctrl, alt, super);*/
 
 	return TRUE;
@@ -526,12 +530,12 @@ static gboolean key_release_callback(GtkWidget *widget, GdkEventKey *event, edit
 
 static void move_cursor_to_mouse(editor_t *editor, double x, double y) {
 	GtkAllocation allocation;
-	
+
 	gtk_widget_get_allocation(editor->drar, &allocation);
 
 	x += gtk_adjustment_get_value(GTK_ADJUSTMENT(editor->hadjustment));
 	y += gtk_adjustment_get_value(GTK_ADJUSTMENT(editor->adjustment));
-	
+
 	buffer_move_cursor_to_position(editor->buffer, x, y);
 }
 
@@ -546,16 +550,16 @@ static gboolean button_press_callback(GtkWidget *widget, GdkEventButton *event, 
 
 	if (event->button == 1) {
 		move_cursor_to_mouse(editor, event->x, event->y);
-		
+
 		editor->mouse_marking = 1;
 		buffer_set_mark_at_cursor(editor->buffer);
-		
+
 		if (event->type == GDK_2BUTTON_PRESS) {
 			buffer_change_select_type(editor->buffer, BST_WORDS);
 		} else if (event->type == GDK_3BUTTON_PRESS) {
 			buffer_change_select_type(editor->buffer, BST_LINES);
 		}
-		
+
 		editor_complete_move(editor, TRUE);
 	} else if (event->button == 2) {
 		move_cursor_to_mouse(editor, event->x, event->y);
@@ -564,7 +568,7 @@ static gboolean button_press_callback(GtkWidget *widget, GdkEventButton *event, 
 		editor_insert_paste(editor, selection_clipboard);
 	} else if (event->button == 3) {
 		lpoint_t start, end;
-		
+
 		buffer_get_selection(editor->buffer, &start, &end);
 
 		buffer_unset_mark(editor->buffer);

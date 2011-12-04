@@ -15,5 +15,6 @@ void wordcompl_update(buffer_t *buffer);
 void wordcompl_complete(buffer_t *buffer);
 
 int teddy_wordcompl_dump_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]);
+int teddy_wordcompl_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]);
 
 #endif

@@ -5,6 +5,8 @@
 #include <stdint.h>
 #include <tcl.h>
 
+#include "interp.h"
+
 #include <unicode/uchar.h>
 
 bool wordcompl_charset[0x10000];
@@ -139,11 +141,93 @@ void wordcompl_update(buffer_t *buffer) {
 	wordcompl_wordset_cap = cur_word+1;
 }
 
+static uint16_t *wordcompl_get_word_at_cursor(buffer_t *buffer, size_t *prefix_len) {
+	*prefix_len = 0;
+
+	if (buffer->cursor.line == NULL) return NULL;
+
+	int start;
+	for (start = buffer->cursor.glyph-1; start > 0; --start) {
+		uint32_t code = buffer->cursor.line->glyph_info[start].code;
+		if ((code >= 0x10000) || (!wordcompl_charset[code])) { ++start; break; }
+	}
+
+	if (start ==  buffer->cursor.glyph) return NULL;
+
+	*prefix_len = buffer->cursor.glyph - start;
+	uint16_t *prefix = malloc(sizeof(uint16_t) * *prefix_len);
+	if (prefix == NULL) {
+		perror("Out of memory");
+		exit(EXIT_FAILURE);
+	}
+
+	return prefix;
+}
+
+static void dbg_print_u16(uint16_t *word, size_t len) {
+	for (int j = 0; j < len; ++j) {
+		fprintf(stderr, "%c", (word[j] < 0x7f) ? word[j] : '?');
+	}
+}
+
+static int wordcompl_search_prefix_bisect(uint16_t *prefix, size_t prefix_len, wc_entry_t **wordset, size_t wordset_size) {
+	if (wordset_size <= 0) return -1;
+	size_t mididx = wordset_size / 2;
+	wc_entry_t *mid = wordset[mididx];
+
+	for (int i = 0; ; ++i) {
+		if (i >= prefix_len) return mididx;
+		if (i >= mid->len) return wordcompl_search_prefix_bisect(prefix, prefix_len, wordset+mididx+1, wordset_size-(mididx+1));
+
+		if (prefix[i] < mid->word[i]) {
+			return wordcompl_search_prefix_bisect(prefix, prefix_len, wordset, mididx);
+		} else if (prefix[i] > mid->word[i]){
+			return wordcompl_search_prefix_bisect(prefix, prefix_len, wordset+mididx+1, wordset_size-(mididx+1));
+		}
+	}
+}
+
+static wc_entry_t **wordcompl_search_prefix(uint16_t *prefix, size_t prefix_len, size_t *num_entries) {
+	*num_entries = 0;
+
+	int idx = wordcompl_search_prefix_bisect(prefix, prefix_len, wordcompl_wordset, wordcompl_wordset_cap);
+	if (idx < 0) return NULL;
+
+	fprintf(stderr, "Seed match is at len %zd score %d [", wordcompl_wordset[idx]->len, wordcompl_wordset[idx]->score);
+	dbg_print_u16(wordcompl_wordset[idx]->word, wordcompl_wordset[idx]->len);
+
+	return NULL;
+}
+
+static int wordcompl_wordset_scorecmp(wc_entry_t **ppa, wc_entry_t **ppb) {
+	wc_entry_t *a = *ppa, *b = *ppb;
+	return a->score - b->score;
+}
+
 void wordcompl_complete(buffer_t *buffer) {
-	//TODO:
-	// - search possible completions
-	// - order them by their counter
-	// - show with window
+	size_t prefix_len;
+	uint16_t *prefix = wordcompl_get_word_at_cursor(buffer, &prefix_len);
+	if (prefix_len == 0) return;
+
+	size_t num_entries;
+	wc_entry_t **entries = wordcompl_search_prefix(prefix, prefix_len, &num_entries);
+
+	if (num_entries == 0) return;
+
+	qsort(entries, num_entries, sizeof(wc_entry_t *), (int (*)(const void *, const void *))wordcompl_wordset_scorecmp);
+
+	fprintf(stderr, "Completions for [");
+	dbg_print_u16(prefix, prefix_len);
+	fprintf(stderr, "]:\n");
+	for (int i = 0; i < num_entries; ++i) {
+		fprintf(stderr, "\tlen: %zd score %d [", entries[i]->len, entries[i]->score);
+		dbg_print_u16(entries[i]->word, entries[i]->len);
+		fprintf(stderr, "]\n");
+	}
+	//TODO: show with window
+
+	free(prefix);
+	free(entries);
 }
 
 int teddy_wordcompl_dump_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
@@ -151,11 +235,21 @@ int teddy_wordcompl_dump_command(ClientData client_data, Tcl_Interp *interp, int
 	for (int i = 0; i < wordcompl_wordset_cap; ++i) {
 		wc_entry_t *e = wordcompl_wordset[i];
 		fprintf(stderr, "\tscore %d, len %zd [", e->score, e->len);
-		for (int j = 0; j < e->len; ++j) {
-			fprintf(stderr, "%c", (e->word[j] < 0x7f) ? e->word[j] : '?');
-		}
+		dbg_print_u16(e->word, e->len);
 		fprintf(stderr, "]\n");
 	}
 
 	return TCL_OK;
 }
+
+int teddy_wordcompl_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
+	if (context_editor == NULL) {
+		Tcl_AddErrorInfo(interp, "No editor open, can not execute 'wordcompl' command");
+		return TCL_ERROR;
+	}
+
+	wordcompl_complete(context_editor->buffer);
+
+	return TCL_OK;
+}
+
