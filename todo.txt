@@ -8,6 +8,7 @@
 - clang syntax highlighting
 - tabs
 
+- how do i disable globbing in "shell"?
 - change perror to show error windows
 - implement | command that filters selected content through external command
 - make easy way to reindent though external filter
@@ -38,6 +39,7 @@
 - appending to a buffer that was never displayed doesn't work (for some reason), tons of valgrind exceptions are generated. There is a valid use case for starting commands on an invisible buffer
 - up/down arrows move through history
 - persistence of history
+- ability to persist the status of a window
 - command to reload buffer contents from disk
 - auto-reloading buffers when there is no change and the file on disk was changed
 - left+middle -> cut

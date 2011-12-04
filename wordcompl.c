@@ -147,10 +147,12 @@ static uint16_t *wordcompl_get_word_at_cursor(buffer_t *buffer, size_t *prefix_l
 	if (buffer->cursor.line == NULL) return NULL;
 
 	int start;
-	for (start = buffer->cursor.glyph-1; start > 0; --start) {
+	for (start = buffer->cursor.glyph-1; start >= 0; --start) {
 		uint32_t code = buffer->cursor.line->glyph_info[start].code;
-		if ((code >= 0x10000) || (!wordcompl_charset[code])) { ++start; break; }
+		if ((code >= 0x10000) || (!wordcompl_charset[code])) { break; }
 	}
+
+	++start;
 
 	if (start ==  buffer->cursor.glyph) return NULL;
 
@@ -161,6 +163,8 @@ static uint16_t *wordcompl_get_word_at_cursor(buffer_t *buffer, size_t *prefix_l
 		exit(EXIT_FAILURE);
 	}
 
+	for (int i = 0; i < *prefix_len; ++i) prefix[i] = buffer->cursor.line->glyph_info[start+i].code;
+
 	return prefix;
 }
 
@@ -170,21 +174,35 @@ static void dbg_print_u16(uint16_t *word, size_t len) {
 	}
 }
 
+static int wordcompl_wordset_prefixcmp(uint16_t *prefix, size_t prefix_len, wc_entry_t *entry) {
+	for (int i = 0; ; ++i) {
+		if (i >= prefix_len) return 0;
+		if (i >= entry->len) return +1;
+
+		//fprintf(stderr, "\tComparing %c %c\n", (char)prefix[i], (char)(entry->word[i]));
+
+		if (prefix[i] < entry->word[i]) {
+			return -1;
+		} else if (prefix[i] > entry->word[i]) {
+			return +1;
+		}
+	}
+}
+
 static int wordcompl_search_prefix_bisect(uint16_t *prefix, size_t prefix_len, wc_entry_t **wordset, size_t wordset_size) {
 	if (wordset_size <= 0) return -1;
 	size_t mididx = wordset_size / 2;
 	wc_entry_t *mid = wordset[mididx];
 
-	for (int i = 0; ; ++i) {
-		if (i >= prefix_len) return mididx;
-		if (i >= mid->len) return wordcompl_search_prefix_bisect(prefix, prefix_len, wordset+mididx+1, wordset_size-(mididx+1));
+	//fprintf(stderr, "Wordcompl bisect size: %zd\n", wordset_size);
 
-		if (prefix[i] < mid->word[i]) {
-			return wordcompl_search_prefix_bisect(prefix, prefix_len, wordset, mididx);
-		} else if (prefix[i] > mid->word[i]){
-			return wordcompl_search_prefix_bisect(prefix, prefix_len, wordset+mididx+1, wordset_size-(mididx+1));
-		}
-	}
+	int r = wordcompl_wordset_prefixcmp(prefix, prefix_len, mid);
+
+	if (r == 0) return (wordset + mididx - wordcompl_wordset);
+	else if (r < 0) return wordcompl_search_prefix_bisect(prefix, prefix_len, wordset, mididx);
+	else if (r > 0) return wordcompl_search_prefix_bisect(prefix, prefix_len, wordset+mididx+1, wordset_size-(mididx+1));
+
+	return -1; // this is impossible
 }
 
 static wc_entry_t **wordcompl_search_prefix(uint16_t *prefix, size_t prefix_len, size_t *num_entries) {
@@ -193,10 +211,33 @@ static wc_entry_t **wordcompl_search_prefix(uint16_t *prefix, size_t prefix_len,
 	int idx = wordcompl_search_prefix_bisect(prefix, prefix_len, wordcompl_wordset, wordcompl_wordset_cap);
 	if (idx < 0) return NULL;
 
-	fprintf(stderr, "Seed match is at len %zd score %d [", wordcompl_wordset[idx]->len, wordcompl_wordset[idx]->score);
+	/*fprintf(stderr, "Seed match is at len %zd score %d [", wordcompl_wordset[idx]->len, wordcompl_wordset[idx]->score);
 	dbg_print_u16(wordcompl_wordset[idx]->word, wordcompl_wordset[idx]->len);
+	fprintf(stderr, "]\n");*/
 
-	return NULL;
+	int start;
+	for (start = idx-1; start >= 0; --start) {
+		if (wordcompl_wordset_prefixcmp(prefix, prefix_len, wordcompl_wordset[start]) != 0) break;
+	}
+	++start;
+
+	int end;
+	for (end = idx+1; end < wordcompl_wordset_cap; ++end) {
+		if (wordcompl_wordset_prefixcmp(prefix, prefix_len, wordcompl_wordset[end]) != 0) break;
+	}
+
+	*num_entries = end - start;
+	wc_entry_t **r = malloc(sizeof(wc_entry_t *) * *num_entries);
+	if (!r) {
+		perror("Out of memory");
+		exit(EXIT_FAILURE);
+	}
+
+	for (int i = 0; i < *num_entries; ++i) {
+		r[i] = wordcompl_wordset[i + start];
+	}
+
+	return r;
 }
 
 static int wordcompl_wordset_scorecmp(wc_entry_t **ppa, wc_entry_t **ppb) {
@@ -209,13 +250,18 @@ void wordcompl_complete(buffer_t *buffer) {
 	uint16_t *prefix = wordcompl_get_word_at_cursor(buffer, &prefix_len);
 	if (prefix_len == 0) return;
 
+	fprintf(stderr, "Searching prefix [");
+	dbg_print_u16(prefix, prefix_len);
+	fprintf(stderr, "]\n");
+
 	size_t num_entries;
 	wc_entry_t **entries = wordcompl_search_prefix(prefix, prefix_len, &num_entries);
 
 	if (num_entries == 0) return;
 
-	qsort(entries, num_entries, sizeof(wc_entry_t *), (int (*)(const void *, const void *))wordcompl_wordset_scorecmp);
+	//qsort(entries, num_entries, sizeof(wc_entry_t *), (int (*)(const void *, const void *))wordcompl_wordset_scorecmp);
 
+	/*
 	fprintf(stderr, "Completions for [");
 	dbg_print_u16(prefix, prefix_len);
 	fprintf(stderr, "]:\n");
@@ -223,7 +269,8 @@ void wordcompl_complete(buffer_t *buffer) {
 		fprintf(stderr, "\tlen: %zd score %d [", entries[i]->len, entries[i]->score);
 		dbg_print_u16(entries[i]->word, entries[i]->len);
 		fprintf(stderr, "]\n");
-	}
+	}*/
+
 	//TODO: show with window
 
 	free(prefix);
