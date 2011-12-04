@@ -37,7 +37,7 @@ static void job_destroy(job_t *job) {
 
 static void job_append(job_t *job, const char *msg, int len, int on_new_line) {
 	buffer_append(job->buffer, msg, len, on_new_line);
-	
+
 	editor_t *editor = columns_get_buffer(job->buffer);
 	if (editor != NULL) {
 		editor_center_on_cursor(editor);
@@ -61,23 +61,9 @@ static gboolean jobs_input_watch_function(GIOChannel *source, GIOCondition condi
 
 	buf[bytes_read] = '\0';
 
-#ifdef PRINT_STUFF_HERE_COMMENTED
-	{
-		int i;
-		for (i = 0; i < bytes_read; ++i) {
-             printf("%c", buf[i]);
-		}
-		printf("\t");
-		for (i = 0; i < bytes_read; ++i) {
-			printf("%2x ", buf[i]);
-		}
-		printf("\n");
-	}
-#endif
-
 	if (!job->ratelimit_silenced) {
 		job_append(job, buf, (size_t)bytes_read, 0);
-		
+
 		if (job->current_ratelimit_bucket_start - time(NULL) > RATELIMIT_BUCKET_DURATION_SECS) {
 			if (job->current_ratelimit_bucket_size > RATELIMIT_MAX_BYTES) {
 				const char *msg = "~ Process silenced due to excessive spam\n";
@@ -87,7 +73,7 @@ static gboolean jobs_input_watch_function(GIOChannel *source, GIOCondition condi
 			job->current_ratelimit_bucket_start = time(NULL);
 			job->current_ratelimit_bucket_size = 0;
 		}
-		
+
 		job->current_ratelimit_bucket_size += bytes_read;
 	}
 
@@ -138,14 +124,14 @@ int jobs_register(pid_t child_pid, int masterfd, struct _buffer_t *buffer) {
 	jobs[i].buffer->job = jobs+i;
 
 	jobs[i].pipe_from_child = g_io_channel_unix_new(masterfd);
-	
+
 	jobs[i].ratelimit_silenced = false;
 	jobs[i].current_ratelimit_bucket_start = 0;
 	jobs[i].current_ratelimit_bucket_size = 0;
 
 	{
 		GError *error = NULL;
-		
+
 		g_io_channel_set_flags(jobs[i].pipe_from_child, g_io_channel_get_flags(jobs[i].pipe_from_child) | G_IO_FLAG_NONBLOCK, &error);
 		if (error != NULL) { printf("There was a strange error"); g_error_free(error); error = NULL; }
 	}

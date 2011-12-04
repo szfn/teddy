@@ -286,7 +286,7 @@ void columns_swap_columns(column_t *cola, column_t *colb) {
 
 	if (idxa == -1) return;
 	if (idxb == -1) return;
-	
+
 	gtk_box_reorder_child(GTK_BOX(columns_hbox), cola->editors_vbox, idxb);
 	gtk_box_reorder_child(GTK_BOX(columns_hbox), colb->editors_vbox, idxa);
 
@@ -351,12 +351,12 @@ editor_t *heuristic_new_frame(editor_t *spawning_editor, buffer_t *buffer) {
 			}
 		}
 	}
-	
+
 	if (null_buffer() != buffer) { // not the +null+ buffer
 		int i = garbage ? numcol-1 : 0;
 
 		// search for an editor pointing at +null+, direction of search determined by garbage flag
-		
+
 		while (garbage ? (i >= 0) : (i < numcol)) {
 			editor_t *editor = column_find_buffer_editor(ordered_columns[i], null_buffer());
 			if (editor != NULL) {
@@ -381,19 +381,19 @@ editor_t *heuristic_new_frame(editor_t *spawning_editor, buffer_t *buffer) {
 				goto heuristic_new_frame_exit;
 			}
 		}
-		
+
 		//printf("   No large column to split\n");
 	}
-	
+
 	{ // search for the column with the most space on the bottom editor
 		column_t *best_column = NULL;
 		int best_column_last_editor_height = 50;
-		
+
 		for (int i = 0; i < numcol; ++i) {
 			GtkAllocation allocation;
 			editor_t *editor = column_get_last_editor(ordered_columns[i]);
 			gtk_widget_get_allocation(editor->drar, &allocation);
-			
+
 			if (allocation.height > best_column_last_editor_height) {
 				best_column_last_editor_height = allocation.height;
 				best_column = ordered_columns[i];
@@ -402,7 +402,7 @@ editor_t *heuristic_new_frame(editor_t *spawning_editor, buffer_t *buffer) {
 				}
 			}
 		}
-		
+
 		if (best_column != NULL) {
 			editor_t *editor = column_new_editor(best_column, buffer);
 			if (editor != NULL) {
@@ -411,32 +411,6 @@ editor_t *heuristic_new_frame(editor_t *spawning_editor, buffer_t *buffer) {
 			}
 		}
 	}
-
-#ifdef DISABLED_PIECE_OF_HEURISTIC_PICKING_A_COLUMN_WITH_SOME_EMPTY_SPACE
-	{ // search for a column with some empty space
-		int i = garbage ? numcol-1 : 0;
-
-		while (garbage ? (i >= 0) : (i < numcol)) {
-			GtkAllocation allocation;
-			double occupied = column_get_occupied_space(ordered_columns[i]);
-			gtk_widget_get_allocation(ordered_columns[i]->editors_vbox, &allocation);
-
-			//printf("   - column %d (allocated: %d used: %g)\n", i, allocation.height, occupied);
-
-			if (allocation.height - occupied > 50) {
-				editor_t *editor = column_new_editor(ordered_columns[i], buffer);
-				if (editor != NULL) {
-					retval = editor;
-					goto heuristic_new_frame_exit;
-				}
-			}
-			
-			i += (garbage ? -1 : +1);
-		}
-
-		//printf("   No column with empty space found\n");
-	}
-#endif
 
 	// try to create a new frame inside the active column (column of last edit operation)
 	if (active_column != NULL) {
@@ -450,7 +424,7 @@ editor_t *heuristic_new_frame(editor_t *spawning_editor, buffer_t *buffer) {
 		//printf("   Active column isn't set\n");
 	}
 
-	
+
 	{ // no good place was found, see if it's appropriate to open a new column
 		GtkAllocation allocation;
 		gtk_widget_get_allocation(ordered_columns[numcol-1]->editors_vbox, &allocation);

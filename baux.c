@@ -23,9 +23,6 @@ void buffer_aux_go_first_nonws(buffer_t *buffer) {
 }
 
 void buffer_aux_go_end(buffer_t *buffer) {
-	/*if (config[CFG_DEFAULT_SPACEMAN].intval) {
-		buffer_line_clean_trailing_spaces(buffer, buffer->cursor.line);
-	}*/
 	buffer->cursor.glyph = buffer->cursor.line->cap;
 }
 
@@ -94,9 +91,9 @@ void buffer_indent_newline(buffer_t *buffer, char *r) {
 	for (line = buffer->cursor.line; line != NULL; line = line->prev) {
 		if (line->cap > 0) break;
 	}
-	
+
 	if (line == NULL) line = buffer->cursor.line;
-	
+
 	r[0] = '\n';
 	int i;
 	for (i = 0; i < line->cap; ++i) {
@@ -117,7 +114,7 @@ void buffer_append(buffer_t *buffer, const char *msg, int length, int on_new_lin
 	char *text;
 
 	buffer_unset_mark(buffer);
-	
+
 	for (; buffer->cursor.line->next != NULL; buffer->cursor.line = buffer->cursor.line->next);
 	buffer->cursor.glyph = buffer->cursor.line->cap;
 	//printf("buffer_append %d %d\n", buffer->cursor.glyph, buffer->cursor.line->cap);
@@ -133,6 +130,6 @@ void buffer_append(buffer_t *buffer, const char *msg, int length, int on_new_lin
 	text[length] = '\0';
 
 	buffer_replace_selection(buffer, text);
-	
+
 	free(text);
 }

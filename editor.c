@@ -111,109 +111,22 @@ void editor_complete_move(editor_t *editor, gboolean should_move_origin) {
 }
 
 void editor_move_cursor(editor_t *editor, int delta_line, int delta_char, enum MoveCursorSpecial special, gboolean should_move_origin) {
-
-#ifdef COMPLEX_LINE_MOVE
-	int i = 0;
-
-	if (delta_line > 0) {
-		for (i = 0; i < delta_line; ++i) {
-			if (editor->buffer->cursor.glyph < editor->buffer->cursor.line->cap) {
-				int j = 0;
-				int found = 0;
-				double cury = editor->buffer->cursor.line->glyphs[editor->buffer->cursor.glyph].y;
-				double wantedx = editor->buffer->cursor.line->glyphs[editor->buffer->cursor.glyph].x;
-				for (j = editor->buffer->cursor.glyph; j < editor->buffer->cursor.line->cap; ++j) {
-					if (fabs(cury - editor->buffer->cursor.line->glyphs[j].y) > 0.001) {
-						//printf("Actually found %g %g\n", cury, buffer->cursor.line->glyphs[j].y);
-						editor->buffer->cursor.glyph = j;
-						cury = editor->buffer->cursor.line->glyphs[j].y;
-						found = 1;
-						break;
-					}
-				}
-				if (found) {
-					for ( ; editor->buffer->cursor.glyph < editor->buffer->cursor.line->cap; ++(editor->buffer->cursor.glyph)) {
-						double diff = wantedx - editor->buffer->cursor.line->glyphs[editor->buffer->cursor.glyph].x;
-						if (fabs(cury - editor->buffer->cursor.line->glyphs[editor->buffer->cursor.glyph].y) > 0.001) {
-							--(editor->buffer->cursor.glyph);
-							break;
-						}
-
-						if (diff <= 0) {
-							if (fabs(diff) > editor->buffer->em_advance/2) {
-								--(editor->buffer->cursor.glyph);
-							}
-							break;
-						}
-					}
-					continue;
-				}
-			}
-
-			if (editor->buffer->cursor.line->next == NULL) break;
-			editor->buffer->cursor.line = editor->buffer->cursor.line->next;
-			if (editor->buffer->cursor.glyph > editor->buffer->cursor.line->cap)
-				editor->buffer->cursor.glyph = editor->buffer->cursor.line->cap;
-		}
-	}
-
-	if (delta_line < 0) {
-		for (i = 0; i < abs(delta_line); ++i) {
-			int j = 0;
-			int found = 0;
-			double cury, wantedx;
-			line_get_glyph_coordinates(editor->buffer, &(editor->buffer->cursor), &wantedx, &cury);
-			for (j = editor->buffer->cursor.glyph-1; j >= 0; --j) {
-				if (fabs(cury - editor->buffer->cursor.line->glyphs[j].y) > 0.001) {
-					editor->buffer->cursor.glyph = j;
-					cury = editor->buffer->cursor.line->glyphs[j].y;
-					found = 1;
-					break;
-				}
-			}
-
-			if (found) {
-				for ( ; editor->buffer->cursor.glyph > 0; --(editor->buffer->cursor.glyph)) {
-					double diff  = wantedx - editor->buffer->cursor.line->glyphs[editor->buffer->cursor.glyph].x;
-					if (fabs(cury - editor->buffer->cursor.line->glyphs[editor->buffer->cursor.glyph].y) > 0.001) {
-						++(editor->buffer->cursor.glyph);
-						break;
-					}
-					if (diff >= 0) {
-						if (fabs(diff) < editor->buffer->em_advance/2) {
-							++(editor->buffer->cursor.glyph);
-						}
-						break;
-					}
-				}
-				continue;
-			}
-			
-
-			if (editor->buffer->cursor.line->prev == NULL) break;
-			editor->buffer->cursor.line = editor->buffer->cursor.line->prev;
-			if (editor->buffer->cursor.glyph > editor->buffer->cursor.line->cap)
-				editor->buffer->cursor.glyph = editor->buffer->cursor.line->cap;
-		}
-	}
-#else
 	while (delta_line < 0) {
 		real_line_t *to = editor->buffer->cursor.line->prev;
 		if (to == NULL) break;
 		editor->buffer->cursor.line = to;
 		++delta_line;
 	}
-	
+
 	while (delta_line > 0) {
 		real_line_t *to = editor->buffer->cursor.line->next;
 		if (to == NULL) break;
 		editor->buffer->cursor.line = to;
 		--delta_line;
 	}
-	
+
 	if (editor->buffer->cursor.glyph > editor->buffer->cursor.line->cap)
 		editor->buffer->cursor.glyph = editor->buffer->cursor.line->cap;
-#endif
 
 	if ((delta_char != 0) || (special != MOVE_NORMAL)) {
 		editor->buffer->cursor.glyph += delta_char;
@@ -227,7 +140,7 @@ void editor_move_cursor(editor_t *editor, int delta_line, int delta_char, enum M
 			editor->buffer->cursor.glyph = editor->buffer->cursor.line->cap;
 		}
 	}
-	
+
 	buffer_extend_selection_by_select_type(editor->buffer);
 
 	editor_complete_move(editor, should_move_origin);
@@ -255,7 +168,7 @@ void quick_message(editor_t *editor, const char *title, const char *msg) {
 	GtkWidget *label = gtk_label_new(msg);
 
 	g_signal_connect_swapped(dialog, "response", G_CALLBACK(gtk_widget_destroy), dialog);
-	
+
 	gtk_container_add(GTK_CONTAINER(content_area), label);
 	gtk_widget_show_all(dialog);
 	gtk_dialog_run(GTK_DIALOG(dialog));
@@ -399,14 +312,6 @@ static gboolean key_press_callback(GtkWidget *widget, GdkEventKey *event, editor
 			return TRUE;
 		case GDK_KEY_Page_Down:
 			editor_move_cursor(editor, +(allocation.height / editor->buffer->line_height) - 2, 0, MOVE_NORMAL, TRUE);
-			/*{
-				double nv = gtk_adjustment_get_value(GTK_ADJUSTMENT(editor->adjustment)) + gtk_adjustment_get_page_increment(GTK_ADJUSTMENT(editor->adjustment));
-				double mv = gtk_adjustment_get_upper(GTK_ADJUSTMENT(editor->adjustment)) - gtk_adjustment_get_page_size(GTK_ADJUSTMENT(editor->adjustment));
-				if (nv > mv) nv = mv;
-				gtk_adjustment_set_value(GTK_ADJUSTMENT(editor->adjustment), nv);
-
-
-				}*/
 			return TRUE;
 
 		case GDK_KEY_Home:
@@ -416,10 +321,6 @@ static gboolean key_press_callback(GtkWidget *widget, GdkEventKey *event, editor
 		case GDK_KEY_End:
 			editor_move_cursor(editor, 0, 0, MOVE_LINE_END, TRUE);
 			return TRUE;
-
-		/*case GDK_KEY_Tab:
-			editor_replace_selection(editor, "\t");
-			return TRUE;*/
 
 		case GDK_KEY_Tab:
 			// Tab is special cased to be the only key to be bindable without modifiers
@@ -874,17 +775,17 @@ static gboolean expose_event_callback(GtkWidget *widget, GdkEventExpose *event, 
 	cairo_destroy(cr);
 
 	editor->initialization_ended = 1;
-	
+
 	if (editor->center_on_cursor_after_next_expose) {
 		editor->center_on_cursor_after_next_expose = FALSE;
 		editor_center_on_cursor(editor);
 	}
-	
+
 	if (editor->warp_mouse_after_next_expose) {
 		editor_grab_focus(editor);
 		editor->warp_mouse_after_next_expose = FALSE;
 	}
-  
+
 	return TRUE;
 }
 
@@ -939,7 +840,7 @@ static gboolean label_button_release_callback(GtkWidget *widget, GdkEventButton 
 
 	if (event->button == 1) {
 		editor_t *target = columns_get_editor_from_positioon(x, y);
-		
+
 		if ((target != NULL) && (target != editor)) {
 			buffer_t *tbuf = target->buffer;
 			editor_switch_buffer(target, editor->buffer);
@@ -953,7 +854,7 @@ static gboolean label_button_release_callback(GtkWidget *widget, GdkEventButton 
 		}
 		return TRUE;
 	}
-	
+
 	return FALSE;
 }
 
@@ -978,7 +879,7 @@ editor_t *new_editor(GtkWidget *window, column_t *column, buffer_t *buffer) {
 	r->drarim = gtk_im_multicontext_new();
 
 	r->timeout_id = -1;
-	
+
 	strcpy(r->locked_command_line, "");
 
 	gtk_widget_add_events(r->drar, GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK | GDK_POINTER_MOTION_MASK);
@@ -1015,11 +916,7 @@ editor_t *new_editor(GtkWidget *window, column_t *column, buffer_t *buffer) {
 		GtkBorder bor = { 0, 0, 0, 0 };
 		GtkWidget *event_box = gtk_event_box_new();
 		GtkWidget *table = gtk_table_new(0, 0, FALSE);
-		
-		/*r->container = gtk_frame_new(NULL);
-		
-		gtk_container_add(GTK_CONTAINER(r->container), table);*/
-		
+
 		r->container = table;
 
 		r->reshandle = reshandle_new(column, r);
@@ -1027,7 +924,7 @@ editor_t *new_editor(GtkWidget *window, column_t *column, buffer_t *buffer) {
 		r->entry = gtk_entry_new();
 
 		gtk_container_add(GTK_CONTAINER(event_box), r->label);
-		
+
 		gtk_widget_set_size_request(r->entry, 10, 16);
 		gtk_entry_set_inner_border(GTK_ENTRY(r->entry), &bor);
 		gtk_entry_set_has_frame(GTK_ENTRY(r->entry), FALSE);
@@ -1035,15 +932,15 @@ editor_t *new_editor(GtkWidget *window, column_t *column, buffer_t *buffer) {
 		gtk_widget_modify_font(r->label, elements_font_description);
 
 		entry_callback_setup(r);
-		
+
 		r->label_state = "cmd";
 		set_label_text(r);
 
 		gtk_widget_add_events(event_box, GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK);
-		
+
 		g_signal_connect(event_box, "button-press-event", G_CALLBACK(label_button_press_callback), r);
 		g_signal_connect(event_box, "button-release-event", G_CALLBACK(label_button_release_callback), r);
-		
+
 		gtk_container_add(GTK_CONTAINER(tag), r->reshandle->resdr);
 		gtk_container_add(GTK_CONTAINER(tag), event_box);
 		gtk_container_add(GTK_CONTAINER(tag), r->entry);
@@ -1054,11 +951,11 @@ editor_t *new_editor(GtkWidget *window, column_t *column, buffer_t *buffer) {
 
 		place_frame_piece(table, TRUE, 0, 2); // top frame
 		place_frame_piece(table, FALSE, 2, 5); // right frame
-		
+
 		gtk_table_attach(GTK_TABLE(table), tag, 0, 2, 1, 2, GTK_EXPAND | GTK_FILL, 0, 0, 0);
 
 		place_frame_piece(table, TRUE, 2, 2); // command line frame
-		
+
 		gtk_table_attach(GTK_TABLE(table), r->drar, 0, 1, 3, 4, GTK_EXPAND | GTK_FILL, GTK_EXPAND | GTK_FILL, 0, 0);
 		gtk_table_attach(GTK_TABLE(table), drarscroll, 1, 2, 3, 4, 0, GTK_EXPAND|GTK_FILL, 0, 0);
 		gtk_table_attach(GTK_TABLE(table), r->drarhscroll, 0, 1, 4, 5, GTK_EXPAND|GTK_FILL, 0, 0, 0);
@@ -1089,7 +986,7 @@ void editor_free(editor_t *editor) {
 
 void editor_grab_focus(editor_t *editor) {
 	gtk_widget_grab_focus(editor->drar);
-	
+
 	if (config[CFG_WARP_MOUSE].intval) {
 		GdkDisplay *display = gdk_display_get_default();
 		GdkScreen *screen = gdk_display_get_default_screen(display);
@@ -1100,7 +997,7 @@ void editor_grab_focus(editor_t *editor) {
 		} else {
 			gint wpos_x, wpos_y;
 			gdk_window_get_position(gtk_widget_get_window(editor->window), &wpos_x, &wpos_y);
-			
+
 			//printf("allocation: %d,%d\n", allocation.x, allocation.y);
 			gdk_display_warp_pointer(display, screen, allocation.x+wpos_x+5, allocation.y+wpos_y+5);
 		}
