@@ -5,6 +5,7 @@
 #include <stdint.h>
 #include <tcl.h>
 
+#include "global.h"
 #include "interp.h"
 
 #include <unicode/uchar.h>
@@ -21,6 +22,10 @@ wc_entry_t **wordcompl_wordset;
 size_t wordcompl_wordset_cap;
 size_t wordcompl_wordset_allocated;
 int wordcompl_callcount;
+
+GtkListStore *wordcompl_list;
+GtkWidget *wordcompl_tree;
+GtkWidget *wordcompl_window;
 
 void wordcompl_init(void) {
 	for (uint32_t i = 0; i < 0x10000; ++i) {
@@ -41,6 +46,39 @@ void wordcompl_init(void) {
 		exit(EXIT_FAILURE);
 	}
 	wordcompl_callcount = 0;
+
+	wordcompl_list = gtk_list_store_new(1, G_TYPE_STRING);
+	wordcompl_tree = gtk_tree_view_new();
+
+	gtk_tree_view_insert_column_with_attributes(GTK_TREE_VIEW(wordcompl_tree), -1, "Completion", gtk_cell_renderer_text_new(), "text", 0, NULL);
+	gtk_tree_view_set_model(GTK_TREE_VIEW(wordcompl_tree), GTK_TREE_MODEL(wordcompl_list));
+	gtk_tree_view_set_headers_visible(GTK_TREE_VIEW(wordcompl_tree), FALSE);
+
+	wordcompl_window = gtk_window_new(GTK_WINDOW_POPUP);
+
+	gtk_window_set_decorated(GTK_WINDOW(wordcompl_window), FALSE);
+
+	g_signal_connect(G_OBJECT(wordcompl_window), "delete-event", G_CALLBACK(gtk_widget_hide_on_delete), NULL);
+
+	{
+		GtkWidget *frame = gtk_table_new(0, 0, FALSE);
+
+		gtk_container_add(GTK_CONTAINER(wordcompl_window), frame);
+
+		place_frame_piece(frame, TRUE, 0, 3); // top frame
+		place_frame_piece(frame, FALSE, 0, 3); // left frame
+		place_frame_piece(frame, FALSE, 2, 3); // right frame
+		place_frame_piece(frame, TRUE, 2, 3); // bottom frame
+
+		GtkWidget *scroll_view = gtk_scrolled_window_new(NULL, NULL);
+
+		gtk_container_add(GTK_CONTAINER(scroll_view), wordcompl_tree);
+		gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(scroll_view), GTK_POLICY_NEVER, GTK_POLICY_AUTOMATIC);
+
+		gtk_table_attach(GTK_TABLE(frame), scroll_view, 1, 2, 1, 2, GTK_EXPAND|GTK_FILL, GTK_EXPAND|GTK_FILL, 0, 0);
+	}
+
+	gtk_window_set_default_size(GTK_WINDOW(wordcompl_window), -1, 150);
 }
 
 static void wordcompl_wordset_grow() {

@@ -1,5 +1,7 @@
 - text autocompletion (wordlist is calculated at load and save by tokenizing a radius of 100 lines around the cursor)
-- smart binding for tab that enters a tabulation only when there is nothing to complete
+  - revert back to tab being special and remove wordcompl command binding
+  - make tab smart (if there is no word under the cursor then it inserts a tab)
+  - bind ctrl-tab by default to entering a tab
 - skip cursor line from removing ending spaces on save
 - simple syntax highlighting
 - word movement, word selection and tokenization should be tied to syntax analysis
