@@ -755,7 +755,6 @@ void interp_init(void) {
 	Tcl_CreateCommand(interp, "c", &teddy_change_command, (ClientData)NULL, NULL);
 
 	Tcl_CreateCommand(interp, "wordcompl_dump", &teddy_wordcompl_dump_command, (ClientData)NULL, NULL);
-	Tcl_CreateCommand(interp, "wordcompl", &teddy_wordcompl_command, (ClientData)NULL, NULL);
 
 	int code = Tcl_Eval(interp, BUILTIN_TCL_CODE);
 	if (code != TCL_OK) {

@@ -59,7 +59,7 @@ const char *list_internal_commands[] = {
 	"rgbcolor", "teddyhistory", "interactarg", "s", "c", "cursor", "bindent",
 
 	// debug commands
-	"wordcompl_dump", "wordcompl"
+	"wordcompl_dump"
 };
 
 char **list_external_commands;

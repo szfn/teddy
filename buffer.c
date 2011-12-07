@@ -704,39 +704,8 @@ char *buffer_lines_to_text(buffer_t *buffer, lpoint_t *startp, lpoint_t *endp) {
 
 		for (i = start; i < end; ++i) {
 			uint32_t code = line->glyph_info[i].code;
-			int i, inc, first_byte_mask, first_byte_pad;
 
-			if (code <= 0x7f) {
-				inc = 0;
-				first_byte_pad = 0x00;
-				first_byte_mask = 0x7f;
-			} else if (code <= 0x7ff) {
-				inc = 1;
-				first_byte_pad = 0xc0;
-				first_byte_mask = 0x1f;
-			} else if (code <= 0xffff) {
-				inc = 2;
-				first_byte_pad = 0xe0;
-				first_byte_mask = 0x0f;
-			} else if (code <= 0x1fffff) {
-				inc = 3;
-				first_byte_pad = 0xf8;
-				first_byte_mask = 0x07;
-			}
-
-			if (cap+inc >= allocated) {
-				allocated *= 2;
-				r = realloc(r, sizeof(char)* allocated);
-			}
-
-			for (i = inc; i > 0; --i) {
-				r[cap+i] = ((uint8_t)code & 0x2f) + 0x80;
-				code >>= 6;
-			}
-
-			r[cap] = ((uint8_t)code & first_byte_mask) + first_byte_pad;
-
-			cap += inc + 1;
+			utf32_to_utf8(code, &r, &cap, &allocated);
 		}
 
 

@@ -27,7 +27,7 @@ void global_init() {
 		printf("Freetype initialization error\n");
 		exit(EXIT_FAILURE);
 	}
-	
+
 	selection_clipboard = gtk_clipboard_get(GDK_SELECTION_PRIMARY);
 	default_clipboard = gtk_clipboard_get(GDK_SELECTION_CLIPBOARD);
 
@@ -55,7 +55,7 @@ char *unrealpath(char *absolute_path, const char *relative_path) {
 	if (relative_path[0] == '~') {
 		const char *home = getenv("HOME");
 		char *r;
-		
+
 		if (home == NULL) goto return_relative_path;
 
 		r = malloc(sizeof(char) * (strlen(relative_path) + strlen(home) + 1));
@@ -85,7 +85,7 @@ char *unrealpath(char *absolute_path, const char *relative_path) {
 	}
 
 	return NULL;
-	
+
 	return_relative_path: {
 		char *r = malloc(sizeof(char) * (strlen(relative_path)+1));
 		strcpy(r, relative_path);
@@ -104,27 +104,27 @@ void set_color_cfg(cairo_t *cr, int color) {
 static gboolean expose_frame(GtkWidget *widget, GdkEventExpose *event, editor_t *editor) {
 	cairo_t *cr = gdk_cairo_create(widget->window);
 	GtkAllocation allocation;
-	
+
 	gtk_widget_get_allocation(widget, &allocation);
-	
+
 	set_color_cfg(cr, config[CFG_BORDER_COLOR].intval);
 	cairo_rectangle(cr, 0, 0, allocation.width, allocation.height);
 	cairo_fill(cr);
 	cairo_destroy(cr);
-	
+
 	return TRUE;
 }
 
 GtkWidget *frame_piece(gboolean horizontal) {
 	GtkWidget *frame = gtk_drawing_area_new();
-	
+
 	if (horizontal)
 		gtk_widget_set_size_request(frame, -1, +1);
 	else
 		gtk_widget_set_size_request(frame, +1, -1);
-		
+
 	g_signal_connect(G_OBJECT(frame), "expose_event", G_CALLBACK(expose_frame), NULL);
-	
+
 	return frame;
 }
 
@@ -141,4 +141,46 @@ void place_frame_piece(GtkWidget *table, gboolean horizontal, int position, int 
 			0, length,
 			0, GTK_EXPAND|GTK_FILL,
 			0, 0);
+}
+
+void utf32_to_utf8(uint32_t code, char **r, int *cap, int *allocated) {
+	int first_byte_pad, first_byte_mask, inc;
+
+	if (code <= 0x7f) {
+		inc = 0;
+		first_byte_pad = 0x00;
+		first_byte_mask = 0x7f;
+	} else if (code <= 0x7ff) {
+		inc = 1;
+		first_byte_pad = 0xc0;
+		first_byte_mask = 0x1f;
+	} else if (code <= 0xffff) {
+		inc = 2;
+		first_byte_pad = 0xe0;
+		first_byte_mask = 0x0f;
+	} else if (code <= 0x1fffff) {
+		inc = 3;
+		first_byte_pad = 0xf8;
+		first_byte_mask = 0x07;
+	}
+
+	if (*cap+inc >= *allocated) {
+		*allocated *= 2;
+		*r = realloc(*r, sizeof(char) * *allocated);
+		if (!(*r)) {
+			perror("Out of memory");
+			exit(EXIT_FAILURE);
+		}
+	}
+
+	for (int i = inc; i > 0; --i) {
+		(*r)[*cap+i] = ((uint8_t)code & 0x2f) + 0x80;
+		code >>= 6;
+	}
+
+	(*r)[*cap] = ((uint8_t)code & first_byte_mask) + first_byte_pad;
+
+	*cap += inc + 1;
+
+	return;
 }

@@ -1,7 +1,6 @@
-- text autocompletion (wordlist is calculated at load and save by tokenizing a radius of 100 lines around the cursor)
-  - revert back to tab being special and remove wordcompl command binding
-  - make tab smart (if there is no word under the cursor then it inserts a tab)
-  - bind ctrl-tab by default to entering a tab
+- moving cursor should hide completions window always
+- implement actual completion
+- bind ctrl-tab by default to entering a tab
 - skip cursor line from removing ending spaces on save
 - simple syntax highlighting
 - word movement, word selection and tokenization should be tied to syntax analysis
@@ -45,13 +44,9 @@
 - command to reload buffer contents from disk
 - auto-reloading buffers when there is no change and the file on disk was changed
 - left+middle -> cut
-- move mouse cursor when searching
-- configurability
-  - enable/disable soft line wrap
-- reimplement hbox/vbox to not be broken on resize
-  - column_adjust_size just takes the last row and uses all the empty space or 40% if there isn't any empty space
-  - put the columns_hbox insite a single custom container that returns a requested size of { 0, 0 } and on allocation just resizes everything maintaining proportions
-
+- move mouse cursor when searching with mouse
+- use an editor for the command line
+- disabling soft word wrap
 
 - tcl commands to disable:
   - unknown <- if it's a command in the path execute it as if it was specified in exec (but also expand all the words containing a * or a ?)

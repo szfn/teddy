@@ -17,6 +17,7 @@
 #include "go.h"
 #include "editor_cmdline.h"
 #include "cfg.h"
+#include "wordcompl.h"
 
 void set_label_text(editor_t *editor) {
 	char *labeltxt;
@@ -97,6 +98,7 @@ static void copy_selection_to_clipboard(editor_t *editor, GtkClipboard *clipboar
 }
 
 void editor_complete_move(editor_t *editor, gboolean should_move_origin) {
+	wordcompl_stop();
 	gtk_widget_queue_draw(editor->drar);
 
 	editor->cursor_visible = TRUE;
@@ -292,6 +294,25 @@ static gboolean key_press_callback(GtkWidget *widget, GdkEventKey *event, editor
 
 	/* Default key bindings */
 	if (!shift && !ctrl && !alt && !super) {
+		if (wordcompl_iscompleting()) {
+			switch(event->keyval) {
+				case GDK_KEY_Up:
+					wordcompl_up();
+					return TRUE;
+				case GDK_KEY_Down:
+					wordcompl_down();
+					return TRUE;
+				case GDK_KEY_Escape:
+					return FALSE;
+				case GDK_KEY_Return:
+				case GDK_KEY_Tab:
+					wordcompl_complete_finish(editor);
+					return TRUE;
+				default:
+					wordcompl_stop();
+			}
+		}
+
 		switch(event->keyval) {
 		case GDK_KEY_Up:
 			editor_move_cursor(editor, -1, 0, MOVE_NORMAL, TRUE);
@@ -323,8 +344,10 @@ static gboolean key_press_callback(GtkWidget *widget, GdkEventKey *event, editor
 			return TRUE;
 
 		case GDK_KEY_Tab:
-			// Tab is special cased to be the only key to be bindable without modifiers
-			break;
+			if (!wordcompl_complete(editor)) {
+				editor_replace_selection(editor, "\t");
+			}
+			return TRUE;
 
 		case GDK_KEY_Delete:
 			if (editor->buffer->mark.line == NULL) {
@@ -363,7 +386,7 @@ static gboolean key_press_callback(GtkWidget *widget, GdkEventKey *event, editor
 	}
 
 	if (shift && !ctrl && !alt && !super) {
-		if ((event->keyval >= 0x21) && (event->keyval <= 0x7e) && (event->keyval != GDK_KEY_Tab)) {
+		if ((event->keyval >= 0x21) && (event->keyval <= 0x7e)) {
 			goto im_context;
 		}
 	}
@@ -421,7 +444,11 @@ static gboolean key_release_callback(GtkWidget *widget, GdkEventKey *event, edit
 	if (!shift && !ctrl && !alt && !super) {
 		switch(event->keyval) {
 		case GDK_KEY_Escape:
-			gtk_widget_grab_focus(editor->entry);
+			if (wordcompl_iscompleting()) {
+				wordcompl_stop();
+			} else {
+				gtk_widget_grab_focus(editor->entry);
+			}
 			return TRUE;
 		}
 	}
@@ -554,7 +581,7 @@ static gboolean motion_callback(GtkWidget *widget, GdkEventMotion *event, editor
 			gtk_widget_queue_draw(editor->drar);
 		}
 	}
-	
+
 	return TRUE;
 }
 
@@ -718,24 +745,24 @@ static gboolean expose_event_callback(GtkWidget *widget, GdkEventExpose *event, 
 
 	if (editor->cursor_visible && !(editor->search_mode)) {
 		double cursor_x, cursor_y;
-		
+
 		buffer_cursor_position(editor->buffer, &cursor_x, &cursor_y);
-		
+
 		cairo_rectangle(cr, cursor_x, cursor_y-editor->buffer->ascent, 2, editor->buffer->ascent+editor->buffer->descent);
 		cairo_fill(cr);
 	}
 
 	/********** NOTHING IS TRANSLATED BEYOND THIS ***************************/
 	cairo_translate(cr, gtk_adjustment_get_value(GTK_ADJUSTMENT(editor->hadjustment)), gtk_adjustment_get_value(GTK_ADJUSTMENT(editor->adjustment)));
-	
+
 
 	{
 		char *posbox_text;
 		cairo_text_extents_t posbox_ext;
 		double x, y;
-		
+
 		asprintf(&posbox_text, " %d,%d %0.0f%%", editor->buffer->cursor.line->lineno+1, editor->buffer->cursor.glyph, (100.0 * editor->buffer->cursor.line->lineno / count));
-		
+
 		cairo_set_scaled_font(cr, editor->buffer->posbox_font.cairofont);
 
 		cairo_text_extents(cr, posbox_text, &posbox_ext);
@@ -753,7 +780,7 @@ static gboolean expose_event_callback(GtkWidget *widget, GdkEventExpose *event, 
 		cairo_move_to(cr, x+1.0, y+posbox_ext.height);
 		set_color_cfg(cr, config[CFG_POSBOX_FG_COLOR].intval);
 		cairo_show_text(cr, posbox_text);
-		
+
 		free(posbox_text);
 	}
 
@@ -858,6 +885,10 @@ static gboolean label_button_release_callback(GtkWidget *widget, GdkEventButton 
 	return FALSE;
 }
 
+static gboolean editor_focusout_callback(GtkWidget *widget, GdkEventFocus *event, editor_t *editor) {
+	wordcompl_stop();
+	return FALSE;
+}
 
 editor_t *new_editor(GtkWidget *window, column_t *column, buffer_t *buffer) {
 	editor_t *r = malloc(sizeof(editor_t));
@@ -886,28 +917,22 @@ editor_t *new_editor(GtkWidget *window, column_t *column, buffer_t *buffer) {
 
 	gtk_widget_set_can_focus(GTK_WIDGET(r->drar), TRUE);
 
-	g_signal_connect(G_OBJECT(r->drar), "expose_event",
-                     G_CALLBACK(expose_event_callback), r);
+	g_signal_connect(G_OBJECT(r->drar), "expose_event", G_CALLBACK(expose_event_callback), r);
 
-	g_signal_connect(G_OBJECT(r->drar), "key-press-event",
-                     G_CALLBACK(key_press_callback), r);
-	g_signal_connect(G_OBJECT(r->drar), "key-release-event",
-                     G_CALLBACK(key_release_callback), r);
+	g_signal_connect(G_OBJECT(r->drar), "key-press-event", G_CALLBACK(key_press_callback), r);
+	g_signal_connect(G_OBJECT(r->drar), "key-release-event", G_CALLBACK(key_release_callback), r);
 
-	g_signal_connect(G_OBJECT(r->drar), "button-press-event",
-                     G_CALLBACK(button_press_callback), r);
+	g_signal_connect(G_OBJECT(r->drar), "button-press-event", G_CALLBACK(button_press_callback), r);
 
-	g_signal_connect(G_OBJECT(r->drar), "button-release-event",
-                     G_CALLBACK(button_release_callback), r);
+	g_signal_connect(G_OBJECT(r->drar), "button-release-event", G_CALLBACK(button_release_callback), r);
 
-	g_signal_connect(G_OBJECT(r->drar), "scroll-event",
-                     G_CALLBACK(scroll_callback), r);
+	g_signal_connect(G_OBJECT(r->drar), "scroll-event", G_CALLBACK(scroll_callback), r);
 
-	g_signal_connect(G_OBJECT(r->drar), "motion-notify-event",
-                     G_CALLBACK(motion_callback), r);
+	g_signal_connect(G_OBJECT(r->drar), "motion-notify-event", G_CALLBACK(motion_callback), r);
+    g_signal_connect(G_OBJECT(r->drar), "focus-out-event", G_CALLBACK(editor_focusout_callback), r);
 
-	g_signal_connect(G_OBJECT(r->drarim), "commit",
-                     G_CALLBACK(text_entry_callback), r);
+	g_signal_connect(G_OBJECT(r->drarim), "commit", G_CALLBACK(text_entry_callback), r);
+
 
 	{
 		GtkWidget *drarscroll = gtk_vscrollbar_new((GtkAdjustment *)(r->adjustment = gtk_adjustment_new(0.0, 0.0, 1.0, 1.0, 1.0, 1.0)));
@@ -1003,3 +1028,4 @@ void editor_grab_focus(editor_t *editor) {
 		}
 	}
 }
+

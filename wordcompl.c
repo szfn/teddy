@@ -22,6 +22,7 @@ wc_entry_t **wordcompl_wordset;
 size_t wordcompl_wordset_cap;
 size_t wordcompl_wordset_allocated;
 int wordcompl_callcount;
+bool wordcompl_visible = false;
 
 GtkListStore *wordcompl_list;
 GtkWidget *wordcompl_tree;
@@ -283,10 +284,11 @@ static int wordcompl_wordset_scorecmp(wc_entry_t **ppa, wc_entry_t **ppb) {
 	return a->score - b->score;
 }
 
-void wordcompl_complete(buffer_t *buffer) {
+bool wordcompl_complete(editor_t *editor) {
 	size_t prefix_len;
-	uint16_t *prefix = wordcompl_get_word_at_cursor(buffer, &prefix_len);
-	if (prefix_len == 0) return;
+
+	uint16_t *prefix = wordcompl_get_word_at_cursor(editor->buffer, &prefix_len);
+	if (prefix_len == 0) return false;
 
 	fprintf(stderr, "Searching prefix [");
 	dbg_print_u16(prefix, prefix_len);
@@ -295,9 +297,9 @@ void wordcompl_complete(buffer_t *buffer) {
 	size_t num_entries;
 	wc_entry_t **entries = wordcompl_search_prefix(prefix, prefix_len, &num_entries);
 
-	if (num_entries == 0) return;
+	if (num_entries == 0) return true;
 
-	//qsort(entries, num_entries, sizeof(wc_entry_t *), (int (*)(const void *, const void *))wordcompl_wordset_scorecmp);
+	qsort(entries, num_entries, sizeof(wc_entry_t *), (int (*)(const void *, const void *))wordcompl_wordset_scorecmp);
 
 	/*
 	fprintf(stderr, "Completions for [");
@@ -309,10 +311,118 @@ void wordcompl_complete(buffer_t *buffer) {
 		fprintf(stderr, "]\n");
 	}*/
 
-	//TODO: show with window
+	gtk_list_store_clear(wordcompl_list);
+
+	{
+		int allocated = 10;
+		int cap = 0;
+		char *r = malloc(allocated * sizeof(char));
+		if (!r) {
+			perror("Out of memory");
+			exit(EXIT_FAILURE);
+		}
+
+		for (int i = 0; i < num_entries; ++i) {
+			for (int j = 0; j < entries[i]->len; ++j) {
+				utf32_to_utf8(entries[i]->word[j], &r, &cap, &allocated);
+			}
+
+			if (cap >= allocated) {
+				allocated *= 2;
+				r = realloc(r, sizeof(char) * allocated);
+				if (!r) {
+					perror("Out of memory");
+					exit(EXIT_FAILURE);
+				}
+			}
+			r[cap++] = '\0';
+
+			GtkTreeIter mah;
+			gtk_list_store_append(wordcompl_list, &mah);
+			gtk_list_store_set(wordcompl_list, &mah, 0, r, -1);
+		}
+
+		free(r);
+	}
+
+	gtk_window_set_transient_for(GTK_WINDOW(wordcompl_window), GTK_WINDOW(editor->window));
+
+	{
+		double x, y;
+		buffer_cursor_position(editor->buffer, &x, &y);
+		y -= gtk_adjustment_get_value(GTK_ADJUSTMENT(editor->adjustment));
+
+		printf("x = %g y = %g\n", x, y);
+
+		GtkAllocation allocation;
+		gtk_widget_get_allocation(editor->drar, &allocation);
+		x += allocation.x; y += allocation.y;
+
+		gint wpos_x, wpos_y;
+		gdk_window_get_position(gtk_widget_get_window(editor->window), &wpos_x, &wpos_y);
+		x += wpos_x; y += wpos_y;
+
+		x += 2; y += 2;
+
+		gtk_widget_set_uposition(wordcompl_window, x, y);
+	}
+
+	{
+		GtkTreePath *path_to_first = gtk_tree_path_new_first();
+		gtk_tree_view_set_cursor(GTK_TREE_VIEW(wordcompl_tree), path_to_first, gtk_tree_view_get_column(GTK_TREE_VIEW(wordcompl_tree), 0), FALSE);
+		gtk_tree_path_free(path_to_first);
+	}
+
+	gtk_widget_show_all(wordcompl_window);
+	wordcompl_visible = true;
 
 	free(prefix);
 	free(entries);
+
+	return true;
+}
+
+void wordcompl_stop(void) {
+	gtk_widget_hide(wordcompl_window);
+	wordcompl_visible = false;
+}
+
+bool wordcompl_iscompleting(void) {
+	return wordcompl_visible;
+}
+
+void wordcompl_up(void) {
+	GtkTreePath *path;
+
+	gtk_tree_view_get_cursor(GTK_TREE_VIEW(wordcompl_tree), &path, NULL);
+
+	if (path == NULL) {
+		path = gtk_tree_path_new_first();
+	} else {
+		gtk_tree_path_prev(path);
+	}
+
+	gtk_tree_view_set_cursor(GTK_TREE_VIEW(wordcompl_tree), path, gtk_tree_view_get_column(GTK_TREE_VIEW(wordcompl_tree), 0), FALSE);
+	gtk_tree_path_free(path);
+}
+
+void wordcompl_down(void) {
+	GtkTreePath *path;
+
+	gtk_tree_view_get_cursor(GTK_TREE_VIEW(wordcompl_tree), &path, NULL);
+
+	if (path == NULL) {
+		path = gtk_tree_path_new_first();
+	} else {
+		gtk_tree_path_next(path);
+	}
+
+	gtk_tree_view_set_cursor(GTK_TREE_VIEW(wordcompl_tree), path, gtk_tree_view_get_column(GTK_TREE_VIEW(wordcompl_tree), 0), FALSE);
+	gtk_tree_path_free(path);
+}
+
+void wordcompl_complete_finish(editor_t *editor) {
+	//TODO: to implement
 }
 
 int teddy_wordcompl_dump_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
@@ -323,17 +433,6 @@ int teddy_wordcompl_dump_command(ClientData client_data, Tcl_Interp *interp, int
 		dbg_print_u16(e->word, e->len);
 		fprintf(stderr, "]\n");
 	}
-
-	return TCL_OK;
-}
-
-int teddy_wordcompl_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
-	if (context_editor == NULL) {
-		Tcl_AddErrorInfo(interp, "No editor open, can not execute 'wordcompl' command");
-		return TCL_ERROR;
-	}
-
-	wordcompl_complete(context_editor->buffer);
 
 	return TCL_OK;
 }
