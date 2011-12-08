@@ -627,7 +627,7 @@ static void draw_selection(editor_t *editor, double width, cairo_t *cr) {
 		// end of selection
 		cairo_rectangle(cr, 0.0, selend_y-editor->buffer->ascent, selend_x, editor->buffer->ascent + editor->buffer->descent);
 		cairo_fill(cr);
-		
+
 		cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
 	}
 
@@ -636,17 +636,17 @@ static void draw_selection(editor_t *editor, double width, cairo_t *cr) {
 
 static void draw_parmatch(editor_t *editor, GtkAllocation *allocation, cairo_t *cr) {
 	buffer_update_parmatch(editor->buffer);
-	
+
 	if (editor->buffer->parmatch.matched.line == NULL) return;
-	
+
 	double x, y;
 	line_get_glyph_coordinates(editor->buffer, &(editor->buffer->parmatch.matched), &x, &y);
 
 	cairo_set_operator(cr, CAIRO_OPERATOR_DIFFERENCE);
-	
+
 	cairo_rectangle(cr, x, y - editor->buffer->ascent, LPOINTGI(editor->buffer->parmatch.matched).x_advance, editor->buffer->ascent + editor->buffer->descent);
 	cairo_fill(cr);
-	
+
 	cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
 }
 
@@ -672,7 +672,7 @@ static gboolean cursor_blinker(editor_t *editor) {
 		}
 		gtk_widget_queue_draw(editor->drar);
 	}
-	
+
 	return TRUE;
 }
 
@@ -741,7 +741,7 @@ static gboolean expose_event_callback(GtkWidget *widget, GdkEventExpose *event, 
 		if (((line->start_y + line->y_increment - originy) > 0) && ((line->start_y - editor->buffer->ascent - originy) < allocation.height)) {
 			draw_line(editor, &allocation, cr, line);
 		}
-		
+
 		++count;
 
 		editor->buffer->rendered_height += line->y_increment;
@@ -892,8 +892,23 @@ static gboolean label_button_release_callback(GtkWidget *widget, GdkEventButton 
 	return FALSE;
 }
 
+static gboolean editor_focusin_callback(GtkWidget *widget, GdkEventFocus *event, editor_t *editor) {
+	if (editor->timeout_id == -1) {
+		editor->timeout_id = g_timeout_add(500, (GSourceFunc)cursor_blinker, (gpointer)editor);
+	}
+	return FALSE;
+}
+
 static gboolean editor_focusout_callback(GtkWidget *widget, GdkEventFocus *event, editor_t *editor) {
 	wordcompl_stop();
+	if (editor->timeout_id != -1) {
+		g_source_remove(editor->timeout_id);
+		editor->timeout_id = -1;
+	}
+	if (editor->cursor_visible) {
+		editor->cursor_visible = 0;
+		gtk_widget_queue_draw(editor->drar);
+	}
 	return FALSE;
 }
 
@@ -937,6 +952,7 @@ editor_t *new_editor(GtkWidget *window, column_t *column, buffer_t *buffer) {
 
 	g_signal_connect(G_OBJECT(r->drar), "motion-notify-event", G_CALLBACK(motion_callback), r);
     g_signal_connect(G_OBJECT(r->drar), "focus-out-event", G_CALLBACK(editor_focusout_callback), r);
+    g_signal_connect(G_OBJECT(r->drar), "focus-in-event", G_CALLBACK(editor_focusin_callback), r);
 
 	g_signal_connect(G_OBJECT(r->drarim), "commit", G_CALLBACK(text_entry_callback), r);
 

@@ -1,4 +1,3 @@
-- skip cursor line from removing ending spaces on save
 - simple syntax highlighting
 - word movement, word selection and tokenization should be tied to syntax analysis
 - shell should expand ~

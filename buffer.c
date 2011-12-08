@@ -731,15 +731,17 @@ char *buffer_lines_to_text(buffer_t *buffer, lpoint_t *startp, lpoint_t *endp) {
 static void buffer_spaceman_on_save(buffer_t *buffer) {
 	if (!config[CFG_DEFAULT_SPACEMAN].intval) return;
 
+	if (buffer->cursor.line == NULL) return;
+
 	int count = SPACEMAN_SAVE_RADIUS;
-	for (real_line_t *line = buffer->cursor.line; line != NULL; line = line->prev) {
+	for (real_line_t *line = buffer->cursor.line->prev; line != NULL; line = line->prev) {
 		 buffer_line_clean_trailing_spaces(buffer, line);
 		 --count;
 		 if (count == 0) break;
 	}
 
 	count = SPACEMAN_SAVE_RADIUS;
-	for (real_line_t *line = buffer->cursor.line; line != NULL; line = line->next) {
+	for (real_line_t *line = buffer->cursor.line->next; line != NULL; line = line->next) {
 		buffer_line_clean_trailing_spaces(buffer, line);
 		--count;
 		if (count == 0) break;
