@@ -24,6 +24,10 @@ size_t wordcompl_wordset_allocated;
 int wordcompl_callcount;
 bool wordcompl_visible = false;
 
+size_t wordcompl_prefix_len;
+int wordcompl_compl_num_entries;
+wc_entry_t **wordcompl_compl_entries;
+
 GtkListStore *wordcompl_list;
 GtkWidget *wordcompl_tree;
 GtkWidget *wordcompl_window;
@@ -244,11 +248,11 @@ static int wordcompl_search_prefix_bisect(uint16_t *prefix, size_t prefix_len, w
 	return -1; // this is impossible
 }
 
-static wc_entry_t **wordcompl_search_prefix(uint16_t *prefix, size_t prefix_len, size_t *num_entries) {
-	*num_entries = 0;
+static void wordcompl_search_prefix(uint16_t *prefix, size_t prefix_len) {
+	wordcompl_compl_num_entries = 0;
 
 	int idx = wordcompl_search_prefix_bisect(prefix, prefix_len, wordcompl_wordset, wordcompl_wordset_cap);
-	if (idx < 0) return NULL;
+	if (idx < 0) return;
 
 	/*fprintf(stderr, "Seed match is at len %zd score %d [", wordcompl_wordset[idx]->len, wordcompl_wordset[idx]->score);
 	dbg_print_u16(wordcompl_wordset[idx]->word, wordcompl_wordset[idx]->len);
@@ -265,18 +269,16 @@ static wc_entry_t **wordcompl_search_prefix(uint16_t *prefix, size_t prefix_len,
 		if (wordcompl_wordset_prefixcmp(prefix, prefix_len, wordcompl_wordset[end]) != 0) break;
 	}
 
-	*num_entries = end - start;
-	wc_entry_t **r = malloc(sizeof(wc_entry_t *) * *num_entries);
-	if (!r) {
+	wordcompl_compl_num_entries = end - start;
+	wordcompl_compl_entries = malloc(sizeof(wc_entry_t *) * wordcompl_compl_num_entries);
+	if (!wordcompl_compl_entries) {
 		perror("Out of memory");
 		exit(EXIT_FAILURE);
 	}
 
-	for (int i = 0; i < *num_entries; ++i) {
-		r[i] = wordcompl_wordset[i + start];
+	for (int i = 0; i < wordcompl_compl_num_entries; ++i) {
+		wordcompl_compl_entries[i] = wordcompl_wordset[i + start];
 	}
-
-	return r;
 }
 
 static int wordcompl_wordset_scorecmp(wc_entry_t **ppa, wc_entry_t **ppb) {
@@ -285,31 +287,20 @@ static int wordcompl_wordset_scorecmp(wc_entry_t **ppa, wc_entry_t **ppb) {
 }
 
 bool wordcompl_complete(editor_t *editor) {
-	size_t prefix_len;
+	wordcompl_prefix_len = 0;
 
-	uint16_t *prefix = wordcompl_get_word_at_cursor(editor->buffer, &prefix_len);
-	if (prefix_len == 0) return false;
+	uint16_t *prefix = wordcompl_get_word_at_cursor(editor->buffer, &wordcompl_prefix_len);
+	if (wordcompl_prefix_len == 0) return false;
 
-	fprintf(stderr, "Searching prefix [");
-	dbg_print_u16(prefix, prefix_len);
-	fprintf(stderr, "]\n");
+	/*fprintf(stderr, "Searching prefix [");
+	dbg_print_u16(prefix, wordcompl_prefix_len);
+	fprintf(stderr, "]\n");*/
 
-	size_t num_entries;
-	wc_entry_t **entries = wordcompl_search_prefix(prefix, prefix_len, &num_entries);
+	wordcompl_search_prefix(prefix, wordcompl_prefix_len);
 
-	if (num_entries == 0) return true;
+	if (wordcompl_compl_num_entries == 0) return true;
 
-	qsort(entries, num_entries, sizeof(wc_entry_t *), (int (*)(const void *, const void *))wordcompl_wordset_scorecmp);
-
-	/*
-	fprintf(stderr, "Completions for [");
-	dbg_print_u16(prefix, prefix_len);
-	fprintf(stderr, "]:\n");
-	for (int i = 0; i < num_entries; ++i) {
-		fprintf(stderr, "\tlen: %zd score %d [", entries[i]->len, entries[i]->score);
-		dbg_print_u16(entries[i]->word, entries[i]->len);
-		fprintf(stderr, "]\n");
-	}*/
+	qsort(wordcompl_compl_entries, wordcompl_compl_num_entries, sizeof(wc_entry_t *), (int (*)(const void *, const void *))wordcompl_wordset_scorecmp);
 
 	gtk_list_store_clear(wordcompl_list);
 
@@ -322,9 +313,11 @@ bool wordcompl_complete(editor_t *editor) {
 			exit(EXIT_FAILURE);
 		}
 
-		for (int i = 0; i < num_entries; ++i) {
-			for (int j = 0; j < entries[i]->len; ++j) {
-				utf32_to_utf8(entries[i]->word[j], &r, &cap, &allocated);
+		for (int i = 0; i < wordcompl_compl_num_entries; ++i) {
+			cap = 0;
+
+			for (int j = 0; j < wordcompl_compl_entries[i]->len; ++j) {
+				utf32_to_utf8(wordcompl_compl_entries[i]->word[j], &r, &cap, &allocated);
 			}
 
 			if (cap >= allocated) {
@@ -352,7 +345,7 @@ bool wordcompl_complete(editor_t *editor) {
 		buffer_cursor_position(editor->buffer, &x, &y);
 		y -= gtk_adjustment_get_value(GTK_ADJUSTMENT(editor->adjustment));
 
-		printf("x = %g y = %g\n", x, y);
+		//printf("x = %g y = %g\n", x, y);
 
 		GtkAllocation allocation;
 		gtk_widget_get_allocation(editor->drar, &allocation);
@@ -377,7 +370,6 @@ bool wordcompl_complete(editor_t *editor) {
 	wordcompl_visible = true;
 
 	free(prefix);
-	free(entries);
 
 	return true;
 }
@@ -385,6 +377,8 @@ bool wordcompl_complete(editor_t *editor) {
 void wordcompl_stop(void) {
 	gtk_widget_hide(wordcompl_window);
 	wordcompl_visible = false;
+	free(wordcompl_compl_entries);
+	wordcompl_compl_entries= NULL;
 }
 
 bool wordcompl_iscompleting(void) {
@@ -422,7 +416,40 @@ void wordcompl_down(void) {
 }
 
 void wordcompl_complete_finish(editor_t *editor) {
-	//TODO: to implement
+	GtkTreePath *focus_path;
+	GtkTreeIter iter;
+
+	gtk_tree_view_get_cursor(GTK_TREE_VIEW(wordcompl_tree), &focus_path, NULL);
+	if (focus_path == NULL) {
+		gboolean valid = gtk_tree_model_get_iter_first(GTK_TREE_MODEL(wordcompl_list), &iter);
+		if (!valid) return;
+	} else {
+		gboolean valid = gtk_tree_model_get_iter(GTK_TREE_MODEL(wordcompl_list), &iter, focus_path);
+		if (!valid) return;
+	}
+
+	GValue value = {0};
+	gtk_tree_model_get_value(GTK_TREE_MODEL(wordcompl_list), &iter, 0, &value);
+	const char *pick = g_value_get_string(&value);
+	if (focus_path != NULL) {
+		gtk_tree_path_free(focus_path);
+	}
+	if (pick == NULL) return;
+
+	int count = wordcompl_prefix_len;
+	int i;
+	for (i = 0; i < strlen(pick); ++i) {
+		if ((pick[i] & 0xC0) != 0x80) {
+			--count;
+			if (count < 0) break;
+		}
+	}
+
+	editor_replace_selection(editor, pick+i);
+
+	g_value_unset(&value);
+
+	wordcompl_stop();
 }
 
 int teddy_wordcompl_dump_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {

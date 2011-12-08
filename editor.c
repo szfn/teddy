@@ -385,6 +385,11 @@ static gboolean key_press_callback(GtkWidget *widget, GdkEventKey *event, editor
 		}
 	}
 
+	if (!shift && ctrl && !alt && !super && (event->keyval == GDK_KEY_Tab)) {
+		editor_replace_selection(editor, "\t");
+		return TRUE;
+	}
+
 	if (shift && !ctrl && !alt && !super) {
 		if ((event->keyval >= 0x21) && (event->keyval <= 0x7e)) {
 			goto im_context;
@@ -423,6 +428,8 @@ static gboolean key_press_callback(GtkWidget *widget, GdkEventKey *event, editor
 	if (command != NULL) {
 		interp_eval(editor, command);
 	}
+
+	return TRUE;
 
  im_context:
 	/* Normal text input processing */
