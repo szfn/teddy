@@ -17,6 +17,7 @@ typedef struct _my_glyph_info_t {
 	double kerning_correction;
 	double x_advance;
 	uint32_t code;
+	uint8_t color;
 } my_glyph_info_t;
 
 typedef struct _real_line_t {
@@ -43,7 +44,7 @@ typedef struct _buffer_t {
 	int editable;
 
 	job_t *job;
-	
+
 	/* Font face stuff */
 	FT_Library *library;
 	teddy_font_t main_font;

@@ -1,3 +1,4 @@
+- convert from pcre to tre
 - simple syntax highlighting
 - word movement, word selection and tokenization should be tied to syntax analysis
 - shell should expand ~

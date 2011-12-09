@@ -11,6 +11,7 @@
 #include "columns.h"
 #include "baux.h"
 #include "wordcompl.h"
+#include "lexy.h"
 
 void buffer_set_mark_at_cursor(buffer_t *buffer) {
 	copy_lpoint(&(buffer->mark), &(buffer->cursor));
@@ -193,7 +194,7 @@ static void buffer_real_line_insert(buffer_t *buffer, real_line_t *insertion_lin
 	int lineno;
 
 	//debug_print_real_lines_state(buffer);
-	
+
 	real_line->next = insertion_line->next;
 	if (real_line->next != NULL) real_line->next->prev = real_line;
 	real_line->prev = insertion_line;
@@ -222,7 +223,7 @@ static double buffer_line_fix_spaces(buffer_t *buffer, real_line_t *line) {
 	double width_correction = 0.0;
 
 	//printf("fixing spaces\n");
-	
+
 	for (i = 0; i < line->cap; ++i) {
 		if (line->glyph_info[i].code == 0x20) {
 			double new_width;
@@ -233,10 +234,10 @@ static double buffer_line_fix_spaces(buffer_t *buffer, real_line_t *line) {
 			}
 
 			//printf("is: %d width: %g\n", initial_spaces, new_width);
-			
+
 			width_correction += new_width - line->glyph_info[i].x_advance;
 			line->glyph_info[i].x_advance = new_width;
-			
+
 		} else if (line->glyph_info[i].code == 0x09) {
 			double new_width;
 			if (initial_spaces) {
@@ -282,11 +283,12 @@ static int buffer_line_insert_utf8_text(buffer_t *buffer, real_line_t *line, con
 		grow_line(line, dst, 1);
 
 		line->glyph_info[dst].code = code;
+		line->glyph_info[dst].color = L_NOTHING;
 
 		/* Kerning correction for x */
 		if (use_kerning && previous && glyph_index) {
 			FT_Vector delta;
-			
+
 			FT_Get_Kerning(scaledface, previous, glyph_index, FT_KERNING_DEFAULT, &delta);
 
 			line->glyph_info[dst].kerning_correction = delta.x >> 6;
@@ -299,11 +301,11 @@ static int buffer_line_insert_utf8_text(buffer_t *buffer, real_line_t *line, con
 		line->glyphs[dst].y = 0.0;
 
 		cairo_scaled_font_glyph_extents(buffer->main_font.cairofont, line->glyphs + dst, 1, &extents);
-		
+
 		if (code == 0x09) {
 			extents.x_advance *= buffer->tab_width;
 		}
-		
+
 		line->glyph_info[dst].x_advance = extents.x_advance;
 		if (dst == line->cap) {
 			++(line->cap);
@@ -315,14 +317,14 @@ static int buffer_line_insert_utf8_text(buffer_t *buffer, real_line_t *line, con
 	if (dst < line->cap) {
 		if (use_kerning) {
 			FT_Vector delta;
-			
+
 			FT_Get_Kerning(scaledface, previous, line->glyphs[dst].index, FT_KERNING_DEFAULT, &delta);
 
 			line->glyph_info[dst].kerning_correction = delta.x >> 6;
 		} else {
 			line->glyph_info[dst].kerning_correction = 0;
 		}
-		
+
 	}
 
 	//buffer_line_fix_spaces(buffer, line);
@@ -336,7 +338,7 @@ static void buffer_insert_multiline_text(buffer_t *buffer, lpoint_t *start_point
 	lpoint_t point;
 	int start = 0;
 	int end = 0;
-	
+
 	copy_lpoint(&point, start_point);
 
 	//printf("Inserting multiline text [[%s]]\n\n", text);
@@ -347,11 +349,11 @@ static void buffer_insert_multiline_text(buffer_t *buffer, lpoint_t *start_point
 			point.glyph += buffer_line_insert_utf8_text(buffer, point.line, text+start, end-start, point.glyph);
 			//printf("    line cap: %d glyph: %d\n", line->cap, glyph);
 			buffer_split_line(buffer, &point);
-			
+
 			assert(point.line->next != NULL);
 			point.line = point.line->next;
 			point.glyph = 0;
-			
+
 			++end;
 			start = end;
 		} else {
@@ -392,7 +394,7 @@ void freeze_selection(buffer_t *buffer, selection_t *selection, lpoint_t *start,
 		freeze_point(&(selection->start), &(buffer->cursor));
 		freeze_point(&(selection->end), &(buffer->cursor));
 		selection->text = malloc(sizeof(char));
-		
+
 		if (selection->text == NULL) {
 			perror("Out of memory");
 			exit(EXIT_FAILURE);
@@ -402,7 +404,7 @@ void freeze_selection(buffer_t *buffer, selection_t *selection, lpoint_t *start,
 	} else {
 		freeze_point(&(selection->start), start);
 		freeze_point(&(selection->end), end);
-		
+
 		selection->text = buffer_lines_to_text(buffer, start, end);
 	}
 }
@@ -411,7 +413,7 @@ static void buffer_line_adjust_glyphs(buffer_t *buffer, real_line_t *line, doubl
 	int i;
 	double y_increment = buffer->line_height;
 	double x = buffer->left_margin;
-	
+
 	line->start_y = y;
 	line->end_y = y;
 
