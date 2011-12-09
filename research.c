@@ -24,30 +24,60 @@ typedef enum _research_window_action_t {
 
 research_window_action_t research_window_results[] = { RESEARCH_REPLACE, RESEARCH_NEXT, RESEARCH_STOP };
 
-static int glyph_pos_to_utf8_byte_pos(const char *text, int glyph) {
-	int i = -1;
-	if (strlen(text) == 0) return 0;
-	while (glyph >= 0) {
-		++i;
-		if (i >= strlen(text)) return -1;
-		if (text[i] <= 0x7F) --glyph;
+struct augmented_lpoint_t {
+	real_line_t *line;
+	int start_glyph;
+	int offset;
+};
+
+static int tre_point_bridge_get_next_char(tre_char_t *c, unsigned int *pos_add, void *context) {
+	struct augmented_lpoint_t *point = (struct augmented_lpoint_t *)context;
+
+	if ((point->offset + point->start_glyph) >= point->line->cap) {
+		*c = 0;
+		*pos_add = 0;
+		return -1;
 	}
-	return i;
+
+	*c = point->line->glyph_info[point->start_glyph + point->offset].code;
+	*pos_add = 1;
+	++(point->offset);
+	return 0;
 }
 
-static int utf8_byte_pos_to_glyph_pos(const char *text, int pos) {
-	int glyph = -1;
-	for (int i = 0; i <= pos; ++i) {
-		if (text[i] <= 0x7F) ++glyph;
-	}
-	return glyph;
+static void tre_point_bridge_rewind(size_t pos, void *context) {
+	struct augmented_lpoint_t *point = (struct augmented_lpoint_t *)context;
+	point->offset = pos;
 }
 
-static void move_regexp_search_forward(void) {
+static int tre_point_bridge_compare(size_t pos, size_t pos2, size_t len, void *context) {
+	struct augmented_lpoint_t *point = (struct augmented_lpoint_t *)context;
+
+	for (int i = 0; i < len; ++i) {
+		if (point->start_glyph + pos + i >= point->line->cap) return -1;
+		if (point->start_glyph + pos2 + i >= point->line->cap) return -1;
+		if (point->line->glyph_info[point->start_glyph + pos + i].code == point->line->glyph_info[point->start_glyph + pos2 + i].code) {
+			return -1;
+		}
+	}
+	return 0;
+}
+
+static void move_regexp_search_forward(bool start_at_top) {
 #define OVECTOR_SIZE 10
 	regmatch_t ovector[OVECTOR_SIZE];
-	lpoint_t search_point;
-	copy_lpoint(&search_point,&(research_editor->buffer->cursor));
+
+	struct augmented_lpoint_t search_point;
+
+	if (start_at_top) {
+		search_point.line = research_editor->buffer->real_line;
+		search_point.start_glyph = 0;
+		search_point.offset = 0;
+	} else {
+		search_point.line = research_editor->buffer->cursor.line;
+		search_point.start_glyph = research_editor->buffer->cursor.glyph;
+		search_point.offset = 0;
+	}
 
 	while (search_point.line != NULL) {
 		tre_str_source tss;
@@ -56,20 +86,21 @@ static void move_regexp_search_forward(void) {
 		tss.compare = tre_point_bridge_compare;
 		tss.get_next_char = tre_point_bridge_get_next_char;
 
-		//printf("Starting search at %d / %d <%s>\n", pos, search_point.glyph, text);
+		//printf("Searching at: %d,%d+%d\n", search_point.line->lineno, search_point.start_glyph, search_point.offset);
 
 		int r = tre_reguexec(&research_regexp, &tss, OVECTOR_SIZE, ovector, 0);
 
 		if (r == REG_NOMATCH) {
 			search_point.line = search_point.line->next;
-			search_point.glyph = 0;
+			search_point.start_glyph = 0;
+			search_point.offset = 0;
 		} else {
 			// there is a match in ovector[0], ovector[1] mark it
 
 			//printf("Match on line <%s> at %d %d\n", text, ovector[0], ovector[1]);
 
-			int start_glyph = ovector[0].rm_so;
-			int end_glyph = ovector[0].rm_eo;
+			int start_glyph = ovector[0].rm_so + search_point.start_glyph;
+			int end_glyph = ovector[0].rm_eo + search_point.start_glyph;
 
 			if ((start_glyph >= 0) && (end_glyph >= 0)) {
 				research_editor->buffer->cursor.line = research_editor->buffer->mark.line = search_point.line;
@@ -85,9 +116,8 @@ static void move_regexp_search_forward(void) {
 	// if we get here no match was found and we are at the end of the buffer
 
 	if (research_next_will_wrap_around) {
-		search_point.line = research_editor->buffer->real_line;
 		research_next_will_wrap_around = false;
-		move_regexp_search_forward();
+		move_regexp_search_forward(true);
 	} else {
 		research_next_will_wrap_around = true;
 	}
@@ -104,7 +134,7 @@ static void research_replace_selection(void) {
 		//TODO: check that there is a selection active
 		editor_replace_selection(research_editor, research_subst);
 	}
-	move_regexp_search_forward();
+	move_regexp_search_forward(false);
 }
 
 static void research_perform_action(research_window_action_t *action) {
@@ -113,7 +143,7 @@ static void research_perform_action(research_window_action_t *action) {
 		research_replace_selection();
 		break;
 	case RESEARCH_NEXT:
-		move_regexp_search_forward();
+		move_regexp_search_forward(false);
 		break;
 	case RESEARCH_STOP:
 		research_stop_search();
@@ -132,7 +162,7 @@ static gboolean research_key_press_callback(GtkWidget *widget, GdkEventKey *even
 		research_replace_selection();
 		break;
 	case GDK_KEY_n:
-		move_regexp_search_forward();
+		move_regexp_search_forward(false);
 		break;
 	case GDK_KEY_Escape:
 	case GDK_KEY_s:
@@ -180,13 +210,13 @@ void research_init(GtkWidget *window) {
 static char *automatic_search_and_replace(char *text, regex_t *re, const char *subst) {
 	int allocation = 10;
 	char *r = malloc(allocation * sizeof(char));
-	int ovector[OVECTOR_SIZE];
+	regmatch_t ovector[OVECTOR_SIZE];
 	int start = 0;
 
 	r[0] = '\0';
 
-	while (pcre_exec(re, re_extra, text, strlen(text), start, 0, ovector, OVECTOR_SIZE) >= 0) {
-		while (strlen(r) + 1 + (ovector[0] - start) + strlen(subst) >= allocation) {
+	while (tre_regexec(re, text+start, OVECTOR_SIZE, ovector, 0) == 0) {
+		while (strlen(r) + 1 + ovector[0].rm_so + strlen(subst) >= allocation) {
 			allocation *= 2;
 			r = realloc(r, allocation * sizeof(char));
 			if (r == NULL) {
@@ -195,9 +225,9 @@ static char *automatic_search_and_replace(char *text, regex_t *re, const char *s
 			}
 		}
 
-		strncat(r, text+start, (ovector[0] - start));
+		strncat(r, text+start, ovector[0].rm_so);
 		strcat(r, subst);
-		start = ovector[1];
+		start += ovector[0].rm_eo;
 	}
 
 	while (strlen(r) + 1 + strlen(text+start) >= allocation) {
@@ -219,7 +249,7 @@ static void start_regexp_search(editor_t *editor, const char *regexp, const char
 	if (r != REG_OK) {
 #define REGERROR_BUF_SIZE 512
 		char buf[REGERROR_BUF_SIZE];
-		tre_regerror(r, &research_regexp, &buf, REGERROR_BUF_SIZE);
+		tre_regerror(r, &research_regexp, buf, REGERROR_BUF_SIZE);
 		char *msg;
 		asprintf(&msg, "Sytanx error in regular expression [%s]: %s\n", regexp, buf);
 		if (msg == NULL) {
@@ -257,7 +287,7 @@ static void start_regexp_search(editor_t *editor, const char *regexp, const char
 		gtk_widget_show_all(research_window);
 		gtk_widget_set_visible(research_button_replace, research_subst != NULL);
 
-		move_regexp_search_forward();
+		move_regexp_search_forward(false);
 	}
 }
 
