@@ -1,11 +1,19 @@
-- convert from pcre to tre
 - simple syntax highlighting
+ - implement tcl command lexydef-create, lexydef-append, lexyassoc
+ - implement tcl command lexydef
+ - implement actual tokenization
+- syntax highlighting update heuristing
+ - opening calculates the first 150 lines
+ - replace_selection recalculates the inserted lines, starting with the first line that has at least one character untouched by the replace_selection operation
+ - cursor movement triggers a consistency check of the lines begin/end statuses (and a mismatch triggers an update) for a radius of 50 lines around the cursor
+ - save triggers a consistency check of the lines begin/end statuses (and a mismatch triggers an update) for a radius of 150 lines around the cursor
+- extend regular expressions in 's' to be lexically aware
 - word movement, word selection and tokenization should be tied to syntax analysis
 - shell should expand ~
 - bg with an argument to force use of a new buffer
-- clang syntax highlighting
 - tabs
 
+- disable selection when another application becomes the owner of the primary selection buffer
 - how do i disable globbing in "shell"?
 - change perror to show error windows
 - implement | command that filters selected content through external command
@@ -44,6 +52,7 @@
 - move mouse cursor when searching with mouse
 - use an editor for the command line
 - disabling soft word wrap
+- clang syntax highlighting
 
 - tcl commands to disable:
   - unknown <- if it's a command in the path execute it as if it was specified in exec (but also expand all the words containing a * or a ?)

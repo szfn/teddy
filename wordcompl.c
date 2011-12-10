@@ -118,6 +118,10 @@ static void wordcompl_update_line(real_line_t *line) {
 			if ((line->glyph_info[i].code >= 0x10000) || !wordcompl_charset[line->glyph_info[i].code]) {
 				if (i - start >= MINIMUM_WORDCOMPL_WORD_LEN) {
 					wc_entry_t *newentry = malloc(sizeof(wc_entry_t) + (sizeof(uint16_t) * (i - start)));
+					if (newentry == NULL) {
+						perror("Out of memory");
+						exit(EXIT_FAILURE);
+					}
 					newentry->score = 1;
 					newentry->len = (i - start);
 					for (int j = 0; j < newentry->len; ++j) newentry->word[j] = line->glyph_info[j+start].code;
@@ -154,6 +158,8 @@ void wordcompl_update(buffer_t *buffer) {
 		wordcompl_update_line(line);
 	}
 
+	if (wordcompl_wordset_cap == 0) return;
+
 	/* SORT */
 	qsort(wordcompl_wordset, wordcompl_wordset_cap, sizeof(wc_entry_t *), (int(*)(const void *, const void *))wordcompl_wordset_cmp);
 
@@ -181,7 +187,7 @@ void wordcompl_update(buffer_t *buffer) {
 		}
 	}
 
-	wordcompl_wordset_cap = cur_word+1;
+	wordcompl_wordset_cap = cur_word+1; // note: this only works when there is at least one word
 }
 
 static uint16_t *wordcompl_get_word_at_cursor(buffer_t *buffer, size_t *prefix_len) {
