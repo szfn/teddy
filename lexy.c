@@ -48,6 +48,7 @@ Associates one tokenizer with a file extension.
 #define LEXY_STATUS_NAME_SIZE 256
 #define LEXY_TOKENIZER_NUMBER 0xff
 #define LEXY_STATE_BLOCK_SIZE 16
+#define LEXY_ASSOCIATION_NUMBER 1024
 
 const char *CONTINUATION_STATE = "continuation-state";
 
@@ -70,7 +71,13 @@ struct lexy_tokenizer {
 	struct lexy_status_pointer status_pointers[LEXY_STATUS_NUMBER];
 };
 
+struct lexy_association {
+	char *extension;
+	struct lexy_tokenizer *tokenizer;
+};
+
 struct lexy_tokenizer lexy_tokenizers[LEXY_TOKENIZER_NUMBER];
+struct lexy_association lexy_associations[LEXY_ASSOCIATION_NUMBER];
 
 void lexy_init(void) {
 	for (int i = 0; i < LEXY_TOKENIZER_NUMBER; ++i) {
@@ -78,6 +85,10 @@ void lexy_init(void) {
 		lexy_tokenizers[i].rows[0].enabled = false;
 		lexy_tokenizers[i].rows[0].jump = false;
 		lexy_tokenizers[i].status_pointers[0].status_name = NULL;
+	}
+
+	for (int i = 0; i < LEXY_ASSOCIATION_NUMBER; ++i) {
+		lexy_associations[i].extension = NULL;
 	}
 }
 
@@ -100,6 +111,7 @@ int lexy_create_command(ClientData client_data, Tcl_Interp *interp, int argc, co
 		Tcl_AddErrorInfo(interp, "Too many tokenizers defined");
 		return TCL_ERROR;
 	} else {
+		//printf("created tokenizer: %s\n", name);
 		lexy_tokenizers[i].tokenizer_name = strdup(name);
 		if (!(lexy_tokenizers[i].tokenizer_name)) {
 			perror("Out of memory");
@@ -158,13 +170,16 @@ static int create_new_state(struct lexy_tokenizer *tokenizer, const char *state_
 }
 
 static struct lexy_row *new_row_for_state(struct lexy_tokenizer *tokenizer, int state) {
+	//printf("Searching a row for state: %d\n", state);
 	int base = tokenizer->status_pointers[state].index;
 	for (int offset = 0; offset < LEXY_STATE_BLOCK_SIZE; ++offset) {
 		struct lexy_row *row = tokenizer->rows + base + offset;
+		//printf("\toffset: %d\n", offset);
 		if (!(row->enabled)) {
 			// we found an empty row, we will use this unless it's right at the end of the block, in that
 			// case a new block needs to be allocated (the very last row of a block is used to store a pointer)
-			if (offset == LEXY_STATE_BLOCK_SIZE) {
+			if (offset == LEXY_STATE_BLOCK_SIZE-1) {
+				//printf("\tLast empty row, filling and creating new state\n");
 				int continuation_state = create_new_state(tokenizer, CONTINUATION_STATE);
 				if (continuation_state < 0) {
 					return NULL;
@@ -174,14 +189,17 @@ static struct lexy_row *new_row_for_state(struct lexy_tokenizer *tokenizer, int 
 				row->next_state = continuation_state;
 				row = tokenizer->rows + tokenizer->status_pointers[state].index;
 			}
+			//printf("\tempty row\n");
 			return row;
 		}
 		if (row->jump) {
 			// follow the jump
+			//printf("\tFollowing jump, current state now: %d\n", row->next_state);
 			base = tokenizer->status_pointers[row->next_state].index;
 			offset = -1;
 		}
 	}
+	//printf("FAILED!\n");
 	return NULL;
 }
 
@@ -211,8 +229,9 @@ int lexy_append_command(ClientData client_data, Tcl_Interp *interp, int argc, co
 	}
 
 	int next_state = find_state(tokenizer, next_state_name);
+	if (next_state < 0) next_state = create_new_state(tokenizer, next_state_name);
 	if (next_state < 0) {
-		Tcl_AddErrorInfo(interp, "Couldn't find next state name");
+		Tcl_AddErrorInfo(interp, "Out of state space for tokenizer");
 		return TCL_ERROR;
 	}
 
@@ -222,14 +241,22 @@ int lexy_append_command(ClientData client_data, Tcl_Interp *interp, int argc, co
 		return TCL_ERROR;
 	}
 
+	char *fixed_pattern = malloc(sizeof(char) * (strlen(pattern) + 2));
+	if (!fixed_pattern) {
+		perror("Out of memory");
+		exit(EXIT_FAILURE);
+	}
+	strcpy(fixed_pattern, "^");
+	strcat(fixed_pattern, pattern);
+
 	regex_t compiled_pattern;
-	int r = tre_regcomp(&compiled_pattern, pattern, REG_EXTENDED);
+	int r = tre_regcomp(&compiled_pattern, fixed_pattern, REG_EXTENDED);
 	if (r != REG_OK) {
 #define REGERROR_BUF_SIZE 512
 		char buf[REGERROR_BUF_SIZE];
 		tre_regerror(r, &compiled_pattern, buf, REGERROR_BUF_SIZE);
 		char *msg;
-		asprintf(&msg, "Syntax error in regular expression [%s]: %s\n", pattern, buf);
+		asprintf(&msg, "Syntax error in regular expression [%s]: %s\n", fixed_pattern, buf);
 		if (msg == NULL) {
 			perror("Out of memory");
 			exit(EXIT_FAILURE);
@@ -241,20 +268,78 @@ int lexy_append_command(ClientData client_data, Tcl_Interp *interp, int argc, co
 	tre_regfree(&compiled_pattern);
 
 	struct lexy_row *new_row = new_row_for_state(tokenizer, start_state);
+	if (new_row == NULL) {
+		Tcl_AddErrorInfo(interp, "Out of row space");
+		return TCL_ERROR;
+	}
 
 	new_row->next_state = next_state;
 	new_row->token_type = token_type;
-	tre_regcomp(&(new_row->pattern), pattern, REG_EXTENDED);
+	tre_regcomp(&(new_row->pattern), fixed_pattern, REG_EXTENDED);
+	new_row->enabled = true;
+
+	free(fixed_pattern);
 
 	return TCL_OK;
 }
 
 int lexy_dump_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
-	//TODO; implement
+	printf("Dumping lexy table:\n");
+	for (int i = 0; i < LEXY_TOKENIZER_NUMBER; ++i) {
+		struct lexy_tokenizer *tokenizer = lexy_tokenizers + i;
+		if (tokenizer->tokenizer_name == NULL) {
+			printf("End\n");
+			break;
+		}
+		printf("Tokenizer %s:\n", tokenizer->tokenizer_name);
+		for (int j = 0; j < LEXY_STATUS_NUMBER; ++j) {
+			struct lexy_status_pointer *status_pointer = tokenizer->status_pointers + j;
+			if (status_pointer->status_name == NULL) {
+				printf("\tEnd\n");
+				break;
+			}
+			printf("\t[%d] Status [%s] beginning at %zd:\n", j, status_pointer->status_name, status_pointer->index);
+			for (int offset = 0; offset < LEXY_STATE_BLOCK_SIZE; ++offset) {
+				struct lexy_row *row = tokenizer->rows + status_pointer->index + offset;
+				if (!(row->enabled)) {
+					printf("\t\tEND\n");
+					break;
+				}
+				printf("\t\t[%zd] ", status_pointer->index + offset);
+				if (row->jump) {
+					printf("JUMP %d\n", row->next_state);
+				} else {
+					printf("PATTERN-MATCH %d JUMP %d\n", row->token_type, row->next_state);
+				}
+			}
+		}
+	}
 	return TCL_OK;
 }
 
 int lexy_assoc_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
-	//TODO: implement
-	return TCL_OK;
+	if (argc != 3) {
+		Tcl_AddErrorInfo(interp, "Wrong number of arguments to 'lexyassoc': usage 'lexyassoc <lexy-name> <extension>'");
+		return TCL_ERROR;
+	}
+
+	const char *lexy_name = argv[1];
+	const char *extension = argv[2];
+
+	struct lexy_tokenizer *tokenizer = find_tokenizer(lexy_name);
+	if (tokenizer == NULL) {
+		Tcl_AddErrorInfo(interp, "Cannot find tokenizer");
+		return TCL_ERROR;
+	}
+
+	for (int i = 0; i < LEXY_ASSOCIATION_NUMBER; ++i) {
+		if ((lexy_associations[i].extension == NULL) || (strcmp(lexy_associations[i].extension, extension) == 0)) {
+			lexy_associations[i].extension = strdup(extension);
+			lexy_associations[i].tokenizer = tokenizer;
+			return TCL_OK;
+		}
+	}
+
+	Tcl_AddErrorInfo(interp, "Out of association space");
+	return TCL_ERROR;
 }

@@ -103,39 +103,39 @@ proc shell {args} {
  
    while {$i < [llength $args]} {
       set i [shell_eat $args $i special normal]
-      
+
       set pipe ""
       if {$i < [llength $args]} {
          if {[lindex $args $i] eq "|"} {
 			set pipe [fdpipe]
          }
       }
-   
+
       set pid [posixfork]
       if {$pid < 0} {
          error "fork failed in 'shell'"
       }
-      
+
       if {$pid == 0} {
          shell_child_code $special $normal $pipe
       }
-   
+
       # parent code, wait and exit
-      
+
       if {$pipe ne ""} {
          # new default standard input is pipe's input side
          fdclose [lindex $pipe 1]
          fddup2 [lindex $pipe 0] 0
          fdclose [lindex $pipe 0]
       }
-         
+
       if {$i >= [llength $args]} {
          #puts "waiting for $pid"
          set r [posixwaitpid $pid]
          #puts "wait ended <$r>"
          return [lindex $r 1]
       }
-      
+
       switch -exact [lindex $args $i] {
          "&&" {
 			#puts "Processing AND $pid"
@@ -157,7 +157,7 @@ proc shell {args} {
 			# Nothing to do here
          }
       }
-      
+
       # skipping separator
       incr i
    }
@@ -185,12 +185,12 @@ proc mgph_remove_trailing_nonalnum {text} {
 
 proc mgph_trim_parenthesis {text} {
    global parenthesis_list
-   
+
    set first_char [string index $text 0]
    set last_char [string index $text end]
-   
+
    if {$first_char ni $parenthesis_list || $last_char ni $parenthesis_list} { return $text }
-   
+
    return [string range $text 1 end-1]
 }
 
@@ -209,27 +209,27 @@ proc mgph_trim_parenthesis {text} {
 proc mouse_go_preprocessing_hook {text} {
    set text [mgph_remove_trailing_nonalnum $text]
    set text [mgph_trim_parenthesis $text]
-   
+
    #puts "Text is <$text>\n"
-   
+
    if {[regexp {^([^:]*)(?::|(?::?[\(\[]))([[:digit:]]+)[,:]([[:digit:]]+)(?:[\]\)])?$} $text -> filename lineno colno]} {
        return "$filename:$lineno:$colno"
    }
-   
+
    if {[regexp {^([^:]*)(?::|(?::?[\(\[]))([[:digit:]]+)(?:[\]\)])?$} $text -> filename lineno]} {
        return "$filename:$lineno:0"
    }
-   
+
    return $text
 }
 
 proc bindent {direction indentchar} {
 	mark lines
-	
+
 	set stored_mark [mark get]
 	set stored_cursor [cursor]
 	set text [c]
-	
+
 	switch -exact $direction {
 		"incr" {
 			set nt [string map [list "\n" "\n$indentchar"] $text]
@@ -243,11 +243,89 @@ proc bindent {direction indentchar} {
 			c $nt
 		}
 	}
-	
+
 	#puts "Stored mark: $stored_mark"
 	#puts "Stored cursor: $stored_cursor"
-	
+
 	go $stored_mark
 	mark
 	go $stored_cursor
 }
+
+proc lexydef {name args} {
+	lexydef-create $name
+	for {set i 0} {$i < [llength $args]} {set i [expr $i + 2]} {
+		set start_state [lindex $args $i]
+		set transitions [lindex $args [expr $i + 1]]
+		for {set j 0} {$j < [llength $transitions]} {set j [expr $j + 2]} {
+			set pattern [lindex $transitions $j]
+			set state_and_token_type [split [lindex $transitions [expr $j + 1]] :]
+
+			if {[llength $state_and_token_type] > 1} {
+				set next_state [lindex $state_and_token_type 0]
+				set type [lindex $state_and_token_type 1]
+			} else {
+				set next_state $start_state
+				set type [lindex $state_and_token_type 0]
+			}
+
+			lexydef-append $name $start_state $pattern $next_state $type
+		}
+	}
+}
+
+lexydef c 0 {
+		auto keyword
+		_Bool keyword
+		break keyword
+		case keyword
+		char keyword
+		_Complex keyword
+		const keyword
+		continue keyword
+		default keyword
+		do keyword
+		double keyword
+		else keyword
+		enum keyword
+		extern keyword
+		float keyword
+		for keyword
+		goto keyword
+		if keyword
+		_Imaginary keyword
+		inline keyword
+		int keyword
+		long keyword
+		register keyword
+		restrict keyword
+		return keyword
+		short keyword
+		signed keyword
+		sizeof keyword
+		static keyword
+		struct keyword
+		switch keyword
+		typedef keyword
+		union keyword
+		unsigned keyword
+		void keyword
+		volatile keyword
+		while keyword
+
+		"//.*$" comment
+		"/\*" comment:comment
+
+		"'.'" string
+		"'\\.'" string
+		"\"" string:string
+
+		"." nothing
+	} comment {
+		"\*/" 0:comment
+		"." comment
+	} string {
+		"\\." string
+		"\"" 0:string
+		"." string
+	}

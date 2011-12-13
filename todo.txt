@@ -1,6 +1,4 @@
 - simple syntax highlighting
- - implement tcl command lexydef-create, lexydef-append, lexyassoc
- - implement tcl command lexydef
  - implement actual tokenization
 - syntax highlighting update heuristing
  - opening calculates the first 150 lines

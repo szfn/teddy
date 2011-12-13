@@ -759,8 +759,8 @@ void interp_init(void) {
 
 	Tcl_CreateCommand(interp, "lexydef-create", &lexy_create_command, (ClientData)NULL, NULL);
 	Tcl_CreateCommand(interp, "lexydef-append", &lexy_append_command, (ClientData)NULL, NULL);
-	Tcl_CreateCommand(interp, "lexy-assoc", &lexy_assoc_command, (ClientData)NULL, NULL);
-	Tcl_CreateCommand(interp, "lexy-dump", &lexy_dump_command, (ClientData)NULL, NULL);
+	Tcl_CreateCommand(interp, "lexyassoc", &lexy_assoc_command, (ClientData)NULL, NULL);
+	Tcl_CreateCommand(interp, "lexy_dump", &lexy_dump_command, (ClientData)NULL, NULL);
 
 	int code = Tcl_Eval(interp, BUILTIN_TCL_CODE);
 	if (code != TCL_OK) {

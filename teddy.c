@@ -34,8 +34,8 @@ int main(int argc, char *argv[]) {
 	init_colors();
 
 	cmdcompl_init();
-	interp_init();
 	lexy_init();
+	interp_init();
 
 	read_conf();
 
