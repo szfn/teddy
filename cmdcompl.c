@@ -58,8 +58,11 @@ const char *list_internal_commands[] = {
 	"bufman", "undo", "search", "focuscmd", "move", "gohome", "bg", "<",
 	"rgbcolor", "teddyhistory", "interactarg", "s", "c", "cursor", "bindent",
 
+	// lexy
+	"lexydef-create", "lexydef-append", "lexassoc",
+
 	// debug commands
-	"wordcompl_dump"
+	"wordcompl_dump", "lexy_dump"
 };
 
 char **list_external_commands;

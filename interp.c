@@ -22,6 +22,7 @@
 #include "builtin.h"
 #include "research.h"
 #include "wordcompl.h"
+#include "lexy.h"
 
 #define INITFILE ".teddy"
 
@@ -172,12 +173,12 @@ static int teddy_mark_command(ClientData client_data, Tcl_Interp *interp, int ar
 		Tcl_AddErrorInfo(interp, "No editor open, can not execute 'mark' command");
 		return TCL_ERROR;
 	}
-	
+
 	if (argc == 1) {
 		editor_mark_action(context_editor);
 	    return TCL_OK;
 	}
-	
+
 	if (argc != 2) {
 	    Tcl_AddErrorInfo(interp, "Wrong number of arguments to 'mark' command");
 		return TCL_ERROR;
@@ -755,6 +756,11 @@ void interp_init(void) {
 	Tcl_CreateCommand(interp, "c", &teddy_change_command, (ClientData)NULL, NULL);
 
 	Tcl_CreateCommand(interp, "wordcompl_dump", &teddy_wordcompl_dump_command, (ClientData)NULL, NULL);
+
+	Tcl_CreateCommand(interp, "lexydef-create", &lexy_create_command, (ClientData)NULL, NULL);
+	Tcl_CreateCommand(interp, "lexydef-append", &lexy_append_command, (ClientData)NULL, NULL);
+	Tcl_CreateCommand(interp, "lexy-assoc", &lexy_assoc_command, (ClientData)NULL, NULL);
+	Tcl_CreateCommand(interp, "lexy-dump", &lexy_dump_command, (ClientData)NULL, NULL);
 
 	int code = Tcl_Eval(interp, BUILTIN_TCL_CODE);
 	if (code != TCL_OK) {

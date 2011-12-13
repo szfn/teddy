@@ -13,6 +13,7 @@
 #include "cfg.h"
 #include "research.h"
 #include "wordcompl.h"
+#include "lexy.h"
 
 static gboolean delete_callback(GtkWidget *widget, GdkEvent *event, gpointer data) {
 	//TODO: terminate all processes
@@ -34,6 +35,7 @@ int main(int argc, char *argv[]) {
 
 	cmdcompl_init();
 	interp_init();
+	lexy_init();
 
 	read_conf();
 
