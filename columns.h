@@ -20,6 +20,7 @@ editor_t *columns_get_buffer(buffer_t *buffer);
 editor_t *columns_get_editor_from_positioon(double x, double y);
 column_t *columns_get_column_from_position(double x, double y);
 void columns_swap_columns(column_t *cola, column_t *colb);
+bool editor_exists(editor_t *editor);
 
 editor_t *heuristic_new_frame(editor_t *spawning_editor, buffer_t *buffer);
 

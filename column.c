@@ -230,7 +230,7 @@ editor_t *column_get_last_editor(column_t *column) {
 
 editor_t *column_remove(column_t *column, editor_t *editor) {
 	int idx = editors_find_editor(column, editor);
-	
+
 	if (column_editor_count(column) == 1) {
 		quick_message(editor, "Error", "Can not remove last editor of the window");
 		return editor;
@@ -279,7 +279,7 @@ editor_t *column_get_editor_from_position(column_t *column, double x, double y) 
 			&& (y >= allocation.y)
 			&& (y <= allocation.y + allocation.height))
 			return column->editors[i];
-		
+
 	}
 	return NULL;
 }
@@ -292,4 +292,12 @@ double column_get_occupied_space(column_t *column) {
 		r += editor_get_height_request(column->editors[i]);
 	}
 	return r;
+}
+
+bool column_editor_exists(column_t *column, editor_t *editor) {
+	for (int i = 0; i < column->editors_allocated; ++i) {
+		if (column->editors[i] == NULL) continue;
+		if (column->editors[i] == editor) return true;
+	}
+	return false;
 }

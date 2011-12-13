@@ -177,6 +177,11 @@ void quick_message(editor_t *editor, const char *title, const char *msg) {
 }
 
 void editor_close_editor(editor_t *editor) {
+	if (editor->timeout_id != -1) {
+		g_source_remove(editor->timeout_id);
+		editor->timeout_id = -1;
+	}
+	
 	if (column_editor_count(editor->column) > 1) {
 		editor = column_remove(editor->column, editor);
 	} else {
@@ -651,6 +656,7 @@ static void draw_parmatch(editor_t *editor, GtkAllocation *allocation, cairo_t *
 }
 
 static gboolean cursor_blinker(editor_t *editor) {
+	if (!editor_exists(editor)) return FALSE;
 	if (!(editor->initialization_ended)) return TRUE;
 	if (editor->cursor_visible < 0) editor->cursor_visible = 1;
 

@@ -470,3 +470,12 @@ editor_t *heuristic_new_frame(editor_t *spawning_editor, buffer_t *buffer) {
 	free(ordered_columns);
 	return retval;
 }
+
+bool editor_exists(editor_t *editor) {
+	for (int i = 0; i < columns_allocated; ++i) {
+		if (columns[i] == NULL) continue;
+		bool r = column_editor_exists(columns[i], editor);
+		if (r) return true;
+	}
+	return false;
+}

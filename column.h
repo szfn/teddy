@@ -28,5 +28,6 @@ editor_t *column_get_first_editor(column_t *column);
 editor_t *column_get_last_editor(column_t *column);
 editor_t *column_get_editor_from_position(column_t *column, double x, double y);
 double column_get_occupied_space(column_t *column);
+bool column_editor_exists(column_t *column, editor_t *editor);
 
 #endif
