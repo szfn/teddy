@@ -8,6 +8,7 @@
 #include "editor.h"
 #include "interp.h"
 #include "global.h"
+#include "treint.h"
 
 GtkWidget *research_window;
 GtkWidget *research_button_replace;
@@ -23,45 +24,6 @@ typedef enum _research_window_action_t {
 } research_window_action_t;
 
 research_window_action_t research_window_results[] = { RESEARCH_REPLACE, RESEARCH_NEXT, RESEARCH_STOP };
-
-struct augmented_lpoint_t {
-	real_line_t *line;
-	int start_glyph;
-	int offset;
-};
-
-static int tre_point_bridge_get_next_char(tre_char_t *c, unsigned int *pos_add, void *context) {
-	struct augmented_lpoint_t *point = (struct augmented_lpoint_t *)context;
-
-	if ((point->offset + point->start_glyph) >= point->line->cap) {
-		*c = 0;
-		*pos_add = 0;
-		return -1;
-	}
-
-	*c = point->line->glyph_info[point->start_glyph + point->offset].code;
-	*pos_add = 1;
-	++(point->offset);
-	return 0;
-}
-
-static void tre_point_bridge_rewind(size_t pos, void *context) {
-	struct augmented_lpoint_t *point = (struct augmented_lpoint_t *)context;
-	point->offset = pos;
-}
-
-static int tre_point_bridge_compare(size_t pos, size_t pos2, size_t len, void *context) {
-	struct augmented_lpoint_t *point = (struct augmented_lpoint_t *)context;
-
-	for (int i = 0; i < len; ++i) {
-		if (point->start_glyph + pos + i >= point->line->cap) return -1;
-		if (point->start_glyph + pos2 + i >= point->line->cap) return -1;
-		if (point->line->glyph_info[point->start_glyph + pos + i].code == point->line->glyph_info[point->start_glyph + pos2 + i].code) {
-			return -1;
-		}
-	}
-	return 0;
-}
 
 static void move_regexp_search_forward(bool start_at_top) {
 #define OVECTOR_SIZE 10
@@ -81,10 +43,7 @@ static void move_regexp_search_forward(bool start_at_top) {
 
 	while (search_point.line != NULL) {
 		tre_str_source tss;
-		tss.context = (void *)(&search_point);
-		tss.rewind = tre_point_bridge_rewind;
-		tss.compare = tre_point_bridge_compare;
-		tss.get_next_char = tre_point_bridge_get_next_char;
+		tre_bridge_init(&search_point, &tss);
 
 		//printf("Searching at: %d,%d+%d\n", search_point.line->lineno, search_point.start_glyph, search_point.offset);
 

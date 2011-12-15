@@ -1,10 +1,10 @@
-- simple syntax highlighting
- - implement actual tokenization
+- actual syntax coloring
 - syntax highlighting update heuristing
  - opening calculates the first 150 lines
  - replace_selection recalculates the inserted lines, starting with the first line that has at least one character untouched by the replace_selection operation
  - cursor movement triggers a consistency check of the lines begin/end statuses (and a mismatch triggers an update) for a radius of 50 lines around the cursor
  - save triggers a consistency check of the lines begin/end statuses (and a mismatch triggers an update) for a radius of 150 lines around the cursor
+- replace tcl regex engine with TRE
 - extend regular expressions in 's' to be lexically aware
 - word movement, word selection and tokenization should be tied to syntax analysis
 - shell should expand ~

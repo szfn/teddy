@@ -668,6 +668,7 @@ int load_text_file(buffer_t *buffer, const char *filename) {
 	fclose(fin);
 
 	wordcompl_update(buffer);
+	lexy_update(buffer);
 
 	return 0;
 }

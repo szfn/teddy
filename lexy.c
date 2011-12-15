@@ -7,6 +7,9 @@
 
 #include <tre/tre.h>
 
+#include "interp.h"
+#include "treint.h"
+
 /*
 Documentation of TCL interface
 
@@ -241,13 +244,14 @@ int lexy_append_command(ClientData client_data, Tcl_Interp *interp, int argc, co
 		return TCL_ERROR;
 	}
 
-	char *fixed_pattern = malloc(sizeof(char) * (strlen(pattern) + 2));
+	char *fixed_pattern = malloc(sizeof(char) * (strlen(pattern) + strlen("^(?:)") + 1));
 	if (!fixed_pattern) {
 		perror("Out of memory");
 		exit(EXIT_FAILURE);
 	}
-	strcpy(fixed_pattern, "^");
+	strcpy(fixed_pattern, "^(?:");
 	strcat(fixed_pattern, pattern);
+	strcat(fixed_pattern, ")");
 
 	regex_t compiled_pattern;
 	int r = tre_regcomp(&compiled_pattern, fixed_pattern, REG_EXTENDED);
@@ -283,7 +287,7 @@ int lexy_append_command(ClientData client_data, Tcl_Interp *interp, int argc, co
 	return TCL_OK;
 }
 
-int lexy_dump_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
+static void lexy_dump_table(void) {
 	printf("Dumping lexy table:\n");
 	for (int i = 0; i < LEXY_TOKENIZER_NUMBER; ++i) {
 		struct lexy_tokenizer *tokenizer = lexy_tokenizers + i;
@@ -314,7 +318,58 @@ int lexy_dump_command(ClientData client_data, Tcl_Interp *interp, int argc, cons
 			}
 		}
 	}
-	return TCL_OK;
+}
+
+static void lexy_dump_buffer(buffer_t *buffer) {
+	for (real_line_t *line = buffer->real_line; line != NULL; line = line->next) {
+		uint8_t last_token = 0xff;
+		int printed = 0;
+
+		for (int glyph = 0; glyph < line->cap; ++glyph) {
+			if (line->glyph_info[glyph].color != last_token) {
+				if (last_token != 0xff) printf("]\n");
+				printed = 0;
+				last_token = line->glyph_info[glyph].color;
+				printf("Token %d [", last_token);
+			}
+			if (printed < 20) {
+				uint32_t code = line->glyph_info[glyph].code;
+				printf("%c", (code >= 0x20) && (code <= 0x7f) ? (char)code : '?');
+				++printed;
+				if (printed >= 20) {
+					printf("...");
+				}
+			}
+		}
+
+		if (last_token != 0xff) {
+			printf("]\n");
+			printed = 0;
+		}
+	}
+}
+
+int lexy_dump_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
+	if (argc < 2) {
+		Tcl_AddErrorInfo(interp, "Wrong number of arguments to lexy_dump, specify \"table\" or \"buffer\"");
+		return TCL_ERROR;
+	}
+
+	if (strcmp(argv[1], "table") == 0) {
+		lexy_dump_table();
+		return TCL_OK;
+	} else if (strcmp(argv[1], "buffer") == 0) {
+		if (context_editor == NULL) {
+			Tcl_AddErrorInfo(interp, "lexy_dump buffer called when no editor was active");
+			return TCL_ERROR;
+		}
+
+		lexy_dump_buffer(context_editor->buffer);
+		return TCL_OK;
+	} else {
+		Tcl_AddErrorInfo(interp, "Wrong argument to lexy_dump, specify \"table\" or \"buffer\"");
+		return TCL_ERROR;
+	}
 }
 
 int lexy_assoc_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
@@ -342,4 +397,92 @@ int lexy_assoc_command(ClientData client_data, Tcl_Interp *interp, int argc, con
 
 	Tcl_AddErrorInfo(interp, "Out of association space");
 	return TCL_ERROR;
+}
+
+static struct lexy_tokenizer *tokenizer_from_buffer(buffer_t *buffer) {
+	for (int i = 0; i < LEXY_ASSOCIATION_NUMBER; ++i) {
+		struct lexy_association *a = lexy_associations + i;
+		if (a->extension == NULL) return NULL;
+
+		regex_t extre;
+		if (tre_regcomp(&extre, a->extension, REG_EXTENDED) != REG_OK) {
+			tre_regfree(&extre);
+			continue;
+		}
+#define REGEXEC_NMATCH 5
+		regmatch_t pmatch[REGEXEC_NMATCH];
+
+		if (tre_regexec(&extre, buffer->name, REGEXEC_NMATCH, pmatch, 0) != REG_OK) {
+			tre_regfree(&extre);
+		} else {
+			tre_regfree(&extre);
+			return a->tokenizer;
+		}
+	}
+	return NULL;
+}
+
+static void lexy_update_one_token(real_line_t *line, int *glyph, struct lexy_tokenizer *tokenizer, int *state) {
+	int base = tokenizer->status_pointers[*state].index;
+	for (int offset = 0; offset < LEXY_STATE_BLOCK_SIZE; ++offset) {
+		struct lexy_row *row = tokenizer->rows + base + offset;
+		//printf("\t\toffset = %d base = %d enabled = %d\n", offset, base, row->enabled);
+		if (!(row->enabled)) {
+			line->glyph_info[*glyph].color = L_NOTHING;
+			++(*glyph);
+			return;
+		}
+		if (row->jump) {
+			base = tokenizer->status_pointers[row->next_state].index;
+			offset = -1;
+			continue;
+		}
+
+		struct augmented_lpoint_t matchpoint;
+		matchpoint.line = line;
+		matchpoint.start_glyph = *glyph;
+		matchpoint.offset = 0;
+
+		tre_str_source tss;
+		tre_bridge_init(&matchpoint, &tss);
+
+#define NMATCH 10
+		regmatch_t pmatch[NMATCH];
+
+		int r = tre_reguexec(&(row->pattern), &tss, NMATCH, pmatch, 0);
+
+		if (r == REG_OK) {
+			//printf("\t\tMatched: %d (%d) - %d as %d [", *glyph+pmatch[0].rm_so, pmatch[0].rm_so, *glyph+pmatch[0].rm_eo, row->token_type);
+			for (int j = 0; j < pmatch[0].rm_eo; ++j) {
+				//uint32_t code = line->glyph_info[*glyph + j].code;
+				//printf("%c", (code >= 0x20) && (code <= 0x7f) ? (char)code : '?');
+				line->glyph_info[*glyph + j].color = row->token_type;
+			}
+			//printf("]\n");
+			*glyph += pmatch[0].rm_eo;
+			*state = row->next_state;
+			return;
+		}
+	}
+}
+
+static void lexy_update_line(real_line_t *line, struct lexy_tokenizer *tokenizer, int *state) {
+	for (int glyph = 0; glyph < line->cap; ) {
+		//printf("\tStarting at %d\n", glyph);
+		lexy_update_one_token(line, &glyph, tokenizer, state);
+	}
+}
+
+void lexy_update(buffer_t *buffer) {
+	struct lexy_tokenizer *tokenizer = tokenizer_from_buffer(buffer);
+	if (tokenizer == NULL) return;
+	int state = 0;
+	if (tokenizer->status_pointers[0].status_name == NULL) return;
+
+	//printf("Applying tokenizer: %s\n", tokenizer->tokenizer_name);
+
+	for (real_line_t *line = buffer->real_line; line != NULL; line = line->next) {
+		//printf("Updating line: %d\n", line->lineno);
+		lexy_update_line(line, tokenizer, &state);
+	}
 }

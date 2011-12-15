@@ -275,46 +275,12 @@ proc lexydef {name args} {
 }
 
 lexydef c 0 {
-		auto keyword
-		_Bool keyword
-		break keyword
-		case keyword
-		char keyword
-		_Complex keyword
-		const keyword
-		continue keyword
-		default keyword
-		do keyword
-		double keyword
-		else keyword
-		enum keyword
-		extern keyword
-		float keyword
-		for keyword
-		goto keyword
-		if keyword
-		_Imaginary keyword
-		inline keyword
-		int keyword
-		long keyword
-		register keyword
-		restrict keyword
-		return keyword
-		short keyword
-		signed keyword
-		sizeof keyword
-		static keyword
-		struct keyword
-		switch keyword
-		typedef keyword
-		union keyword
-		unsigned keyword
-		void keyword
-		volatile keyword
-		while keyword
+		"auto|_Bool|break|case|char|_Complex|const|continue|default|do|double|else|enum|extern|float|for|goto|if|_Imaginary|inline|int|long|register|restrict|return|short|signed|sizeof|static|struct|switch|typedef|union|unsigned|void|volatile|while" keyword
+
+		"[a-zA-Z_][a-zA-Z0-9_]*" id
 
 		"//.*$" comment
-		"/\*" comment:comment
+		"/\\*" comment:comment
 
 		"'.'" string
 		"'\\.'" string
@@ -322,10 +288,12 @@ lexydef c 0 {
 
 		"." nothing
 	} comment {
-		"\*/" 0:comment
+		"\\*/" 0:comment
 		"." comment
 	} string {
 		"\\." string
 		"\"" 0:string
 		"." string
 	}
+
+lexyassoc c ".c$"
