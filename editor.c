@@ -110,6 +110,8 @@ void editor_complete_move(editor_t *editor, gboolean should_move_origin) {
 		gtk_widget_queue_draw(editor->drar);
 	}
 
+	lexy_update_for_move(editor->buffer, editor->buffer->cursor.line);
+
 	copy_selection_to_clipboard(editor, selection_clipboard);
 }
 
@@ -182,7 +184,7 @@ void editor_close_editor(editor_t *editor) {
 		g_source_remove(editor->timeout_id);
 		editor->timeout_id = -1;
 	}
-	
+
 	if (column_editor_count(editor->column) > 1) {
 		editor = column_remove(editor->column, editor);
 	} else {

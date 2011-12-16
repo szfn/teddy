@@ -55,6 +55,8 @@ Associates one tokenizer with a file extension.
 #define LEXY_STATE_BLOCK_SIZE 16
 #define LEXY_ASSOCIATION_NUMBER 1024
 
+#define LEXY_LOAD_HOOK_MAX_COUNT 150
+
 const char *CONTINUATION_STATE = "continuation-state";
 
 struct lexy_row {
@@ -473,24 +475,46 @@ static void lexy_update_one_token(real_line_t *line, int *glyph, struct lexy_tok
 }
 
 static void lexy_update_line(real_line_t *line, struct lexy_tokenizer *tokenizer, int *state) {
+	line->lexy_state_start = *state;
 	for (int glyph = 0; glyph < line->cap; ) {
 		//printf("\tStarting at %d\n", glyph);
 		lexy_update_one_token(line, &glyph, tokenizer, state);
 	}
+	line->lexy_state_end = *state;
 }
 
-void lexy_update(buffer_t *buffer) {
+void lexy_update_starting_at(buffer_t *buffer, real_line_t *start_line, bool quick_exit) {
+	if (start_line == NULL) return;
 	struct lexy_tokenizer *tokenizer = tokenizer_from_buffer(buffer);
 	if (tokenizer == NULL) return;
-	int state = 0;
-	if (tokenizer->status_pointers[0].status_name == NULL) return;
 
-	//printf("Applying tokenizer: %s\n", tokenizer->tokenizer_name);
+	int count = 0;
+	int state = 0xff;
 
-	for (real_line_t *line = buffer->real_line; line != NULL; line = line->next) {
-		//printf("Updating line: %d\n", line->lineno);
-		lexy_update_line(line, tokenizer, &state);
+	real_line_t *line;
+	for (line = start_line; line != NULL; line = line->next) {
+		if ((line->lexy_state_start != state) || (line->lexy_state_start == 0xff) || (count < 2)) {
+			if (state == 0xff) state = line->lexy_state_start;
+			lexy_update_line(line, tokenizer, &state);
+		} else {
+			if (quick_exit) break;
+		}
+
+		state = line->lexy_state_end;
+
+		if (count >= LEXY_LOAD_HOOK_MAX_COUNT) break;
+		++count;
 	}
+
+	buffer->lexy_last_update_line = line;
+}
+
+void lexy_update_for_move(buffer_t *buffer, real_line_t *start_line) {
+	if (start_line->lineno > buffer->lexy_last_update_line->lineno) {
+		start_line = buffer->lexy_last_update_line;
+	}
+
+	lexy_update_starting_at(buffer, start_line, false);
 }
 
 int lexy_cfg_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
@@ -509,3 +533,5 @@ int lexy_cfg_command(ClientData client_data, Tcl_Interp *interp, int argc, const
 
 	return TCL_OK;
 }
+
+

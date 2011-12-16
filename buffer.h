@@ -29,6 +29,7 @@ typedef struct _real_line_t {
 	double start_y;
 	double end_y;
 	double y_increment;
+	uint8_t lexy_state_start, lexy_state_end;
 	struct _real_line_t *prev;
 	struct _real_line_t *next;
 } real_line_t;
@@ -78,6 +79,9 @@ typedef struct _buffer_t {
 	int tab_width;
 	double left_margin;
 	double right_margin;
+
+	/* Lexy stuff */
+	real_line_t *lexy_last_update_line;
 } buffer_t;
 
 // utility function to convert first codepoint in utf8 stream into an utf32 codepoint

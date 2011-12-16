@@ -171,6 +171,7 @@ static real_line_t *new_real_line(int lineno) {
 	line->next = NULL;
 	line->lineno = lineno;
 	line->y_increment = 0.0;
+	line->lexy_state_start = line->lexy_state_end = 0xff;
 	return line;
 }
 
@@ -440,7 +441,7 @@ static void buffer_line_adjust_glyphs(buffer_t *buffer, real_line_t *line, doubl
 static void buffer_typeset_from(buffer_t *buffer, real_line_t *start_line) {
 	real_line_t *line;
 	double y = start_line->start_y;
-	
+
 	for (line = start_line; line != NULL; line = line->next) {
 		buffer_line_adjust_glyphs(buffer, line, y);
 		y += line->y_increment;
@@ -449,8 +450,9 @@ static void buffer_typeset_from(buffer_t *buffer, real_line_t *start_line) {
 
 void buffer_replace_selection(buffer_t *buffer, const char *new_text) {
 	lpoint_t start_point, end_point;
+	real_line_t *pre_start_line;
 	undo_node_t *undo_node;
-	
+
 	//printf("buffer_replace_selection (call): %d %d\n", buffer->cursor.line->cap, buffer->cursor.glyph);
 
 	if (!(buffer->editable)) return;
@@ -464,10 +466,15 @@ void buffer_replace_selection(buffer_t *buffer, const char *new_text) {
 
 	if (buffer->job == NULL)
        freeze_selection(buffer, &(undo_node->before_selection), &start_point, &end_point);
-	
+
 	buffer_remove_selection(buffer, &start_point, &end_point);
 
 	copy_lpoint(&start_point, &(buffer->cursor));
+	if (start_point.glyph > 0) {
+		pre_start_line = start_point.line;
+	} else {
+		pre_start_line = start_point.line->prev;
+	}
 
 	//printf("buffer_replace_selection: %d %d\n", buffer->cursor_line->cap, buffer->cursor_glyph);
 	buffer_insert_multiline_text(buffer, &(buffer->cursor), new_text);
@@ -481,8 +488,14 @@ void buffer_replace_selection(buffer_t *buffer, const char *new_text) {
 		undo_push(&(buffer->undo), undo_node);
 
 	buffer_typeset_from(buffer, start_point.line);
-	
+
 	buffer_unset_mark(buffer);
+
+	if (pre_start_line == NULL) {
+		lexy_update_starting_at(buffer, buffer->real_line, true);
+	} else {
+		lexy_update_starting_at(buffer, pre_start_line, true);
+	}
 }
 
 static real_line_t *buffer_search_line(buffer_t *buffer, int lineno) {
@@ -668,7 +681,7 @@ int load_text_file(buffer_t *buffer, const char *filename) {
 	fclose(fin);
 
 	wordcompl_update(buffer);
-	lexy_update(buffer);
+	lexy_update_starting_at(buffer, buffer->real_line, false);
 
 	return 0;
 }
@@ -896,6 +909,8 @@ buffer_t *buffer_create(FT_Library *library) {
 	buffer->has_filename = 0;
 	buffer->select_type = BST_NORMAL;
 
+	buffer->lexy_last_update_line = NULL;
+
 	undo_init(&(buffer->undo));
 
 	teddy_font_init(&(buffer->main_font), library, config[CFG_MAIN_FONT].strval);
@@ -930,7 +945,7 @@ buffer_t *buffer_create(FT_Library *library) {
 
 	buffer->mark.line = NULL;
 	buffer->mark.glyph = -1;
-	
+
 	parmatch_init(&(buffer->parmatch));
 
 	buffer->tab_width = 4;

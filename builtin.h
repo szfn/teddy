@@ -278,7 +278,9 @@ proc lexydef {name args} {\n\
 }\n\
 \n\
 lexydef c 0 {\n\
-		\"auto|_Bool|break|case|char|_Complex|const|continue|default|do|double|else|enum|extern|float|for|goto|if|_Imaginary|inline|int|long|register|restrict|return|short|signed|sizeof|static|struct|switch|typedef|union|unsigned|void|volatile|while\" keyword\n\
+		\"\\\\<(?:auto|_Bool|break|case|char|_Complex|const|continue|default|do|double|else|enum|extern|float|for|goto|if|_Imaginary|inline|int|long|register|restrict|return|short|signed|sizeof|static|struct|switch|typedef|union|unsigned|void|volatile|while|int8_t|uint8_t|int16_t|uint16_t|int32_t|uint32_t|int64_t|uint64_t|size_t|time_t)\\\\>\" keyword\n\
+\n\
+		\"#(?:include|ifdef|ifnedf|if|else|end|pragma)\\\\>\" keyword\n\
 \n\
 		\"[a-zA-Z_][a-zA-Z0-9_]*\" id\n\
 \n\
