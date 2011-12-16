@@ -510,6 +510,8 @@ void lexy_update_starting_at(buffer_t *buffer, real_line_t *start_line, bool qui
 }
 
 void lexy_update_for_move(buffer_t *buffer, real_line_t *start_line) {
+        if (buffer->lexy_last_update_line == NULL) return;
+
 	if (start_line->lineno > buffer->lexy_last_update_line->lineno) {
 		start_line = buffer->lexy_last_update_line;
 	}

@@ -8,17 +8,18 @@
 #include "cmdcompl.h"
 #include "interp.h"
 #include "cfg.h"
+#include "lexy.h"
 
 static bool should_be_case_sensitive(uint32_t *needle, int len) {
 	if (config[CFG_INTERACTIVE_SEARCH_CASE_SENSITIVE].intval == 0) return false;
 	if (config[CFG_INTERACTIVE_SEARCH_CASE_SENSITIVE].intval == 1) return true;
-	
+
 	// smart case sensitiveness set up here
-	
+
 	for (int i = 0; i < len; ++i) {
 		if (u_isupper(needle[i])) return true;
 	}
-	
+
 	return false;
 }
 
@@ -35,9 +36,9 @@ bool uchar_match_case_insensitive(uint32_t a, uint32_t b) {
 static void move_search_forward(editor_t *editor, gboolean ctrl_g_invoked) {
 	const gchar *text = gtk_entry_get_text(GTK_ENTRY(editor->entry));
 	int len = strlen(text);
-	
+
 	uint32_t *needle = malloc(len*sizeof(uint32_t));
-	
+
 	real_line_t *search_line;
 	int search_glyph;
 
@@ -46,7 +47,7 @@ static void move_search_forward(editor_t *editor, gboolean ctrl_g_invoked) {
 	for (i = 0, dst = 0; i < len; ) {
 		needle[dst++] = utf8_to_utf32(text, &i, len);
 	}
-	
+
 	bool case_sensitive = should_be_case_sensitive(needle, dst);
 	uchar_match_fn *match_fn = case_sensitive ? &uchar_match_case_sensitive : &uchar_match_case_insensitive;
 
@@ -88,6 +89,7 @@ static void move_search_forward(editor_t *editor, gboolean ctrl_g_invoked) {
 			editor->buffer->mark.glyph = i - j;
 			editor->buffer->cursor.line = search_line;
 			editor->buffer->cursor.glyph = i;
+			lexy_update_for_move(editor->buffer, editor->buffer->cursor.line);
 			break;
 		}
 	}
@@ -96,7 +98,7 @@ static void move_search_forward(editor_t *editor, gboolean ctrl_g_invoked) {
 		editor->search_failed = 0;
 		buffer_unset_mark(editor->buffer);
 	}
-	
+
 	free(needle);
 
 	editor_center_on_cursor(editor);
@@ -114,7 +116,7 @@ static gboolean entry_search_insert_callback(GtkWidget *widget, GdkEventKey *eve
 		editor->ignore_next_entry_keyrelease = 0;
 		return TRUE;
 	}
-	
+
 	gboolean ctrl_g_invoked = FALSE;
 
 	if ((event->keyval == GDK_KEY_Escape) || (event->keyval == GDK_KEY_Return)) {
@@ -129,7 +131,7 @@ static gboolean entry_search_insert_callback(GtkWidget *widget, GdkEventKey *eve
 			ctrl_g_invoked = TRUE;
 		}
 	}
-	
+
 	if (ctrl && (event->keyval == GDK_KEY_r)) {
 		history_pick(command_history, editor);
 		editor->ignore_next_entry_keyrelease = 1;
@@ -155,7 +157,7 @@ void editor_start_search(editor_t *editor, const char *initial_search_term) {
 	editor->current_entry_handler_id = g_signal_connect(G_OBJECT(editor->entry), "key-release-event", G_CALLBACK(entry_search_insert_callback), editor);
 	editor->search_failed = FALSE;
 	editor->search_mode = TRUE;
-	
+
 	/* not needed gtk_entry_set_text seems to generate a move_search_forward through the event automatically
 	if (initial_search_term != NULL) move_search_forward(editor, TRUE);
 	*/
@@ -229,13 +231,13 @@ static gboolean entry_default_insert_callback(GtkWidget *widget, GdkEventKey *ev
 					da = interp_eval(editor, Tcl_Merge(2, eval_args));
 				}
 			}
-			
+
 			gtk_entry_set_text(GTK_ENTRY(editor->entry), "");
 			if (editor->locked_command_line[0] != '\0') {
 				strcpy(editor->locked_command_line, "");
 				set_label_text(editor);
 			}
-			
+
 			switch(da) {
 			case FOCUS_ALREADY_SWITCHED:
 				break;

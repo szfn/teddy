@@ -9,6 +9,7 @@
 #include "interp.h"
 #include "global.h"
 #include "treint.h"
+#include "lexy.h"
 
 GtkWidget *research_window;
 GtkWidget *research_button_replace;
@@ -65,6 +66,7 @@ static void move_regexp_search_forward(bool start_at_top) {
 				research_editor->buffer->cursor.line = research_editor->buffer->mark.line = search_point.line;
 				research_editor->buffer->mark.glyph = start_glyph;
 				research_editor->buffer->cursor.glyph = end_glyph;
+				lexy_update_for_move(research_editor->buffer, research_editor->buffer->cursor.line);
 				editor_center_on_cursor(research_editor);
 				gtk_widget_queue_draw(research_editor->drar);
 			}
