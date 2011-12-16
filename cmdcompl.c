@@ -59,7 +59,7 @@ const char *list_internal_commands[] = {
 	"rgbcolor", "teddyhistory", "interactarg", "s", "c", "cursor", "bindent",
 
 	// lexy
-	"lexydef-create", "lexydef-append", "lexassoc",
+	"lexydef-create", "lexydef-append", "lexassoc", "lexycfg",
 
 	// debug commands
 	"wordcompl_dump", "lexy_dump"

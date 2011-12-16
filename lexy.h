@@ -11,11 +11,14 @@
 #define L_COMMENT 3
 #define L_STRING 4
 
+extern int lexy_colors[0xff];
+
 void lexy_init(void);
 void lexy_update(buffer_t *buffer);
 
 int lexy_create_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]);
 int lexy_append_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]);
+int lexy_cfg_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]);
 
 int lexy_assoc_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]);
 

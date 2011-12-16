@@ -13,6 +13,11 @@ setcfg posbox_border_color 0
 setcfg posbox_bg_color 15654274
 setcfg posbox_fg_color 0
 
+lexycfg keyword [rgbcolor yellow]
+lexycfg comment [rgbcolor cyan]
+lexycfg string [rgbcolor green]
+lexycfg id [rgbcolor "antique white"]
+
 bindkey Ctrl-Space mark
 bindkey Ctrl-Shift-Space {mark lines}
 

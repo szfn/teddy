@@ -10,6 +10,8 @@
 #include "interp.h"
 #include "treint.h"
 
+int lexy_colors[0xff];
+
 /*
 Documentation of TCL interface
 
@@ -92,6 +94,10 @@ void lexy_init(void) {
 
 	for (int i = 0; i < LEXY_ASSOCIATION_NUMBER; ++i) {
 		lexy_associations[i].extension = NULL;
+	}
+
+	for (int i = 0; i < 0xff; ++i) {
+		lexy_colors[i] = 16777215;
 	}
 }
 
@@ -485,4 +491,21 @@ void lexy_update(buffer_t *buffer) {
 		//printf("Updating line: %d\n", line->lineno);
 		lexy_update_line(line, tokenizer, &state);
 	}
+}
+
+int lexy_cfg_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
+	if (argc != 3) {
+		Tcl_AddErrorInfo(interp, "Wrong number of arguments to 'lexycfg', usage: lexycfg <name> <color>");
+		return TCL_ERROR;
+	}
+
+	const char *name_str = argv[1];
+	const char *color_str = argv[2];
+
+	uint8_t type = parse_token_type_name(name_str);
+	int color = atoi(color_str);
+
+	lexy_colors[type] = color;
+
+	return TCL_OK;
 }

@@ -18,6 +18,7 @@
 #include "editor_cmdline.h"
 #include "cfg.h"
 #include "wordcompl.h"
+#include "lexy.h"
 
 void set_label_text(editor_t *editor) {
 	char *labeltxt;
@@ -682,12 +683,41 @@ static gboolean cursor_blinker(editor_t *editor) {
 	return TRUE;
 }
 
+#define COLORED_OUTPUT
+
 static void draw_line(editor_t *editor, GtkAllocation *allocation, cairo_t *cr, real_line_t *line) {
+#ifndef COLORED_OUTPUT
 	cairo_show_glyphs(cr, line->glyphs, line->cap);
+#endif
 
 	double cury = line->start_y;
 
+#ifdef COLORED_OUTPUT
+	int start = 0;
+	uint8_t color = 0xff;
+#endif
+
 	for (int i = 0; i < line->cap; ++i) {
+#ifdef COLORED_OUTPUT
+		//TODO:
+		// - get actual color
+		// - set color
+
+
+
+		if (line->glyph_info[i].color != color) {
+			if (color != 0xff) {
+				set_color_cfg(cr, lexy_colors[color]);
+				cairo_show_glyphs(cr, line->glyphs+start, i-start);
+				set_color_cfg(cr, config[CFG_EDITOR_FG_COLOR].intval);
+			}
+
+			color = line->glyph_info[i].color;
+			start = i;
+		}
+
+#endif
+
 		// draws soft wrapping indicators
 		if (line->glyphs[i].y - cury > 0.001) {
 			/* draw ending tract */
@@ -707,6 +737,14 @@ static void draw_line(editor_t *editor, GtkAllocation *allocation, cairo_t *cr, 
 			cairo_set_line_width(cr, 2.0);
 		}
 	}
+
+#ifdef COLORED_OUTPUT
+	if (color != 0xff) {
+		set_color_cfg(cr, lexy_colors[color]);
+		cairo_show_glyphs(cr, line->glyphs+start, line->cap-start);
+		set_color_cfg(cr, config[CFG_EDITOR_FG_COLOR].intval);
+	}
+#endif
 }
 
 static gboolean expose_event_callback(GtkWidget *widget, GdkEventExpose *event, editor_t *editor) {
