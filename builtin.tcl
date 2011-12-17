@@ -279,13 +279,16 @@ lexydef c 0 {
 
 		"#(?:include|ifdef|ifnedf|if|else|end|pragma)\\>" keyword
 
+		"-?(?:0x)?[0-9][0-9]*(?:\\.[0-9]+)?(?:e-[0-9]+?)?" literal
+		"NULL" literal
+
 		"[a-zA-Z_][a-zA-Z0-9_]*" id
 
 		"//.*$" comment
 		"/\\*" comment:comment
 
 		"'.'" string
-		"'\\.'" string
+		{'\\.'} string
 		"\"" string:string
 
 		"." nothing
@@ -299,3 +302,4 @@ lexydef c 0 {
 	}
 
 lexyassoc c ".c$"
+lexyassoc c ".h$"

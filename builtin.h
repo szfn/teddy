@@ -282,13 +282,16 @@ lexydef c 0 {\n\
 \n\
 		\"#(?:include|ifdef|ifnedf|if|else|end|pragma)\\\\>\" keyword\n\
 \n\
+		\"-?(?:0x)?[0-9][0-9]*(?:\\\\.[0-9]+)?(?:e-[0-9]+?)?\" literal\n\
+		\"NULL\" literal\n\
+\n\
 		\"[a-zA-Z_][a-zA-Z0-9_]*\" id\n\
 \n\
 		\"//.*$\" comment\n\
 		\"/\\\\*\" comment:comment\n\
 \n\
 		\"'.'\" string\n\
-		\"'\\\\.'\" string\n\
+		{'\\\\.'} string\n\
 		\"\\\"\" string:string\n\
 \n\
 		\".\" nothing\n\
@@ -302,5 +305,6 @@ lexydef c 0 {\n\
 	}\n\
 \n\
 lexyassoc c \".c$\"\n\
+lexyassoc c \".h$\"\n\
 "
 #endif

@@ -17,6 +17,7 @@ lexycfg keyword [rgbcolor yellow]
 lexycfg comment [rgbcolor cyan]
 lexycfg string [rgbcolor green]
 lexycfg id [rgbcolor "antique white"]
+lexycfg literal [rgbcolor green]
 
 bindkey Ctrl-Space mark
 bindkey Ctrl-Shift-Space {mark lines}

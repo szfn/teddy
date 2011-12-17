@@ -12,6 +12,7 @@
 #define L_ID 2
 #define L_COMMENT 3
 #define L_STRING 4
+#define L_LITERAL 5
 
 extern int lexy_colors[0xff];
 

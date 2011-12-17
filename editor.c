@@ -688,6 +688,8 @@ static gboolean cursor_blinker(editor_t *editor) {
 #define COLORED_OUTPUT
 
 static void draw_line(editor_t *editor, GtkAllocation *allocation, cairo_t *cr, real_line_t *line) {
+	cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
+	
 #ifndef COLORED_OUTPUT
 	cairo_show_glyphs(cr, line->glyphs, line->cap);
 #endif

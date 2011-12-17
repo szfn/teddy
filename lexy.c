@@ -155,6 +155,7 @@ static int parse_token_type_name(const char *token_type_name) {
 	if (strcmp(token_type_name, "identifier") == 0) return L_ID;
 	if (strcmp(token_type_name, "comment") == 0) return L_COMMENT;
 	if (strcmp(token_type_name, "string") == 0) return L_STRING;
+	if (strcmp(token_type_name, "literal") == 0) return L_LITERAL;
 	return -1;
 }
 

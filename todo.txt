@@ -1,5 +1,9 @@
 - replace tcl regex engine with TRE
+- write builtin tokenizers for python, java, tcl, go
 - shell should expand ~
+- how do i disable globbing in "shell"?
+- better ctrl-k
+
 - bg with an argument to force use of a new buffer
 - interface tabs
 - elastic tabs
@@ -8,7 +12,6 @@
 - extend regular expressions in 's' to be lexically aware
 - disable selection when another application becomes the owner of the primary selection buffer
 - word movement, word selection and tokenization should be tied to syntax analysis
-- how do i disable globbing in "shell"?
 - change perror to show error windows
 - implement | command that filters selected content through external command
 - make easy way to reindent though external filter
