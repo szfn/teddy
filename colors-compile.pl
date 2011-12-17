@@ -22,7 +22,7 @@ while (<$in>) {
     next if /^!/;
     $_ = trim($_);
     my ($r, $g, $b, $name) = split /\s+/, $_, 4;
-    my $value = $b + ($g << 8) + ($r << 16);
+    my $value = $b + ($r << 8) + ($g << 16);
     print "   g_hash_table_replace(x11colors, \"$name\", (gpointer)$value);\n";
 }
 close $in;
