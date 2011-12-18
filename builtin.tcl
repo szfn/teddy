@@ -277,7 +277,7 @@ proc lexydef {name args} {
 lexydef c 0 {
 		"\\<(?:auto|_Bool|break|case|char|_Complex|const|continue|default|do|double|else|enum|extern|float|for|goto|if|_Imaginary|inline|int|long|register|restrict|return|short|signed|sizeof|static|struct|switch|typedef|union|unsigned|void|volatile|while|int8_t|uint8_t|int16_t|uint16_t|int32_t|uint32_t|int64_t|uint64_t|size_t|time_t)\\>" keyword
 
-		"#(?:include|ifdef|ifnedf|if|else|end|pragma)\\>" keyword
+		"#(?:include|ifdef|ifndef|if|else|endif|pragma)\\>" keyword
 
 		"-?(?:0x)?[0-9][0-9]*(?:\\.[0-9]+)?(?:e-[0-9]+?)?" literal
 		"NULL" literal
