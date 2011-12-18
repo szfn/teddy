@@ -296,10 +296,29 @@ lexydef c 0 {
 		"\\*/" 0:comment
 		"." comment
 	} string {
-		"\\." string
+		{\\.} string
 		"\"" 0:string
 		"." string
 	}
 
 lexyassoc c ".c$"
 lexyassoc c ".h$"
+
+lexydef tcl 0 {
+		{\<(?:after|error|lappend|platform|tcl_findLibrary|append|eval|lassign|platform::shell|tcl_startOfNextWord|apply|exec|lindex|proc|tcl_startOfPreviousWord|array|exit|linsert|puts|tcl_wordBreakAfter|auto_execok|expr	list|pwd|tcl_wordBreakBefore|auto_import|fblocked|llength|re_syntax|tcltest|auto_load|fconfigure|load|read|tclvars|auto_mkindex|fcopy|lrange|refchan|tell|auto_mkindex_old|file|lrepeat|regexp|time|auto_qualify|fileevent|lreplace|registry|tm|auto_reset|filename|lreverse|regsub|trace|bgerror|flush|lsearch|rename|unknown|binary|for|lset|return|unload|break|foreach|lsort||unset|catch|format|mathfunc|scan|update|cd|gets|mathop|seek|uplevel|chan|glob|memory|set|upvar|clock|global|msgcat|socket|variable|close|history|namespace|source|vwait|concat|http|open|split|while|continue|if|package|string|dde|incr|parray|subst|dict|info|pid|switch|encoding|interp|pkg::create|eof|join|pkg_mkIndex|tcl_endOfWord)\>} keyword
+
+		{\<$[a-zA-Z_][a-zA-Z0-9_]*\>} id
+		{"} string:string
+		{\{\*\}} keyword
+		{#.*$} comment
+
+		{\<[a-zA-Z0-9]*\>} nothing
+
+		"." nothing
+	} string {
+		{\\.} string
+		{"} 0:string
+		"." string
+	}
+
+lexyassoc tcl ".tcl$"
