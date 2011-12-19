@@ -322,3 +322,39 @@ lexydef tcl 0 {
 	}
 
 lexyassoc tcl {\.tcl$}
+
+lexydef python 0 {
+		{\<(?:and|del|from|not|while|as|elif|global|or|with|assert|else|if|pass|yield|break|except|import|print|class|exec|in|raise|continue|finally|is|return|def|for|lambda|try)\>} keyword
+
+		"-?(?:0[xbXB])?[0-9][0-9]*(?:\\.[0-9]+)?(?:e-[0-9]+?)?[LljJ]?" literal
+		"\<None|True|False\>" literal
+
+		{\<$[a-zA-Z_][a-zA-Z0-9_]*\>} id
+
+		{(?:r|u|ur|R|U|UR|Ur|uR|b|B|br|Br|bR|BR)?"""} lstringq:string
+		{(?:r|u|ur|R|U|UR|Ur|uR|b|B|br|Br|bR|BR)?'''} lstringq:string
+		{(?:r|u|ur|R|U|UR|Ur|uR|b|B|br|Br|bR|BR)?"} stringqq:string
+		{(?:r|u|ur|R|U|UR|Ur|uR|b|B|br|Br|bR|BR)?'} stringq:string
+
+		{#.*$} comment
+
+		"." nothing
+	} stringqq {
+		{\\.} string
+		{"} 0:string
+		{.} string
+	} stringq {
+		{\\.} string
+		{'} 0:string
+		{.} string
+	} lstringqq {
+		{\\.} string
+		{"""} 0:string
+		{.} string
+	} lstringq {
+		{\\.} string
+		{'''} 0:string
+		{.} string
+	}
+
+lexyassoc python {\.py$}
