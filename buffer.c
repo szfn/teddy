@@ -524,6 +524,8 @@ void buffer_undo(buffer_t *buffer) {
 
 	undo_node = undo_pop(&(buffer->undo));
 
+	if (undo_node == NULL) return;
+
 	buffer->modified = 1;
 
 	buffer_unset_mark(buffer);

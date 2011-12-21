@@ -1,13 +1,16 @@
-- replace tcl regex engine with TRE
-- write builtin tokenizers for python, java, tcl, go
+- write builtin tokenizers for java, go
+- document lexy commands
 - shell should expand ~
 - how do i disable globbing in "shell"?
 - better ctrl-k
+- modn tabs
 
+- replace tcl regex engine with TRE
 - bg with an argument to force use of a new buffer
 - interface tabs
 - elastic tabs
 
+- selection should copy selected text on past not on selection, for better efficiency (selection slowdown is noticeable on mouse selection)
 - xcb port
 - extend regular expressions in 's' to be lexically aware
 - disable selection when another application becomes the owner of the primary selection buffer
