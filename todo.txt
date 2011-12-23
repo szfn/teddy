@@ -1,12 +1,11 @@
-- shift+space and shift+backspace should do the same thing as unshifted
-- slow mouse movement (probably due to syntax highlighting)
-- highlighting check on 'go' command
+- slow cursor movement (probably due to syntax highlighting)
 - document lexy commands
 - shell should expand ~
 - how do i disable globbing in "shell"?
 - better ctrl-k
 - modn tabs
 
+- hex literals in C don't highlight correctly
 - replace tcl regex engine with TRE
 - bg with an argument to force use of a new buffer
 - interface tabs

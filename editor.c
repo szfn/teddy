@@ -300,6 +300,29 @@ static gboolean key_press_callback(GtkWidget *widget, GdkEventKey *event, editor
 
 	gtk_widget_get_allocation(editor->drar, &allocation);
 
+	if (!ctrl && !alt && !super) {
+		switch(event->keyval) {
+		case GDK_KEY_Delete:
+			if (editor->buffer->mark.line == NULL) {
+				buffer_set_mark_at_cursor(editor->buffer);
+				buffer_move_cursor(editor->buffer, +1);
+				editor_replace_selection(editor, "");
+			} else {
+				editor_replace_selection(editor, "");
+			}
+			return TRUE;
+		case GDK_KEY_BackSpace:
+			if (editor->buffer->mark.line == NULL) {
+				buffer_set_mark_at_cursor(editor->buffer);
+				buffer_move_cursor(editor->buffer, -1);
+				editor_replace_selection(editor, "");
+			} else {
+				editor_replace_selection(editor, "");
+			}
+			return TRUE;
+		}
+	}
+
 	/* Default key bindings */
 	if (!shift && !ctrl && !alt && !super) {
 		if (wordcompl_iscompleting()) {
@@ -357,24 +380,6 @@ static gboolean key_press_callback(GtkWidget *widget, GdkEventKey *event, editor
 			}
 			return TRUE;
 
-		case GDK_KEY_Delete:
-			if (editor->buffer->mark.line == NULL) {
-				buffer_set_mark_at_cursor(editor->buffer);
-				buffer_move_cursor(editor->buffer, +1);
-				editor_replace_selection(editor, "");
-			} else {
-				editor_replace_selection(editor, "");
-			}
-			return TRUE;
-		case GDK_KEY_BackSpace:
-			if (editor->buffer->mark.line == NULL) {
-				buffer_set_mark_at_cursor(editor->buffer);
-				buffer_move_cursor(editor->buffer, -1);
-				editor_replace_selection(editor, "");
-			} else {
-				editor_replace_selection(editor, "");
-			}
-			return TRUE;
 		case GDK_KEY_Return: {
 			char *r = alloca(sizeof(char) * (editor->buffer->cursor.line->cap + 2));
 			if (config[CFG_DEFAULT_AUTOINDENT].intval) {
@@ -399,7 +404,7 @@ static gboolean key_press_callback(GtkWidget *widget, GdkEventKey *event, editor
 	}
 
 	if (shift && !ctrl && !alt && !super) {
-		if ((event->keyval >= 0x21) && (event->keyval <= 0x7e)) {
+		if ((event->keyval >= 0x20) && (event->keyval <= 0x7e)) {
 			goto im_context;
 		}
 	}

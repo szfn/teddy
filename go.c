@@ -11,6 +11,7 @@
 #include "buffers.h"
 #include "global.h"
 #include "columns.h"
+#include "lexy.h"
 
 GtkWidget *go_switch_label;
 GtkWidget *go_switch_window;
@@ -25,17 +26,17 @@ switch_window_result_t switch_window_results[] = { GO_CURRENT, GO_NEW, GO_SELECT
 
 static int exec_char_specifier(const char *specifier, int really_exec, buffer_t *buffer) {
 	long int n1;
-	
+
 	if ((strcmp(specifier, "^") == 0) || (strcmp(specifier, ":^") == 0)) {
 		if (really_exec) buffer_aux_go_first_nonws(buffer);
 		return 1;
 	}
-	
+
 	if ((strcmp(specifier, "$") == 0) || (strcmp(specifier, ":$") == 0)) {
 		if (really_exec) buffer_aux_go_end(buffer);
 		return 1;
 	}
-	
+
 	if (specifier[0] == ':') {
 		n1 = strtol(specifier+1, NULL, 10);
 		if (n1 != LONG_MIN) {
@@ -49,9 +50,9 @@ static int exec_char_specifier(const char *specifier, int really_exec, buffer_t 
 
 static int isnumber(const char *str) {
 	const char *c = str;
-	
+
 	if ((*c == '+') || (*c == '-')) ++c;
-	
+
 	for (; *c != '\0'; ++c) {
 		if (!isdigit(*c)) return 0;
 	}
@@ -67,7 +68,7 @@ static int exec_go_position(const char *specifier, editor_t *context_editor, buf
 			editor_complete_move(context_editor, TRUE);
 		return 1;
 	}
-	
+
 	if (isnumber(specifier)) {
 		n1 = strtol(specifier, NULL, 10);
 		//printf("Line\n");
@@ -113,7 +114,7 @@ editor_t *go_to_buffer(editor_t *editor, buffer_t *buffer) {
 	asprintf(&msg, "Show buffer [%s]:", buffer->name);
 	gtk_label_set_text(GTK_LABEL(go_switch_label), msg);
 	free(msg);
-	
+
 	gtk_widget_show_all(go_switch_window);
 	response = gtk_dialog_run(GTK_DIALOG(go_switch_window));
 	gtk_widget_hide(go_switch_window);
@@ -125,12 +126,12 @@ editor_t *go_to_buffer(editor_t *editor, buffer_t *buffer) {
 		editor_switch_buffer(editor, buffer);
 		chdir(editor->buffer->wd);
 		return editor;
-		
+
 	case GO_SELECT:
 		selection_target_buffer = buffer;
 		gtk_widget_queue_draw(editor->window);
 		return NULL;
-		
+
 	case GO_NEW:
 	default:
 		target = heuristic_new_frame(editor, buffer);
@@ -140,7 +141,7 @@ editor_t *go_to_buffer(editor_t *editor, buffer_t *buffer) {
 		}
 		return target;
 	}
-	
+
 	return editor;
 }
 
@@ -183,25 +184,25 @@ int exec_go(const char *specifier) {
 	//printf("possible position token: %s\n", tok);
 	if (tok == NULL) { retval = 1; goto exec_go_cleanup; }
 	if (strlen(tok) == 0) { retval = 1; goto exec_go_cleanup; }
-		
+
 	char *tok2 = strtok_r(NULL, ":", &saveptr);
 	char *subspecifier;
-		
+
 	if (tok2 != NULL) {
 		asprintf(&subspecifier, "%s:%s", tok, tok2);
 	} else {
 		asprintf(&subspecifier, "%s", tok);
 	}
-		
+
 	if (subspecifier[0] == '[') ++tok;
 	if (subspecifier[strlen(subspecifier)-1] == ']') subspecifier[strlen(subspecifier)-1] = '\0';
-		
+
 	exec_go_position(subspecifier, editor, buffer);
-		
+
 	free(subspecifier);
-		
+
 	retval = 1;
-	
+
  exec_go_cleanup:
 	if (sc != NULL) free(sc);
 	if (urp != NULL) free(urp);
@@ -223,7 +224,7 @@ int teddy_go_command(ClientData client_data, Tcl_Interp *interp, int argc, const
 		char *urp = unrealpath(context_editor->buffer->path, argv[1]);
 		char *msg;
 		GtkWidget *dialog = gtk_dialog_new_with_buttons("Create file", GTK_WINDOW(context_editor->window), GTK_DIALOG_MODAL|GTK_DIALOG_DESTROY_WITH_PARENT, "Yes", 1, "No", 0, NULL);
-		
+
 		asprintf(&msg, "File [%s] does not exist, do you want to create it?", urp);
 		gtk_container_add(GTK_CONTAINER(gtk_dialog_get_content_area(GTK_DIALOG(dialog))), gtk_label_new(msg));
 		free(msg);
@@ -257,6 +258,7 @@ int teddy_go_command(ClientData client_data, Tcl_Interp *interp, int argc, const
 		return TCL_OK;
 	} else {
 		context_editor->center_on_cursor_after_next_expose = TRUE;
+		lexy_update_for_move(context_editor->buffer, context_editor->buffer->cursor.line);
 		gtk_widget_queue_draw(context_editor->drar);
 		return TCL_OK;
 	}
@@ -285,7 +287,7 @@ static gboolean go_key_press_callback(GtkWidget *widget, GdkEventKey *event, gpo
 			return TRUE;
 		}
 	}
-	
+
 	return FALSE;
 }
 
@@ -324,7 +326,7 @@ void go_init(GtkWidget *window) {
 static bool mouse_open_select_like_file(editor_t *editor, lpoint_t *cursor, lpoint_t *start, lpoint_t *end) {
 	start->glyph = 0;
 	end->glyph = cursor->line->cap;
-	
+
 	start->line = cursor->line;
 	end->line = cursor->line;
 
@@ -335,7 +337,7 @@ static bool mouse_open_select_like_file(editor_t *editor, lpoint_t *cursor, lpoi
 			break;
 		}
 	}
-		
+
 	for (int i = cursor->glyph; i < start->line->cap; ++i) {
 		uint32_t code = start->line->glyph_info[i].code;
 		if ((code == 0x20) || (code == 0x09)) {
@@ -343,12 +345,12 @@ static bool mouse_open_select_like_file(editor_t *editor, lpoint_t *cursor, lpoi
 			break;
 		}
 	}
-		
+
 	//printf("start_glyph: %d end_glyph: %d\n", start->glyph, end->glyph);
 	if (start->glyph > end->glyph) {
 		return false;
 	}
-	
+
 	return true;
 }
 
@@ -356,13 +358,13 @@ void mouse_open_action(editor_t *editor, lpoint_t *start, lpoint_t *end) {
 	bool auto_selection = false;
 	lpoint_t changed_end;
 	lpoint_t cursor;
-	
+
 	context_editor = editor;
-	
+
 	copy_lpoint(&cursor, start);
-	
+
 	//printf("start_glyph: %d\n", start->glyph);
-	
+
 	if (end == NULL) {
 		end = &changed_end;
 		auto_selection = true;
@@ -377,17 +379,17 @@ void mouse_open_action(editor_t *editor, lpoint_t *start, lpoint_t *end) {
 	}
 
 	char *text = buffer_lines_to_text(editor->buffer, start, end);
-	
+
 	//printf("Open or search on selection [%s]\n", text);
-	
+
 	if (text == NULL) return;
-	
+
 	const char *eval_argv[] = { "mouse_go_preprocessing_hook", text };
-	
+
 	int code = Tcl_Eval(interp, Tcl_Merge(2, eval_argv));
 
 	free(text);
-	
+
 	if (code == TCL_OK) {
 		//printf("After processing hook: [%s]\n", Tcl_GetStringResult(interp));
 	} else {
@@ -397,13 +399,13 @@ void mouse_open_action(editor_t *editor, lpoint_t *start, lpoint_t *end) {
 		Tcl_IncrRefCount(key);
 		Tcl_DictObjGet(NULL, options, key, &stackTrace);
 		Tcl_DecrRefCount(key);
-		
+
 		fprintf(stderr, "TCL Exception: %s\n", Tcl_GetString(stackTrace));
 		return;
 	}
-	
+
 	const char *go_arg = Tcl_GetStringResult(interp);
-	
+
 	if (!exec_go(go_arg)) {
 		// if this succeeded we could open the file at the specified line and we are done
 		// otherwise the following code runs, we restrict the selection to a word around
