@@ -278,12 +278,12 @@ proc lexydef {name args} {\n\
 }\n\
 \n\
 lexydef c 0 {\n\
-		\"\\\\<(?:auto|_Bool|break|case|char|_Complex|const|continue|default|do|double|else|enum|extern|float|for|goto|if|_Imaginary|inline|int|long|register|restrict|return|short|signed|sizeof|static|struct|switch|typedef|union|unsigned|void|volatile|while|int8_t|uint8_t|int16_t|uint16_t|int32_t|uint32_t|int64_t|uint64_t|size_t|time_t)\\\\>\" keyword\n\
+		\"\\\\<(?:auto|_Bool|break|case|char|_Complex|const|continue|default|do|double|else|enum|extern|float|for|goto|if|_Imaginary|inline|int|long|register|restrict|return|short|signed|sizeof|static|struct|switch|typedef|union|unsigned|void|volatile|while|int8_t|uint8_t|int16_t|uint16_t|int32_t|uint32_t|int64_t|uint64_t|size_t|time_t|bool)\\\\>\" keyword\n\
 \n\
-		\"#(?:include|ifdef|ifnedf|if|else|end|pragma)\\\\>\" keyword\n\
+		\"#(?:include|ifdef|ifndef|if|else|endif|pragma|define)\\\\>\" keyword\n\
 \n\
 		\"-?(?:0x)?[0-9][0-9]*(?:\\\\.[0-9]+)?(?:e-[0-9]+?)?\" literal\n\
-		\"NULL\" literal\n\
+		\"NULL|true|false\" literal\n\
 \n\
 		\"[a-zA-Z_][a-zA-Z0-9_]*\" id\n\
 \n\
@@ -299,12 +299,121 @@ lexydef c 0 {\n\
 		\"\\\\*/\" 0:comment\n\
 		\".\" comment\n\
 	} string {\n\
-		\"\\\\.\" string\n\
+		{\\\\.} string\n\
 		\"\\\"\" 0:string\n\
 		\".\" string\n\
 	}\n\
 \n\
-lexyassoc c \".c$\"\n\
-lexyassoc c \".h$\"\n\
+lexyassoc c {\\.c$}\n\
+lexyassoc c {\\.h$}\n\
+\n\
+lexydef tcl 0 {\n\
+		{\\<(?:after|error|lappend|platform|tcl_findLibrary|append|eval|lassign|platform::shell|tcl_startOfNextWord|apply|exec|lindex|proc|tcl_startOfPreviousWord|array|exit|linsert|puts|tcl_wordBreakAfter|auto_execok|expr	list|pwd|tcl_wordBreakBefore|auto_import|fblocked|llength|re_syntax|tcltest|auto_load|fconfigure|load|read|tclvars|auto_mkindex|fcopy|lrange|refchan|tell|auto_mkindex_old|file|lrepeat|regexp|time|auto_qualify|fileevent|lreplace|registry|tm|auto_reset|filename|lreverse|regsub|trace|bgerror|flush|lsearch|rename|unknown|binary|for|lset|return|unload|break|foreach|lsort||unset|catch|format|mathfunc|scan|update|cd|gets|mathop|seek|uplevel|chan|glob|memory|set|upvar|clock|global|msgcat|socket|variable|close|history|namespace|source|vwait|concat|http|open|split|while|continue|if|package|string|dde|incr|parray|subst|dict|info|pid|switch|encoding|interp|pkg::create|eof|join|pkg_mkIndex|tcl_endOfWord)\\>} keyword\n\
+\n\
+		{\\<$[a-zA-Z_][a-zA-Z0-9_]*\\>} id\n\
+		{\"} string:string\n\
+		{\\{\\*\\}} keyword\n\
+		{#.*$} comment\n\
+\n\
+		{\\<[a-zA-Z0-9]*\\>} nothing\n\
+\n\
+		\".\" nothing\n\
+	} string {\n\
+		{\\\\.} string\n\
+		{\"} 0:string\n\
+		\".\" string\n\
+	}\n\
+\n\
+lexyassoc tcl {\\.tcl$}\n\
+\n\
+lexydef python 0 {\n\
+		{\\<(?:and|del|from|not|while|as|elif|global|or|with|assert|else|if|pass|yield|break|except|import|print|class|exec|in|raise|continue|finally|is|return|def|for|lambda|try)\\>} keyword\n\
+\n\
+		\"-?(?:0[xbXB])?[0-9][0-9]*(?:\\\\.[0-9]+)?(?:e-[0-9]+?)?[LljJ]?\" literal\n\
+		\"\\<None|True|False\\>\" literal\n\
+\n\
+		{\\<$[a-zA-Z_][a-zA-Z0-9_]*\\>} id\n\
+\n\
+		{(?:r|u|ur|R|U|UR|Ur|uR|b|B|br|Br|bR|BR)?\"\"\"} lstringq:string\n\
+		{(?:r|u|ur|R|U|UR|Ur|uR|b|B|br|Br|bR|BR)?'''} lstringq:string\n\
+		{(?:r|u|ur|R|U|UR|Ur|uR|b|B|br|Br|bR|BR)?\"} stringqq:string\n\
+		{(?:r|u|ur|R|U|UR|Ur|uR|b|B|br|Br|bR|BR)?'} stringq:string\n\
+\n\
+		{#.*$} comment\n\
+\n\
+		\".\" nothing\n\
+	} stringqq {\n\
+		{\\\\.} string\n\
+		{\"} 0:string\n\
+		{.} string\n\
+	} stringq {\n\
+		{\\\\.} string\n\
+		{'} 0:string\n\
+		{.} string\n\
+	} lstringqq {\n\
+		{\\\\.} string\n\
+		{\"\"\"} 0:string\n\
+		{.} string\n\
+	} lstringq {\n\
+		{\\\\.} string\n\
+		{'''} 0:string\n\
+		{.} string\n\
+	}\n\
+\n\
+lexyassoc python {\\.py$}\n\
+\n\
+lexydef java 0 {\n\
+		{\\<(?:abstract|continue|for|new|switch|assert|default|goto|package|synchronized|boolean|do|if|private|this|break|double|implements|protected|throw|byte|else|import|public|throws|case|enum|instanceof|return|transient|catch|extends|int|short|trychar|final|interface|static|void|class|finally|long|strictfp|volatile|const|float|native|super|while)\\>} keyword\n\
+\n\
+		\"-?(?:0x)?[0-9][0-9]*(?:\\\\.[0-9]+)?(?:e-[0-9]+?)?\" literal\n\
+		\"null|true|false\" literal\n\
+\n\
+		\"[a-zA-Z_][a-zA-Z0-9_]*\" id\n\
+\n\
+		\"//.*$\" comment\n\
+		\"/\\\\*\" comment:comment\n\
+\n\
+		\"'.'\" string\n\
+		{'\\\\.'} string\n\
+		\"\\\"\" string:string\n\
+\n\
+		\".\" nothing\n\
+	} comment {\n\
+		\"\\\\*/\" 0:comment\n\
+		\".\" comment\n\
+	} string {\n\
+		{\\\\.} string\n\
+		\"\\\"\" 0:string\n\
+		\".\" string\n\
+	}\n\
+\n\
+lexyassoc java {\\.java$}\n\
+\n\
+lexydef go 0 {\n\
+		{\\<(?:break|default|func|interface|select|case|defer|go|map|struct|chan|else|goto|package|switch|const|fallthrough|if|range|type|continue|for|import|return|var)\\>} keyword\n\
+\n\
+		\"-?(?:0x)?[0-9][0-9]*(?:\\\\.[0-9]+)?(?:e-[0-9]+?)?\" literal\n\
+		{(?:nil|true|false|iota)} literal\n\
+\n\
+		{\\<$[a-zA-Z_][a-zA-Z0-9_]*\\>} id\n\
+\n\
+		\"//.*$\" comment\n\
+		\"/\\\\*\" comment:comment\n\
+\n\
+		\"'.'\" string\n\
+		{'\\\\.'} string\n\
+		\"\\\"\" string:string\n\
+\n\
+		\".\" nothing\n\
+	} comment {\n\
+		\"\\\\*/\" 0:comment\n\
+		\".\" comment\n\
+	} string {\n\
+		{\\\\.} string\n\
+		\"\\\"\" 0:string\n\
+		\".\" string\n\
+	}\n\
+\n\
+lexyassoc go {\\.go$}\n\
 "
 #endif

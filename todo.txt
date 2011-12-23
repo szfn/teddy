@@ -1,5 +1,6 @@
-- write builtin tokenizers for go
+- shift+space and shift+backspace should do the same thing as unshifted
 - slow mouse movement (probably due to syntax highlighting)
+- highlighting check on 'go' command
 - document lexy commands
 - shell should expand ~
 - how do i disable globbing in "shell"?
@@ -11,6 +12,7 @@
 - interface tabs
 - elastic tabs
 
+- debugger integration (just displaying currently executed line)
 - selection should copy selected text on past not on selection, for better efficiency (selection slowdown is noticeable on mouse selection)
 - xcb port
 - extend regular expressions in 's' to be lexically aware

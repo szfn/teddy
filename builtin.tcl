@@ -385,3 +385,30 @@ lexydef java 0 {
 	}
 
 lexyassoc java {\.java$}
+
+lexydef go 0 {
+		{\<(?:break|default|func|interface|select|case|defer|go|map|struct|chan|else|goto|package|switch|const|fallthrough|if|range|type|continue|for|import|return|var)\>} keyword
+
+		"-?(?:0x)?[0-9][0-9]*(?:\\.[0-9]+)?(?:e-[0-9]+?)?" literal
+		{(?:nil|true|false|iota)} literal
+
+		{\<$[a-zA-Z_][a-zA-Z0-9_]*\>} id
+
+		"//.*$" comment
+		"/\\*" comment:comment
+
+		"'.'" string
+		{'\\.'} string
+		"\"" string:string
+
+		"." nothing
+	} comment {
+		"\\*/" 0:comment
+		"." comment
+	} string {
+		{\\.} string
+		"\"" 0:string
+		"." string
+	}
+
+lexyassoc go {\.go$}
