@@ -1,4 +1,3 @@
-- slow cursor movement (probably due to syntax highlighting)
 - document lexy commands
 - shell should expand ~
 - how do i disable globbing in "shell"?

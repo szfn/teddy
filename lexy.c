@@ -511,13 +511,13 @@ void lexy_update_starting_at(buffer_t *buffer, real_line_t *start_line, bool qui
 }
 
 void lexy_update_for_move(buffer_t *buffer, real_line_t *start_line) {
-        if (buffer->lexy_last_update_line == NULL) return;
+	if (buffer->lexy_last_update_line == NULL) return;
 
 	if (start_line->lineno > buffer->lexy_last_update_line->lineno) {
 		start_line = buffer->lexy_last_update_line;
 	}
 
-	lexy_update_starting_at(buffer, start_line, false);
+	lexy_update_starting_at(buffer, start_line, true);
 }
 
 int lexy_cfg_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
