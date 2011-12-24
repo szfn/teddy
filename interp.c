@@ -183,7 +183,7 @@ static int teddy_mark_command(ClientData client_data, Tcl_Interp *interp, int ar
 	    Tcl_AddErrorInfo(interp, "Wrong number of arguments to 'mark' command");
 		return TCL_ERROR;
 	}
-	
+
 	if (strcmp(argv[1], "get") == 0) {
 		set_tcl_result_to_lpoint(interp, &(context_editor->buffer->mark));
 		return TCL_OK;
@@ -213,7 +213,7 @@ static int teddy_mark_command(ClientData client_data, Tcl_Interp *interp, int ar
 		Tcl_AddErrorInfo(interp, "Called mark command with unknown argument");
 		return TCL_ERROR;
 	}
-	
+
 	return TCL_OK;
 }
 
@@ -222,12 +222,12 @@ static int teddy_cursor_command(ClientData client_data, Tcl_Interp *interp, int 
 		Tcl_AddErrorInfo(interp, "No editor open, can not execute 'cursor' command");
 		return TCL_ERROR;
 	}
-	
+
 	if (argc != 1) {
 		Tcl_AddErrorInfo(interp, "Too many arguments to 'cursor' command");
 		return TCL_ERROR;
 	}
-	
+
 	set_tcl_result_to_lpoint(interp, &(context_editor->buffer->cursor));
 	return TCL_OK;
 }
@@ -297,12 +297,34 @@ static int teddy_undo_command(ClientData client_data, Tcl_Interp *interp, int ar
 		return TCL_ERROR;
 	}
 
-	if (argc != 1) {
-		Tcl_AddErrorInfo(interp, "Wrong number of arguments to 'undo' command");
-		return TCL_ERROR;
+	if (argc == 1) {
+		editor_undo_action(context_editor);
+		return TCL_OK;
+	} else if (argc == 2) {
+		if (strcmp(argv[1], "tag") == 0) {
+			undo_node_t *u = undo_peek(&(context_editor->buffer->undo));
+			if ((u == NULL) || (u->tag == NULL)) {
+				Tcl_SetResult(interp, "", TCL_VOLATILE);
+			} else {
+				Tcl_SetResult(interp, u->tag, TCL_VOLATILE);
+			}
+		} else {
+			Tcl_AddErrorInfo(interp, "Wrong arguments to 'undo', usage; undo [tag [tagname]]");
+			return TCL_ERROR;
+		}
+	} else if (argc == 3) {
+		if (strcmp(argv[1], "tag") == 0) {
+			undo_node_t *u = undo_peek(&(context_editor->buffer->undo));
+			if (u != NULL) {
+				if (u->tag != NULL) free(u->tag);
+				u->tag = strdup(argv[2]);
+			}
+		} else {
+			Tcl_AddErrorInfo(interp, "Wrong arguments to 'undo', usage; undo [tag [tagname]]");
+			return TCL_ERROR;
+		}
 	}
 
-	editor_undo_action(context_editor);
 
 	return TCL_OK;
 }
@@ -374,7 +396,7 @@ static int teddy_move_command(ClientData client_data, Tcl_Interp *interp, int ar
 	if (operation != TMCO_NONE) {
 		editor_mark_action(context_editor);
 	}
-	
+
 	if (strcmp(argv[2], "char") == 0) {
 		editor_move_cursor(context_editor, 0, next ? 1 : -1, MOVE_NORMAL, TRUE);
 	} else if (strcmp(argv[2], "softline") == 0) {
@@ -446,7 +468,7 @@ static void waitall(void) {
 
 static int teddy_backgrounded_bg_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
 	pid_t child;
-	
+
 	if (argc != 2) {
 		Tcl_AddErrorInfo(interp, "Wrong number of arguments to 'bg' command");
 		return TCL_ERROR;

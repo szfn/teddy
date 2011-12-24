@@ -23,6 +23,7 @@ void undo_free(undo_t *undo) {
 void undo_node_free(undo_node_t *node) {
 	free(node->before_selection.text);
 	free(node->after_selection.text);
+	if (node->tag != NULL) free(node->tag);
 	free(node);
 }
 
@@ -57,19 +58,19 @@ static int selection_len(selection_t *selection) {
 static void selections_cat(selection_t *dst, selection_t *src) {
 	dst->end.lineno = src->end.lineno;
 	dst->end.glyph = src->end.glyph;
-	
+
 	char *newtext = malloc(strlen(src->text) + strlen(dst->text) + 1);
-	
+
 	strcpy(newtext, dst->text);
 	strcat(newtext, src->text);
-	
+
 	free(dst->text);
 	dst->text = newtext;
 }
 
 void undo_push(undo_t *undo, undo_node_t *new_node) {
 	time_t now = time(NULL);
-	
+
 	// when appropriate we fuse the new undo node with the last one so you don't have to undo typing one character at a time
 	if ((undo->head != NULL)
       && selection_is_empty(&(undo->head->before_selection))
@@ -87,7 +88,7 @@ void undo_push(undo_t *undo, undo_node_t *new_node) {
 		new_node->next = NULL;
 		new_node->time = now;
 		undo->head = new_node;
-		
+
 		/*
 		printf("PUSHING\n");
 		debug_print_undo(new_node);*/
@@ -109,5 +110,9 @@ undo_node_t *undo_pop(undo_t *undo) {
 	debug_print_undo(r);*/
 
 	return r;
+}
+
+undo_node_t *undo_peek(undo_t *undo) {
+	return undo->head;
 }
 

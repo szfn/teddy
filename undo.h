@@ -19,7 +19,9 @@ typedef struct _undo_node_t {
 
 	struct _undo_node_t *prev;
 	struct _undo_node_t *next;
-	
+
+	char *tag;
+
 	time_t time;
 } undo_node_t;
 
@@ -38,5 +40,8 @@ void undo_push(undo_t *undo, undo_node_t *new_node);
 
 /* removes node from undo list and returns it, you are responsible for free'ing it */
 undo_node_t *undo_pop(undo_t *undo);
+
+// peeks at first node in the undo list
+undo_node_t *undo_peek(undo_t *undo);
 
 #endif

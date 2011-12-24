@@ -1,7 +1,9 @@
 - better ctrl-k
+ - ability to instruct undo to fuse edits
 - modn tabs
-- undo doesn't run update
+- undo doesn't run update lexy
 
+- fix bad rendering perfomance by killing cairo
 - gdb integration
 - replace tcl regex engine with TRE
 - bg with an argument to force use of a new buffer
@@ -12,7 +14,6 @@
 - highlight current line
 - debugger integration (just displaying currently executed line)
 - selection should copy selected text on past not on selection, for better efficiency (selection slowdown is noticeable on mouse selection)
-- xcb port
 - extend regular expressions in 's' to be lexically aware
 - disable selection when another application becomes the owner of the primary selection buffer
 - word movement, word selection and tokenization should be tied to syntax analysis

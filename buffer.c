@@ -459,8 +459,10 @@ void buffer_replace_selection(buffer_t *buffer, const char *new_text) {
 
 	buffer->modified = 1;
 
-	if (buffer->job == NULL)
+	if (buffer->job == NULL) {
 		undo_node = malloc(sizeof(undo_node_t));
+		undo_node->tag = NULL;
+	}
 
 	buffer_get_selection(buffer, &start_point, &end_point);
 
