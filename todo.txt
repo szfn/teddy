@@ -1,9 +1,8 @@
-- shell should expand ~
-- how do i disable globbing in "shell"?
 - better ctrl-k
 - modn tabs
-
 - hex literals in C don't highlight correctly
+
+- gdb integration
 - replace tcl regex engine with TRE
 - bg with an argument to force use of a new buffer
 - interface tabs

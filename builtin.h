@@ -12,7 +12,7 @@ proc shell_perform_redirection {redirection} {\n\
    set redirected_descriptor [dict get $redirection redirected_descriptor]\n\
    set open_direction [dict get $redirection open_direction]\n\
    set target [dict get $redirection target]\n\
-      \n\
+\n\
    switch -exact $open_direction {\n\
       \">\" {\n\
          if {$redirected_descriptor eq \"\"} {set redirected_descriptor 1}\n\
@@ -47,52 +47,64 @@ proc shell_perform_redirection {redirection} {\n\
 proc shell_eat {args i specialVarName normalVarName} {\n\
    set special {}\n\
    set normal {}\n\
-   \n\
+\n\
    for {} {$i < [llength $args]} {incr i} {\n\
       set cur [lindex $args $i]\n\
+\n\
       if {$cur eq \"&&\"} { break }\n\
       if {$cur eq \"||\"} { break }\n\
       if {$cur eq \"|\"} { break }\n\
+\n\
       set isspecial [regexp {^([0-9]*)(>|>&|<&|<|>>)(.*)$} $cur -> redirected_descriptor open_direction target]\n\
+\n\
       if {$isspecial} {\n\
          lappend special [dict create redirected_descriptor $redirected_descriptor open_direction $open_direction target $target]\n\
+      } elseif {[string first ! $cur] == 0} {\n\
+      	lappend normal [string range $cur 1 end]\n\
       } else {\n\
+         if {[string first ~ $cur] == 0} {\n\
+         	global env\n\
+         	set cur $env(HOME)/[string range $cur 1 end]\n\
+         }\n\
+\n\
          if {[string first * $cur] >= 0} {\n\
 			# Perform autoglobbing\n\
-			lappend normal {*}[glob $cur]\n\
+			if [catch {lappend normal {*}[glob $cur]}] {\n\
+				lappend normal $cur\n\
+			}\n\
          } else {\n\
 			lappend normal $cur\n\
          }\n\
       }\n\
    }\n\
-   \n\
+\n\
    upvar $specialVarName specialVar\n\
    upvar $normalVarName normalVar\n\
    set specialVar $special\n\
    set normalVar $normal\n\
-      \n\
+\n\
    return $i\n\
 }\n\
 \n\
 proc shell_child_code {special normal pipe} {\n\
    # child code, make redirects and exec\n\
-   \n\
+\n\
    #puts \"message from child code\"\n\
-   \n\
+\n\
    if {$pipe ne \"\"} {\n\
       # default ouput of this process will be pipe's output side\n\
       fdclose [lindex $pipe 0]\n\
       fddup2 [lindex $pipe 1] 1\n\
       fdclose [lindex $pipe 1]\n\
    }\n\
-   \n\
+\n\
    for {set i 0} {$i < [llength $special]} {incr i} {\n\
       shell_perform_redirection [lindex $special $i]\n\
    }\n\
-   \n\
+\n\
    #puts \"Executing $normal\"\n\
    posixexec {*}$normal\n\
-   \n\
+\n\
    posixexit -1\n\
 }\n\
 \n\
@@ -103,7 +115,7 @@ proc shell {args} {\n\
    }\n\
 \n\
    set i 0\n\
- \n\
+\n\
    while {$i < [llength $args]} {\n\
       set i [shell_eat $args $i special normal]\n\
 \n\

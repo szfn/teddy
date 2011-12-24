@@ -9,7 +9,7 @@ proc shell_perform_redirection {redirection} {
    set redirected_descriptor [dict get $redirection redirected_descriptor]
    set open_direction [dict get $redirection open_direction]
    set target [dict get $redirection target]
-      
+
    switch -exact $open_direction {
       ">" {
          if {$redirected_descriptor eq ""} {set redirected_descriptor 1}
@@ -44,52 +44,64 @@ proc shell_perform_redirection {redirection} {
 proc shell_eat {args i specialVarName normalVarName} {
    set special {}
    set normal {}
-   
+
    for {} {$i < [llength $args]} {incr i} {
       set cur [lindex $args $i]
+
       if {$cur eq "&&"} { break }
       if {$cur eq "||"} { break }
       if {$cur eq "|"} { break }
+
       set isspecial [regexp {^([0-9]*)(>|>&|<&|<|>>)(.*)$} $cur -> redirected_descriptor open_direction target]
+
       if {$isspecial} {
          lappend special [dict create redirected_descriptor $redirected_descriptor open_direction $open_direction target $target]
+      } elseif {[string first ! $cur] == 0} {
+      	lappend normal [string range $cur 1 end]
       } else {
+         if {[string first ~ $cur] == 0} {
+         	global env
+         	set cur $env(HOME)/[string range $cur 1 end]
+         }
+
          if {[string first * $cur] >= 0} {
 			# Perform autoglobbing
-			lappend normal {*}[glob $cur]
+			if [catch {lappend normal {*}[glob $cur]}] {
+				lappend normal $cur
+			}
          } else {
 			lappend normal $cur
          }
       }
    }
-   
+
    upvar $specialVarName specialVar
    upvar $normalVarName normalVar
    set specialVar $special
    set normalVar $normal
-      
+
    return $i
 }
 
 proc shell_child_code {special normal pipe} {
    # child code, make redirects and exec
-   
+
    #puts "message from child code"
-   
+
    if {$pipe ne ""} {
       # default ouput of this process will be pipe's output side
       fdclose [lindex $pipe 0]
       fddup2 [lindex $pipe 1] 1
       fdclose [lindex $pipe 1]
    }
-   
+
    for {set i 0} {$i < [llength $special]} {incr i} {
       shell_perform_redirection [lindex $special $i]
    }
-   
+
    #puts "Executing $normal"
    posixexec {*}$normal
-   
+
    posixexit -1
 }
 
@@ -100,7 +112,7 @@ proc shell {args} {
    }
 
    set i 0
- 
+
    while {$i < [llength $args]} {
       set i [shell_eat $args $i special normal]
 
