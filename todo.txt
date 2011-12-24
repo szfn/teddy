@@ -1,4 +1,3 @@
-- document lexy commands
 - shell should expand ~
 - how do i disable globbing in "shell"?
 - better ctrl-k
