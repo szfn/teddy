@@ -94,9 +94,11 @@ char *unrealpath(char *absolute_path, const char *relative_path) {
 }
 
 void set_color_cfg(cairo_t *cr, int color) {
-	uint8_t blue = (uint8_t)color;
-	uint8_t red = (uint8_t)(color >> 8);
-	uint8_t green = (uint8_t)(color >> 16);
+	uint8_t red = (uint8_t)(color);
+	uint8_t green = (uint8_t)(color >> 8);
+	uint8_t blue = (uint8_t)(color >> 16);
+
+	//printf("Setting color: %d %d %d (%d)\n", red, green, blue, color);
 
 	cairo_set_source_rgb(cr, red/255.0, green/255.0, blue/255.0);
 }

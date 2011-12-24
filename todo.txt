@@ -1,6 +1,6 @@
 - better ctrl-k
 - modn tabs
-- hex literals in C don't highlight correctly
+- undo doesn't run update
 
 - gdb integration
 - replace tcl regex engine with TRE
@@ -8,6 +8,8 @@
 - interface tabs
 - elastic tabs
 
+- implement font replacement
+- highlight current line
 - debugger integration (just displaying currently executed line)
 - selection should copy selected text on past not on selection, for better efficiency (selection slowdown is noticeable on mouse selection)
 - xcb port
@@ -19,8 +21,6 @@
 - make easy way to reindent though external filter
 - cmdcompl shoul build the list of internal commands dynamically
 - implement man command that runs the man command in background and shows it in a new editor (must be possible to implement in tcl)
-- implement font replacement
-- highlight current line
 - command line autocompletion shouldn't include commands unless it's the first word con the command line
 - opening directories
 - command to refresh an open directory
@@ -52,9 +52,6 @@
 - use an editor for the command line
 - disabling soft word wrap
 - clang syntax highlighting
-
-- tcl commands to disable:
-  - unknown <- if it's a command in the path execute it as if it was specified in exec (but also expand all the words containing a * or a ?)
 
 - tcl commands to add:
   - kill -> kill's current process (if one is active in the buffer), otherwise kills current buffer. If an argument is specified does the same thing as the kill command

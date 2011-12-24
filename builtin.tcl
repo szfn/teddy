@@ -291,7 +291,8 @@ lexydef c 0 {
 
 		"#(?:include|ifdef|ifndef|if|else|endif|pragma|define)\\>" keyword
 
-		"-?(?:0x)?[0-9][0-9]*(?:\\.[0-9]+)?(?:e-[0-9]+?)?" literal
+		"-?(?:0x)[0-9a-fA-F]*" literal
+		"-?[0-9][0-9]*(?:\\.[0-9]+)?(?:e-[0-9]+?)?" literal
 		"NULL|true|false" literal
 
 		"[a-zA-Z_][a-zA-Z0-9_]*" id
@@ -338,7 +339,8 @@ lexyassoc tcl {\.tcl$}
 lexydef python 0 {
 		{\<(?:and|del|from|not|while|as|elif|global|or|with|assert|else|if|pass|yield|break|except|import|print|class|exec|in|raise|continue|finally|is|return|def|for|lambda|try)\>} keyword
 
-		"-?(?:0[xbXB])?[0-9][0-9]*(?:\\.[0-9]+)?(?:e-[0-9]+?)?[LljJ]?" literal
+		"-?(?:0[bB])?[0-9][0-9]*(?:\\.[0-9]+)?(?:e-[0-9]+?)?[LljJ]?" literal
+		"-?(?:0[xX])[0-9a-fA-F]*" literal
 		"\<None|True|False\>" literal
 
 		{\<$[a-zA-Z_][a-zA-Z0-9_]*\>} id
@@ -374,7 +376,8 @@ lexyassoc python {\.py$}
 lexydef java 0 {
 		{\<(?:abstract|continue|for|new|switch|assert|default|goto|package|synchronized|boolean|do|if|private|this|break|double|implements|protected|throw|byte|else|import|public|throws|case|enum|instanceof|return|transient|catch|extends|int|short|trychar|final|interface|static|void|class|finally|long|strictfp|volatile|const|float|native|super|while)\>} keyword
 
-		"-?(?:0x)?[0-9][0-9]*(?:\\.[0-9]+)?(?:e-[0-9]+?)?" literal
+		"-?(?:0x)[0-9a-fA-F]*" literal
+		"-?[0-9][0-9]*(?:\\.[0-9]+)?(?:e-[0-9]+?)?" literal
 		"null|true|false" literal
 
 		"[a-zA-Z_][a-zA-Z0-9_]*" id
@@ -400,8 +403,9 @@ lexyassoc java {\.java$}
 
 lexydef go 0 {
 		{\<(?:break|default|func|interface|select|case|defer|go|map|struct|chan|else|goto|package|switch|const|fallthrough|if|range|type|continue|for|import|return|var)\>} keyword
-
-		"-?(?:0x)?[0-9][0-9]*(?:\\.[0-9]+)?(?:e-[0-9]+?)?" literal
+		
+		"-?(?:0x)[0-9a-fA-F]*" literal
+		"-?[0-9][0-9]*(?:\\.[0-9]+)?(?:e-[0-9]+?)?" literal
 		{(?:nil|true|false|iota)} literal
 
 		{\<$[a-zA-Z_][a-zA-Z0-9_]*\>} id

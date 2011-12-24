@@ -498,7 +498,7 @@ void lexy_update_starting_at(buffer_t *buffer, real_line_t *start_line, bool qui
 			if (state == 0xff) state = line->lexy_state_start;
 			lexy_update_line(line, tokenizer, &state);
 		} else {
-			if (quick_exit) break;
+			if (quick_exit) return;
 		}
 
 		state = line->lexy_state_end;
@@ -515,9 +515,16 @@ void lexy_update_for_move(buffer_t *buffer, real_line_t *start_line) {
 
 	if (start_line->lineno > buffer->lexy_last_update_line->lineno) {
 		start_line = buffer->lexy_last_update_line;
+	} else {
+		return;
 	}
 
-	lexy_update_starting_at(buffer, start_line, true);
+	for(;;) {
+		lexy_update_starting_at(buffer, start_line, true);
+		start_line = buffer->lexy_last_update_line;
+		if (start_line == NULL) break;
+		if (start_line->lineno >= buffer->cursor.line->lineno) break;
+	}
 }
 
 int lexy_cfg_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {

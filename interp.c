@@ -471,7 +471,7 @@ static int teddy_backgrounded_bg_command(ClientData client_data, Tcl_Interp *int
 			Tcl_IncrRefCount(key);
 			Tcl_DictObjGet(NULL, options, key, &stackTrace);
 			Tcl_DecrRefCount(key);
-			
+
 			fprintf(stderr, "TCL Exception: %s\n", Tcl_GetString(stackTrace));
 			waitall();
 			exit(EXIT_FAILURE);
@@ -496,7 +496,7 @@ static int teddy_setenv_command(ClientData client_data, Tcl_Interp *interp, int 
 	} else {
 		return TCL_OK;
 	}
-	
+
 }
 
 static int teddy_bg_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
@@ -504,7 +504,7 @@ static int teddy_bg_command(ClientData client_data, Tcl_Interp *interp, int argc
 	int masterfd;
 	buffer_t *buffer;
 	struct termios term;
-	
+
 	if (context_editor == NULL) {
 		Tcl_AddErrorInfo(interp, "No editor open, can not execute 'bg' command");
 		return TCL_ERROR;
@@ -518,7 +518,7 @@ static int teddy_bg_command(ClientData client_data, Tcl_Interp *interp, int argc
 	buffer = buffers_get_buffer_for_process();
 	if (context_editor->buffer != buffer)
 		buffer_cd(buffer, context_editor->buffer->wd);
-	
+
 	go_to_buffer(context_editor, buffer);
 
 	bzero(&term, sizeof(struct termios));
@@ -580,7 +580,7 @@ static int teddy_bg_command(ClientData client_data, Tcl_Interp *interp, int argc
 			Tcl_IncrRefCount(key);
 			Tcl_DictObjGet(NULL, options, key, &stackTrace);
 			Tcl_DecrRefCount(key);
-			
+
 			fprintf(stderr, "TCL Exception: %s\n", Tcl_GetString(stackTrace));
 			waitall();
 			exit(EXIT_FAILURE);
@@ -601,7 +601,7 @@ static int teddy_rgbcolor_command(ClientData client_data, Tcl_Interp *interp, in
 		return TCL_OK;
 	}
 	case 4: {
-		int ret = atoi(argv[3]) + (atoi(argv[2]) << 8) + (atoi(argv[1]) << 16);
+		int ret = (atoi(argv[3]) << 16) + (atoi(argv[2]) << 8) + (atoi(argv[1]));
 		Tcl_SetObjResult(interp, Tcl_NewIntObj(ret));
 		return TCL_OK;
 	}

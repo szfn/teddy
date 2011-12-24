@@ -294,7 +294,8 @@ lexydef c 0 {\n\
 \n\
 		\"#(?:include|ifdef|ifndef|if|else|endif|pragma|define)\\\\>\" keyword\n\
 \n\
-		\"-?(?:0x)?[0-9][0-9]*(?:\\\\.[0-9]+)?(?:e-[0-9]+?)?\" literal\n\
+		\"-?(?:0x)[0-9a-fA-F]*\" literal\n\
+		\"-?[0-9][0-9]*(?:\\\\.[0-9]+)?(?:e-[0-9]+?)?\" literal\n\
 		\"NULL|true|false\" literal\n\
 \n\
 		\"[a-zA-Z_][a-zA-Z0-9_]*\" id\n\
@@ -341,7 +342,8 @@ lexyassoc tcl {\\.tcl$}\n\
 lexydef python 0 {\n\
 		{\\<(?:and|del|from|not|while|as|elif|global|or|with|assert|else|if|pass|yield|break|except|import|print|class|exec|in|raise|continue|finally|is|return|def|for|lambda|try)\\>} keyword\n\
 \n\
-		\"-?(?:0[xbXB])?[0-9][0-9]*(?:\\\\.[0-9]+)?(?:e-[0-9]+?)?[LljJ]?\" literal\n\
+		\"-?(?:0[bB])?[0-9][0-9]*(?:\\\\.[0-9]+)?(?:e-[0-9]+?)?[LljJ]?\" literal\n\
+		\"-?(?:0[xX])[0-9a-fA-F]*\" literal\n\
 		\"\\<None|True|False\\>\" literal\n\
 \n\
 		{\\<$[a-zA-Z_][a-zA-Z0-9_]*\\>} id\n\
@@ -377,7 +379,8 @@ lexyassoc python {\\.py$}\n\
 lexydef java 0 {\n\
 		{\\<(?:abstract|continue|for|new|switch|assert|default|goto|package|synchronized|boolean|do|if|private|this|break|double|implements|protected|throw|byte|else|import|public|throws|case|enum|instanceof|return|transient|catch|extends|int|short|trychar|final|interface|static|void|class|finally|long|strictfp|volatile|const|float|native|super|while)\\>} keyword\n\
 \n\
-		\"-?(?:0x)?[0-9][0-9]*(?:\\\\.[0-9]+)?(?:e-[0-9]+?)?\" literal\n\
+		\"-?(?:0x)[0-9a-fA-F]*\" literal\n\
+		\"-?[0-9][0-9]*(?:\\\\.[0-9]+)?(?:e-[0-9]+?)?\" literal\n\
 		\"null|true|false\" literal\n\
 \n\
 		\"[a-zA-Z_][a-zA-Z0-9_]*\" id\n\
@@ -403,8 +406,9 @@ lexyassoc java {\\.java$}\n\
 \n\
 lexydef go 0 {\n\
 		{\\<(?:break|default|func|interface|select|case|defer|go|map|struct|chan|else|goto|package|switch|const|fallthrough|if|range|type|continue|for|import|return|var)\\>} keyword\n\
-\n\
-		\"-?(?:0x)?[0-9][0-9]*(?:\\\\.[0-9]+)?(?:e-[0-9]+?)?\" literal\n\
+		\n\
+		\"-?(?:0x)[0-9a-fA-F]*\" literal\n\
+		\"-?[0-9][0-9]*(?:\\\\.[0-9]+)?(?:e-[0-9]+?)?\" literal\n\
 		{(?:nil|true|false|iota)} literal\n\
 \n\
 		{\\<$[a-zA-Z_][a-zA-Z0-9_]*\\>} id\n\
