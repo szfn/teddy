@@ -1,11 +1,18 @@
 #ifndef __BUILTIN_TCL__
 #define __BUILTIN_TCL__
 
-#define BUILTIN_TCL_CODE "proc kill_line {} {\n\
+#define BUILTIN_TCL_CODE "# builtin commands for teddy\n\
+\n\
+proc kill_line {} {\n\
    go :1\n\
    mark\n\
    move next line\n\
+   if {[undo tag] eq \"kill_line\"} {\n\
+   	undo fusenext\n\
+   }\n\
    cb cut\n\
+   undo tag kill_line\n\
+   cb pput [undo get before]\n\
 }\n\
 \n\
 proc shell_perform_redirection {redirection} {\n\

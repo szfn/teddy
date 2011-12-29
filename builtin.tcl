@@ -1,8 +1,15 @@
+# builtin commands for teddy
+
 proc kill_line {} {
    go :1
    mark
    move next line
+   if {[undo tag] eq "kill_line"} {
+   	undo fusenext
+   }
    cb cut
+   undo tag kill_line
+   cb pput [undo get before]
 }
 
 proc shell_perform_redirection {redirection} {

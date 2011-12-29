@@ -238,21 +238,30 @@ static int teddy_cb_command(ClientData client_data, Tcl_Interp *interp, int argc
 		return TCL_ERROR;
 	}
 
-	if (argc != 2) {
-		Tcl_AddErrorInfo(interp, "Wrong number of arguments to 'cb' command");
-		return TCL_ERROR;
-	}
-
-	if (strcmp(argv[1], "copy") == 0) {
-		editor_copy_action(context_editor);
-	} else if (strcmp(argv[1], "cut") == 0) {
-		editor_cut_action(context_editor);
-	} else if (strcmp(argv[1], "paste") == 0) {
-		editor_insert_paste(context_editor, default_clipboard);
-	} else if (strcmp(argv[1], "ppaste") == 0) {
-		editor_insert_paste(context_editor, selection_clipboard);
+	if (argc == 2) {
+		if (strcmp(argv[1], "copy") == 0) {
+			editor_copy_action(context_editor);
+		} else if (strcmp(argv[1], "cut") == 0) {
+			editor_cut_action(context_editor);
+		} else if (strcmp(argv[1], "paste") == 0) {
+			editor_insert_paste(context_editor, default_clipboard);
+		} else if (strcmp(argv[1], "ppaste") == 0) {
+			editor_insert_paste(context_editor, selection_clipboard);
+		} else {
+			Tcl_AddErrorInfo(interp, "Wrong argument to 'cb' command");
+			return TCL_ERROR;
+		}
+	} else if (argc == 3) {
+		if (strcmp(argv[1], "put") == 0) {
+			gtk_clipboard_set_text(default_clipboard, argv[2], -1);
+		} else if (strcmp(argv[1], "pput") == 0) {
+			gtk_clipboard_set_text(selection_clipboard, argv[2], -1);
+		} else {
+			Tcl_AddErrorInfo(interp, "Wrong argument to 'cb' command");
+			return TCL_ERROR;
+		}
 	} else {
-		Tcl_AddErrorInfo(interp, "Wrong argument to 'cb' command");
+		Tcl_AddErrorInfo(interp, "Wrong number of arguments to 'cb' command");
 		return TCL_ERROR;
 	}
 
@@ -308,8 +317,10 @@ static int teddy_undo_command(ClientData client_data, Tcl_Interp *interp, int ar
 			} else {
 				Tcl_SetResult(interp, u->tag, TCL_VOLATILE);
 			}
+		} else if (strcmp(argv[1], "fusenext") == 0) {
+			context_editor->buffer->undo.please_fuse = true;
 		} else {
-			Tcl_AddErrorInfo(interp, "Wrong arguments to 'undo', usage; undo [tag [tagname]]");
+			Tcl_AddErrorInfo(interp, "Wrong arguments to 'undo', usage; undo [tag [tagname] | fusenext | get <before|after>]");
 			return TCL_ERROR;
 		}
 	} else if (argc == 3) {
@@ -318,6 +329,32 @@ static int teddy_undo_command(ClientData client_data, Tcl_Interp *interp, int ar
 			if (u != NULL) {
 				if (u->tag != NULL) free(u->tag);
 				u->tag = strdup(argv[2]);
+			}
+		} else if (strcmp(argv[1], "get") == 0) {
+			undo_node_t *u = undo_peek(&(context_editor->buffer->undo));
+
+			if (u == NULL) {
+				Tcl_SetResult(interp, "", TCL_VOLATILE);
+				return TCL_OK;
+			}
+
+			if (strcmp(argv[2], "before") == 0) {
+				if (u->before_selection.text != NULL) {
+					Tcl_SetResult(interp, u->before_selection.text, TCL_VOLATILE);
+				} else {
+					Tcl_SetResult(interp, "", TCL_VOLATILE);
+				}
+				return TCL_OK;
+			} else if (strcmp(argv[2], "after") == 0) {
+				if (u->after_selection.text != NULL) {
+					Tcl_SetResult(interp, u->after_selection.text, TCL_VOLATILE);
+				} else {
+					Tcl_SetResult(interp, "", TCL_VOLATILE);
+				}
+				return TCL_OK;
+			} else {
+				Tcl_AddErrorInfo(interp, "Wrong argument to 'undo get', expected before or after");
+				return TCL_ERROR;
 			}
 		} else {
 			Tcl_AddErrorInfo(interp, "Wrong arguments to 'undo', usage; undo [tag [tagname]]");

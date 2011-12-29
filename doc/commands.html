@@ -134,19 +134,24 @@
 
 		<h3>cb</h3>
 		<div class="ind">
-			<p><b>Syntax:</b> <tt>cb <b>[</b> copy <b>|</b> cut <b>|</b> paste <b>|</b> ppaste <b>]</b></tt>
+			<p><b>Syntax:</b> <tt>cb <b>[</b> copy <b>|</b> cut <b>|</b> paste <b>|</b> ppaste <b>|</b> put <i>text</i> <b>|</b> pput <i>text</i> <b>]</b></tt>
 			<p><ul>
-				<li><tt>cb copy</tt>: copies selection to clipboard
-				<li><tt>cb cut</tt>: cuts selection to clipboard
-				<li><tt>cb paste</tt>: paste selection from clipboard
-				<li><tt>cb ppaste</tt>: paste selection from primary clipboard (there is no copy to primary clipboard because everything selected gets automatically copied to primary clipboard)
+				<li><tt>cb copy</tt>: copies selection to X11 default clipboard buffer
+				<li><tt>cb cut</tt>: cuts selection to X11 default clipboard buffer
+				<li><tt>cb paste</tt>: paste from X11 default clipboard buffer
+				<li><tt>cb ppaste</tt>: paste selection from X11 selection buffer (there is no copy to X11 selection buffer because everything selected gets automatically copied to primary clipboard)
+				<li><tt>cb put</tt> and <tt>cb pput</tt> save their argument either in the clipboard bufer or the primary selection buffer, respectively.
 			</ul>
 		</div>
 
 		<h3>undo</h3>
 		<div class="ind">
-			<p><b>Syntax:</b> <tt>undo</tt>
-			<p>Undoes last action
+			<p><b>Syntax:</b> <tt>undo <b>[</b> fusenext <b>|</b> tag <b>[</b> <i>tagname</i> <b>]</b> <b>|</b> get <b>(</b> before <b>|</b> after <b>)</b> <b>]</b></tt>
+			<p>Without arguments undoes last action.
+			<p>With <tt>get</tt> as an argument returns the very last action executed, <tt>undo get before</tt> gets the text that was replaced, <tt>undo get after</tt> returns the text after the replacement (for insertion the text before is empty, for deletions the text after is empty).
+			<p>With <tt>fusenext</tt> teddy will attempt to fuse the very next action performed with the last performed action.
+			<p>With <tt>tag</tt> without any other argument it returns the tag for the last undo action (by default: the empty string). When <tt>tag</tt> and a <i>tagname</i> is specified the last undo action is marked with <i>tagname</i>.
+			<p>Most of this is used to implement the kill_line builtin, see builtin.tcl for details.
 		</div>
 
 		<h2>Motion</h2>

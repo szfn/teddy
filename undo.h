@@ -3,6 +3,8 @@
 
 #include "point.h"
 
+#include <stdbool.h>
+
 #include <time.h>
 
 #define TYPING_FUSION_INTERVAL 2
@@ -28,6 +30,8 @@ typedef struct _undo_node_t {
 typedef struct _undo_t {
 	/* head of the undo stack, in other words, the very last undo node added to the list */
 	undo_node_t *head;
+
+	bool please_fuse;
 } undo_t;
 
 void undo_init(undo_t *undo);

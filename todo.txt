@@ -1,5 +1,4 @@
-- better ctrl-k
- - ability to instruct undo to fuse edits
+- teddy-hack-resize
 - modn tabs
 - undo doesn't run update lexy
 

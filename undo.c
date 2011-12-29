@@ -7,6 +7,7 @@
 
 void undo_init(undo_t *undo) {
 	undo->head = NULL;
+	undo->please_fuse = false;
 }
 
 void undo_free(undo_t *undo) {
@@ -72,7 +73,17 @@ void undo_push(undo_t *undo, undo_node_t *new_node) {
 	time_t now = time(NULL);
 
 	// when appropriate we fuse the new undo node with the last one so you don't have to undo typing one character at a time
-	if ((undo->head != NULL)
+	if (undo->please_fuse
+	  && (undo->head != NULL)
+	  && selections_are_adjacent(&(undo->head->after_selection), &(new_node->after_selection))) {
+	    //debug_print_undo(undo->head);
+	    //debug_print_undo(new_node);
+	    selections_cat(&(undo->head->before_selection), &(new_node->before_selection));
+		selections_cat(&(undo->head->after_selection), &(new_node->after_selection));
+		undo->head->time = now;
+		undo_node_free(new_node);
+		//debug_print_undo(undo->head);
+	} else if ((undo->head != NULL)
       && selection_is_empty(&(undo->head->before_selection))
       && selection_is_empty(&(new_node->before_selection))
       && (selection_len(&(new_node->after_selection)) == 1)
@@ -93,6 +104,8 @@ void undo_push(undo_t *undo, undo_node_t *new_node) {
 		printf("PUSHING\n");
 		debug_print_undo(new_node);*/
 	}
+
+	undo->please_fuse = false;
 }
 
 undo_node_t *undo_pop(undo_t *undo) {
