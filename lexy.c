@@ -519,7 +519,7 @@ void lexy_update_for_move(buffer_t *buffer, real_line_t *start_line) {
 		return;
 	}
 
-	for(;;) {
+	for(int count = 0; count < 10; ++count) { // count is here just to prevent this loop from running forever on patological situations
 		lexy_update_starting_at(buffer, start_line, true);
 		start_line = buffer->lexy_last_update_line;
 		if (start_line == NULL) break;

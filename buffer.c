@@ -499,7 +499,7 @@ void buffer_thaw_selection(buffer_t *buffer, selection_t *selection, lpoint_t *s
 
 void buffer_undo(buffer_t *buffer) {
 	lpoint_t start_point, end_point;
-	real_line_t *typeset_start_line;
+	real_line_t *typeset_start_line, *pre_start_line = NULL;
 	undo_node_t *undo_node;
 
 	if (!(buffer->editable)) return;
@@ -518,12 +518,23 @@ void buffer_undo(buffer_t *buffer) {
 	buffer_remove_selection(buffer, &start_point, &end_point);
 
 	typeset_start_line = buffer->cursor.line;
+	if (buffer->cursor.glyph > 0) {
+		pre_start_line = typeset_start_line;
+	} else {
+		pre_start_line = typeset_start_line->prev;
+	}
 
 	buffer_insert_multiline_text(buffer, &(buffer->cursor), undo_node->before_selection.text);
 
 	buffer_typeset_from(buffer, typeset_start_line);
 
 	undo_node_free(undo_node);
+
+	if (pre_start_line == NULL) {
+		lexy_update_starting_at(buffer, buffer->real_line, true);
+	} else {
+		lexy_update_starting_at(buffer, pre_start_line, true);
+	}
 }
 
 static uint8_t utf8_first_byte_processing(uint8_t ch) {

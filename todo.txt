@@ -1,5 +1,4 @@
-- just run lexy on the entire file (too many problems) and disable running lexy on move
-
+- lexy isn't updated on scrolling
 - fix bad rendering perfomance by killing cairo
 - gdb integration
 - replace tcl regex engine with TRE
