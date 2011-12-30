@@ -1,4 +1,3 @@
-- teddy-hack-resize
 - modn tabs
 - undo doesn't run update lexy
 

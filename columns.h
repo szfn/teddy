@@ -26,4 +26,6 @@ editor_t *heuristic_new_frame(editor_t *spawning_editor, buffer_t *buffer);
 
 extern column_t *active_column; // column where the last edit operation happened
 
+extern void columns_resize_hack(void);
+
 #endif

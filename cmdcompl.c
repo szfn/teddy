@@ -58,6 +58,8 @@ const char *list_internal_commands[] = {
 	"bufman", "undo", "search", "focuscmd", "move", "gohome", "bg", "<",
 	"rgbcolor", "teddyhistory", "interactarg", "s", "c", "cursor", "bindent",
 
+	"teddy-hack-resize",
+
 	// lexy
 	"lexydef-create", "lexydef-append", "lexassoc", "lexycfg",
 
