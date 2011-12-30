@@ -1,5 +1,4 @@
-- modn tabs
-- undo doesn't run update lexy
+- just run lexy on the entire file (too many problems) and disable running lexy on move
 
 - fix bad rendering perfomance by killing cairo
 - gdb integration
@@ -7,6 +6,7 @@
 - bg with an argument to force use of a new buffer
 - interface tabs
 - elastic tabs
+- options for tabs
 
 - implement font replacement
 - highlight current line

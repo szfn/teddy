@@ -218,46 +218,6 @@ static void buffer_split_line(buffer_t *buffer, lpoint_t *point) {
 	buffer_real_line_insert(buffer, point->line, copied_segment);
 }
 
-static double buffer_line_fix_spaces(buffer_t *buffer, real_line_t *line) {
-	int i = 0;
-	int initial_spaces = 1;
-	double width_correction = 0.0;
-
-	//printf("fixing spaces\n");
-
-	for (i = 0; i < line->cap; ++i) {
-		if (line->glyph_info[i].code == 0x20) {
-			double new_width;
-			if (initial_spaces) {
-				new_width = buffer->em_advance;
-			} else {
-				new_width = buffer->space_advance;
-			}
-
-			//printf("is: %d width: %g\n", initial_spaces, new_width);
-
-			width_correction += new_width - line->glyph_info[i].x_advance;
-			line->glyph_info[i].x_advance = new_width;
-
-		} else if (line->glyph_info[i].code == 0x09) {
-			double new_width;
-			if (initial_spaces) {
-				new_width = buffer->em_advance * buffer->tab_width;
-			} else {
-				new_width = buffer->space_advance * buffer->tab_width;
-			}
-
-			width_correction += new_width - line->glyph_info[i].x_advance;
-			line->glyph_info[i].x_advance = new_width;
-
-		} else {
-			initial_spaces = 0;
-		}
-	}
-
-	return width_correction;
-}
-
 static int buffer_line_insert_utf8_text(buffer_t *buffer, real_line_t *line, const char *text, int len, int insertion_point) {
 	FT_Face scaledface = cairo_ft_scaled_font_lock_face(buffer->main_font.cairofont);
 	FT_Bool use_kerning = FT_HAS_KERNING(scaledface);
@@ -303,9 +263,9 @@ static int buffer_line_insert_utf8_text(buffer_t *buffer, real_line_t *line, con
 
 		cairo_scaled_font_glyph_extents(buffer->main_font.cairofont, line->glyphs + dst, 1, &extents);
 
-		if (code == 0x09) {
+		/*if (code == 0x09) {
 			extents.x_advance *= buffer->tab_width;
-		}
+		}*/
 
 		line->glyph_info[dst].x_advance = extents.x_advance;
 		if (dst == line->cap) {
@@ -327,8 +287,6 @@ static int buffer_line_insert_utf8_text(buffer_t *buffer, real_line_t *line, con
 		}
 
 	}
-
-	//buffer_line_fix_spaces(buffer, line);
 
 	cairo_ft_scaled_font_unlock_face(buffer->main_font.cairofont);
 
@@ -414,14 +372,37 @@ static void buffer_line_adjust_glyphs(buffer_t *buffer, real_line_t *line, doubl
 	int i;
 	double y_increment = buffer->line_height;
 	double x = buffer->left_margin;
+	bool initial_spaces = true;
 
 	line->start_y = y;
 	line->end_y = y;
 
-	buffer_line_fix_spaces(buffer, line);
+	//buffer_line_fix_spaces(buffer, line);
 
 	//printf("setting type\n");
 	for (i = 0; i < line->cap; ++i) {
+		if (line->glyph_info[i].code == 0x20) {
+			line->glyph_info[i].x_advance = initial_spaces ? buffer->em_advance : buffer->space_advance;
+		} else if (line->glyph_info[i].code == 0x09) {
+			switch(buffer->tab_mode) {
+			case TAB_MODN: {
+				double size = buffer->tab_width * buffer->em_advance;
+				double to_next_cell = size - fmod(x, size);
+				if (to_next_cell < buffer->em_advance) {
+					// if it is too small jump to next cell instead
+					to_next_cell += size;
+				}
+				line->glyph_info[i].x_advance = to_next_cell;
+				break;
+			}
+			case TAB_FIXED:
+			default:
+				line->glyph_info[i].x_advance = buffer->tab_width * (initial_spaces ? buffer->em_advance : buffer->space_advance);
+			}
+		} else {
+			initial_spaces = false;
+		}
+
 		x += line->glyph_info[i].kerning_correction;
 		if (x+line->glyph_info[i].x_advance > buffer->rendered_width - buffer->right_margin) {
 			y += buffer->line_height;
@@ -953,6 +934,7 @@ buffer_t *buffer_create(FT_Library *library) {
 	parmatch_init(&(buffer->parmatch));
 
 	buffer->tab_width = 4;
+	buffer->tab_mode = TAB_MODN;
 	buffer->left_margin = 4.0;
 	buffer->right_margin = 4.0;
 
