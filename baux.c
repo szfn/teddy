@@ -133,3 +133,4 @@ void buffer_append(buffer_t *buffer, const char *msg, int length, int on_new_lin
 
 	free(text);
 }
+

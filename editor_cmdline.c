@@ -249,14 +249,14 @@ static gboolean entry_default_insert_callback(GtkWidget *widget, GdkEventKey *ev
 			}
 			return TRUE;
 		}
-			
+
 		if (event->keyval == GDK_KEY_Tab) {
 			const char *text;
 			int end, i;
 
 			end = gtk_editable_get_position(GTK_EDITABLE(editor->entry));
 			text = gtk_entry_get_text(GTK_ENTRY(editor->entry));
-		
+
 			for (i = end-1; i >= 0; --i) {
 				if (u_isalnum(text[i])) continue;
 				if (text[i] == '-') continue;
@@ -268,9 +268,9 @@ static gboolean entry_default_insert_callback(GtkWidget *widget, GdkEventKey *ev
 				//printf("Breaking on [%c] %d (text: %s)\n", text[i], i, text);
 				break;
 			}
-		
+
 			//printf("Completion start %d end %d\n", i+1, end);
-		
+
 			if (cmdcompl_complete(text+i+1, end-i-1, editor->buffer->wd) == 1) {
 				char *nt = cmdcompl_get_completion(gtk_entry_get_text(GTK_ENTRY(editor->entry)), &end);
 				if (nt != NULL) {
@@ -317,14 +317,14 @@ static gboolean entry_focusout_callback(GtkWidget *widget, GdkEventFocus *event,
 		history_add(search_history, gtk_entry_get_text(GTK_ENTRY(editor->entry)));
 		gtk_entry_set_text(GTK_ENTRY(editor->entry), "");
 	}
-	
+
 	editor->search_mode = FALSE;
-	
+
 	if (editor->locked_command_line[0] != '\0') {
 		strcpy(editor->locked_command_line, "");
 		set_label_text(editor);
 	}
-	
+
 	g_signal_handler_disconnect(editor->entry, editor->current_entry_handler_id);
 	editor->current_entry_handler_id = g_signal_connect(editor->entry, "key-release-event", G_CALLBACK(entry_default_insert_callback), editor);
 	focus_can_follow_mouse = 1;
@@ -340,7 +340,7 @@ static gboolean entry_focusin_callback(GtkWidget *widget, GdkEventFocus *event, 
 void entry_callback_setup(editor_t *r) {
 	r->current_entry_handler_id = g_signal_connect(r->entry, "key-release-event", G_CALLBACK(entry_default_insert_callback), r);
 	g_signal_connect(r->entry, "key-press-event", G_CALLBACK(entry_key_press_callback), r);
-	
+
 	g_signal_connect(r->entry, "focus-out-event", G_CALLBACK(entry_focusout_callback), r);
 	g_signal_connect(r->entry, "focus-in-event", G_CALLBACK(entry_focusin_callback), r);
 }

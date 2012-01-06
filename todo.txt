@@ -1,14 +1,17 @@
-- lexy isn't updated on scrolling
-- fix bad rendering perfomance by killing cairo
+- opening directories
+- up/down arrows move through history
+- when command line is updated with history move cursor to the end
+- implement font replacement
+- cairo optimization: display all glyphs of the same type at once
+- highlight current line
 - gdb integration
 - replace tcl regex engine with TRE
 - bg with an argument to force use of a new buffer
 - interface tabs
 - elastic tabs
-- options for tabs
+- options for tab character visualization
 
-- implement font replacement
-- highlight current line
+- fix bad rendering perfomance by killing cairo
 - debugger integration (just displaying currently executed line)
 - selection should copy selected text on past not on selection, for better efficiency (selection slowdown is noticeable on mouse selection)
 - extend regular expressions in 's' to be lexically aware
@@ -20,7 +23,6 @@
 - cmdcompl shoul build the list of internal commands dynamically
 - implement man command that runs the man command in background and shows it in a new editor (must be possible to implement in tcl)
 - command line autocompletion shouldn't include commands unless it's the first word con the command line
-- opening directories
 - command to refresh an open directory
 - open current directory on startup
 - implement command to create a scratch buffer
@@ -40,7 +42,6 @@
 - 's' command: support normal pcre flags
 - sort buffer menu by buffer name?
 - appending to a buffer that was never displayed doesn't work (for some reason), tons of valgrind exceptions are generated. There is a valid use case for starting commands on an invisible buffer
-- up/down arrows move through history
 - persistence of history
 - ability to persist the status of a window
 - command to reload buffer contents from disk

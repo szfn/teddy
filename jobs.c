@@ -10,6 +10,7 @@
 #include "baux.h"
 #include "editor.h"
 #include "columns.h"
+#include "lexy.h"
 
 #define JOBS_READ_BUFFER_SIZE 128
 
@@ -35,8 +36,10 @@ static void job_destroy(job_t *job) {
 	job->used = 0;
 }
 
-static void job_append(job_t *job, const char *msg, int len, int on_new_line) {
+static void job_append(job_t *job, const char *msg, int len, int on_new_line, uint8_t color) {
+	job->buffer->default_color = color;
 	buffer_append(job->buffer, msg, len, on_new_line);
+	job->buffer->default_color = L_NOTHING;
 
 	editor_t *editor = columns_get_buffer(job->buffer);
 	if (editor != NULL) {
@@ -47,8 +50,8 @@ static void job_append(job_t *job, const char *msg, int len, int on_new_line) {
 
 static void jobs_child_watch_function(GPid pid, gint status, job_t *job) {
 	char *msg;
-	asprintf(&msg, "~ Process PID %d ended (status: %d)\n", job->child_pid, status);
-	job_append(job, msg, strlen(msg), 1);
+	asprintf(&msg, "~ %d\n", status);
+	job_append(job, msg, strlen(msg), 1, L_KEYWORD);
 	free(msg);
 	job_destroy(job);
 }
@@ -62,12 +65,12 @@ static gboolean jobs_input_watch_function(GIOChannel *source, GIOCondition condi
 	buf[bytes_read] = '\0';
 
 	if (!job->ratelimit_silenced) {
-		job_append(job, buf, (size_t)bytes_read, 0);
+		job_append(job, buf, (size_t)bytes_read, 0, L_NOTHING);
 
 		if (job->current_ratelimit_bucket_start - time(NULL) > RATELIMIT_BUCKET_DURATION_SECS) {
 			if (job->current_ratelimit_bucket_size > RATELIMIT_MAX_BYTES) {
-				const char *msg = "~ Process silenced due to excessive spam\n";
-				job_append(job, msg, strlen(msg), 1);
+				const char *msg = "SILENCED\n";
+				job_append(job, msg, strlen(msg), 1, L_KEYWORD);
 				job->ratelimit_silenced = true;
 			}
 			job->current_ratelimit_bucket_start = time(NULL);
@@ -87,29 +90,29 @@ static gboolean jobs_input_watch_function(GIOChannel *source, GIOCondition condi
 			job_append(job, msg, strlen(msg), 1);
 			free(msg);*/
 		} else {
-			asprintf(&msg, "~ Error for PID %d\n", job->child_pid);
-			job_append(job, msg, strlen(msg), 1);
+			asprintf(&msg, "~ (i/o error)\n");
+			job_append(job, msg, strlen(msg), 1, L_KEYWORD);
 			free(msg);
 		}
 		job->child_source_id = g_child_watch_add(job->child_pid, (GChildWatchFunc)jobs_child_watch_function, job);
 		return FALSE;
 	case G_IO_STATUS_EOF:
-		asprintf(&msg, "~ EOF for PID %d\n", job->child_pid);
-		job_append(job, msg, strlen(msg), 1);
+		asprintf(&msg, "~ (eof)\n");
+		job_append(job, msg, strlen(msg), 1, L_KEYWORD);
 		free(msg);
 		job->child_source_id = g_child_watch_add(job->child_pid, (GChildWatchFunc)jobs_child_watch_function, job);
 		return FALSE;
 	case G_IO_STATUS_AGAIN:
 		return TRUE;
 	default:
-		asprintf(&msg, "~ Unexpected error for PID %d (%d)\n", job->child_pid, r);
-		job_append(job, msg, strlen(msg), 1);
+		asprintf(&msg, "~ (unknown error: %d)\n", r);
+		job_append(job, msg, strlen(msg), 1, L_KEYWORD);
 		free(msg);
 		return FALSE;
 	}
 }
 
-int jobs_register(pid_t child_pid, int masterfd, struct _buffer_t *buffer) {
+int jobs_register(pid_t child_pid, int masterfd, struct _buffer_t *buffer, const char *command) {
 	int i;
 	for (i = 0; i < MAX_JOBS; ++i) {
 		if (!(jobs[i].used)) break;
@@ -137,6 +140,13 @@ int jobs_register(pid_t child_pid, int masterfd, struct _buffer_t *buffer) {
 	}
 
 	jobs[i].pipe_from_child_source_id = g_io_add_watch(jobs[i].pipe_from_child, G_IO_IN|G_IO_HUP, (GIOFunc)(jobs_input_watch_function), jobs+i);
+
+	char *pp = buffer_ppp(buffer, false, 20, true);
+	char *msg;
+	asprintf(&msg, "%s%% %s\t\t(pid: %d)\n", pp, command, child_pid);
+	job_append(jobs+i, msg, strlen(msg), 0, L_KEYWORD);
+	free(msg);
+	free(pp);
 
 	return 1;
 }

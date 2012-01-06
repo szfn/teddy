@@ -48,6 +48,7 @@ typedef struct _buffer_t {
 	int has_filename;
 	int modified;
 	int editable;
+	uint8_t default_color;
 
 	job_t *job;
 
@@ -160,5 +161,8 @@ void buffer_line_clean_trailing_spaces(buffer_t *buffer, real_line_t *line);
 
 void freeze_selection(buffer_t *buffer, selection_t *selection, lpoint_t *start, lpoint_t *end);
 void buffer_thaw_selection(buffer_t *buffer, selection_t *selection, lpoint_t *start, lpoint_t *end);
+
+/* Prettyprinting of buffer directory or buffer filename */
+char *buffer_ppp(buffer_t *buffer, bool include_filename, int reqlen, bool always_home);
 
 #endif

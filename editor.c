@@ -23,8 +23,12 @@
 void set_label_text(editor_t *editor) {
 	char *labeltxt;
 
-	if ((strcmp(editor->label_state, "cmd") == 0) && (editor->locked_command_line[0] != '\0')) {
-		asprintf(&labeltxt, " %s | cmd<%s>", editor->buffer->name, editor->locked_command_line);
+	if (strcmp(editor->label_state, "cmd") == 0) {
+		if (editor->locked_command_line[0] != '\0') {
+			asprintf(&labeltxt, " %s | cmd<%s>", editor->buffer->name, editor->locked_command_line);
+		} else {
+			asprintf(&labeltxt, " %s>", editor->buffer->name);
+		}
 	} else {
 		asprintf(&labeltxt, " %s | %s>", editor->buffer->name, editor->label_state);
 	}

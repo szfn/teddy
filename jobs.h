@@ -15,7 +15,7 @@ typedef struct _job_t {
 	int used;
 	pid_t child_pid;
 	struct _buffer_t *buffer;
-	
+
 	int masterfd;
 	GIOChannel *pipe_from_child;
 
@@ -32,7 +32,7 @@ typedef struct _job_t {
 job_t jobs[MAX_JOBS];
 
 void jobs_init(void);
-int jobs_register(pid_t child_pid, int masterfd, struct _buffer_t *buffer);
+int jobs_register(pid_t child_pid, int masterfd, struct _buffer_t *buffer, const char *command);
 int write_all(int fd, const char *str);
 
 #endif

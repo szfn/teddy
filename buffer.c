@@ -244,7 +244,7 @@ static int buffer_line_insert_utf8_text(buffer_t *buffer, real_line_t *line, con
 		grow_line(line, dst, 1);
 
 		line->glyph_info[dst].code = code;
-		line->glyph_info[dst].color = L_NOTHING;
+		line->glyph_info[dst].color = buffer->default_color;
 
 		/* Kerning correction for x */
 		if (use_kerning && previous && glyph_index) {
@@ -598,6 +598,62 @@ void buffer_cd(buffer_t *buffer, const char *wd) {
 	asprintf(&(buffer->wd), "%s", wd);
 }
 
+char *buffer_ppp(buffer_t *buffer, bool include_filename, int reqlen, bool always_home) {
+	char *source = (include_filename && buffer->has_filename) ? buffer->path : buffer->wd;
+
+	if ((source == NULL) || (reqlen < 0)) {
+		// no source could be determined or bad reqlen request
+		char *r = malloc(sizeof(char));
+		*r = '\0';
+		return r;
+	}
+
+	char *compr = malloc(sizeof(char) * (strlen(source) + 1));
+	if (compr == NULL) {
+		perror("Out of memory");
+		exit(EXIT_FAILURE);
+	}
+
+	if (!always_home && (strlen(source) < reqlen)) {
+		strcpy(compr, source);
+		return compr;
+	}
+
+
+	int i = 0, j = 0;
+
+	const char *home = getenv("HOME");
+	if (home != NULL) {
+		for(j = 0; j < strlen(home); ++j) {
+			if (home[j] != source[j]) {
+				j = 0;
+				break;
+			}
+		}
+		if (j != 0)
+			compr[i++] = '~';
+	}
+
+	char *lastslash = strrchr(source, '/');
+
+	while((i + strlen(source+j)) > reqlen) {
+		if (source+j == lastslash) break;
+		if (source[j] == '\0') break;
+		if (source[j] == '/') {
+			compr[i++] = '/';
+			++j;
+			continue;
+		} else {
+			compr[i++] = source[j++];
+			for(; source[j] != '\0' && source[j] != '/'; ++j)
+				; // skips rest of directory
+		}
+	}
+
+	strcpy(compr+i, source+j);
+	return compr;
+}
+
 int load_text_file(buffer_t *buffer, const char *filename) {
 	FILE *fin = fopen(filename, "r");
 	char ch;
@@ -619,13 +675,11 @@ int load_text_file(buffer_t *buffer, const char *filename) {
 	buffer->has_filename = 1;
 	free(buffer->name);
 	buffer->path = realpath(filename, NULL);
+	buffer->name = buffer_ppp(buffer, true, 20, true);
+
 	{
 		char *name = strrchr(buffer->path, '/');
-		if (name == NULL) {
-			asprintf(&(buffer->name), "%s", buffer->path);
-		} else {
-			asprintf(&(buffer->name), "%s", name+1);
-
+		if (name != NULL) {
 			free(buffer->wd);
 			buffer->wd = malloc(sizeof(char) * (name - buffer->path + 2));
 			strncpy(buffer->wd, buffer->path, (name - buffer->path + 1));
@@ -898,6 +952,8 @@ buffer_t *buffer_create(FT_Library *library) {
 	buffer->modified = 0;
 	buffer->editable = 1;
 	buffer->job = NULL;
+	buffer->default_color = L_NOTHING;
+
 
 	asprintf(&(buffer->name), "+unnamed");
 	buffer->path = NULL;

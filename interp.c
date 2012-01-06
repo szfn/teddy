@@ -592,12 +592,7 @@ static int teddy_bg_command(ClientData client_data, Tcl_Interp *interp, int argc
 	} else if (child != 0) {
 		/* parent code */
 
-		char *msg;
-		asprintf(&msg, "~ Executing {%s} on PID %d\n\n", argv[1], child);
-		buffer_append(buffer, msg, strlen(msg), TRUE);
-		free(msg);
-
-		if (!jobs_register(child, masterfd, buffer)) {
+		if (!jobs_register(child, masterfd, buffer, argv[1])) {
 			Tcl_AddErrorInfo(interp, "Registering job failed, probably exceeded the maximum number of jobs available");
 			return TCL_ERROR;
 		}
