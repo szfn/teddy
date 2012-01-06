@@ -24,17 +24,19 @@ history_t *history_new(void) {
 
 	r->history_window = gtk_dialog_new();
 	gtk_window_set_destroy_with_parent(GTK_WINDOW(r->history_window), TRUE);
-	
+
 	GtkWidget *scroll_window = gtk_scrolled_window_new(NULL, NULL);
 	gtk_container_add(GTK_CONTAINER(scroll_window), r->history_tree);
-	
+
 	gtk_container_add(GTK_CONTAINER(gtk_dialog_get_content_area(GTK_DIALOG(r->history_window))), scroll_window);
 
 	gtk_window_set_default_size(GTK_WINDOW(r->history_window), 400, 300);
 
 	g_signal_connect(G_OBJECT(r->history_window), "delete-event", G_CALLBACK(gtk_widget_hide_on_delete), NULL);
 	g_signal_connect(G_OBJECT(r->history_tree), "row-activated", G_CALLBACK(history_select_callback), r);
-	
+
+	r->index = 0;
+
 	return r;
 }
 
@@ -49,17 +51,17 @@ int teddy_history_command(ClientData client_data, Tcl_Interp *interp, int argc, 
 	int idx, i;
 	gboolean valid;
 	GtkTreeIter iter;
-	
+
 	if (context_editor == NULL) {
 		Tcl_AddErrorInfo(interp, "Can not call 'teddyhistory' command without a current editor");
 		return TCL_ERROR;
 	}
-	
+
 	if (argc != 3) {
 		Tcl_AddErrorInfo(interp, "Wrong number of arguments to 'teddyhistory' command");
 		return TCL_ERROR;
 	}
-	
+
 	if (strcmp(argv[1], "cmd") == 0) {
 		history = command_history;
 	} else if (strcmp(argv[1], "search") == 0) {
@@ -68,41 +70,41 @@ int teddy_history_command(ClientData client_data, Tcl_Interp *interp, int argc, 
 		Tcl_AddErrorInfo(interp, "Wrong first argument for 'teddyhistory' command, must be 'cmd' or 'search'");
 		return TCL_ERROR;
 	}
-	
+
 	idx = atoi(argv[2]);
-	
+
 	valid = gtk_tree_model_get_iter_first(GTK_TREE_MODEL(history->history_list), &iter);
-	
+
 	for (i = 1; i < idx; ++i) {
        if (!valid) break;
        valid = gtk_tree_model_iter_next(GTK_TREE_MODEL(history->history_list), &iter);
 	}
-	
+
 	if (valid) {
 		GValue value = {0};
 		const char *pick;
-		
+
 		gtk_tree_model_get_value(GTK_TREE_MODEL(history->history_list), &iter, 0, &value);
-		
+
 		pick = g_value_get_string(&value);
-		
+
 		if (pick != NULL) {
            Tcl_SetResult(interp, (char *)pick, TCL_VOLATILE);
 		} else {
            Tcl_SetResult(interp, "", TCL_VOLATILE);
 		}
-		
+
 		g_value_unset(&value);
 	} else {
 		Tcl_SetResult(interp, "", TCL_VOLATILE);
 	}
-	
+
 	return TCL_OK;
 }
 
 void history_pick(history_t *history, editor_t *editor) {
 	int r;
-	
+
 	gtk_window_set_transient_for(GTK_WINDOW(history->history_window), GTK_WINDOW(editor->window));
 	gtk_window_set_modal(GTK_WINDOW(history->history_window), TRUE);
 	gtk_widget_show_all(history->history_window);
@@ -115,7 +117,7 @@ void history_pick(history_t *history, editor_t *editor) {
 		GtkTreeIter iter;
 		const char *pick;
 		GValue value = {0};
-		
+
 		gtk_tree_view_get_cursor(GTK_TREE_VIEW(history->history_tree), &focus_path, NULL);
 		if (focus_path == NULL) {
 			gboolean valid = gtk_tree_model_get_iter_first(GTK_TREE_MODEL(history->history_list), &iter);
@@ -125,17 +127,67 @@ void history_pick(history_t *history, editor_t *editor) {
 		} else {
 			gtk_tree_model_get_iter(GTK_TREE_MODEL(history->history_list), &iter, focus_path);
 		}
-		
+
 		gtk_tree_model_get_value(GTK_TREE_MODEL(history->history_list), &iter, 0, &value);
-		
+
 		pick = g_value_get_string(&value);
 
 		gtk_entry_set_text(GTK_ENTRY(editor->entry), pick);
+		gtk_editable_set_position(GTK_EDITABLE(editor->entry), -1);
 
 		if (focus_path != NULL) {
 			gtk_tree_path_free(focus_path);
 		}
-		
+
 		g_value_unset(&value);
+	}
+}
+
+void history_index_reset(history_t *history) {
+	history->index = 0;
+}
+
+void history_index_next(history_t *history) {
+	++(history->index);
+}
+
+void history_index_prev(history_t *history) {
+	--(history->index);
+}
+
+void history_substitute_with_index(history_t *history, editor_t *editor) {
+	if (history->index <= 0) {
+		history->index = 0;
+		gtk_entry_set_text(GTK_ENTRY(editor->entry), "");
+		gtk_editable_set_position(GTK_EDITABLE(editor->entry), -1);
+		return;
+	}
+
+	GtkTreeIter iter;
+	gboolean valid = gtk_tree_model_get_iter_first(GTK_TREE_MODEL(history->history_list), &iter);
+
+	for (int i = 1; i < history->index; ++i) {
+       if (!valid) {  break; }
+       valid = gtk_tree_model_iter_next(GTK_TREE_MODEL(history->history_list), &iter);
+	}
+
+	if (valid) {
+		GValue value = {0};
+		const char *pick;
+
+		gtk_tree_model_get_value(GTK_TREE_MODEL(history->history_list), &iter, 0, &value);
+
+		pick = g_value_get_string(&value);
+
+		if (pick != NULL) {
+			gtk_entry_set_text(GTK_ENTRY(editor->entry), pick);
+			gtk_editable_set_position(GTK_EDITABLE(editor->entry), -1);
+		}
+
+		g_value_unset(&value);
+	} else {
+		history->index = 0;
+		gtk_entry_set_text(GTK_ENTRY(editor->entry), "");
+		gtk_editable_set_position(GTK_EDITABLE(editor->entry), -1);
 	}
 }

@@ -1,7 +1,5 @@
 - opening directories
-- up/down arrows move through history
-- when command line is updated with history move cursor to the end
-- implement font replacement
+- implement font substitution
 - cairo optimization: display all glyphs of the same type at once
 - highlight current line
 - gdb integration

@@ -286,7 +286,7 @@ static void cmdcompl_start(const char *text, int length, char *working_directory
 			partial_filename = malloc(sizeof(char) * (length - rlidx + 1));
 			strncpy(partial_filename, text+rlidx+1, length - rlidx - 1);
 			partial_filename[length - rlidx - 1] = '\0';
-			
+
 			/*printf("Relative directory [%s]\n", reldir);
 			printf("Partial filename [%s]\n", partial_filename);*/
 		}
@@ -319,12 +319,12 @@ static void cmdcompl_start(const char *text, int length, char *working_directory
 						if (den->d_type == DT_DIR) {
 							strcat(relname, "/");
 						}
-						
+
 						gtk_list_store_append(completions_list, &mah);
 						gtk_list_store_set(completions_list, &mah, 0, relname, -1);
-						
+
 						free(relname);
-						
+
 						++num_found_completions;
 						if (num_found_completions >= MAX_NUMBER_OF_COMPLETIONS) {
 							found_completions_is_incomplete = 1;
@@ -339,7 +339,7 @@ static void cmdcompl_start(const char *text, int length, char *working_directory
 		free(absdir);
 		free(reldir);
 	}
-      
+
 	// internal commands
 	cmdcompl_add_matches(list_internal_commands, sizeof(list_internal_commands) / sizeof(const char *), text, length);
 
@@ -351,7 +351,7 @@ static void cmdcompl_start(const char *text, int length, char *working_directory
 
 static int cmdcompl_can_filter(const char *text, int length) {
 	int rlidx;
-	
+
 	if (last_complete_request == NULL) return 0;
 	if (found_completions_is_incomplete) return 0;
 	if (length < strlen(last_complete_request)) return 0;

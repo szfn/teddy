@@ -284,6 +284,8 @@ static gboolean entry_default_insert_callback(GtkWidget *widget, GdkEventKey *ev
 
 			return TRUE;
 		}
+
+
 	}
 
 	//TODO: history scan with up, down - arrow keys
@@ -294,18 +296,26 @@ static gboolean entry_default_insert_callback(GtkWidget *widget, GdkEventKey *ev
 static gboolean entry_key_press_callback(GtkWidget *widget, GdkEventKey *event, editor_t *editor) {
 	switch(event->keyval) {
 	case GDK_KEY_Tab:
+		history_index_reset(command_history);
 		return TRUE;
 	case GDK_KEY_Up:
 		if (cmdcompl_isvisible()) {
 			cmdcompl_move_to_prev();
+		} else {
+			history_index_next(command_history);
+			history_substitute_with_index(command_history, editor);
 		}
 		return TRUE;
 	case GDK_KEY_Down:
 		if (cmdcompl_isvisible()) {
 			cmdcompl_move_to_next();
+		} else {
+			history_index_prev(command_history);
+			history_substitute_with_index(command_history, editor);
 		}
 		return TRUE;
 	default:
+		history_index_reset(command_history);
 		return FALSE;
 	}
 }
@@ -329,6 +339,7 @@ static gboolean entry_focusout_callback(GtkWidget *widget, GdkEventFocus *event,
 	editor->current_entry_handler_id = g_signal_connect(editor->entry, "key-release-event", G_CALLBACK(entry_default_insert_callback), editor);
 	focus_can_follow_mouse = 1;
 	cmdcompl_hide();
+	history_index_reset(command_history);
 	return FALSE;
 }
 
