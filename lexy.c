@@ -55,7 +55,7 @@ Associates one tokenizer with a file extension.
 #define LEXY_STATE_BLOCK_SIZE 16
 #define LEXY_ASSOCIATION_NUMBER 1024
 
-#define LEXY_LOAD_HOOK_MAX_COUNT 150
+#define LEXY_LOAD_HOOK_MAX_COUNT 1000
 
 const char *CONTINUATION_STATE = "continuation-state";
 
