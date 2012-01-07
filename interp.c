@@ -7,6 +7,7 @@
 #include <termios.h>
 #include <unistd.h>
 #include <pty.h>
+#include <signal.h>
 
 #include "global.h"
 #include "columns.h"
@@ -773,6 +774,136 @@ static int teddy_resize_hack_command(ClientData client_data, Tcl_Interp *interp,
 	return TCL_OK;
 }
 
+static int parse_signum(const char *sigspec) {
+	char *endptr = NULL;
+	int signum = (int)strtol(sigspec, &endptr, 10);
+	if ((endptr != NULL) && (*endptr == '\0')) {
+		return signum;
+	}
+
+	if (!strcmp(sigspec, "HUP")) return SIGHUP;
+	if (!strcmp(sigspec, "INT")) return SIGINT;
+	if (!strcmp(sigspec, "QUIT")) return SIGQUIT;
+	if (!strcmp(sigspec, "ILL")) return SIGILL;
+	if (!strcmp(sigspec, "ABRT")) return SIGABRT;
+	if (!strcmp(sigspec, "FPE")) return SIGFPE;
+	if (!strcmp(sigspec, "KILL")) return SIGKILL;
+	if (!strcmp(sigspec, "SEGV")) return SIGSEGV;
+	if (!strcmp(sigspec, "PIPE")) return SIGPIPE;
+	if (!strcmp(sigspec, "ALRM")) return SIGALRM;
+	if (!strcmp(sigspec, "TERM")) return SIGTERM;
+	if (!strcmp(sigspec, "USR1")) return SIGUSR1;
+	if (!strcmp(sigspec, "USR2")) return SIGUSR2;
+	if (!strcmp(sigspec, "CHLD")) return SIGCHLD;
+	if (!strcmp(sigspec, "CONT")) return SIGCONT;
+	if (!strcmp(sigspec, "STOP")) return SIGSTOP;
+	if (!strcmp(sigspec, "TSTP")) return SIGTSTP;
+	if (!strcmp(sigspec, "TTIN")) return SIGTTIN;
+	if (!strcmp(sigspec, "TTOU")) return SIGTTOU;
+	if (!strcmp(sigspec, "BUS")) return SIGBUS;
+	if (!strcmp(sigspec, "POLL")) return SIGPOLL;
+	if (!strcmp(sigspec, "PROF")) return SIGPROF;
+	if (!strcmp(sigspec, "SYS")) return SIGSYS;
+	if (!strcmp(sigspec, "TRAP")) return SIGTRAP;
+	if (!strcmp(sigspec, "URG")) return SIGURG;
+	if (!strcmp(sigspec, "VTALRM")) return SIGVTALRM;
+	if (!strcmp(sigspec, "XCPU")) return SIGXCPU;
+	if (!strcmp(sigspec, "XFSZ")) return SIGXFSZ;
+
+	return -1;
+}
+
+static int teddy_kill_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
+	if (argc == 1) {
+		if (context_editor == NULL) {
+			/* automatic version of kill doesn't work unless there is an editor to automatically infer what to do from */
+			Tcl_AddErrorInfo(interp, "Short version of 'kill' called without an active editor, provide an editor or more arguments");
+			return TCL_ERROR;
+		}
+
+		if (context_editor->buffer->job != NULL) {
+			kill(context_editor->buffer->job->child_pid, SIGTERM);
+		} else {
+			buffers_close(context_editor->buffer, context_editor->window);
+			chdir(context_editor->buffer->wd);
+		}
+
+		return TCL_OK;
+	} else if (argc == 2) {
+		if (strcmp(argv[1], "process") == 0) {
+			// kill current process with SIGTERM (check that context_editor is defined and associated buffer has a job)
+			if (context_editor == NULL) {
+				Tcl_AddErrorInfo(interp, "No active editor");
+				return TCL_ERROR;
+			}
+			if (context_editor->buffer->job == NULL) {
+				Tcl_AddErrorInfo(interp, "No active job");
+				return TCL_ERROR;
+			}
+			kill(context_editor->buffer->job->child_pid, SIGTERM);
+		} else if (strcmp(argv[1], "buffer") == 0) {
+			// close buffer (check that context_editor is defined)
+			if (context_editor == NULL) {
+				Tcl_AddErrorInfo(interp, "No active editor");
+				return TCL_ERROR;
+			}
+			buffers_close(context_editor->buffer, context_editor->window);
+			chdir(context_editor->buffer->wd);
+		} else if (argv[1][0] == '-') {
+			// kill current process with specific signal (check that context_editor is defined and associated buffer has a job)
+			if (context_editor == NULL) {
+				Tcl_AddErrorInfo(interp, "No active editor");
+				return TCL_ERROR;
+			}
+			if (context_editor->buffer->job == NULL) {
+				Tcl_AddErrorInfo(interp, "No active job");
+				return TCL_ERROR;
+			}
+			int signum = parse_signum(argv[1]+1);
+			if (signum < 0) {
+				Tcl_AddErrorInfo(interp, "Can not parse signal specification");
+				return TCL_ERROR;
+			}
+			kill(context_editor->buffer->job->child_pid, signum);
+		} else {
+			// kill specified process with SIGTERM
+			char *endptr = NULL;
+			int target_pid = (int)strtol(argv[1], &endptr, 10);
+			if ((endptr == NULL) || (*endptr != '\0')) {
+				Tcl_AddErrorInfo(interp, "Invalid pid specification");
+				return TCL_ERROR;
+			}
+			kill(target_pid, SIGTERM);
+		}
+
+		return TCL_OK;
+	} else if (argc == 3) {
+		// kill specified process with specified signal
+
+		if (argv[1][0] != '-') {
+			Tcl_AddErrorInfo(interp, "Expected a signal specification as first argument for two-argument kill");
+			return TCL_ERROR;
+		}
+		int signum = parse_signum(argv[1]+1);
+		if (signum < 0) {
+			Tcl_AddErrorInfo(interp, "Can not parse signal specification");
+			return TCL_ERROR;
+		}
+		char *endptr = NULL;
+		int target_pid = (int)strtol(argv[2], &endptr, 10);
+		if ((endptr == NULL) || (*endptr != '\0')) {
+			Tcl_AddErrorInfo(interp, "Invalid pid specification");
+			return TCL_ERROR;
+		}
+		kill(target_pid, signum);
+	} else {
+		Tcl_AddErrorInfo(interp, "Too many arguments to 'kill', consult documentation");
+		return TCL_ERROR;
+	}
+
+	return TCL_OK;
+}
+
 void interp_init(void) {
 	interp = Tcl_CreateInterp();
 	if (interp == NULL) {
@@ -791,6 +922,7 @@ void interp_init(void) {
 
 	Tcl_HideCommand(interp, "exit", "hidden_exit");
 	Tcl_CreateCommand(interp, "exit", &teddy_exit_command, (ClientData)NULL, NULL);
+	Tcl_CreateCommand(interp, "kill", &teddy_kill_command, (ClientData)NULL, NULL);
 
 	Tcl_CreateCommand(interp, "setcfg", &teddy_setcfg_command, (ClientData)NULL, NULL);
 	Tcl_CreateCommand(interp, "bindkey", &teddy_bindkey_command, (ClientData)NULL, NULL);

@@ -1,9 +1,9 @@
-- kill -> kill's current process (if one is active in the buffer), otherwise kills current buffer. If an argument is specified does the same thing as the kill command
+- the buffer manager should have the old short name (without directory) too (and search should be on that field)
 - opening directories
-- highlight current line
 - option to mark command to not copy text to primary selection
 - fix resize bug (by reimplementing layouts)
 
+- highlight current line
 - implement font substitution
 - cairo optimization: display all glyphs of the same type at once
 - gdb integration

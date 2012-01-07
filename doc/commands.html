@@ -117,6 +117,19 @@
 			<p>Shows buffer manager.
 		</div>
 
+		<h3>kill</h3>
+		<div class="ind">
+			<p><b>Syntax:</b> <tt>kill <b>[</b> -<i>signal-specifier</i> <b>]</b> <b>[</b> process <b>|</b> buffer <b>|</b> <i>pid</i> <b>]</b></tt>
+			<p>Kills processes or closes buffers. Some notes on invocations:
+			<ul>
+				<li><tt>kill -<i>signal specifier</i></tt> sends the specified signal to the process associated with the current buffer
+				<li><tt>kill process</tt> acts like <tt>kill -TERM</tt>
+				<li><tt>kill buffer</tt> closes the current buffer
+				<li><tt>kill</tt> without arguments acts like <tt>kill process</tt> if there is a process associated with the current buffer or <tt>kill buffer</tt> otherwise
+				<li>signal specifiers are either symbolic (like TERM, HUP, KILL, &amp;c) or numerical
+			</ul>
+		</div>
+
 		<h2>Selections and clipboard</h2>
 
 		<h3>mark</h3>
