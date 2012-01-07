@@ -87,7 +87,7 @@ static gboolean buffers_key_press_callback(GtkWidget *widget, GdkEventKey *event
 
 int buffers_close(buffer_t *buffer, GtkWidget *window) {
 	if (buffers[0] == buffer) return 1;
-                                  
+
 	if (buffer->modified) {
 		GtkWidget *dialog;
 		GtkWidget *content_area;
@@ -152,14 +152,14 @@ int buffers_close(buffer_t *buffer, GtkWidget *window) {
 					}
 				} while (gtk_tree_model_iter_next(GTK_TREE_MODEL(buffers_list), &mah));
 			}
-			
+
 			buffers[i] = NULL;
 
 			gtk_widget_queue_draw(buffers_tree);
 		} else {
 			printf("Attempted to remove buffer not present in list\n");
 		}
-		
+
 		buffer_free(buffer);
 	}
 
@@ -168,16 +168,16 @@ int buffers_close(buffer_t *buffer, GtkWidget *window) {
 
 void buffers_init(void) {
 	process_buffers_counter = 0;
-	
+
 	{
 		int i;
 		buffers_allocated = 10;
 		buffers = malloc(sizeof(buffer_t *) * buffers_allocated);
-		
+
 		for (i = 0; i < buffers_allocated; ++i) {
 			buffers[i] = NULL;
 		}
-		
+
 		if (!buffers) {
 			perror("Out of memory");
 			exit(EXIT_FAILURE);
@@ -198,11 +198,12 @@ void buffers_init(void) {
 		GtkWidget *label2 = gtk_label_new("Press <Enter> to focus buffer, <Del> to delete buffer,\n<Esc> to close");
 		GtkWidget *scroll = gtk_scrolled_window_new(NULL, NULL);
 
-		buffers_list = gtk_list_store_new(2, G_TYPE_INT, G_TYPE_STRING);
+		buffers_list = gtk_list_store_new(3, G_TYPE_INT, G_TYPE_STRING, G_TYPE_STRING);
 		buffers_tree = gtk_tree_view_new();
 
 		gtk_tree_view_insert_column_with_attributes(GTK_TREE_VIEW(buffers_tree), -1, "Buffer Number", gtk_cell_renderer_text_new(), "text", 0, NULL);
-		gtk_tree_view_insert_column_with_attributes(GTK_TREE_VIEW(buffers_tree), -1, "Buffer Name", gtk_cell_renderer_text_new(), "text", 1, NULL);
+		gtk_tree_view_insert_column_with_attributes(GTK_TREE_VIEW(buffers_tree), -1, "Buffer Short Name", gtk_cell_renderer_text_new(), "text", 1, NULL);
+		gtk_tree_view_insert_column_with_attributes(GTK_TREE_VIEW(buffers_tree), -1, "Buffer Name", gtk_cell_renderer_text_new(), "text", 2, NULL);
 		gtk_tree_view_set_model(GTK_TREE_VIEW(buffers_tree), GTK_TREE_MODEL(buffers_list));
 		gtk_tree_view_set_headers_visible(GTK_TREE_VIEW(buffers_tree), FALSE);
 		gtk_tree_view_set_search_column(GTK_TREE_VIEW(buffers_tree), 1);
@@ -218,7 +219,7 @@ void buffers_init(void) {
 		gtk_box_set_child_packing(GTK_BOX(vbox), label2, FALSE, FALSE, 2, GTK_PACK_END);
 
 		gtk_label_set_justify(GTK_LABEL(label2), GTK_JUSTIFY_LEFT);
-		
+
 		buffers_window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
 		gtk_window_set_decorated(GTK_WINDOW(buffers_window), TRUE);
 
@@ -230,7 +231,7 @@ void buffers_init(void) {
 
 		g_signal_connect(G_OBJECT(buffers_tree), "key-press-event", G_CALLBACK(buffers_key_press_callback), NULL);
 	}
-	
+
 }
 
 
@@ -266,7 +267,10 @@ void buffers_add(buffer_t *b) {
 		GtkTreeIter mah;
 
 		gtk_list_store_append(buffers_list, &mah);
-		gtk_list_store_set(buffers_list, &mah, 0, i, 1, b->name, -1);
+		char *namename = strrchr(b->name, '/');
+		if ((namename == NULL) || (*namename == '\0')) namename = b->name;
+		else  ++namename;
+		gtk_list_store_set(buffers_list, &mah, 0, i, 1, namename, 2, b->name, -1);
 	}
 }
 
@@ -319,19 +323,19 @@ buffer_t *buffers_open(buffer_t *base_buffer, const char *filename, char **rp) {
 	if (load_text_file(b, *rp) != 0) {
 		// file may not exist, attempt to create it
 		FILE *f = fopen(*rp, "w");
-			
+
 		if (!f) {
 			buffer_free(b);
 			return NULL;
 		}
-			
+
 		fclose(f);
 		if (load_text_file(b, *rp) != 0) {
 			buffer_free(b);
 			return NULL;
 		}
 	}
-		
+
 	// file loaded or created successfully
 	buffers_add(b);
 	return b;

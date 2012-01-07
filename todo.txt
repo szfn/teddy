@@ -1,10 +1,10 @@
-- the buffer manager should have the old short name (without directory) too (and search should be on that field)
 - opening directories
 - option to mark command to not copy text to primary selection
 - fix resize bug (by reimplementing layouts)
 
 - highlight current line
 - implement font substitution
+- bufman doesn't display a window, it switches the current editor to the +bufman+ special buffer (that has special keybindings)
 - cairo optimization: display all glyphs of the same type at once
 - gdb integration
 - replace tcl regex engine with TRE
