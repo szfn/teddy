@@ -1,14 +1,17 @@
+- kill -> kill's current process (if one is active in the buffer), otherwise kills current buffer. If an argument is specified does the same thing as the kill command
 - opening directories
+- highlight current line
+- option to mark command to not copy text to primary selection
+- fix resize bug (by reimplementing layouts)
+
 - implement font substitution
 - cairo optimization: display all glyphs of the same type at once
-- highlight current line
 - gdb integration
 - replace tcl regex engine with TRE
 - bg with an argument to force use of a new buffer
 - interface tabs
-- elastic tabs
 - options for tab character visualization
-
+- macros
 - fix bad rendering perfomance by killing cairo
 - debugger integration (just displaying currently executed line)
 - selection should copy selected text on past not on selection, for better efficiency (selection slowdown is noticeable on mouse selection)
@@ -25,13 +28,10 @@
 - open current directory on startup
 - implement command to create a scratch buffer
 - fix mark words when used with cursor keys
-- implement commands for macro editing
 - implement stayoncmd flag for buffers
 - implement lockcmd command that changes the command line of a buffer to always send a specific command
-- implement disable horizontal scrollbar
 - implement ability to switch a buffer's main font
 - implement +bg+ buffer setup hook, set as defaults: stayoncmd, disable horzontal scrollbar, switch font to monospaced
-- possible bug: selecting and scrolling doesn't work
 - Ctrl-o move to next editor (keep a stack of editors like windows' windows)
 - command to change buffer font to fixed width (start +bg buffers on fixed width by default)
 - ansi sequences processing
@@ -49,7 +49,6 @@
 - use an editor for the command line
 - disabling soft word wrap
 - clang syntax highlighting
+- elastic tabs
 
-- tcl commands to add:
-  - kill -> kill's current process (if one is active in the buffer), otherwise kills current buffer. If an argument is specified does the same thing as the kill command
-
+https://github.com/agl/critbit

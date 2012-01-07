@@ -410,21 +410,21 @@ void mouse_open_action(editor_t *editor, lpoint_t *start, lpoint_t *end) {
 		// if this succeeded we could open the file at the specified line and we are done
 		// otherwise the following code runs, we restrict the selection to a word around
 		// the cursor and call search on that
-		
+
 		copy_lpoint(start, &cursor);
 		copy_lpoint(end, &cursor);
-		
+
 		buffer_aux_wnwa_prev_ex(start);
 		buffer_aux_wnwa_next_ex(end);
-		
+
 		// artifact of how wnwa_prev works
 		/*++(start->glyph);
 		if (start->glyph > start->line->cap) start->glyph = start->line->cap;*/
-		
+
 		char *wordsel = buffer_lines_to_text(editor->buffer, start, end);
 		editor_start_search(context_editor, wordsel);
 		free(wordsel);
 	}
-	
+
 	context_editor = NULL;
 }

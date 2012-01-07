@@ -229,15 +229,19 @@ proc mouse_go_preprocessing_hook {text} {
    set text [mgph_remove_trailing_nonalnum $text]
    set text [mgph_trim_parenthesis $text]
 
-   #puts "Text is <$text>\n"
+   #puts "Text is <$text>"
 
    if {[regexp {^([^:]*)(?::|(?::?[\(\[]))([[:digit:]]+)[,:]([[:digit:]]+)(?:[\]\)])?$} $text -> filename lineno colno]} {
+       #puts "Returning <$filename:$lineno:$colno>"
        return "$filename:$lineno:$colno"
    }
 
    if {[regexp {^([^:]*)(?::|(?::?[\(\[]))([[:digit:]]+)(?:[\]\)])?$} $text -> filename lineno]} {
+       #puts "Returning <$filename:$lineno:0>"
        return "$filename:$lineno:0"
    }
+
+   #puts "Returning <$text>\n"
 
    return $text
 }

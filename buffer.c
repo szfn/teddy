@@ -957,7 +957,7 @@ buffer_t *buffer_create(FT_Library *library) {
 
 	asprintf(&(buffer->name), "+unnamed");
 	buffer->path = NULL;
-	asprintf(&(buffer->wd), "%s", getcwd(NULL, 0));
+	asprintf(&(buffer->wd), "%s/", getcwd(NULL, 0));
 	buffer->has_filename = 0;
 	buffer->select_type = BST_NORMAL;
 
