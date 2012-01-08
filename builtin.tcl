@@ -2,12 +2,12 @@
 
 proc kill_line {} {
    go :1
-   mark
+   mark transient
    move next line
    if {[undo tag] eq "kill_line"} {
    	undo fusenext
    }
-   cb cut
+   c ""
    undo tag kill_line
    cb pput [undo get before]
 }

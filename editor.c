@@ -89,6 +89,8 @@ static void copy_selection_to_clipboard(editor_t *editor, GtkClipboard *clipboar
 	lpoint_t start, end;
 	char *r = NULL;
 
+	if (editor->buffer->mark_transient) return;
+
 	buffer_get_selection(editor->buffer, &start, &end);
 
 	if (start.line == NULL) return;

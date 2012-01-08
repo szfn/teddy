@@ -193,6 +193,12 @@ static int teddy_mark_command(ClientData client_data, Tcl_Interp *interp, int ar
 			buffer_set_mark_at_cursor(context_editor->buffer);
 			gtk_widget_queue_draw(context_editor->drar);
 		}
+	} else if (strcmp(argv[1], "transient") == 0) {
+		if (context_editor->buffer->mark.line == NULL) {
+			buffer_set_mark_at_cursor(context_editor->buffer);
+			context_editor->buffer->mark_transient = true;
+			gtk_widget_queue_draw(context_editor->drar);
+		}
 	} else if (strcmp(argv[1], "stop") == 0) {
 		if (context_editor->buffer->mark.line != NULL) {
 			buffer_unset_mark(context_editor->buffer);

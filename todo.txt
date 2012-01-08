@@ -1,5 +1,3 @@
-- command to reload buffer contents from disk (for directory too) -- document
-- option to mark command to not copy text to primary selection
 - fix resize bug (by reimplementing layouts)
 
 - highlight current line
