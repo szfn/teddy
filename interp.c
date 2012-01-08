@@ -904,6 +904,36 @@ static int teddy_kill_command(ClientData client_data, Tcl_Interp *interp, int ar
 	return TCL_OK;
 }
 
+static int teddy_refresh_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
+	if (context_editor == NULL) {
+		Tcl_AddErrorInfo(interp, "No editor open, can not execute 'refresh' command");
+		return TCL_ERROR;
+	}
+
+	if (argc != 1) {
+		Tcl_AddErrorInfo(interp, "No arguments should be supplied to refresh");
+		return TCL_ERROR;
+	}
+
+	char *path = strdup(context_editor->buffer->path);
+	if (path == NULL) {
+		perror("Out of memory");
+		exit(EXIT_FAILURE);
+	}
+
+	if (null_buffer() == context_editor->buffer) return TCL_OK;
+
+	int r = buffers_close(context_editor->buffer, context_editor->window);
+	if (r == 0) return TCL_OK;
+
+	buffer_t *buffer = go_file(NULL, path, false);
+	if (buffer != NULL) editor_switch_buffer(context_editor, buffer);
+
+	free(path);
+
+	return TCL_OK;
+}
+
 void interp_init(void) {
 	interp = Tcl_CreateInterp();
 	if (interp == NULL) {
@@ -932,6 +962,7 @@ void interp_init(void) {
 	Tcl_CreateCommand(interp, "pwd", &teddy_pwd_command, (ClientData)NULL, NULL);
 
 	Tcl_CreateCommand(interp, "go", &teddy_go_command, (ClientData)NULL, NULL);
+	Tcl_CreateCommand(interp, "refresh", &teddy_refresh_command, (ClientData)NULL, NULL);
 
 	Tcl_CreateCommand(interp, "mark", &teddy_mark_command, (ClientData)NULL, NULL);
 	Tcl_CreateCommand(interp, "cursor", &teddy_cursor_command, (ClientData)NULL, NULL);
