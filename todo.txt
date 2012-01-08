@@ -1,4 +1,4 @@
-- opening directories
+- command to reload buffer contents from disk (for directory too)
 - option to mark command to not copy text to primary selection
 - fix resize bug (by reimplementing layouts)
 
@@ -42,7 +42,6 @@
 - appending to a buffer that was never displayed doesn't work (for some reason), tons of valgrind exceptions are generated. There is a valid use case for starting commands on an invisible buffer
 - persistence of history
 - ability to persist the status of a window
-- command to reload buffer contents from disk
 - auto-reloading buffers when there is no change and the file on disk was changed
 - left+middle -> cut
 - move mouse cursor when searching with mouse

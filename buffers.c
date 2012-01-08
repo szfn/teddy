@@ -309,38 +309,6 @@ int buffers_close_all(GtkWidget *window) {
 	return 1;
 }
 
-
-buffer_t *buffers_open(buffer_t *base_buffer, const char *filename, char **rp) {
-	buffer_t *b;
-	*rp = unrealpath((base_buffer != NULL) ? base_buffer->path : NULL, filename);
-
-	if (rp == NULL) {
-		perror("Error resolving pathname");
-		return NULL;
-	}
-
-	b = buffer_create(&library);
-	if (load_text_file(b, *rp) != 0) {
-		// file may not exist, attempt to create it
-		FILE *f = fopen(*rp, "w");
-
-		if (!f) {
-			buffer_free(b);
-			return NULL;
-		}
-
-		fclose(f);
-		if (load_text_file(b, *rp) != 0) {
-			buffer_free(b);
-			return NULL;
-		}
-	}
-
-	// file loaded or created successfully
-	buffers_add(b);
-	return b;
-}
-
 buffer_t *buffers_find_buffer_from_path(const char *urp) {
 	char *rp = realpath(urp, NULL);
 	buffer_t *r = NULL;

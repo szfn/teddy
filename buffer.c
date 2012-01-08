@@ -12,6 +12,7 @@
 #include "baux.h"
 #include "wordcompl.h"
 #include "lexy.h"
+#include "rd.h"
 
 void buffer_set_mark_at_cursor(buffer_t *buffer) {
 	copy_lpoint(&(buffer->mark), &(buffer->cursor));
@@ -652,6 +653,32 @@ char *buffer_ppp(buffer_t *buffer, bool include_filename, int reqlen, bool alway
 
 	strcpy(compr+i, source+j);
 	return compr;
+}
+
+int load_dir(buffer_t *buffer, const char *dirname) {
+	DIR *dir = opendir(dirname);
+	if (dir == NULL) {
+		return -1;
+	}
+
+	buffer->cursor.line = buffer->real_line = new_real_line(0);
+	buffer->cursor.glyph = 0;
+
+	buffer->has_filename = 0;
+	buffer->path = realpath(dirname, NULL);
+	free(buffer->wd);
+	buffer->wd = strdup(buffer->path);
+	free(buffer->name);
+	buffer->name = buffer_ppp(buffer, true, 20, true);
+
+	rd(dir, buffer);
+
+	closedir(dir);
+
+	buffer->editable = false;
+	buffer->modified = false;
+
+	return 0;
 }
 
 int load_text_file(buffer_t *buffer, const char *filename) {

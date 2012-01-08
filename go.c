@@ -3,6 +3,9 @@
 #include <gtk/gtk.h>
 #include <gdk/gdkkeysyms.h>
 #include <stdbool.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
 
 #include "interp.h"
 #include "baux.h"
@@ -101,6 +104,56 @@ static int exec_go_position(const char *specifier, editor_t *context_editor, buf
 	return 0;
 }
 
+buffer_t *go_file(buffer_t *base_buffer, const char *filename, bool create) {
+	char *urp = unrealpath((base_buffer != NULL) ? base_buffer->path : NULL, filename);
+
+	if (urp == NULL) {
+		return NULL;
+	}
+
+	buffer_t *buffer = buffers_find_buffer_from_path(urp);
+	if (buffer != NULL) goto go_file_return;
+
+
+	struct stat s;
+	if (stat(urp, &s) != 0) {
+		if (create) {
+			FILE *f = fopen(urp, "w");
+			if (f) { fclose(f); }
+			if (stat(urp, &s) != 0) {
+				buffer = NULL;
+				goto go_file_return;
+			}
+		} else {
+			buffer = NULL;
+			goto go_file_return;
+		}
+	}
+
+	buffer = buffer_create(&library);
+
+	if (S_ISDIR(s.st_mode)) {
+		if (load_dir(buffer, urp) != 0) {
+			buffer_free(buffer);
+			buffer = NULL;
+		}
+	} else {
+		if (load_text_file(buffer, urp) != 0) {
+			buffer_free(buffer);
+			buffer = NULL;
+		}
+	}
+
+
+	if (buffer != NULL) {
+		buffers_add(buffer);
+	}
+
+go_file_return:
+	free(urp);
+	return buffer;
+}
+
 editor_t *go_to_buffer(editor_t *editor, buffer_t *buffer) {
 	editor_t *target = columns_get_buffer(buffer);
 	int response;
@@ -146,36 +199,25 @@ editor_t *go_to_buffer(editor_t *editor, buffer_t *buffer) {
 }
 
 int exec_go(const char *specifier) {
-     char *sc = NULL;
-     char *saveptr, *tok;
-     char *urp = NULL;
-     buffer_t *buffer = NULL;
-     editor_t *editor = NULL;
-     int retval;
+	char *sc = NULL;
+	char *saveptr, *tok;
+	buffer_t *buffer = NULL;
+	editor_t *editor = NULL;
+	int retval;
 
-     if (exec_go_position(specifier, context_editor, context_editor->buffer)) {
-         retval = 1;
-         goto exec_go_cleanup;
-     }
-
-     sc = malloc(sizeof(char) * (strlen(specifier) + 1));
-     strcpy(sc, specifier);
-
-     tok = strtok_r(sc, ":", &saveptr);
-     if (tok == NULL) { retval = 0; goto exec_go_cleanup; }
-
-     urp = unrealpath(context_editor->buffer->path, tok);
-
-     buffer = buffers_find_buffer_from_path(urp);
-     if (buffer == NULL) {
-         buffer = buffer_create(&library);
-         if (load_text_file(buffer, urp) != 0) {
-             buffer_free(buffer);
-             retval = 0;
-             goto exec_go_cleanup;
-         }
-         buffers_add(buffer);
+	if (exec_go_position(specifier, context_editor, context_editor->buffer)) {
+	    retval = 1;
+	    goto exec_go_cleanup;
 	}
+
+	sc = malloc(sizeof(char) * (strlen(specifier) + 1));
+	strcpy(sc, specifier);
+
+	tok = strtok_r(sc, ":", &saveptr);
+	if (tok == NULL) { retval = 0; goto exec_go_cleanup; }
+
+	buffer = go_file(context_editor->buffer, tok, false);
+	if (buffer == NULL) { retval = 0; goto exec_go_cleanup; }
 
 	editor = go_to_buffer(context_editor, buffer);
 	// editor will be NULL here if the user decided to select an editor
@@ -205,7 +247,6 @@ int exec_go(const char *specifier) {
 
  exec_go_cleanup:
 	if (sc != NULL) free(sc);
-	if (urp != NULL) free(urp);
 	return retval;
 }
 

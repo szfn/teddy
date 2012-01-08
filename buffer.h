@@ -100,10 +100,12 @@ void buffer_free(buffer_t *buffer);
 
 /* Initialization completion function (at least one of these two must be called after buffer_create, before the buffer is used in any way)
    - load_text_file: loads a text file
+   - load_dir: loads a directory
    - load_empyt: finalize the buffer initialization as empty
  */
 int load_text_file(buffer_t *buffer, const char *filename);
 void load_empty(buffer_t *buffer);
+int load_dir(buffer_t *buffer, const char *dirname);
 
 // save the buffer to its file (if exists, otherwise fails)
 void save_to_text_file(buffer_t *buffer);

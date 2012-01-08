@@ -14,6 +14,7 @@
 #include "research.h"
 #include "wordcompl.h"
 #include "lexy.h"
+#include "rd.h"
 
 static gboolean delete_callback(GtkWidget *widget, GdkEvent *event, gpointer data) {
 	//TODO: terminate all processes
@@ -29,6 +30,7 @@ int main(int argc, char *argv[]) {
 
 	gtk_init(&argc, &argv);
 
+	rd_init();
 	global_init();
 	cfg_init();
 	init_colors();
@@ -44,16 +46,12 @@ int main(int argc, char *argv[]) {
 	wordcompl_init();
 
 	for (i = 1; i < argc; ++i) {
-		char *rp;
 		buffer_t *buf;
 		//printf("Will show: %s\n", argv[i]);
-		buf = buffers_open(NULL, argv[i], &rp);
-		if (buf == NULL) {
-			fprintf(stderr, "Load of [%s] failed\n", (rp == NULL) ? argv[i] : rp);
-		} else {
+		buf = go_file(NULL, argv[i], true);
+		if (buf != NULL) {
 			abuf = buf;
 		}
-		free(rp);
 	}
 
 	window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
