@@ -6,15 +6,27 @@
 #include "editor.h"
 #include "buffer.h"
 
+#define GTK_TYPE_COLUMN (gtk_column_get_type())
+#define GTK_COLUMN(obj) (G_TYPE_CHECK_INSTANCE_CAST((obj), GTK_TYPE_COLUMN, column_t))
+#define GTK_COLUMN_CLASS(klass) (G_TYPE_CHECK_CLASS_CAST((klass), GTK_TYPE_COLUMN, column_class))
+#define GTK_IS_COLUMN(obj) (G_TYPE_CHECK_INSTANCE_TYPE((obj), GTK_TYPE_COLUMN))
+#define GTK_COLUMN_GET_CLASS(obj) (G_TYPE_INSTANCE_GET_CLASS((obj), GTK_TYPE_COLUMN, column_class))
+
 typedef struct _column_t {
+	GtkBox box;
 	editor_t **editors;
 	int editors_allocated;
 	GtkWidget *editors_window;
-	GtkWidget *editors_vbox;
 	int exposed;
 } column_t;
 
-column_t *column_new(GtkWidget *window);
+typedef struct _column_class {
+	GtkBoxClass parent_class;
+} column_class;
+
+GType gtk_myvbox_get_type(void) G_GNUC_CONST;
+
+column_t *column_new(GtkWidget *window, gint spacing);
 void column_free(column_t *column);
 editor_t *column_new_editor(column_t *column, buffer_t *buffer);
 editor_t *column_find_buffer_editor(column_t *column, buffer_t *buffer);

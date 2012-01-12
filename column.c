@@ -6,17 +6,56 @@
 #include <math.h>
 #include <assert.h>
 
-
 #define MAGIC_NUMBER 18
 
+static void gtk_column_class_init(column_class *klass);
+static void gtk_column_init(column_t *column);
+static void gtk_column_size_request(GtkWidget *widget, GtkRequisition *requisition);
+static void gtk_column_size_allocate(GtkWidget *widget, GtkAllocation *allocation);
+
+GType gtk_column_get_type(void) {
+	static GType column_type = 0;
+
+	if (!column_type) {
+		static const GTypeInfo column_info = {
+			sizeof(column_class),
+			NULL,
+			NULL,
+			(GClassInitFunc)gtk_column_class_init,
+			NULL,
+			NULL,
+			sizeof(column_t),
+			0,
+			(GInstanceInitFunc)gtk_column_init,
+		};
+
+		column_type = g_type_register_static(GTK_TYPE_BOX, "column_t", &column_info, 0);
+	}
+
+	return column_type;
+}
+
+static void gtk_column_class_init(column_class *class) {
+	GtkWidgetClass *widget_class = (GtkWidgetClass *)class;
+
+	widget_class->size_request = gtk_column_size_request;
+	widget_class->size_allocate = gtk_column_size_allocate;
+}
+
+static void gtk_column_init(column_t *column) {
+}
+
 static gboolean editors_expose_event_callback(GtkWidget *widget, GdkEventExpose *event, column_t *column) {
-	column->exposed = 1;    
+	column->exposed = 1;
 	return FALSE;
 }
 
-column_t *column_new(GtkWidget *window) {
-	column_t *column = malloc(sizeof(column_t));
-	int i;
+column_t *column_new(GtkWidget *window, gint spacing) {
+	GtkWidget *column_widget = g_object_new(GTK_TYPE_COLUMN, NULL);
+	column_t *column = GTK_COLUMN(column_widget);
+
+	GTK_BOX(column)->spacing = spacing;
+	GTK_BOX(column)->homogeneous = FALSE;
 
 	column->exposed = 0;
 	column->editors_allocated = 10;
@@ -25,16 +64,93 @@ column_t *column_new(GtkWidget *window) {
 		perror("Out of memory");
 		exit(EXIT_FAILURE);
 	}
-	for (i = 0; i < column->editors_allocated; ++i) {
+	for (int i = 0; i < column->editors_allocated; ++i) {
 		column->editors[i] = NULL;
 	}
 
-	column->editors_vbox = gtk_vbox_new(FALSE, 0);
-	g_signal_connect(G_OBJECT(column->editors_vbox), "expose-event", G_CALLBACK(editors_expose_event_callback), (gpointer)column);
+	g_signal_connect(G_OBJECT(column), "expose-event", G_CALLBACK(editors_expose_event_callback), (gpointer)column);
 
 	column->editors_window = window;
 
 	return column;
+}
+
+static void gtk_column_size_request(GtkWidget *widget, GtkRequisition *requisition) {
+	GtkBox *box = GTK_BOX(widget);
+	column_t *column = GTK_COLUMN(widget);
+
+	requisition->width = GTK_CONTAINER(box)->border_width * 2;
+	requisition->height = GTK_CONTAINER(box)->border_width * 2;
+
+	requisition->width += 50;
+
+	for (int i = 0; i < column->editors_allocated; ++i) {
+		editor_t *editor = column->editors[i];
+		if (editor == NULL) continue;
+		requisition->height += (MIN_LINES_HEIGHT_REQUEST + 2) * editor->buffer->line_height;
+		GtkRequisition child_requisition;
+		gtk_widget_size_request(editor->container, &child_requisition);
+	}
+
+	GList *children = box->children;
+	while (children) {
+		GtkBoxChild *child = children->data;
+		children = children->next;
+
+		requisition->height += child->padding * 2;
+	}
+}
+
+static int editors_editor_from_table(column_t *column, GtkWidget *table) {
+	int i;
+	for (i = 0; i < column->editors_allocated; ++i) {
+		if (column->editors[i] == NULL) continue;
+		if (column->editors[i]->container == table) return i;
+	}
+	return -1;
+}
+
+static void gtk_column_size_allocate(GtkWidget *widget, GtkAllocation *allocation) {
+	column_t *column = GTK_COLUMN(widget);
+	GtkBox *box = GTK_BOX(widget);
+
+	widget->allocation = *allocation;
+
+	double total_height_request = 0.0;
+	for (int i = 0; i < column->editors_allocated; ++i) {
+		editor_t *editor = column->editors[i];
+		if (editor == NULL) continue;
+
+		total_height_request += editor_get_height_request(editor);
+	}
+
+	gint y = allocation->y + GTK_CONTAINER(box)->border_width;
+
+	GList *children = box->children;
+	while (children) {
+		GtkBoxChild *child = children->data;
+		children = children->next;
+
+		int i = editors_editor_from_table(column, child->widget);
+
+		double size_request = (i != -1) ? editor_get_height_request(column->editors[i]) / total_height_request : 0.1;
+
+		GtkAllocation child_allocation;
+
+		child_allocation.x = allocation->x + GTK_CONTAINER(box)->border_width;
+		child_allocation.width = MAX(1, (gint)allocation->width - (gint)GTK_CONTAINER(box)->border_width * 1);
+		child_allocation.y = y;
+
+		child_allocation.height = allocation->height * size_request;
+
+		y += child_allocation.height;
+
+		printf("Allocated height: %d y: %d\n", child_allocation.height, child_allocation.y);
+
+		gtk_widget_size_allocate(child->widget, &child_allocation);
+	}
+
+	printf("\n");
 }
 
 void column_free(column_t *column) {
@@ -46,12 +162,12 @@ void column_free(column_t *column) {
 		}
 	}
 	free(column->editors);
-	free(column);
+	//free(column);
 }
 
 static void editors_grow(column_t *column) {
 	int i;
-	
+
 	column->editors = realloc(column->editors, sizeof(editor_t *) * column->editors_allocated * 2);
 	if (!(column->editors)) {
 		perror("Out of memory");
@@ -63,14 +179,6 @@ static void editors_grow(column_t *column) {
 	column->editors_allocated *= 2;
 }
 
-static int editors_editor_from_table(column_t *column, GtkWidget *table) {
-	int i;
-	for (i = 0; i < column->editors_allocated; ++i) {
-		if (column->editors[i] == NULL) continue;
-		if (column->editors[i]->container == table) return i;
-	}
-	return -1;
-}
 
 static int editors_find_editor(column_t *column, editor_t *editor) {
 	int i;
@@ -85,7 +193,7 @@ static editor_t *editors_index_to_editor(column_t *column, int idx) {
 }
 
 editor_t *column_get_editor_before(column_t *column, editor_t *editor) {
-	GList *list = gtk_container_get_children(GTK_CONTAINER(column->editors_vbox));
+	GList *list = gtk_container_get_children(GTK_CONTAINER(column));
 	GList *prev = NULL, *cur;
 	editor_t *r;
 
@@ -105,7 +213,7 @@ editor_t *column_get_editor_before(column_t *column, editor_t *editor) {
 }
 
 static editor_t *column_get_last(column_t *column) {
-	GList *list = gtk_container_get_children(GTK_CONTAINER(column->editors_vbox));
+	GList *list = gtk_container_get_children(GTK_CONTAINER(column));
 	GList *cur, *prev = NULL;
 	GtkWidget *w;
 
@@ -118,7 +226,7 @@ static editor_t *column_get_last(column_t *column) {
 	w = prev->data;
 
 	g_list_free(list);
-	
+
 	{
 		int idx = editors_editor_from_table(column, w);
 		return editors_index_to_editor(column, idx);
@@ -127,14 +235,14 @@ static editor_t *column_get_last(column_t *column) {
 
 static int column_add(column_t *column, editor_t *editor) {
 	int i;
-	
+
 	for (i = 0; i < column->editors_allocated; ++i) {
 		if (column->editors[i] == NULL) break;
 	}
 
 	if (i < column->editors_allocated) {
 		editor_t *last_editor = column_get_last(column);
-		
+
 		column->editors[i] = editor;
 
 		if (last_editor != NULL) {
@@ -144,7 +252,6 @@ static int column_add(column_t *column, editor_t *editor) {
 
 			gtk_widget_get_allocation(last_editor->container, &allocation);
 			last_editor_real_size = editor_get_height_request(last_editor);
-
 
 			if (allocation.height * 0.40 > allocation.height - last_editor_real_size) {
 				new_height = allocation.height * 0.40;
@@ -161,11 +268,11 @@ static int column_add(column_t *column, editor_t *editor) {
 			gtk_widget_set_size_request(last_editor->container, -1, allocation.height - new_height);
 		}
 
-		gtk_container_add(GTK_CONTAINER(column->editors_vbox), editor->container);
-		gtk_box_set_child_packing(GTK_BOX(column->editors_vbox), editor->container, TRUE, TRUE, 1, GTK_PACK_START);
+		gtk_container_add(GTK_CONTAINER(column), editor->container);
+		gtk_box_set_child_packing(GTK_BOX(column), editor->container, TRUE, TRUE, 1, GTK_PACK_START);
 
-		gtk_widget_show_all(column->editors_vbox);
-		gtk_widget_queue_draw(column->editors_vbox);
+		gtk_widget_show_all(GTK_WIDGET(column));
+		gtk_widget_queue_draw(GTK_WIDGET(column));
 
 		return 1;
 	} else {
@@ -207,7 +314,7 @@ int column_editor_count(column_t *column) {
 }
 
 editor_t *column_get_first_editor(column_t *column) {
-	GList *list = gtk_container_get_children(GTK_CONTAINER(column->editors_vbox));
+	GList *list = gtk_container_get_children(GTK_CONTAINER(column));
 	int new_idx = editors_editor_from_table(column, list->data);
 	editor_t *r = (new_idx != -1) ? column->editors[new_idx] : NULL;
 	g_list_free(list);
@@ -216,7 +323,7 @@ editor_t *column_get_first_editor(column_t *column) {
 
 editor_t *column_get_last_editor(column_t *column) {
 	editor_t *r = NULL;
-	GList *list = gtk_container_get_children(GTK_CONTAINER(column->editors_vbox));
+	GList *list = gtk_container_get_children(GTK_CONTAINER(column));
 	for (GList *cur = list; cur != NULL; cur = cur->next) {
 		if (cur->next == NULL) {
 			int new_idx = editors_editor_from_table(column, cur->data);
@@ -239,7 +346,7 @@ editor_t *column_remove(column_t *column, editor_t *editor) {
 	editor->initialization_ended = 0;
 
 	if (idx != -1) {
-		gtk_container_remove(GTK_CONTAINER(column->editors_vbox), editor->container);
+		gtk_container_remove(GTK_CONTAINER(column), editor->container);
 		column->editors[idx] = NULL;
 	}
 

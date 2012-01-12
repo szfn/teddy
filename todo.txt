@@ -1,7 +1,10 @@
+- opened directories don't have the finishing '/' (and directory navigation doesn't work properly)
 - fix resize bug (by reimplementing layouts)
 
 - highlight current line
+- shift-left drag on tag closes origin editor (and swapping with +null+ always causes the editor to be closed)
 - implement font substitution
+- review new heuristic
 - bufman doesn't display a window, it switches the current editor to the +bufman+ special buffer (that has special keybindings)
 - cairo optimization: display all glyphs of the same type at once
 - gdb integration
