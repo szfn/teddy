@@ -154,7 +154,7 @@ go_file_return:
 	return buffer;
 }
 
-editor_t *go_to_buffer(editor_t *editor, buffer_t *buffer) {
+editor_t *go_to_buffer(editor_t *editor, buffer_t *buffer, int where) {
 	editor_t *target = columns_get_buffer(columnset, buffer);
 	int response;
 	char *msg;
@@ -168,9 +168,13 @@ editor_t *go_to_buffer(editor_t *editor, buffer_t *buffer) {
 	gtk_label_set_text(GTK_LABEL(go_switch_label), msg);
 	free(msg);
 
-	gtk_widget_show_all(go_switch_window);
-	response = gtk_dialog_run(GTK_DIALOG(go_switch_window));
-	gtk_widget_hide(go_switch_window);
+	if (where < 0) {
+		gtk_widget_show_all(go_switch_window);
+		response = gtk_dialog_run(GTK_DIALOG(go_switch_window));
+		gtk_widget_hide(go_switch_window);
+	} else {
+		response = where;
+	}
 
 	//printf("Response was: %d\n", response);
 
@@ -198,7 +202,7 @@ editor_t *go_to_buffer(editor_t *editor, buffer_t *buffer) {
 	return editor;
 }
 
-int exec_go(const char *specifier) {
+static int exec_go(const char *specifier, int where) {
 	char *sc = NULL;
 	char *saveptr, *tok;
 	buffer_t *buffer = NULL;
@@ -219,7 +223,7 @@ int exec_go(const char *specifier) {
 	buffer = go_file(context_editor->buffer, tok, false);
 	if (buffer == NULL) { retval = 0; goto exec_go_cleanup; }
 
-	editor = go_to_buffer(context_editor, buffer);
+	editor = go_to_buffer(context_editor, buffer, where);
 	// editor will be NULL here if the user decided to select an editor
 
 	tok = strtok_r(NULL, ":", &saveptr);
@@ -261,7 +265,7 @@ int teddy_go_command(ClientData client_data, Tcl_Interp *interp, int argc, const
 		return TCL_ERROR;
 	}
 
-	if (!exec_go(argv[1])) {
+	if (!exec_go(argv[1], -1)) {
 		char *urp = unrealpath(context_editor->buffer->path, argv[1]);
 		char *msg;
 		GtkWidget *dialog = gtk_dialog_new_with_buttons("Create file", GTK_WINDOW(context_editor->window), GTK_DIALOG_MODAL|GTK_DIALOG_DESTROY_WITH_PARENT, "Yes", 1, "No", 0, NULL);
@@ -289,7 +293,7 @@ int teddy_go_command(ClientData client_data, Tcl_Interp *interp, int argc, const
 					quick_message(context_editor, "Error", "Unexpected error during file creation");
 				} else {
 					buffers_add(buffer);
-					go_to_buffer(context_editor, buffer);
+					go_to_buffer(context_editor, buffer, -1);
 				}
 			}
 		}
@@ -447,7 +451,13 @@ void mouse_open_action(editor_t *editor, lpoint_t *start, lpoint_t *end) {
 
 	const char *go_arg = Tcl_GetStringResult(interp);
 
-	if (!exec_go(go_arg)) {
+	int where = -1;
+
+	if (editor->buffer->path[strlen(editor->buffer->path)-1] == '/') {
+		where = GO_NEW;
+	}
+
+	if (!exec_go(go_arg, where)) {
 		// if this succeeded we could open the file at the specified line and we are done
 		// otherwise the following code runs, we restrict the selection to a word around
 		// the cursor and call search on that

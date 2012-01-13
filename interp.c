@@ -585,7 +585,7 @@ static int teddy_bg_command(ClientData client_data, Tcl_Interp *interp, int argc
 	if (context_editor->buffer != buffer)
 		buffer_cd(buffer, context_editor->buffer->wd);
 
-	go_to_buffer(context_editor, buffer);
+	go_to_buffer(context_editor, buffer, -1);
 
 	bzero(&term, sizeof(struct termios));
 

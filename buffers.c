@@ -62,7 +62,7 @@ static gboolean buffers_key_press_callback(GtkWidget *widget, GdkEventKey *event
 			int idx = get_selected_idx();
 			if (idx < 0) return TRUE;
 			gtk_widget_hide(buffers_window);
-			go_to_buffer(buffers_selector_focus_editor, buffers[idx]);
+			go_to_buffer(buffers_selector_focus_editor, buffers[idx], -1);
 			return TRUE;
 		}
 		case GDK_KEY_Escape:

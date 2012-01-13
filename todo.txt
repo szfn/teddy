@@ -1,6 +1,6 @@
 - highlight current line (remove cursor blinking?)
 - shift-left drag on tag closes origin editor
-
+- review mouse actions on resize handler
 - implement font substitution
 - review new heuristic
 - bufman doesn't display a window, it switches the current editor to the +bufman+ special buffer (that has special keybindings)
