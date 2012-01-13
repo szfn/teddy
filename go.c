@@ -155,11 +155,11 @@ go_file_return:
 }
 
 editor_t *go_to_buffer(editor_t *editor, buffer_t *buffer) {
-	editor_t *target = columns_get_buffer(buffer);
+	editor_t *target = columns_get_buffer(columnset, buffer);
 	int response;
 	char *msg;
 	if (target != NULL) {
-		editor_grab_focus(target);
+		editor_grab_focus(target, true);
 		deferred_action_to_return = FOCUS_ALREADY_SWITCHED;
 		return target;
 	}
@@ -187,9 +187,9 @@ editor_t *go_to_buffer(editor_t *editor, buffer_t *buffer) {
 
 	case GO_NEW:
 	default:
-		target = heuristic_new_frame(editor, buffer);
+		target = heuristic_new_frame(columnset, editor, buffer);
 		if (target != NULL) {
-			editor_grab_focus(target);
+			editor_grab_focus(target, true);
 			deferred_action_to_return = FOCUS_ALREADY_SWITCHED;
 		}
 		return target;

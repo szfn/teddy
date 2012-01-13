@@ -63,18 +63,18 @@ int main(int argc, char *argv[]) {
 	g_signal_connect_swapped(G_OBJECT(window), "destroy", G_CALLBACK(gtk_main_quit), NULL);
 
 	go_init(window);
-	columns_init(window);
+	columnset = the_columns_new(window);
 	research_init(window);
-	editor = columns_new((abuf == NULL) ? null_buffer() : abuf);
+	editor = columns_new(columnset, (abuf == NULL) ? null_buffer() : abuf);
 
 	gtk_widget_show_all(window);
 
-	editor_grab_focus(editor);
+	editor_grab_focus(editor, false);
 
 	gtk_main();
 
 	buffers_free();
-	columns_free();
+	columns_free(columnset);
 	interp_free();
 	cmdcompl_free();
 

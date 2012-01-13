@@ -668,6 +668,13 @@ int load_dir(buffer_t *buffer, const char *dirname) {
 
 	buffer->has_filename = 0;
 	buffer->path = realpath(dirname, NULL);
+	if (buffer->path[strlen(buffer->path)-1] != '/') {
+		char *p = malloc((strlen(buffer->path) + 2) * sizeof(char));
+		strcpy(p, buffer->path);
+		strcat(p, "/");
+		free(buffer->path);
+		buffer->path = p;
+	}
 	free(buffer->wd);
 	buffer->wd = strdup(buffer->path);
 	free(buffer->name);
@@ -1203,7 +1210,7 @@ void buffer_line_clean_trailing_spaces(buffer_t *buffer, real_line_t *line) {
 		if (buffer->cursor.glyph > line->cap) buffer->cursor.glyph = line->cap;
 	}
 
-	editor_t *editor = columns_get_buffer(buffer);
+	editor_t *editor = columns_get_buffer(columnset, buffer);
 	if (editor != NULL) {
 		gtk_widget_queue_draw(editor->label);
 	}

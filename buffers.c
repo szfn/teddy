@@ -30,7 +30,7 @@ static int get_selected_idx(void) {
 	GtkTreeIter iter;
 	GValue value = {0};
 	int idx;
-	
+
 	gtk_tree_view_get_cursor(GTK_TREE_VIEW(buffers_tree), &focus_path, &focus_column);
 
 	if (focus_path == NULL) return -1;
@@ -38,7 +38,7 @@ static int get_selected_idx(void) {
 	gtk_tree_model_get_iter(GTK_TREE_MODEL(buffers_list), &iter, focus_path);
 	gtk_tree_model_get_value(GTK_TREE_MODEL(buffers_list), &iter, 0, &value);
 	idx = g_value_get_int(&value);
-	
+
 	g_value_unset(&value);
 	gtk_tree_path_free(focus_path);
 
@@ -46,7 +46,7 @@ static int get_selected_idx(void) {
 		printf("Error selecting buffer (why?) %d\n", idx);
 		return -1;
 	}
-	
+
 	return idx;
 }
 
@@ -127,7 +127,7 @@ int buffers_close(buffer_t *buffer, GtkWidget *window) {
 		}
 	}
 
-	columns_replace_buffer(buffer);
+	columns_replace_buffer(columnset, buffer);
 
 	{
 		int i;

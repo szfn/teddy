@@ -12,6 +12,8 @@
 #include "columns.h"
 #include "lexy.h"
 
+#include "global.h"
+
 #define JOBS_READ_BUFFER_SIZE 128
 
 void jobs_init(void) {
@@ -41,7 +43,7 @@ static void job_append(job_t *job, const char *msg, int len, int on_new_line, ui
 	buffer_append(job->buffer, msg, len, on_new_line);
 	job->buffer->default_color = L_NOTHING;
 
-	editor_t *editor = columns_get_buffer(job->buffer);
+	editor_t *editor = columns_get_buffer(columnset, job->buffer);
 	if (editor != NULL) {
 		editor_center_on_cursor(editor);
 		gtk_widget_queue_draw(editor->drar);

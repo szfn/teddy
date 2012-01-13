@@ -43,7 +43,7 @@ void set_label_text(editor_t *editor) {
 }
 
 void editor_complete_edit(editor_t *editor) {
-	active_column = editor->column;
+	columnset->active_column = editor->column;
 	set_label_text(editor);
 	editor_center_on_cursor(editor);
 	gtk_widget_queue_draw(editor->drar);
@@ -194,10 +194,10 @@ void editor_close_editor(editor_t *editor) {
 	if (column_editor_count(editor->column) > 1) {
 		editor = column_remove(editor->column, editor);
 	} else {
-		column_t *column = columns_remove(editor->column, editor);
+		column_t *column = columns_remove(columnset, editor->column, editor);
 		editor = column_get_first_editor(column);
 	}
-	editor_grab_focus(editor);
+	editor_grab_focus(editor, false);
 }
 
 void editor_switch_buffer(editor_t *editor, buffer_t *buffer) {
@@ -291,7 +291,7 @@ void editor_save_action(editor_t *editor) {
 
 void editor_undo_action(editor_t *editor) {
 	buffer_undo(editor->buffer);
-	active_column = editor->column;
+	columnset->active_column = editor->column;
 }
 
 static gboolean key_press_callback(GtkWidget *widget, GdkEventKey *event, editor_t *editor) {
@@ -670,7 +670,7 @@ static void draw_parmatch(editor_t *editor, GtkAllocation *allocation, cairo_t *
 }
 
 static gboolean cursor_blinker(editor_t *editor) {
-	if (!editor_exists(editor)) return FALSE;
+	if (!editor_exists(columnset, editor)) return FALSE;
 	if (!(editor->initialization_ended)) return TRUE;
 	if (editor->cursor_visible < 0) editor->cursor_visible = 1;
 
@@ -869,7 +869,7 @@ static gboolean expose_event_callback(GtkWidget *widget, GdkEventExpose *event, 
 	}
 
 	if (editor->warp_mouse_after_next_expose) {
-		editor_grab_focus(editor);
+		editor_grab_focus(editor, true);
 		editor->warp_mouse_after_next_expose = FALSE;
 	}
 
@@ -893,7 +893,7 @@ static gboolean hscrolled_callback(GtkAdjustment *adj, gpointer data) {
 static gboolean label_button_press_callback(GtkWidget *widget, GdkEventButton *event, editor_t *editor) {
 	if ((event->type == GDK_2BUTTON_PRESS) && (event->button == 1)) {
 		if (column_remove_others(editor->column, editor) == 0) {
-			columns_remove_others(editor->column, editor);
+			columns_remove_others(columnset, editor->column, editor);
 		}
 		return TRUE;
 	}
@@ -906,9 +906,9 @@ static gboolean label_button_press_callback(GtkWidget *widget, GdkEventButton *e
 	if ((event->type == GDK_BUTTON_PRESS) && (event->button == 3)) {
 		editor_t *new_editor = column_new_editor(editor->column, null_buffer());
 		if (new_editor == NULL) {
-			heuristic_new_frame(editor, null_buffer());
+			heuristic_new_frame(columnset, editor, null_buffer());
 		} else {
-           editor_grab_focus(new_editor);
+           editor_grab_focus(new_editor, true);
 		}
 		return TRUE;
 	}
@@ -926,18 +926,22 @@ static gboolean label_button_release_callback(GtkWidget *widget, GdkEventButton 
 	y = event->y + allocation.y;
 
 	if (event->button == 1) {
-		editor_t *target = columns_get_editor_from_positioon(x, y);
+		editor_t *target = columns_get_editor_from_position(columnset, x, y);
 
 		if ((target != NULL) && (target != editor)) {
 			buffer_t *tbuf = target->buffer;
 			editor_switch_buffer(target, editor->buffer);
 			editor_switch_buffer(editor, tbuf);
+
+			if (tbuf == null_buffer()) {
+				editor_close_editor(editor);
+			}
 		}
 		return TRUE;
 	} else if (event->button == 3) {
-		column_t *target_column = columns_get_column_from_position(x, y);
+		column_t *target_column = columns_get_column_from_position(columnset, x, y);
 		if ((target_column != NULL) && (target_column != editor->column)) {
-			columns_swap_columns(editor->column, target_column);
+			columns_swap_columns(columnset, editor->column, target_column);
 		}
 		return TRUE;
 	}
@@ -1085,10 +1089,10 @@ void editor_free(editor_t *editor) {
 	free(editor);
 }
 
-void editor_grab_focus(editor_t *editor) {
+void editor_grab_focus(editor_t *editor, bool warp) {
 	gtk_widget_grab_focus(editor->drar);
 
-	if (config[CFG_WARP_MOUSE].intval) {
+	if (config[CFG_WARP_MOUSE].intval && warp) {
 		GdkDisplay *display = gdk_display_get_default();
 		GdkScreen *screen = gdk_display_get_default_screen(display);
 		GtkAllocation allocation;

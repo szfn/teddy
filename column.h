@@ -18,13 +18,14 @@ typedef struct _column_t {
 	int editors_allocated;
 	GtkWidget *editors_window;
 	int exposed;
+	double fraction;
 } column_t;
 
 typedef struct _column_class {
 	GtkBoxClass parent_class;
 } column_class;
 
-GType gtk_myvbox_get_type(void) G_GNUC_CONST;
+GType gtk_column_get_type(void) G_GNUC_CONST;
 
 column_t *column_new(GtkWidget *window, gint spacing);
 void column_free(column_t *column);

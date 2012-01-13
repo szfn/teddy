@@ -36,7 +36,7 @@ typedef struct _editor_t {
 	gboolean warp_mouse_after_next_expose;
 
 	struct _column_t *column;
-	
+
 	char locked_command_line[LOCKED_COMMAND_LINE_SIZE];
 } editor_t;
 
@@ -72,6 +72,6 @@ void editor_complete_move(editor_t *editor, gboolean should_move_origin);
 
 void editor_close_editor(editor_t *editor);
 
-void editor_grab_focus(editor_t *editor);
+void editor_grab_focus(editor_t *editor, bool warp);
 
 #endif

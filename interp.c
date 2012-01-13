@@ -53,9 +53,9 @@ static int teddy_new_command(ClientData client_data, Tcl_Interp *interp, int arg
 	}
 
 	if (argc == 1) {
-		editor_t *n = heuristic_new_frame(context_editor, null_buffer());
+		editor_t *n = heuristic_new_frame(columnset, context_editor, null_buffer());
 		if (n != NULL) {
-			editor_grab_focus(n);
+			editor_grab_focus(n, true);
 			deferred_action_to_return = FOCUS_ALREADY_SWITCHED;
 		}
 		return TCL_OK;
@@ -64,14 +64,14 @@ static int teddy_new_command(ClientData client_data, Tcl_Interp *interp, int arg
 	if (strcmp(argv[1], "row") == 0) {
 		editor_t *n = column_new_editor(context_editor->column, null_buffer());
 		if (n != NULL) {
-			editor_grab_focus(n);
+			editor_grab_focus(n, true);
 			deferred_action_to_return = FOCUS_ALREADY_SWITCHED;
 		}
 		return TCL_OK;
 	} else if (strcmp(argv[1], "col") == 0) {
-		editor_t *n = columns_new(null_buffer());
+		editor_t *n = columns_new(columnset, null_buffer());
 		if (n != NULL) {
-			editor_grab_focus(n);
+			editor_grab_focus(n, true);
 			deferred_action_to_return = FOCUS_ALREADY_SWITCHED;
 		}
 		return TCL_OK;
@@ -764,22 +764,6 @@ static int teddy_change_command(ClientData client_data, Tcl_Interp *interp, int 
 	}
 }
 
-static int teddy_resize_hack_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
-	if (context_editor == NULL) {
-		Tcl_AddErrorInfo(interp, "No editor open, can not execute 'teddy-hack-resize command");
-		return TCL_ERROR;
-	}
-
-	if (argc != 1) {
-		Tcl_AddErrorInfo(interp, "No arguments should be supplied to teddy-hack-resize");
-		return TCL_ERROR;
-	}
-
-	columns_resize_hack();
-
-	return TCL_OK;
-}
-
 static int parse_signum(const char *sigspec) {
 	char *endptr = NULL;
 	int signum = (int)strtol(sigspec, &endptr, 10);
@@ -1001,7 +985,6 @@ void interp_init(void) {
 	Tcl_CreateCommand(interp, "lexyassoc", &lexy_assoc_command, (ClientData)NULL, NULL);
 	Tcl_CreateCommand(interp, "lexy_dump", &lexy_dump_command, (ClientData)NULL, NULL);
 	Tcl_CreateCommand(interp, "lexycfg", &lexy_cfg_command, (ClientData)NULL, NULL);
-	Tcl_CreateCommand(interp, "teddy-hack-resize", &teddy_resize_hack_command, (ClientData)NULL, NULL);
 
 	int code = Tcl_Eval(interp, BUILTIN_TCL_CODE);
 	if (code != TCL_OK) {

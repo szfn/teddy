@@ -3,6 +3,7 @@
 
 #include "editor.h"
 #include "column.h"
+#include "columns.h"
 #include "buffer.h"
 #include "history.h"
 
@@ -20,6 +21,8 @@ extern void quick_message(editor_t *editor, const char *title, const char *msg);
 extern PangoFontDescription *elements_font_description;
 
 extern buffer_t *selection_target_buffer;
+
+extern columns_t *columnset;
 
 extern GHashTable *keybindings;
 

@@ -60,6 +60,7 @@ column_t *column_new(GtkWidget *window, gint spacing) {
 	column->exposed = 0;
 	column->editors_allocated = 10;
 	column->editors = malloc(sizeof(editor_t *) * column->editors_allocated);
+	column->fraction = 1.0;
 	if (!(column->editors)) {
 		perror("Out of memory");
 		exit(EXIT_FAILURE);
@@ -121,7 +122,10 @@ static void gtk_column_size_allocate(GtkWidget *widget, GtkAllocation *allocatio
 		editor_t *editor = column->editors[i];
 		if (editor == NULL) continue;
 
-		total_height_request += editor_get_height_request(editor);
+		GtkRequisition child_requisition;
+		gtk_widget_size_request(editor->container, &child_requisition);
+
+		total_height_request += child_requisition.height;
 	}
 
 	gint y = allocation->y + GTK_CONTAINER(box)->border_width;
@@ -131,26 +135,29 @@ static void gtk_column_size_allocate(GtkWidget *widget, GtkAllocation *allocatio
 		GtkBoxChild *child = children->data;
 		children = children->next;
 
-		int i = editors_editor_from_table(column, child->widget);
+		//int i = editors_editor_from_table(column, child->widget);
 
-		double size_request = (i != -1) ? editor_get_height_request(column->editors[i]) / total_height_request : 0.1;
+		GtkRequisition child_requisition;
+		gtk_widget_size_request(child->widget, &child_requisition);
+
+		double size_request = child_requisition.height / total_height_request;
 
 		GtkAllocation child_allocation;
 
 		child_allocation.x = allocation->x + GTK_CONTAINER(box)->border_width;
-		child_allocation.width = MAX(1, (gint)allocation->width - (gint)GTK_CONTAINER(box)->border_width * 1);
+		child_allocation.width = MAX(1, (gint)allocation->width - (gint)GTK_CONTAINER(box)->border_width * 2);
 		child_allocation.y = y;
 
 		child_allocation.height = allocation->height * size_request;
 
 		y += child_allocation.height;
 
-		printf("Allocated height: %d y: %d\n", child_allocation.height, child_allocation.y);
+		//printf("Allocated height: %d y: %d (%g)\n", child_allocation.height, child_allocation.y, size_request);
 
 		gtk_widget_size_allocate(child->widget, &child_allocation);
 	}
 
-	printf("\n");
+	//printf("\n");
 }
 
 void column_free(column_t *column) {
@@ -162,7 +169,7 @@ void column_free(column_t *column) {
 		}
 	}
 	free(column->editors);
-	//free(column);
+	//g_object_unref(G_OBJECT(column));
 }
 
 static void editors_grow(column_t *column) {

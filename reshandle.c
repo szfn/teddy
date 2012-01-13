@@ -7,6 +7,8 @@
 #include "editor.h"
 #include "buffers.h"
 
+#include "global.h"
+
 static gboolean reshandle_expose_callback(GtkWidget *widget, GdkEventExpose *event, reshandle_t *reshandle) {
 	cairo_t *cr = gdk_cairo_create(widget->window);
 	GtkAllocation allocation;
@@ -43,7 +45,7 @@ static gboolean reshandle_button_press_callback(GtkWidget *widget, GdkEventButto
 
 	if ((event->type == GDK_2BUTTON_PRESS) && (event->button == 1)) {
 		if (column_remove_others(reshandle->editor->column, reshandle->editor) == 0) {
-			columns_remove_others(reshandle->editor->column, reshandle->editor);
+			columns_remove_others(columnset, reshandle->editor->column, reshandle->editor);
 		}
 		return TRUE;
 	}
@@ -56,9 +58,9 @@ static gboolean reshandle_button_press_callback(GtkWidget *widget, GdkEventButto
 	if ((event->type == GDK_BUTTON_PRESS) && (event->button == 3)) {
 		editor_t *new_editor = column_new_editor(reshandle->editor->column, null_buffer());
 		if (new_editor == NULL) {
-			heuristic_new_frame(reshandle->editor, null_buffer());
+			heuristic_new_frame(columnset, reshandle->editor, null_buffer());
 		} else {
-           editor_grab_focus(new_editor);
+           editor_grab_focus(new_editor, true);
 		}
 		return TRUE;
 	}
@@ -97,30 +99,18 @@ static gboolean reshandle_button_release_callback(GtkWidget *widget, GdkEventBut
 		gtk_widget_queue_draw(GTK_WIDGET(reshandle->column));
 	}
 
-	prev_column = columns_get_column_before(reshandle->column);
+	prev_column = columns_get_column_before(columnset, reshandle->column);
 	if (prev_column != NULL) {
 		GtkAllocation allocation;
-		double cur_width;
-		double prev_width;
 
-		//printf("Change: %g\n", changex);
+		gtk_widget_get_allocation(GTK_WIDGET(columnset), &allocation);
+		double change_fraction = changex / allocation.width;
 
-		gtk_widget_get_allocation(GTK_WIDGET(reshandle->column), &allocation);
-		cur_width = allocation.width - changex;
+		prev_column->fraction = prev_column->fraction + change_fraction;
+		reshandle->column->fraction -= change_fraction;
 
-		//printf("Current width: %d -> %g\n", allocation.width, cur_width);
-
-		gtk_widget_get_allocation(GTK_WIDGET(prev_column), &allocation);
-		prev_width = allocation.width + changex;
-
-		//printf("Previous width: %d -> %g\n", allocation.width, prev_width);
-
-		if (cur_width < 50) cur_width = 50;
-		if (prev_width < 50) prev_width = 50;
-
-		gtk_widget_set_size_request(GTK_WIDGET(reshandle->column), cur_width, -1);
-		gtk_widget_set_size_request(GTK_WIDGET(prev_column), prev_width, -1);
-		gtk_widget_queue_draw(columns_hbox);
+		columns_reallocate(columnset);
+		gtk_widget_queue_draw(GTK_WIDGET(columnset));
 	}
 
 	return TRUE;

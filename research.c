@@ -87,7 +87,7 @@ static void move_regexp_search_forward(bool start_at_top) {
 static void research_stop_search(void) {
 	tre_regfree(&research_regexp);
 	gtk_widget_hide(research_window);
-	editor_grab_focus(research_editor);
+	editor_grab_focus(research_editor, false);
 }
 
 static void research_replace_selection(void) {

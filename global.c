@@ -10,6 +10,8 @@ PangoFontDescription *elements_font_description;
 
 buffer_t *selection_target_buffer = NULL;
 
+columns_t *columnset = NULL;
+
 GHashTable *keybindings;
 
 history_t *search_history;

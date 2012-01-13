@@ -4,54 +4,139 @@
 #include "global.h"
 #include "buffers.h"
 
-column_t **columns;
-int columns_allocated;
-GtkWidget *columns_window;
-GtkWidget *columns_hbox;
+static void gtk_columns_class_init(columns_class *klass);
+static void gtk_columns_init(columns_t *columns);
+static void gtk_columns_size_request(GtkWidget *widget, GtkRequisition *requisition);
+static void gtk_columns_size_allocate(GtkWidget *widget, GtkAllocation *allocation);
 
-column_t *active_column = NULL;
+GType gtk_columns_get_type(void) {
+	static GType columns_type = 0;
 
-//static int columns_exposed = 0;
+	if (!columns_type) {
+		static const GTypeInfo columns_info = {
+			sizeof(columns_class),
+			NULL,
+			NULL,
+			(GClassInitFunc)gtk_columns_class_init,
+			NULL,
+			NULL,
+			sizeof(columns_t),
+			0,
+			(GInstanceInitFunc)gtk_columns_init,
+		};
 
-void columns_init(GtkWidget *window) {
-	int i;
+		columns_type = g_type_register_static(GTK_TYPE_BOX, "columns_t", &columns_info, 0);
+	}
 
-	columns_allocated = 5;
-	columns = malloc(columns_allocated * sizeof(column_t *));
-	if (!columns) {
+	return columns_type;
+}
+
+static void gtk_columns_class_init(columns_class *class) {
+	GtkWidgetClass *widget_class = (GtkWidgetClass *)class;
+
+	widget_class->size_request = gtk_columns_size_request;
+	widget_class->size_allocate = gtk_columns_size_allocate;
+}
+
+static void gtk_columns_init(columns_t *columns) {
+}
+
+columns_t *the_columns_new(GtkWidget *window) {
+	GtkWidget *columns_widget = g_object_new(GTK_TYPE_COLUMNS, NULL);
+	columns_t *columns = GTK_COLUMNS(columns_widget);
+
+	GTK_BOX(columns)->spacing = 0;
+	GTK_BOX(columns)->homogeneous = FALSE;
+
+	columns->active_column = NULL;
+	columns->columns_allocated = 5;
+	columns->columns = malloc(columns->columns_allocated * sizeof(column_t *));
+	if (!columns->columns) {
 		perror("Out of memory");
 		exit(EXIT_FAILURE);
 	}
-	for (i = 0; i < columns_allocated; ++i) {
-		columns[i] = NULL;
+	for (int i = 0; i < columns->columns_allocated; ++i) {
+		columns->columns[i] = NULL;
 	}
 
-	columns_hbox = gtk_hbox_new(FALSE, 0);
-	columns_window = window;
+	columns->columns_window = window;
 
-	gtk_container_add(GTK_CONTAINER(window), columns_hbox);
+	gtk_container_add(GTK_CONTAINER(columns->columns_window), GTK_WIDGET(columns));
 
 	//g_signal_connect(G_OBJECT(columns_hbox), "expose-event", G_CALLBACK(columns_expose_callback), NULL);
+
+	return columns;
 }
 
-static void columns_grow(void) {
-	int i;
+static void gtk_columns_size_request(GtkWidget *widget, GtkRequisition *requisition) {
+	GtkBox *box = GTK_BOX(widget);
+	columns_t *columns = GTK_COLUMNS(widget);
 
-	columns = realloc(columns, columns_allocated * 2 * sizeof(column_t *));
-	if (!columns) {
+	requisition->width = 1;
+	requisition->height = 1;
+
+	for (int i = 0; i < columns->columns_allocated; ++i) {
+		column_t *column = columns->columns[i];
+		if (column == NULL) continue;
+		GtkRequisition child_requisition;
+		gtk_widget_size_request(GTK_WIDGET(column), &child_requisition);
+		requisition->width += child_requisition.width;
+		requisition->height = MAX(requisition->height, child_requisition.height);
+	}
+
+	requisition->width += GTK_CONTAINER(box)->border_width * 2;
+	requisition->height += GTK_CONTAINER(box)->border_width * 2;
+}
+
+static void gtk_columns_size_allocate(GtkWidget *widget, GtkAllocation *allocation) {
+	columns_t *columns = GTK_COLUMNS(widget);
+	GtkBox *box = GTK_BOX(widget);
+
+	widget->allocation = *allocation;
+
+	double fraction_total = 0.0;
+	for (int i = 0; i < columns->columns_allocated; ++i) {
+		if (columns->columns[i] != NULL) fraction_total += columns->columns[i]->fraction;
+	}
+
+	double x = allocation->x + GTK_CONTAINER(box)->border_width;
+
+	GList *children = box->children;
+	while (children) {
+		GtkBoxChild *child = children->data;
+		children = children->next;
+
+		GtkAllocation child_allocation;
+
+		column_t *column = GTK_COLUMN(child->widget);
+
+		child_allocation.y = allocation->y + GTK_CONTAINER(box)->border_width;
+		child_allocation.x = x;
+		child_allocation.height = MAX(1, (gint)allocation->height - (gint)GTK_CONTAINER(box)->border_width * 2);
+		child_allocation.width = column->fraction/fraction_total * allocation->width;
+
+		x += child_allocation.width;
+
+		gtk_widget_size_allocate(child->widget, &child_allocation);
+	}
+}
+
+static void columns_grow(columns_t *columns) {
+	columns->columns = realloc(columns->columns, columns->columns_allocated * 2 * sizeof(column_t *));
+	if (!(columns->columns)) {
 		perror("Out of memory");
 		exit(EXIT_FAILURE);
 	}
 
-	for(i = columns_allocated; i < columns_allocated * 2; ++i) {
-		columns[i] = NULL;
+	for(int i = columns->columns_allocated; i < columns->columns_allocated * 2; ++i) {
+		columns->columns[i] = NULL;
 	}
 
-	columns_allocated *= 2;
+	columns->columns_allocated *= 2;
 }
 
-static column_t *columns_get_last(void) {
-	GList *list = gtk_container_get_children(GTK_CONTAINER(columns_hbox));
+static column_t *columns_get_last(columns_t *columns) {
+	GList *list = gtk_container_get_children(GTK_CONTAINER(columns));
 	GList *cur;
 	GtkWidget *w;
 	int i;
@@ -64,44 +149,43 @@ static column_t *columns_get_last(void) {
 
 	g_list_free(list);
 
-	for (i = 0; i < columns_allocated; ++i) {
-		if (columns[i] == NULL) continue;
-		if (GTK_WIDGET(columns[i]) == w) return columns[i];
+	for (i = 0; i < columns->columns_allocated; ++i) {
+		if (columns->columns[i] == NULL) continue;
+		if (GTK_WIDGET(columns->columns[i]) == w) return columns->columns[i];
 	}
 
 	return NULL;
 }
 
-static column_t *columns_widget_to_column(GtkWidget *w) {
+static column_t *columns_widget_to_column(columns_t *columns, GtkWidget *w) {
 	int i;
-
-	for (i = 0; i < columns_allocated; ++i) {
-		if (columns[i] == NULL) continue;
-		if (GTK_WIDGET(columns[i]) == w) break;
+	for (i = 0; i < columns->columns_allocated; ++i) {
+		if (columns->columns[i] == NULL) continue;
+		if (GTK_WIDGET(columns->columns[i]) == w) break;
 	}
 
-	return (i >= columns_allocated) ? NULL : columns[i];
+	return (i >= columns->columns_allocated) ? NULL : columns->columns[i];
 }
 
-static column_t *columns_get_first(void) {
-	GList *list = gtk_container_get_children(GTK_CONTAINER(columns_hbox));
+static column_t *columns_get_first(columns_t *columns) {
+	GList *list = gtk_container_get_children(GTK_CONTAINER(columns));
 	GtkWidget *w = list->data;
 	g_list_free(list);
-	return columns_widget_to_column(w);
+	return columns_widget_to_column(columns, w);
 }
 
-editor_t *columns_new(buffer_t *buffer) {
+editor_t *columns_new(columns_t *columns, buffer_t *buffer) {
 	int i;
 
-	for (i = 0; i < columns_allocated; ++i) {
-		if (columns[i] == NULL) break;
+	for (i = 0; i < columns->columns_allocated; ++i) {
+		if (columns->columns[i] == NULL) break;
 	}
 
-	if (i < columns_allocated) {
-		column_t *last_column = columns_get_last();
+	if (i < columns->columns_allocated) {
+		column_t *last_column = columns_get_last(columns);
 
-		columns[i] = column_new(columns_window, 0);
-		gtk_box_set_child_packing(GTK_BOX(columns_hbox), GTK_WIDGET(columns[i]), TRUE, TRUE, 1, GTK_PACK_START);
+		columns->columns[i] = column_new(columns->columns_window, 0);
+		gtk_box_set_child_packing(GTK_BOX(columns), GTK_WIDGET(columns->columns[i]), TRUE, TRUE, 1, GTK_PACK_START);
 
 		//printf("Resize mode: %d\n", gtk_container_get_resize_mode(GTK_CONTAINER(columns_hbox)));
 
@@ -110,53 +194,47 @@ editor_t *columns_new(buffer_t *buffer) {
 
 			gtk_widget_get_allocation(GTK_WIDGET(last_column), &allocation);
 
-			if (allocation.width * 0.40 < 100) {
-				columns_remove(columns[i], NULL);
-				return column_get_first_editor(columns_get_first());
+			if (allocation.width * 0.40 < 50) {
+				columns_remove(columns, columns->columns[i], NULL);
+				return column_get_first_editor(columns_get_first(columns));
 			}
 
 			if (allocation.width > 1) {
-				gtk_widget_set_size_request(GTK_WIDGET(last_column), allocation.width * 0.60, 10);
-				gtk_widget_set_size_request(GTK_WIDGET(columns[i]), allocation.width * 0.40, 10);
+				double f =  last_column->fraction;
+				last_column->fraction = f * 0.60;
+				columns->columns[i]->fraction = f * 0.40;
 			}
 		}
 
-		gtk_container_add(GTK_CONTAINER(columns_hbox), GTK_WIDGET(columns[i]));
+		gtk_container_add(GTK_CONTAINER(columns), GTK_WIDGET(columns->columns[i]));
 
-		return column_new_editor(columns[i], buffer);
+		return column_new_editor(columns->columns[i], buffer);
 	} else {
-		columns_grow();
-		return columns_new(buffer);
+		columns_grow(columns);
+		return columns_new(columns, buffer);
 	}
 }
 
-void columns_free(void) {
+void columns_free(columns_t *columns) {
 	int i;
-	for (i = 0; i < columns_allocated; ++i) {
-		if (columns[i] == NULL) continue;
-		column_free(columns[i]);
-		columns[i] = NULL;
+	for (i = 0; i < columns->columns_allocated; ++i) {
+		if (columns->columns[i] == NULL) continue;
+		column_free(columns->columns[i]);
+		columns->columns[i] = NULL;
 	}
-	free(columns);
+	//g_object_unref(G_OBJECT(columns));
 }
 
-void columns_replace_buffer(buffer_t *buffer) {
+void columns_replace_buffer(columns_t *columns, buffer_t *buffer) {
 	int i;
-	for (i = 0; i < columns_allocated; ++i) {
-		if (columns[i] == NULL) continue;
-		column_replace_buffer(columns[i], buffer);
+	for (i = 0; i < columns->columns_allocated; ++i) {
+		if (columns->columns[i] == NULL) continue;
+		column_replace_buffer(columns->columns[i], buffer);
 	}
 }
 
-void columns_resize_hack(void) {
-	for (int i = 0; i < columns_allocated; ++i) {
-		if (columns[i] == NULL) continue;
-		gtk_widget_set_size_request(GTK_WIDGET(columns[i]), 100, 50);
-	}
-}
-
-column_t *columns_get_column_before(column_t *column) {
-	GList *list = gtk_container_get_children(GTK_CONTAINER(columns_hbox));
+column_t *columns_get_column_before(columns_t *columns, column_t *column) {
+	GList *list = gtk_container_get_children(GTK_CONTAINER(columns));
 	GList *cur;
 	GList *prev = NULL;
 	GtkWidget *w;
@@ -173,31 +251,31 @@ column_t *columns_get_column_before(column_t *column) {
 
 	g_list_free(list);
 
-	return columns_widget_to_column(w);
+	return columns_widget_to_column(columns, w);
 }
 
 
-int columns_column_count(void) {
+int columns_column_count(columns_t *columns) {
 	int i, count = 0;
-	for (i = 0; i < columns_allocated; ++i) {
-		if (columns[i] == NULL) continue;
+	for (i = 0; i < columns->columns_allocated; ++i) {
+		if (columns->columns[i] == NULL) continue;
 		++count;
 	}
 	return count;
 }
 
-static int columns_find_column(column_t *column) {
+static int columns_find_column(columns_t *columns, column_t *column) {
 	int i;
-	for (i = 0; i < columns_allocated; ++i) {
-		if (columns[i] == column) return i;
+	for (i = 0; i < columns->columns_allocated; ++i) {
+		if (columns->columns[i] == column) return i;
 	}
 	return -1;
 }
 
-column_t *columns_remove(column_t *column, editor_t *editor) {
-	int idx = columns_find_column(column);
+column_t *columns_remove(columns_t *columns, column_t *column, editor_t *editor) {
+	int idx = columns_find_column(columns, column);
 
-	if (columns_column_count() == 1) {
+	if (columns_column_count(columns) == 1) {
 		if (editor != NULL) {
 			quick_message(editor, "Error", "Can not remove last column of the window");
 		}
@@ -205,71 +283,64 @@ column_t *columns_remove(column_t *column, editor_t *editor) {
 	}
 
 	if (idx != -1) {
-		column_t *column_to_grow = columns_get_column_before(column);
-		GtkAllocation removed_allocation;
+		column_t *column_to_grow = columns_get_column_before(columns, column);
 
-		gtk_widget_get_allocation(GTK_WIDGET(column), &removed_allocation);
-
-		gtk_container_remove(GTK_CONTAINER(columns_hbox), GTK_WIDGET(column));
-		columns[idx] = NULL;
+		columns->columns[idx] = NULL;
 
 		if (column_to_grow == NULL) {
-			column_to_grow = columns_get_first();
+			column_to_grow = columns_get_first(columns);
 		}
 
 		if (column_to_grow != NULL) {
-			GtkAllocation allocation;
-			gtk_widget_get_allocation(GTK_WIDGET(column_to_grow), &allocation);
-
-			allocation.width += removed_allocation.width;
-
-			gtk_widget_set_size_request(GTK_WIDGET(column_to_grow), allocation.width, -1);
+			column_to_grow->fraction += column->fraction;
 		}
 	}
 
+	gtk_container_remove(GTK_CONTAINER(columns), GTK_WIDGET(column));
+
 	column_free(column);
 
-	return columns_get_first();
+	return columns_get_first(columns);
 }
 
-void columns_remove_others(column_t *column, editor_t *editor) {
+void columns_remove_others(columns_t *columns, column_t *column, editor_t *editor) {
 	int i;
-	for (i = 0; i < columns_allocated; ++i) {
-		if (columns[i] == NULL) continue;
-		if (columns[i] == column) continue;
-		columns_remove(columns[i], editor);
+	for (i = 0; i < columns->columns_allocated; ++i) {
+		if (columns->columns[i] == NULL) continue;
+		if (columns->columns[i] == column) continue;
+		columns_remove(columns, columns->columns[i], editor);
 	}
 }
 
-editor_t *columns_get_buffer(buffer_t *buffer) {
+editor_t *columns_get_buffer(columns_t *columns, buffer_t *buffer) {
 	int i;
-	for (i = 0; i < columns_allocated; ++i) {
+	for (i = 0; i < columns->columns_allocated; ++i) {
 		editor_t *r;
-		if (columns[i] == NULL) continue;
-		r = column_find_buffer_editor(columns[i], buffer);
+		if (columns->columns[i] == NULL) continue;
+		r = column_find_buffer_editor(columns->columns[i], buffer);
 		if (r != NULL) return r;
 	}
 	return NULL;
 }
 
-column_t *columns_get_column_from_position(double x, double y) {
+column_t *columns_get_column_from_position(columns_t *columns, double x, double y) {
 	int i;
-	for (i = 0; i < columns_allocated; ++i) {
+	for (i = 0; i < columns->columns_allocated; ++i) {
 		GtkAllocation allocation;
-		if (columns[i] == NULL) continue;
-		gtk_widget_get_allocation(GTK_WIDGET(columns[i]), &allocation);
+		if (columns->columns[i] == NULL) continue;
+		gtk_widget_get_allocation(GTK_WIDGET(columns->columns[i]), &allocation);
 		//printf("Comparing (%g,%g) with (%d,%d) (%d,%d)\n", x, y, allocation.x, allocation.y, allocation.x+allocation.width, allocation.y+allocation.height);
 		if ((x >= allocation.x)
 			&& (x <= allocation.x + allocation.width)
 			&& (y >= allocation.y)
 			&& (y <= allocation.y + allocation.height))
-			return columns[i];
+			return columns->columns[i];
 	}
 	return NULL;
 }
 
-editor_t *columns_get_editor_from_positioon(double x, double y) {
-	column_t *column = columns_get_column_from_position(x, y);
+editor_t *columns_get_editor_from_position(columns_t *columns, double x, double y) {
+	column_t *column = columns_get_column_from_position(columns, x, y);
 	if (column == NULL) {
 		printf("Column not found\n");
 		return NULL;
@@ -277,8 +348,8 @@ editor_t *columns_get_editor_from_positioon(double x, double y) {
 	return column_get_editor_from_position(column, x, y);
 }
 
-void columns_swap_columns(column_t *cola, column_t *colb) {
-	GList *list = gtk_container_get_children(GTK_CONTAINER(columns_hbox));
+void columns_swap_columns(columns_t *columns, column_t *cola, column_t *colb) {
+	GList *list = gtk_container_get_children(GTK_CONTAINER(columns));
 	GList *cur;
 	int idxa = -1, idxb = -1, i;
 	for (cur = list, i = 0; cur != NULL; cur = cur->next, ++i) {
@@ -294,34 +365,16 @@ void columns_swap_columns(column_t *cola, column_t *colb) {
 	if (idxa == -1) return;
 	if (idxb == -1) return;
 
-	gtk_box_reorder_child(GTK_BOX(columns_hbox), GTK_WIDGET(cola), idxb);
-	gtk_box_reorder_child(GTK_BOX(columns_hbox), GTK_WIDGET(colb), idxa);
+	gtk_box_reorder_child(GTK_BOX(columns), GTK_WIDGET(cola), idxb);
+	gtk_box_reorder_child(GTK_BOX(columns), GTK_WIDGET(colb), idxa);
 
-	{
-		GtkAllocation alla;
-		GtkAllocation allb;
-
-		gtk_widget_get_allocation(GTK_WIDGET(cola), &alla);
-		gtk_widget_get_allocation(GTK_WIDGET(colb), &allb);
-
-		gtk_widget_set_size_request(GTK_WIDGET(cola), allb.width, -1);
-		gtk_widget_set_size_request(GTK_WIDGET(colb), alla.width, -1);
-
-		gtk_widget_queue_draw(columns_hbox);
-	}
+	double temp = cola->fraction;
+	cola->fraction = colb->fraction;
+	colb->fraction = temp;
 }
 
-static column_t *columns_column_from_vbox(GtkWidget *vbox) {
-	int i;
-	for (i = 0; i < columns_allocated; ++i) {
-		if (columns[i] == NULL) continue;
-		if (GTK_WIDGET(columns[i]) == vbox) return columns[i];
-	}
-	return NULL;
-}
-
-static column_t **columns_ordered_columns(int *numcol) {
-	GList *list = gtk_container_get_children(GTK_CONTAINER(columns_hbox));
+static column_t **columns_ordered_columns(columns_t *columns, int *numcol) {
+	GList *list = gtk_container_get_children(GTK_CONTAINER(columns));
 	column_t **r = malloc(sizeof(column_t *) * g_list_length(list));
 	GList *cur;
 	int i = 0;
@@ -329,10 +382,7 @@ static column_t **columns_ordered_columns(int *numcol) {
 	*numcol = g_list_length(list);
 
 	for (cur = list; cur != NULL; cur = cur->next) {
-		r[i] = columns_column_from_vbox(cur->data);
-		if (r[i] == NULL) {
-			printf("Error, one element of columns wasn't a column?!\n");
-		}
+		r[i] = GTK_COLUMN(cur->data);
 		++i;
 	}
 
@@ -341,10 +391,10 @@ static column_t **columns_ordered_columns(int *numcol) {
 	return r;
 }
 
-editor_t *heuristic_new_frame(editor_t *spawning_editor, buffer_t *buffer) {
+editor_t *heuristic_new_frame(columns_t *columns, editor_t *spawning_editor, buffer_t *buffer) {
 	int garbage = (buffer->name[0] == '+'); // when the garbage flag is set we want to put the buffer in a frame to the right
 	int numcol;
-	column_t **ordered_columns = columns_ordered_columns(&numcol);
+	column_t **ordered_columns = columns_ordered_columns(columns, &numcol);
 	editor_t *retval = NULL;
 
 	//printf("New Buffer Heuristic\n");
@@ -382,7 +432,7 @@ editor_t *heuristic_new_frame(editor_t *spawning_editor, buffer_t *buffer) {
 		gtk_widget_get_allocation(GTK_WIDGET(ordered_columns[numcol-1]), &allocation);
 
 		if (allocation.width > 1000) {
-			editor_t *editor = columns_new(buffer);
+			editor_t *editor = columns_new(columns, buffer);
 			if (editor != NULL) {
 				retval = editor;
 				goto heuristic_new_frame_exit;
@@ -420,8 +470,8 @@ editor_t *heuristic_new_frame(editor_t *spawning_editor, buffer_t *buffer) {
 	}
 
 	// try to create a new frame inside the active column (column of last edit operation)
-	if (active_column != NULL) {
-		editor_t *editor = column_new_editor(active_column, buffer);
+	if (columns->active_column != NULL) {
+		editor_t *editor = column_new_editor(columns->active_column, buffer);
 		if (editor != NULL) {
 			retval = editor;
 			goto heuristic_new_frame_exit;
@@ -437,7 +487,7 @@ editor_t *heuristic_new_frame(editor_t *spawning_editor, buffer_t *buffer) {
 		gtk_widget_get_allocation(GTK_WIDGET(ordered_columns[numcol-1]), &allocation);
 
 		if ((allocation.width * 0.40) > (30 * buffer->em_advance)) {
-			editor_t *editor = columns_new(buffer);
+			editor_t *editor = columns_new(columns, buffer);
 			if (editor != NULL) {
 				retval = editor;
 				goto heuristic_new_frame_exit;
@@ -478,11 +528,15 @@ editor_t *heuristic_new_frame(editor_t *spawning_editor, buffer_t *buffer) {
 	return retval;
 }
 
-bool editor_exists(editor_t *editor) {
-	for (int i = 0; i < columns_allocated; ++i) {
-		if (columns[i] == NULL) continue;
-		bool r = column_editor_exists(columns[i], editor);
+bool editor_exists(columns_t *columns, editor_t *editor) {
+	for (int i = 0; i < columns->columns_allocated; ++i) {
+		if (columns->columns[i] == NULL) continue;
+		bool r = column_editor_exists(columns->columns[i], editor);
 		if (r) return true;
 	}
 	return false;
+}
+
+void columns_reallocate(columns_t *columns) {
+	gtk_columns_size_allocate(GTK_WIDGET(columns), &(GTK_WIDGET(columns)->allocation));
 }
