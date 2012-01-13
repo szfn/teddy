@@ -16,6 +16,7 @@ typedef struct _lpoint_t {
 } lpoint_t;
 
 #define LPOINTGI(x) ((x).line->glyph_info[(x).glyph])
+#define LPOINTG(x) ((x).line->glyphs[(x).glyph])
 
 // makes dst be the same point as src
 void copy_lpoint(lpoint_t *dst, lpoint_t *src);

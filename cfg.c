@@ -3,12 +3,13 @@
 #include <string.h>
 #include <stdlib.h>
 
-config_item_t config[15];
+config_item_t config[16];
 const char *config_names[] = {
 	"border_color",
 	"default_autoindent",
 	"default_spaceman",
 	"editor_bg_color",
+	"editor_bg_cursorline",
 	"editor_fg_color",
 	"editor_sel_color",
 	"focus_follows_mouse",
@@ -32,6 +33,7 @@ void cfg_init(void) {
 	setcfg(config + CFG_DEFAULT_AUTOINDENT, "1");
 	setcfg(config + CFG_DEFAULT_SPACEMAN, "1");
 	setcfg(config + CFG_EDITOR_BG_COLOR, "255");
+	setcfg(config + CFG_EDITOR_BG_CURSORLINE, "13882323");
 	setcfg(config + CFG_EDITOR_FG_COLOR, "16777215");
 	setcfg(config + CFG_EDITOR_SEL_COLOR, "16777215");
 	setcfg(config + CFG_FOCUS_FOLLOWS_MOUSE, "1");
