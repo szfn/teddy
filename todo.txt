@@ -22,8 +22,6 @@
 - cmdcompl shoul build the list of internal commands dynamically
 - implement man command that runs the man command in background and shows it in a new editor (must be possible to implement in tcl)
 - command line autocompletion shouldn't include commands unless it's the first word con the command line
-- command to refresh an open directory
-- open current directory on startup
 - implement command to create a scratch buffer
 - fix mark words when used with cursor keys
 - implement stayoncmd flag for buffers

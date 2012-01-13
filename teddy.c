@@ -65,9 +65,23 @@ int main(int argc, char *argv[]) {
 	go_init(window);
 	columnset = the_columns_new(window);
 	research_init(window);
-	editor = columns_new(columnset, (abuf == NULL) ? null_buffer() : abuf);
+
 
 	gtk_widget_show_all(window);
+
+	editor = NULL;
+
+	if (abuf != NULL) {
+		editor = columns_new(columnset, abuf);
+	}
+
+	buffer_t *curdir_buf = go_file(NULL, getcwd(NULL, 0), true);
+	if (curdir_buf != NULL) {
+		editor_t *curdir_ed = columns_new(columnset, curdir_buf);
+		if (editor == NULL) editor = curdir_ed;
+	}
+
+	if (editor == NULL) editor = columns_new(columnset, null_buffer());
 
 	editor_grab_focus(editor, false);
 

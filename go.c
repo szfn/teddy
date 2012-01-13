@@ -114,7 +114,6 @@ buffer_t *go_file(buffer_t *base_buffer, const char *filename, bool create) {
 	buffer_t *buffer = buffers_find_buffer_from_path(urp);
 	if (buffer != NULL) goto go_file_return;
 
-
 	struct stat s;
 	if (stat(urp, &s) != 0) {
 		if (create) {
