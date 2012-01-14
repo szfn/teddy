@@ -14,8 +14,6 @@
 extern GtkClipboard *selection_clipboard;
 extern GtkClipboard *default_clipboard;
 
-extern FT_Library library;
-
 extern void quick_message(editor_t *editor, const char *title, const char *msg);
 
 extern PangoFontDescription *elements_font_description;

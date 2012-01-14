@@ -13,7 +13,11 @@ typedef struct _teddy_font_t {
 	cairo_font_options_t *font_options;
 } teddy_font_t;
 
-void teddy_font_init(teddy_font_t *font, FT_Library *library, const char *fontpattern);
-void teddy_font_free(teddy_font_t *font);
+extern FT_Library library;
+extern teddy_font_t main_font;
+extern teddy_font_t posbox_font;
+
+void teddy_font_real_init(void);
+void teddy_font_real_free(void);
 
 #endif

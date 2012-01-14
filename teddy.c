@@ -44,6 +44,8 @@ int main(int argc, char *argv[]) {
 
 	read_conf();
 
+	teddy_font_real_init();
+
 	jobs_init();
 	buffers_init();
 	wordcompl_init();
@@ -90,6 +92,7 @@ int main(int argc, char *argv[]) {
 	columns_free(columnset);
 	interp_free();
 	cmdcompl_free();
+	teddy_font_real_free();
 
 	return 0;
 }

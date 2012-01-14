@@ -222,7 +222,7 @@ static void buffer_split_line(buffer_t *buffer, lpoint_t *point) {
 }
 
 static int buffer_line_insert_utf8_text(buffer_t *buffer, real_line_t *line, const char *text, int len, int insertion_point) {
-	FT_Face scaledface = cairo_ft_scaled_font_lock_face(buffer->main_font.cairofont);
+	FT_Face scaledface = cairo_ft_scaled_font_lock_face(main_font.cairofont);
 	FT_Bool use_kerning = FT_HAS_KERNING(scaledface);
 	FT_UInt previous = 0;
 	int src, dst;
@@ -264,7 +264,7 @@ static int buffer_line_insert_utf8_text(buffer_t *buffer, real_line_t *line, con
 		line->glyphs[dst].x = 0.0;
 		line->glyphs[dst].y = 0.0;
 
-		cairo_scaled_font_glyph_extents(buffer->main_font.cairofont, line->glyphs + dst, 1, &extents);
+		cairo_scaled_font_glyph_extents(main_font.cairofont, line->glyphs + dst, 1, &extents);
 
 		/*if (code == 0x09) {
 			extents.x_advance *= buffer->tab_width;
@@ -291,7 +291,7 @@ static int buffer_line_insert_utf8_text(buffer_t *buffer, real_line_t *line, con
 
 	}
 
-	cairo_ft_scaled_font_unlock_face(buffer->main_font.cairofont);
+	cairo_ft_scaled_font_unlock_face(main_font.cairofont);
 
 	return inserted_glyphs;
 }
@@ -984,7 +984,6 @@ void buffer_update_parmatch(buffer_t *buffer) {
 buffer_t *buffer_create(FT_Library *library) {
 	buffer_t *buffer = malloc(sizeof(buffer_t));
 
-	buffer->library = library;
 	buffer->modified = 0;
 	buffer->editable = 1;
 	buffer->job = NULL;
@@ -1001,23 +1000,20 @@ buffer_t *buffer_create(FT_Library *library) {
 
 	undo_init(&(buffer->undo));
 
-	teddy_font_init(&(buffer->main_font), library, config[CFG_MAIN_FONT].strval);
-	teddy_font_init(&(buffer->posbox_font), library, config[CFG_POSBOX_FONT].strval);
-
 	{
 		cairo_text_extents_t extents;
 		cairo_font_extents_t font_extents;
 
-		cairo_scaled_font_text_extents(buffer->main_font.cairofont, "M", &extents);
+		cairo_scaled_font_text_extents(main_font.cairofont, "M", &extents);
 		buffer->em_advance = extents.width;
 
-		cairo_scaled_font_text_extents(buffer->main_font.cairofont, "x", &extents);
+		cairo_scaled_font_text_extents(main_font.cairofont, "x", &extents);
 		buffer->ex_height = extents.height;
 
-		cairo_scaled_font_text_extents(buffer->main_font.cairofont, " ", &extents);
+		cairo_scaled_font_text_extents(main_font.cairofont, " ", &extents);
 		buffer->space_advance = extents.x_advance;
 
-		cairo_scaled_font_extents(buffer->main_font.cairofont, &font_extents);
+		cairo_scaled_font_extents(main_font.cairofont, &font_extents);
 		buffer->line_height = font_extents.height - config[CFG_MAIN_FONT_HEIGHT_REDUCTION].intval;
 		buffer->ascent = font_extents.ascent;
 		buffer->descent = font_extents.descent;
@@ -1059,9 +1055,6 @@ void buffer_free(buffer_t *buffer) {
 			cursor = next;
 		}
 	}
-
-	teddy_font_free(&(buffer->main_font));
-	teddy_font_free(&(buffer->posbox_font));
 
 	undo_free(&(buffer->undo));
 

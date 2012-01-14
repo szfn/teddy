@@ -1,5 +1,4 @@
 - implement font substitution
- - extract font loading from buffer
  - calculate bmp coverage map with fonts for main font pattern
  - remove glyphs array from real lines, store all information in glyph_info, rewrite expose event so that it writes all the characters with the same (font, color) pair all at the same time
  - change typesetting so that it picks glyphs from all the loaded fonts, instead of just the best match

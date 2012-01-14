@@ -52,11 +52,6 @@ typedef struct _buffer_t {
 
 	job_t *job;
 
-	/* Font face stuff */
-	FT_Library *library;
-	teddy_font_t main_font;
-	teddy_font_t posbox_font;
-
 	/* Font secondary metrics of main font */
 	double em_advance;
 	double space_advance;

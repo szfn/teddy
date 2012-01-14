@@ -772,7 +772,7 @@ static gboolean expose_event_callback(GtkWidget *widget, GdkEventExpose *event, 
 	draw_cursorline(cr, editor);
 
 	set_color_cfg(cr, config[CFG_EDITOR_FG_COLOR].intval);
-	cairo_set_scaled_font(cr, editor->buffer->main_font.cairofont);
+	cairo_set_scaled_font(cr, main_font.cairofont);
 
 	buffer_typeset_maybe(editor->buffer, allocation.width);
 
@@ -814,7 +814,7 @@ static gboolean expose_event_callback(GtkWidget *widget, GdkEventExpose *event, 
 
 		asprintf(&posbox_text, " %d,%d %0.0f%%", editor->buffer->cursor.line->lineno+1, editor->buffer->cursor.glyph, (100.0 * editor->buffer->cursor.line->lineno / count));
 
-		cairo_set_scaled_font(cr, editor->buffer->posbox_font.cairofont);
+		cairo_set_scaled_font(cr, posbox_font.cairofont);
 
 		cairo_text_extents(cr, posbox_text, &posbox_ext);
 

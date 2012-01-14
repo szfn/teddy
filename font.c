@@ -1,13 +1,18 @@
 #include "font.h"
 
-
 #include <gdk/gdk.h>
 
-static void teddy_font_init_ex(teddy_font_t *font, FT_Library *library, const char *fontfile, double size, int face_index) {
+#include "cfg.h"
+
+FT_Library library;
+teddy_font_t main_font;
+teddy_font_t posbox_font;
+
+static void teddy_font_init_ex(teddy_font_t *font,  const char *fontfile, double size, int face_index) {
 	gdouble dpi = gdk_screen_get_resolution(gdk_screen_get_default());
 	double text_size = dpi / 72.0 * size;
 
-	int error = FT_New_Face(*library, (const char *)fontfile, face_index, &(font->face));
+	int error = FT_New_Face(library, (const char *)fontfile, face_index, &(font->face));
 	if (error) {
 		printf("Error loading freetype font\n");
 		exit(EXIT_FAILURE);
@@ -31,7 +36,7 @@ static void teddy_font_init_ex(teddy_font_t *font, FT_Library *library, const ch
 	font->cairofont = cairo_scaled_font_create(font->cairoface, &(font->font_size_matrix), &(font->font_ctm), font->font_options);
 }
 
-static void teddy_font_init_fontconfig_pattern(teddy_font_t *font, FT_Library *library, const char *fontpattern) {
+static void teddy_font_init_fontconfig_pattern(teddy_font_t *font, const char *fontpattern) {
 	FcResult result;
 
 	FcPattern *pat = FcNameParse((const FcChar8 *)fontpattern);
@@ -61,13 +66,13 @@ static void teddy_font_init_fontconfig_pattern(teddy_font_t *font, FT_Library *l
 		index = 0;
 	}
 
-	teddy_font_init_ex(font, library, (const char *)fontfile, size, index);
+	teddy_font_init_ex(font, (const char *)fontfile, size, index);
 
 	FcPatternDestroy(match);
 	FcPatternDestroy(pat);
 }
 
-static void teddy_font_init_direct_path(teddy_font_t *font, FT_Library *library, const char *fontspec) {
+static void teddy_font_init_direct_path(teddy_font_t *font, const char *fontspec) {
 	char *saveptr;
 	char *fontspec_copy = strdup(fontspec);
 	char *fontpath = strtok_r(fontspec_copy, ":", &saveptr);
@@ -80,23 +85,39 @@ static void teddy_font_init_direct_path(teddy_font_t *font, FT_Library *library,
 	char *sizestr = strtok_r(NULL, ":", &saveptr);
 	double size = atof(sizestr);
 
-	teddy_font_init_ex(font, library, fontpath, size, 0);
+	teddy_font_init_ex(font, fontpath, size, 0);
 
 	free(fontspec_copy);
 }
 
-void teddy_font_init(teddy_font_t *font, FT_Library *library, const char *fontpattern) {
+static void teddy_font_init(teddy_font_t *font, const char *fontpattern) {
 	if (fontpattern[0] == '/') {
-		teddy_font_init_direct_path(font, library, fontpattern);
+		teddy_font_init_direct_path(font, fontpattern);
 	} else {
-		teddy_font_init_fontconfig_pattern(font, library, fontpattern);
+		teddy_font_init_fontconfig_pattern(font, fontpattern);
 	}
 }
 
-void teddy_font_free(teddy_font_t *font) {
+static void teddy_font_free(teddy_font_t *font) {
 	cairo_scaled_font_destroy(font->cairofont);
 	cairo_font_options_destroy(font->font_options);
 	cairo_font_face_destroy(font->cairoface);
 
 	FT_Done_Face(font->face);
+}
+
+void teddy_font_real_init(void) {
+	int error = FT_Init_FreeType(&library);
+	if (error) {
+		printf("Freetype initialization error\n");
+		exit(EXIT_FAILURE);
+	}
+
+	teddy_font_init(&main_font, config[CFG_MAIN_FONT].strval);
+	teddy_font_init(&posbox_font, config[CFG_POSBOX_FONT].strval);
+}
+
+void teddy_font_real_free(void) {
+	teddy_font_free(&main_font);
+	teddy_font_free(&posbox_font);
 }
