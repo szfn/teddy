@@ -3,11 +3,11 @@
 
 #include <gdk/gdk.h>
 
-static void teddy_font_init_ex(teddy_font_t *font, FT_Library *library, const char *fontfile, double size) {
+static void teddy_font_init_ex(teddy_font_t *font, FT_Library *library, const char *fontfile, double size, int face_index) {
 	gdouble dpi = gdk_screen_get_resolution(gdk_screen_get_default());
 	double text_size = dpi / 72.0 * size;
 
-	int error = FT_New_Face(*library, (const char *)fontfile, 0, &(font->face));
+	int error = FT_New_Face(*library, (const char *)fontfile, face_index, &(font->face));
 	if (error) {
 		printf("Error loading freetype font\n");
 		exit(EXIT_FAILURE);
@@ -24,7 +24,7 @@ static void teddy_font_init_ex(teddy_font_t *font, FT_Library *library, const ch
 	cairo_matrix_init(&(font->font_size_matrix), text_size, 0, 0, text_size, 0, 0);
 	cairo_matrix_init(&(font->font_ctm), 1, 0, 0, 1, 0, 0);
 	font->font_options = cairo_font_options_create();
-	
+
 	cairo_font_options_set_antialias(font->font_options, CAIRO_ANTIALIAS_GRAY);
 	cairo_font_options_set_hint_style(font->font_options, CAIRO_HINT_STYLE_SLIGHT);
 
@@ -56,7 +56,12 @@ static void teddy_font_init_fontconfig_pattern(teddy_font_t *font, FT_Library *l
 		size = 12.0;
 	}
 
-	teddy_font_init_ex(font, library, (const char *)fontfile, size);
+	int index;
+	if (FcPatternGetInteger(match, FC_INDEX, 0, &index) != FcResultMatch) {
+		index = 0;
+	}
+
+	teddy_font_init_ex(font, library, (const char *)fontfile, size, index);
 
 	FcPatternDestroy(match);
 	FcPatternDestroy(pat);
@@ -66,17 +71,17 @@ static void teddy_font_init_direct_path(teddy_font_t *font, FT_Library *library,
 	char *saveptr;
 	char *fontspec_copy = strdup(fontspec);
 	char *fontpath = strtok_r(fontspec_copy, ":", &saveptr);
-	
+
 	if (fontpath == NULL) {
 		fprintf(stderr, "Bizzarre error interpreting the font specification\n");
 		exit(EXIT_FAILURE);
 	}
-	
+
 	char *sizestr = strtok_r(NULL, ":", &saveptr);
 	double size = atof(sizestr);
-	
-	teddy_font_init_ex(font, library, fontpath, size);
-	
+
+	teddy_font_init_ex(font, library, fontpath, size, 0);
+
 	free(fontspec_copy);
 }
 

@@ -291,6 +291,7 @@ void editor_save_action(editor_t *editor) {
 void editor_undo_action(editor_t *editor) {
 	buffer_undo(editor->buffer);
 	columnset->active_column = editor->column;
+	gtk_widget_queue_draw(editor->drar);
 }
 
 static gboolean key_press_callback(GtkWidget *widget, GdkEventKey *event, editor_t *editor) {

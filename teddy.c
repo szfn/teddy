@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <fontconfig/fontconfig.h>
 
 #include "global.h"
 #include "go.h"
@@ -29,6 +30,8 @@ int main(int argc, char *argv[]) {
 	int i;
 
 	gtk_init(&argc, &argv);
+
+	FcInit();
 
 	rd_init();
 	global_init();
