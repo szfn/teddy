@@ -189,8 +189,12 @@ void editor_close_editor(editor_t *editor) {
 	if (column_editor_count(editor->column) > 1) {
 		editor = column_remove(editor->column, editor);
 	} else {
-		column_t *column = columns_remove(columnset, editor->column, editor);
-		editor = column_get_first_editor(column);
+		if (editor->buffer == null_buffer()) {
+			column_t *column = columns_remove(columnset, editor->column, editor);
+			editor = column_get_first_editor(column);
+		} else {
+			editor_switch_buffer(editor, null_buffer());
+		}
 	}
 	editor_grab_focus(editor, false);
 }
@@ -876,16 +880,44 @@ static gboolean hscrolled_callback(GtkAdjustment *adj, gpointer data) {
 	return TRUE;
 }
 
+bool dragging = false;
+
 static gboolean label_button_press_callback(GtkWidget *widget, GdkEventButton *event, editor_t *editor) {
-	if ((event->type == GDK_2BUTTON_PRESS) && (event->button == 1)) {
-		if (column_remove_others(editor->column, editor) == 0) {
-			columns_remove_others(columnset, editor->column, editor);
+
+
+	if (event->button == 1) {
+		if (event->type == GDK_2BUTTON_PRESS) {
+			dragging = false;
+
+			if (column_remove_others(editor->column, editor) == 0) {
+				columns_remove_others(columnset, editor->column, editor);
+			}
+			return TRUE;
+		} else {
+			dragging = true;
 		}
-		return TRUE;
 	}
 
 	if ((event->type == GDK_BUTTON_PRESS) && (event->button == 2)) {
-		editor_close_editor(editor);
+		if (dragging) {
+			dragging = false;
+
+			GtkAllocation allocation;
+
+			gtk_widget_get_allocation(widget, &allocation);
+
+			double x = event->x + allocation.x;
+			double y = event->y + allocation.y;
+
+			editor_t *target = columns_get_editor_from_position(columnset, x, y);
+
+			if ((target != NULL) && (target != editor)) {
+				editor_switch_buffer(target, editor->buffer);
+				editor_close_editor(editor);
+			}
+		} else {
+			editor_close_editor(editor);
+		}
 		return TRUE;
 	}
 
@@ -905,13 +937,22 @@ static gboolean label_button_press_callback(GtkWidget *widget, GdkEventButton *e
 static gboolean label_button_release_callback(GtkWidget *widget, GdkEventButton *event, editor_t *editor) {
 	GtkAllocation allocation;
 	double x, y;
+	int shift = event->state & GDK_SHIFT_MASK;
+	int ctrl = event->state & GDK_CONTROL_MASK;
+	int alt = event->state & GDK_MOD1_MASK;
+	int super = event->state & GDK_SUPER_MASK;
 
 	gtk_widget_get_allocation(widget, &allocation);
 
 	x = event->x + allocation.x;
 	y = event->y + allocation.y;
 
-	if (event->button == 1) {
+	if (event->button != 1) return FALSE;
+	if (!dragging) return FALSE;
+
+	dragging = false;
+
+	if (!shift && !ctrl && !alt && !super) {
 		editor_t *target = columns_get_editor_from_position(columnset, x, y);
 
 		if ((target != NULL) && (target != editor)) {
@@ -924,7 +965,7 @@ static gboolean label_button_release_callback(GtkWidget *widget, GdkEventButton 
 			}
 		}
 		return TRUE;
-	} else if (event->button == 3) {
+	} else if (shift && !ctrl && !alt && !super) {
 		column_t *target_column = columns_get_column_from_position(columnset, x, y);
 		if ((target_column != NULL) && (target_column != editor->column)) {
 			columns_swap_columns(columnset, editor->column, target_column);
