@@ -69,11 +69,7 @@ int main(int argc, char *argv[]) {
 
 	gtk_widget_show_all(window);
 
-	editor = NULL;
-
-	if (abuf != NULL) {
-		editor = columns_new(columnset, abuf);
-	}
+	editor = columns_new(columnset, abuf ? abuf : null_buffer());
 
 	buffer_t *curdir_buf = go_file(NULL, getcwd(NULL, 0), true);
 	if (curdir_buf != NULL) {

@@ -399,15 +399,52 @@ editor_t *heuristic_new_frame(columns_t *columns, editor_t *spawning_editor, buf
 	column_t **ordered_columns = columns_ordered_columns(columns, &numcol);
 	editor_t *retval = NULL;
 
+	if (buffer->path[strlen(buffer->path) - 1] == '/') garbage = 1;
+
 	//printf("New Buffer Heuristic\n");
 
-	{
-		int i;
-		for (i = 0; i < numcol; ++i) {
-			if (ordered_columns[i] == NULL) {
-				//printf("There were unexpected errors, bailing out of new heuristic\n");
+	for (int i = 0; i < numcol; ++i) {
+		if (ordered_columns[i] == NULL) {
+			//printf("There were unexpected errors, bailing out of new heuristic\n");
+			goto heuristic_new_frame_exit;
+		}
+	}
+
+	{ // if the last column is very large create a new column and use it
+		GtkAllocation allocation;
+		gtk_widget_get_allocation(GTK_WIDGET(ordered_columns[numcol-1]), &allocation);
+
+		if (allocation.width > 800) {
+			editor_t *editor = columns_new(columns, buffer);
+			if (editor != NULL) {
+				retval = editor;
 				goto heuristic_new_frame_exit;
 			}
+		}
+
+		//printf("   No large column to split\n");
+	}
+
+	if (!garbage || (null_buffer() == buffer)) {
+		// try to create a new frame inside the active column (column of last edit operation)
+		// it must be an actual buffer or the null buffer, +bg+ buffers shouldn't try to go here
+		if (columns->active_column != NULL) {
+			editor_t *editor = column_new_editor(columns->active_column, buffer);
+			if (editor != NULL) {
+				retval = editor;
+				goto heuristic_new_frame_exit;
+			}
+			//printf("   Splitting of active column failed\n");
+		} else {
+			//printf("   Active column isn't set\n");
+		}
+	} else {
+		// if it is garbage then try to create a new frame inside the rightmost column
+
+		editor_t *editor = column_new_editor(ordered_columns[numcol - 1], buffer);
+		if (editor != NULL) {
+			retval = editor;
+			goto heuristic_new_frame_exit;
 		}
 	}
 
@@ -428,61 +465,6 @@ editor_t *heuristic_new_frame(columns_t *columns, editor_t *spawning_editor, buf
 
 		//printf("   No +null+ editor to take over\n");
 	}
-
-	{ // if the last column is very large create a new column and use it
-		GtkAllocation allocation;
-		gtk_widget_get_allocation(GTK_WIDGET(ordered_columns[numcol-1]), &allocation);
-
-		if (allocation.width > 1000) {
-			editor_t *editor = columns_new(columns, buffer);
-			if (editor != NULL) {
-				retval = editor;
-				goto heuristic_new_frame_exit;
-			}
-		}
-
-		//printf("   No large column to split\n");
-	}
-
-	{ // search for the column with the most space on the bottom editor
-		column_t *best_column = NULL;
-		int best_column_last_editor_height = 50;
-
-		for (int i = 0; i < numcol; ++i) {
-			GtkAllocation allocation;
-			editor_t *editor = column_get_last_editor(ordered_columns[i]);
-			gtk_widget_get_allocation(editor->drar, &allocation);
-
-			if (allocation.height > best_column_last_editor_height) {
-				best_column_last_editor_height = allocation.height;
-				best_column = ordered_columns[i];
-				if (allocation.height > (MAX_LINES_HEIGHT_REQUEST / 2) * buffer->line_height) {
-					break;
-				}
-			}
-		}
-
-		if (best_column != NULL) {
-			editor_t *editor = column_new_editor(best_column, buffer);
-			if (editor != NULL) {
-				retval = editor;
-				goto heuristic_new_frame_exit;
-			}
-		}
-	}
-
-	// try to create a new frame inside the active column (column of last edit operation)
-	if (columns->active_column != NULL) {
-		editor_t *editor = column_new_editor(columns->active_column, buffer);
-		if (editor != NULL) {
-			retval = editor;
-			goto heuristic_new_frame_exit;
-		}
-		//printf("   Splitting of active column failed\n");
-	} else {
-		//printf("   Active column isn't set\n");
-	}
-
 
 	{ // no good place was found, see if it's appropriate to open a new column
 		GtkAllocation allocation;
