@@ -18,10 +18,13 @@ typedef struct _my_glyph_info_t {
 	double x_advance;
 	uint32_t code;
 	uint8_t color;
+
+	unsigned long glyph_index;
+	double x;
+	double y;
 } my_glyph_info_t;
 
 typedef struct _real_line_t {
-	cairo_glyph_t *glyphs;
 	my_glyph_info_t *glyph_info;
 	int allocated;
 	int cap;

@@ -48,11 +48,6 @@ static void grow_line(real_line_t *line, int insertion_point, int size) {
 		line->allocated *= 2;
 		if (line->allocated == 0) line->allocated = 10;
 		/*printf("new size: %d\n", line->allocated_glyphs);*/
-		line->glyphs = realloc(line->glyphs, sizeof(cairo_glyph_t) * line->allocated);
-		if (!(line->glyphs)) {
-			perror("Couldn't allocate glyphs space");
-			exit(EXIT_FAILURE);
-		}
 		line->glyph_info = realloc(line->glyph_info, sizeof(my_glyph_info_t) * line->allocated);
 		if (!(line->glyph_info)) {
 			perror("Couldn't allocate glyphs space");
@@ -62,7 +57,6 @@ static void grow_line(real_line_t *line, int insertion_point, int size) {
 
 	if (insertion_point < line->cap) {
 		/*printf("memmove %x <- %x %d\n", line->glyphs+dst+1, line->glyphs+dst, line->glyphs_cap - dst); */
-		memmove(line->glyphs+insertion_point+size, line->glyphs+insertion_point, sizeof(cairo_glyph_t)*(line->cap - insertion_point));
 		memmove(line->glyph_info+insertion_point+size, line->glyph_info+insertion_point, sizeof(my_glyph_info_t)*(line->cap - insertion_point));
 		line->cap += size;
 	}
@@ -76,7 +70,6 @@ static void buffer_join_lines(buffer_t *buffer, real_line_t *line1, real_line_t 
 	if (line2 == NULL) return;
 
 	grow_line(line1, line1->cap, line2->cap);
-	memcpy(line1->glyphs+line1->cap, line2->glyphs, sizeof(cairo_glyph_t)*line2->cap);
 	memcpy(line1->glyph_info+line1->cap, line2->glyph_info, sizeof(my_glyph_info_t)*line2->cap);
 	line1->cap += line2->cap;
 
@@ -85,7 +78,6 @@ static void buffer_join_lines(buffer_t *buffer, real_line_t *line1, real_line_t 
 	line1->next = line2->next;
 	if (line2->next != NULL) line2->next->prev = line1;
 
-	free(line2->glyphs);
 	free(line2->glyph_info);
 	free(line2);
 
@@ -98,7 +90,6 @@ static void buffer_join_lines(buffer_t *buffer, real_line_t *line1, real_line_t 
 }
 
 static void buffer_line_delete_from(buffer_t *buffer, real_line_t *real_line, int start, int size) {
-	memmove(real_line->glyphs+start, real_line->glyphs+start+size, sizeof(cairo_glyph_t)*(real_line->cap-start-size));
 	memmove(real_line->glyph_info+start, real_line->glyph_info+start+size, sizeof(my_glyph_info_t)*(real_line->cap-start-size));
 	real_line->cap -= size;
 }
@@ -128,7 +119,6 @@ static void buffer_remove_selection(buffer_t *buffer, lpoint_t *start, lpoint_t 
 	/* Remove real_lines between start and end */
 	for (real_line = start->line->next; (real_line != NULL) && (real_line != end->line); ) {
 		real_line_t *next = real_line->next;
-		free(real_line->glyphs);
 		free(real_line->glyph_info);
 		free(real_line);
 		real_line = next;
@@ -159,13 +149,8 @@ static void buffer_remove_selection(buffer_t *buffer, lpoint_t *start, lpoint_t 
 static real_line_t *new_real_line(int lineno) {
 	real_line_t *line = malloc(sizeof(real_line_t));
 	line->allocated = 10;
-	line->glyphs = malloc(sizeof(cairo_glyph_t) * line->allocated);
-	if (!(line->glyphs)) {
-		perror("Couldn't allocate glyphs space");
-		exit(EXIT_FAILURE);
-	}
 	line->glyph_info = malloc(sizeof(my_glyph_info_t) * line->allocated);
-	if (!(line->glyphs)) {
+	if (!(line->glyph_info)) {
 		perror("Couldn't allocate glyphs space");
 		exit(EXIT_FAILURE);
 	}
@@ -185,7 +170,6 @@ static real_line_t *buffer_copy_line(buffer_t *buffer, real_line_t *real_line, i
 
 	grow_line(r, 0, size);
 
-	memcpy(r->glyphs, real_line->glyphs+start, size * sizeof(cairo_glyph_t));
 	memcpy(r->glyph_info, real_line->glyph_info+start, size * sizeof(my_glyph_info_t));
 
 	r->cap = size;
@@ -229,7 +213,7 @@ static int buffer_line_insert_utf8_text(buffer_t *buffer, real_line_t *line, con
 	int inserted_glyphs = 0;
 
 	if (insertion_point > 0) {
-		previous = line->glyphs[insertion_point-1].index;
+		previous = line->glyph_info[insertion_point-1].glyph_index;
 	}
 
 	for (src = 0, dst = insertion_point; src < len; ) {
@@ -260,11 +244,18 @@ static int buffer_line_insert_utf8_text(buffer_t *buffer, real_line_t *line, con
 			line->glyph_info[dst].kerning_correction = 0;
 		}
 
-		previous = line->glyphs[dst].index = glyph_index;
-		line->glyphs[dst].x = 0.0;
-		line->glyphs[dst].y = 0.0;
+		previous = line->glyph_info[dst].glyph_index = glyph_index;
+		line->glyph_info[dst].x = 0.0;
+		line->glyph_info[dst].y = 0.0;
 
-		cairo_scaled_font_glyph_extents(main_font.cairofont, line->glyphs + dst, 1, &extents);
+		{
+			cairo_glyph_t g;
+			g.index = glyph_index;
+			g.x = 0.0;
+			g.y = 0.0;
+
+			cairo_scaled_font_glyph_extents(main_font.cairofont, &g, 1, &extents);
+		}
 
 		/*if (code == 0x09) {
 			extents.x_advance *= buffer->tab_width;
@@ -282,7 +273,7 @@ static int buffer_line_insert_utf8_text(buffer_t *buffer, real_line_t *line, con
 		if (use_kerning) {
 			FT_Vector delta;
 
-			FT_Get_Kerning(scaledface, previous, line->glyphs[dst].index, FT_KERNING_DEFAULT, &delta);
+			FT_Get_Kerning(scaledface, previous, line->glyph_info[dst].glyph_index, FT_KERNING_DEFAULT, &delta);
 
 			line->glyph_info[dst].kerning_correction = delta.x >> 6;
 		} else {
@@ -413,8 +404,8 @@ static void buffer_line_adjust_glyphs(buffer_t *buffer, real_line_t *line, doubl
 			y_increment += buffer->line_height;
 			x = buffer->left_margin;
 		}
-		line->glyphs[i].x = x;
-		line->glyphs[i].y = y;
+		line->glyph_info[i].x = x;
+		line->glyph_info[i].y = y;
 		x += line->glyph_info[i].x_advance;
 		//printf("x: %g (%g)\n", x, glyph_info[i].x_advance);
 	}
@@ -917,11 +908,11 @@ void line_get_glyph_coordinates(buffer_t *buffer, lpoint_t *point, double *x, do
 	}
 
 	if (point->glyph >= point->line->cap) {
-		*y = point->line->glyphs[point->line->cap-1].y;
-		*x = point->line->glyphs[point->line->cap-1].x + point->line->glyph_info[point->line->cap-1].x_advance;
+		*y = point->line->glyph_info[point->line->cap-1].y;
+		*x = point->line->glyph_info[point->line->cap-1].x + point->line->glyph_info[point->line->cap-1].x_advance;
 	} else {
-		*y = point->line->glyphs[point->glyph].y;
-		*x = point->line->glyphs[point->glyph].x;
+		*y = point->line->glyph_info[point->glyph].y;
+		*x = point->line->glyph_info[point->glyph].x;
 	}
 }
 
@@ -946,8 +937,8 @@ void buffer_move_cursor_to_position(buffer_t *buffer, double x, double y) {
 	assert(line != NULL);
 
 	for (i = 0; i < line->cap; ++i) {
-		if ((y >= line->glyphs[i].y - buffer->line_height) && (y <= line->glyphs[i].y)) {
-			double glyph_start = line->glyphs[i].x;
+		if ((y >= line->glyph_info[i].y - buffer->line_height) && (y <= line->glyph_info[i].y)) {
+			double glyph_start = line->glyph_info[i].x;
 			double glyph_end = glyph_start + line->glyph_info[i].x_advance;
 
 			if (x < glyph_start) {
@@ -1049,7 +1040,6 @@ void buffer_free(buffer_t *buffer) {
 
 		while (cursor != NULL) {
 			real_line_t *next = cursor->next;
-			free(cursor->glyphs);
 			free(cursor->glyph_info);
 			free(cursor);
 			cursor = next;
