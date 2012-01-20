@@ -669,47 +669,57 @@ static void draw_parmatch(editor_t *editor, GtkAllocation *allocation, cairo_t *
 	cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
 }
 
-#define COLORED_OUTPUT
+struct growable_glyph_array {
+	cairo_glyph_t *glyphs;
+	int n;
+	int allocated;
+	uint16_t kind;
+};
 
-static void draw_line(editor_t *editor, GtkAllocation *allocation, cairo_t *cr, real_line_t *line) {
-	cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
+static struct growable_glyph_array *growable_glyph_array_init(void) {
+	struct growable_glyph_array *gga = malloc(sizeof(struct growable_glyph_array));
+	gga->allocated = 10;
+	gga->n = 0;
+	gga->kind = 0;
+	gga->glyphs = malloc(sizeof(cairo_glyph_t) * gga->allocated);
+	if (!(gga->glyphs)) {
+		perror("Out of memory");
+		exit(EXIT_FAILURE);
+	}
+	return gga;
+}
 
-#ifndef COLORED_OUTPUT
-	cairo_show_glyphs(cr, line->glyphs, line->cap);
-#endif
+static void growable_glyph_array_free(struct growable_glyph_array *gga) {
+	free(gga->glyphs);
+	free(gga);
+}
+
+static void growable_glyph_array_append(struct growable_glyph_array *gga, cairo_glyph_t glyph) {
+	if (gga->n >= gga->allocated) {
+		gga->allocated *= 2;
+		gga->glyphs = realloc(gga->glyphs, sizeof(cairo_glyph_t) * gga->allocated);
+	}
+
+	gga->glyphs[gga->n] = glyph;
+	++(gga->n);
+}
+
+static void draw_line(editor_t *editor, GtkAllocation *allocation, cairo_t *cr, real_line_t *line, GHashTable *ht) {
+	struct growable_glyph_array *gga_current = NULL;
 
 	double cury = line->start_y;
 
-#ifdef COLORED_OUTPUT
-	int start = 0;
-	uint8_t color = 0xff;
-#endif
-
 	for (int i = 0; i < line->cap; ++i) {
-#ifdef COLORED_OUTPUT
-		if (line->glyph_info[i].color != color) {
-			if (color != 0xff) {
-				set_color_cfg(cr, lexy_colors[color]);
-				cairo_show_glyphs(cr, line->glyphs+start, i-start);
-				set_color_cfg(cr, config[CFG_EDITOR_FG_COLOR].intval);
-			}
-
-			color = line->glyph_info[i].color;
-			start = i;
-		}
-
-#endif
-
 		// draws soft wrapping indicators
-		if (line->glyphs[i].y - cury > 0.001) {
+		if (line->glyph_info[i].y - cury > 0.001) {
 			/* draw ending tract */
 			cairo_set_line_width(cr, 4.0);
-			cairo_move_to(cr, line->glyphs[i-1].x + line->glyph_info[i-1].x_advance, cury-(editor->buffer->ex_height/2.0));
+			cairo_move_to(cr, line->glyph_info[i-1].x + line->glyph_info[i-1].x_advance, cury-(editor->buffer->ex_height/2.0));
 			cairo_line_to(cr, allocation->width, cury-(editor->buffer->ex_height/2.0));
 			cairo_stroke(cr);
 			cairo_set_line_width(cr, 2.0);
 
-			cury = line->glyphs[i].y;
+			cury = line->glyph_info[i].y;
 
 			/* draw initial tract */
 			cairo_set_line_width(cr, 4.0);
@@ -718,15 +728,22 @@ static void draw_line(editor_t *editor, GtkAllocation *allocation, cairo_t *cr, 
 			cairo_stroke(cr);
 			cairo_set_line_width(cr, 2.0);
 		}
-	}
 
-#ifdef COLORED_OUTPUT
-	if (color != 0xff) {
-		set_color_cfg(cr, lexy_colors[color]);
-		cairo_show_glyphs(cr, line->glyphs+start, line->cap-start);
-		set_color_cfg(cr, config[CFG_EDITOR_FG_COLOR].intval);
+		if ((gga_current == NULL) || (gga_current->kind != line->glyph_info[i].color)) {
+			gga_current = g_hash_table_lookup(ht, (gconstpointer)(uint64_t)(line->glyph_info[i].color));
+			if (gga_current == NULL) {
+				gga_current = growable_glyph_array_init();
+				g_hash_table_insert(ht, (gpointer)(uint64_t)(line->glyph_info[i].color), gga_current);
+			}
+		}
+
+		cairo_glyph_t g;
+		g.index = line->glyph_info[i].glyph_index;
+		g.x = line->glyph_info[i].x;
+		g.y = line->glyph_info[i].y;
+
+		growable_glyph_array_append(gga_current, g);
 	}
-#endif
 }
 
 static void draw_cursorline(cairo_t *cr, editor_t *editor) {
@@ -780,16 +797,33 @@ static gboolean expose_event_callback(GtkWidget *widget, GdkEventExpose *event, 
 
 	double originy = gtk_adjustment_get_value(GTK_ADJUSTMENT(editor->adjustment));
 
+	GHashTable *ht = g_hash_table_new(g_direct_hash, g_direct_equal);
+
 	int count = 0;
 	for (real_line_t *line = editor->buffer->real_line; line != NULL; line = line->next) {
 		if (((line->start_y + line->y_increment - originy) > 0) && ((line->start_y - editor->buffer->ascent - originy) < allocation.height)) {
-			draw_line(editor, &allocation, cr, line);
+			draw_line(editor, &allocation, cr, line, ht);
 		}
 
 		++count;
 
 		editor->buffer->rendered_height += line->y_increment;
 	}
+
+	{
+		cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
+		GHashTableIter it;
+		g_hash_table_iter_init(&it, ht);
+		uint16_t type;
+		struct growable_glyph_array *gga;
+		while (g_hash_table_iter_next(&it, (gpointer *)&type, (gpointer *)&gga)) {
+			set_color_cfg(cr, lexy_colors[(uint8_t)type]);
+			cairo_show_glyphs(cr, gga->glyphs, gga->n);
+			growable_glyph_array_free(gga);
+		}
+	}
+
+	g_hash_table_destroy(ht);
 
 	draw_selection(editor, allocation.width, cr);
 	draw_parmatch(editor, &allocation, cr);

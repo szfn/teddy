@@ -13,6 +13,7 @@ typedef struct _teddy_font_t {
 	cairo_scaled_font_t *cairofont;
 	cairo_matrix_t font_size_matrix, font_ctm;
 	cairo_font_options_t *font_options;
+	FT_Face scaled_face;
 } teddy_font_t;
 
 typedef struct _teddy_fontset_t {

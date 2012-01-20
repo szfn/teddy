@@ -159,6 +159,7 @@ static real_line_t *new_real_line(int lineno) {
 	line->next = NULL;
 	line->lineno = lineno;
 	line->y_increment = 0.0;
+	line->start_y = 0.0;
 	line->lexy_state_start = line->lexy_state_end = 0xff;
 	return line;
 }
@@ -222,7 +223,7 @@ static int buffer_line_insert_utf8_text(buffer_t *buffer, real_line_t *line, con
 		cairo_text_extents_t extents;
 		/*printf("First char: %02x\n", (uint8_t)text[src]);*/
 
-		if (code != 0x09) {
+		if (code != 0x09) { // TODO: include all the many non-space blank characters of unicode
 			glyph_index = FT_Get_Char_Index(scaledface, code);
 		} else {
 			glyph_index = FT_Get_Char_Index(scaledface, 0x20);
