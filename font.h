@@ -23,7 +23,6 @@ typedef struct _teddy_fontset_t {
 } teddy_fontset_t;
 
 extern FT_Library library;
-extern teddy_font_t main_font;
 extern teddy_fontset_t main_fonts;
 extern teddy_font_t posbox_font;
 

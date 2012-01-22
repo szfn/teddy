@@ -20,6 +20,7 @@ typedef struct _my_glyph_info_t {
 	uint8_t color;
 
 	unsigned long glyph_index;
+	uint8_t fontidx;
 	double x;
 	double y;
 } my_glyph_info_t;

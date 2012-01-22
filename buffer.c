@@ -207,26 +207,32 @@ static void buffer_split_line(buffer_t *buffer, lpoint_t *point) {
 }
 
 static int buffer_line_insert_utf8_text(buffer_t *buffer, real_line_t *line, const char *text, int len, int insertion_point) {
-	FT_Face scaledface = cairo_ft_scaled_font_lock_face(main_font.cairofont);
-	FT_Bool use_kerning = FT_HAS_KERNING(scaledface);
 	FT_UInt previous = 0;
+	uint8_t previous_fontidx = 0;
 	int src, dst;
 	int inserted_glyphs = 0;
 
 	if (insertion_point > 0) {
 		previous = line->glyph_info[insertion_point-1].glyph_index;
+		previous_fontidx = line->glyph_info[insertion_point-1].fontidx;
+	}
+
+	for (int i = 0; i < main_fonts.count; ++i) {
+		main_fonts.fonts[i].scaled_face = cairo_ft_scaled_font_lock_face(main_fonts.fonts[i].cairofont);
 	}
 
 	for (src = 0, dst = insertion_point; src < len; ) {
 		uint32_t code = utf8_to_utf32(text, &src, len);
 		FT_UInt glyph_index;
 		cairo_text_extents_t extents;
+		uint8_t fontidx = (code <= 0xffff) ? main_fonts.map[(uint16_t)code] : 0;
+		if (fontidx >= main_fonts.count) fontidx = 0;
 		/*printf("First char: %02x\n", (uint8_t)text[src]);*/
 
 		if (code != 0x09) { // TODO: include all the many non-space blank characters of unicode
-			glyph_index = FT_Get_Char_Index(scaledface, code);
+			glyph_index = FT_Get_Char_Index(main_fonts.fonts[fontidx].scaled_face, code);
 		} else {
-			glyph_index = FT_Get_Char_Index(scaledface, 0x20);
+			glyph_index = FT_Get_Char_Index(main_fonts.fonts[fontidx].scaled_face, 0x20);
 		}
 
 		grow_line(line, dst, 1);
@@ -235,10 +241,10 @@ static int buffer_line_insert_utf8_text(buffer_t *buffer, real_line_t *line, con
 		line->glyph_info[dst].color = buffer->default_color;
 
 		/* Kerning correction for x */
-		if (use_kerning && previous && glyph_index) {
+		if ((previous_fontidx == fontidx) && FT_HAS_KERNING(main_fonts.fonts[fontidx].scaled_face) && previous && glyph_index) {
 			FT_Vector delta;
 
-			FT_Get_Kerning(scaledface, previous, glyph_index, FT_KERNING_DEFAULT, &delta);
+			FT_Get_Kerning(main_fonts.fonts[fontidx].scaled_face, previous, glyph_index, FT_KERNING_DEFAULT, &delta);
 
 			line->glyph_info[dst].kerning_correction = delta.x >> 6;
 		} else {
@@ -246,6 +252,7 @@ static int buffer_line_insert_utf8_text(buffer_t *buffer, real_line_t *line, con
 		}
 
 		previous = line->glyph_info[dst].glyph_index = glyph_index;
+		previous_fontidx = line->glyph_info[dst].fontidx = fontidx;
 		line->glyph_info[dst].x = 0.0;
 		line->glyph_info[dst].y = 0.0;
 
@@ -255,7 +262,7 @@ static int buffer_line_insert_utf8_text(buffer_t *buffer, real_line_t *line, con
 			g.x = 0.0;
 			g.y = 0.0;
 
-			cairo_scaled_font_glyph_extents(main_font.cairofont, &g, 1, &extents);
+			cairo_scaled_font_glyph_extents(main_fonts.fonts[fontidx].cairofont, &g, 1, &extents);
 		}
 
 		/*if (code == 0x09) {
@@ -271,10 +278,11 @@ static int buffer_line_insert_utf8_text(buffer_t *buffer, real_line_t *line, con
 	}
 
 	if (dst < line->cap) {
-		if (use_kerning) {
+		uint8_t fontidx = line->glyph_info[dst].fontidx;
+		if ((previous_fontidx == fontidx) && FT_HAS_KERNING(main_fonts.fonts[fontidx].scaled_face)) {
 			FT_Vector delta;
 
-			FT_Get_Kerning(scaledface, previous, line->glyph_info[dst].glyph_index, FT_KERNING_DEFAULT, &delta);
+			FT_Get_Kerning(main_fonts.fonts[fontidx].scaled_face, previous, line->glyph_info[dst].glyph_index, FT_KERNING_DEFAULT, &delta);
 
 			line->glyph_info[dst].kerning_correction = delta.x >> 6;
 		} else {
@@ -283,7 +291,9 @@ static int buffer_line_insert_utf8_text(buffer_t *buffer, real_line_t *line, con
 
 	}
 
-	cairo_ft_scaled_font_unlock_face(main_font.cairofont);
+	for (int i = 0; i < main_fonts.count; ++i) {
+		cairo_ft_scaled_font_unlock_face(main_fonts.fonts[i].cairofont);
+	}
 
 	return inserted_glyphs;
 }
@@ -996,16 +1006,16 @@ buffer_t *buffer_create(FT_Library *library) {
 		cairo_text_extents_t extents;
 		cairo_font_extents_t font_extents;
 
-		cairo_scaled_font_text_extents(main_font.cairofont, "M", &extents);
+		cairo_scaled_font_text_extents(main_fonts.fonts[0].cairofont, "M", &extents);
 		buffer->em_advance = extents.width;
 
-		cairo_scaled_font_text_extents(main_font.cairofont, "x", &extents);
+		cairo_scaled_font_text_extents(main_fonts.fonts[0].cairofont, "x", &extents);
 		buffer->ex_height = extents.height;
 
-		cairo_scaled_font_text_extents(main_font.cairofont, " ", &extents);
+		cairo_scaled_font_text_extents(main_fonts.fonts[0].cairofont, " ", &extents);
 		buffer->space_advance = extents.x_advance;
 
-		cairo_scaled_font_extents(main_font.cairofont, &font_extents);
+		cairo_scaled_font_extents(main_fonts.fonts[0].cairofont, &font_extents);
 		buffer->line_height = font_extents.height - config[CFG_MAIN_FONT_HEIGHT_REDUCTION].intval;
 		buffer->ascent = font_extents.ascent;
 		buffer->descent = font_extents.descent;

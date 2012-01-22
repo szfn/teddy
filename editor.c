@@ -729,11 +729,14 @@ static void draw_line(editor_t *editor, GtkAllocation *allocation, cairo_t *cr, 
 			cairo_set_line_width(cr, 2.0);
 		}
 
-		if ((gga_current == NULL) || (gga_current->kind != line->glyph_info[i].color)) {
-			gga_current = g_hash_table_lookup(ht, (gconstpointer)(uint64_t)(line->glyph_info[i].color));
+		uint16_t type = (uint16_t)(line->glyph_info[i].color) + ((uint16_t)(line->glyph_info[i].fontidx) << 8);
+
+		if ((gga_current == NULL) || (gga_current->kind != type)) {
+			gga_current = g_hash_table_lookup(ht, (gconstpointer)(uint64_t)type);
 			if (gga_current == NULL) {
 				gga_current = growable_glyph_array_init();
-				g_hash_table_insert(ht, (gpointer)(uint64_t)(line->glyph_info[i].color), gga_current);
+				gga_current->kind = type;
+				g_hash_table_insert(ht, (gpointer)(uint64_t)type, gga_current);
 			}
 		}
 
@@ -789,7 +792,6 @@ static gboolean expose_event_callback(GtkWidget *widget, GdkEventExpose *event, 
 	draw_cursorline(cr, editor);
 
 	set_color_cfg(cr, config[CFG_EDITOR_FG_COLOR].intval);
-	cairo_set_scaled_font(cr, main_font.cairofont);
 
 	buffer_typeset_maybe(editor->buffer, allocation.width);
 
@@ -817,11 +819,17 @@ static gboolean expose_event_callback(GtkWidget *widget, GdkEventExpose *event, 
 		uint16_t type;
 		struct growable_glyph_array *gga;
 		while (g_hash_table_iter_next(&it, (gpointer *)&type, (gpointer *)&gga)) {
-			set_color_cfg(cr, lexy_colors[(uint8_t)type]);
+			uint8_t color = (uint8_t)type;
+			uint8_t fontidx = (uint8_t)(type >> 8);
+			//printf("Printing text with font %d, color %d\n", fontidx, color);
+			cairo_set_scaled_font(cr, main_fonts.fonts[fontidx].cairofont);
+			set_color_cfg(cr, lexy_colors[color]);
 			cairo_show_glyphs(cr, gga->glyphs, gga->n);
 			growable_glyph_array_free(gga);
 		}
 	}
+
+	//printf("\n\n");
 
 	g_hash_table_destroy(ht);
 
