@@ -1,12 +1,13 @@
 - bufman doesn't display a window, it switches the current editor to the +bufman+ special buffer (that has special keybindings)
 - splitting of columns, frames (instead of just adding at the end)
 - cairo optimization: display all glyphs of the same type at once
-- gdb integration
 - replace tcl regex engine with TRE
 - bg with an argument to force use of a new buffer
 - interface tabs
+- TAGS files
 - options for tab character visualization
 - macros
+- gdb integration
 - fix bad rendering perfomance by killing cairo
 - debugger integration (just displaying currently executed line)
 - selection should copy selected text on past not on selection, for better efficiency (selection slowdown is noticeable on mouse selection)

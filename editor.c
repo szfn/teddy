@@ -791,8 +791,6 @@ static gboolean expose_event_callback(GtkWidget *widget, GdkEventExpose *event, 
 
 	draw_cursorline(cr, editor);
 
-	set_color_cfg(cr, config[CFG_EDITOR_FG_COLOR].intval);
-
 	buffer_typeset_maybe(editor->buffer, allocation.width);
 
 	editor->buffer->rendered_height = 0.0;
@@ -812,6 +810,7 @@ static gboolean expose_event_callback(GtkWidget *widget, GdkEventExpose *event, 
 		editor->buffer->rendered_height += line->y_increment;
 	}
 
+	//set_color_cfg(cr, config[CFG_EDITOR_FG_COLOR].intval);
 	{
 		cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
 		GHashTableIter it;
