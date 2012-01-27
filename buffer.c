@@ -983,7 +983,7 @@ void buffer_update_parmatch(buffer_t *buffer) {
 	parmatch_find(&(buffer->parmatch), &(buffer->cursor));
 }
 
-buffer_t *buffer_create(FT_Library *library) {
+buffer_t *buffer_create(void) {
 	buffer_t *buffer = malloc(sizeof(buffer_t));
 
 	buffer->modified = 0;

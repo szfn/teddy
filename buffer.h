@@ -95,7 +95,7 @@ typedef struct _buffer_t {
 uint32_t utf8_to_utf32(const char *text, int *src, int len);
 
 
-buffer_t *buffer_create(FT_Library *library);
+buffer_t *buffer_create(void);
 void buffer_free(buffer_t *buffer);
 
 /* Initialization completion function (at least one of these two must be called after buffer_create, before the buffer is used in any way)

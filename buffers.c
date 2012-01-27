@@ -184,7 +184,7 @@ void buffers_init(void) {
 		}
 	}
 
-	buffers[0] = buffer_create(&library);
+	buffers[0] = buffer_create();
 	{
 		free(buffers[0]->name);
 		asprintf(&(buffers[0]->name), "+null+");
@@ -344,7 +344,7 @@ buffer_t *buffers_get_buffer_for_process(void) {
 	}
 
 	if (i >= buffers_allocated) {
-		buffer = buffer_create(&library);
+		buffer = buffer_create();
 		load_empty(buffer);
 		if (buffer->name != NULL) {
 			free(buffer->name);

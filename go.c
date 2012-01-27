@@ -129,7 +129,7 @@ buffer_t *go_file(buffer_t *base_buffer, const char *filename, bool create) {
 		}
 	}
 
-	buffer = buffer_create(&library);
+	buffer = buffer_create();
 
 	if (S_ISDIR(s.st_mode)) {
 		if (load_dir(buffer, urp) != 0) {
@@ -285,7 +285,7 @@ int teddy_go_command(ClientData client_data, Tcl_Interp *interp, int argc, const
 				quick_message(context_editor, "Error", msg);
 				free(msg);
 			} else {
-				buffer_t *buffer = buffer_create(&library);
+				buffer_t *buffer = buffer_create();
 				fclose(f);
 				if (load_text_file(buffer, urp) != 0) {
 					buffer_free(buffer);
