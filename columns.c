@@ -399,7 +399,7 @@ editor_t *heuristic_new_frame(columns_t *columns, editor_t *spawning_editor, buf
 	column_t **ordered_columns = columns_ordered_columns(columns, &numcol);
 	editor_t *retval = NULL;
 
-	if (buffer->path[strlen(buffer->path) - 1] == '/') garbage = 1;
+	if ((buffer->path == NULL) || (buffer->path[strlen(buffer->path) - 1] == '/')) garbage = 1;
 
 	//printf("New Buffer Heuristic\n");
 

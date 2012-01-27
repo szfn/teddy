@@ -925,8 +925,6 @@ static gboolean hscrolled_callback(GtkAdjustment *adj, gpointer data) {
 bool dragging = false;
 
 static gboolean label_button_press_callback(GtkWidget *widget, GdkEventButton *event, editor_t *editor) {
-
-
 	if (event->button == 1) {
 		if (event->type == GDK_2BUTTON_PRESS) {
 			dragging = false;
