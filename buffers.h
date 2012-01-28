@@ -2,8 +2,8 @@
 #define __BUFFERS_H__
 
 #include "buffer.h"
-
 #include "editor.h"
+#include "interp.h"
 
 #include <gtk/gtk.h>
 
@@ -24,5 +24,6 @@ buffer_t *buffers_find_buffer_from_path(const char *path);
 buffer_t *buffers_get_buffer_for_process(void);
 buffer_t *buffers_create_with_name(char *name);
 
+int teddy_buffer_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]);
 
 #endif

@@ -369,3 +369,13 @@ buffer_t *buffers_get_buffer_for_process(void) {
 	return buffer;
 }
 
+int teddy_buffer_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
+	//TODO: implement
+	// - make
+	// - propset
+	// - setkeyprocessor
+	// - current
+	// - ls
+	// - info
+	return TCL_OK;
+}
