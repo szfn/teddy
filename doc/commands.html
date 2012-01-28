@@ -103,6 +103,19 @@
 		</div>
 
 		<h3>go</h3>
+		<div class="ind">
+			<p><b>Syntax: </b> <tt>go <b>[</b> -ask <b>|</b> -new <b>|</b> -here <b>|</b> -select <b>]</b> <i>file/position specifier</i></tt>
+			<p>Goes to the specified file/position. The mandatory argument can have several forms:
+			<ul>
+				<li>a number, it will move the cursor to that line.
+				<li>the colon character followed by a number, it will move the cursor to that character in the current line, for example <tt>go :1</tt> goes to the first character of the line.
+				<li>the colon can also be followed by <tt>^</tt> (first non-whitespace character of the line) or <tt>$</tt> (last character of the line).
+				<li><tt><i>line number</i>:<i>column specifier</i></tt> will move the cursor to the specified position.
+				<li><tt><i>filename</i></tt> opens the specified file or directory, will ask to create it if it doesn't exist.
+				<li><tt><i>filename</i>:<i>position specifier</i></tt> opens the specified file and moves the cursor to the specified position (composed of a line number and an optional column specifier).
+			</ul>
+			<p>If the command requests opening an already opened file or directory go will focus the already opened buffer, if the buffer if visible, if the buffer is not visible or if the command requests to open a new buffer a window will be shown to let the user select which editor to use for the buffer, unless the first argument was -here, -current or -new.
+		</div>
 
 		<h3>refresh</h3>
 		<div class="ind">

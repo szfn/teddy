@@ -254,8 +254,27 @@ static int exec_go(const char *specifier, int where) {
 }
 
 int teddy_go_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
-	if (argc != 2) {
-		Tcl_AddErrorInfo(interp, "Wrong number of arguments to 'go', usage: 'go [<filename>]:[<position-specifier>]");
+	const char *goarg;
+	int where = -1;
+
+	if (argc == 2) {
+		goarg = argv[1];
+	} else if (argc == 3) {
+		goarg = argv[2];
+		if (strcmp(argv[1], "-new") == 0) {
+			where = GO_NEW;
+		} else if (strcmp(argv[1], "-select") == 0) {
+			where = GO_SELECT;
+		} else if (strcmp(argv[1], "-here") == 0) {
+			where = GO_CURRENT;
+		} else if (strcmp(argv[1], "-ask") == 0) {
+			where = -1;
+		} else {
+			Tcl_AddErrorInfo(interp, "Wrong arguments to 'go', usage: 'go [-here|-select|-new|-ask] [<filename>]:[<position-specifier>]");
+			return TCL_ERROR;
+		}
+	} else {
+		Tcl_AddErrorInfo(interp, "Wrong number of arguments to 'go', usage: 'go [-here|-select|-new] [<filename>]:[<position-specifier>]");
 		return TCL_ERROR;
 	}
 
@@ -264,8 +283,8 @@ int teddy_go_command(ClientData client_data, Tcl_Interp *interp, int argc, const
 		return TCL_ERROR;
 	}
 
-	if (!exec_go(argv[1], -1)) {
-		char *urp = unrealpath(context_editor->buffer->path, argv[1]);
+	if (!exec_go(goarg, where)) {
+		char *urp = unrealpath(context_editor->buffer->path, goarg);
 		char *msg;
 		GtkWidget *dialog = gtk_dialog_new_with_buttons("Create file", GTK_WINDOW(context_editor->window), GTK_DIALOG_MODAL|GTK_DIALOG_DESTROY_WITH_PARENT, "Yes", 1, "No", 0, NULL);
 
