@@ -332,6 +332,19 @@ buffer_t *buffers_find_buffer_from_path(const char *urp) {
 	return r;
 }
 
+buffer_t *buffers_create_with_name(char *name) {
+	buffer_t *buffer = buffer_create();
+	load_empty(buffer);
+	if (buffer->name != NULL) {
+		free(buffer->name);
+	}
+	buffer->name = name;
+
+	buffers_add(buffer);
+
+	return buffer;
+}
+
 buffer_t *buffers_get_buffer_for_process(void) {
 	buffer_t *buffer;
 	int i;
@@ -344,15 +357,11 @@ buffer_t *buffers_get_buffer_for_process(void) {
 	}
 
 	if (i >= buffers_allocated) {
-		buffer = buffer_create();
-		load_empty(buffer);
-		if (buffer->name != NULL) {
-			free(buffer->name);
-		}
-
-		asprintf(&(buffer->name), "+bg/%d+", process_buffers_counter);
+		char *bufname;
+		asprintf(&bufname, "+bg/%d+", process_buffers_counter);
 		++process_buffers_counter;
-		buffers_add(buffer);
+
+		buffer = buffers_create_with_name(bufname);
 	} else {
 		buffer = buffers[i];
 	}

@@ -260,8 +260,9 @@
 
 		<h3>bg</h3>
 		<div class="ind">
-			<p><b>Syntax:</b> <tt>bg <i>expression</i></tt>
+			<p><b>Syntax:</b> <tt>bg <b>[</b> <i>buffer-name</i> <b>]</b> <i>expression</i></tt>
 			<p>Evaluates <i>expression</i> in background. When called from the command line it also select and shows an inactive +bg+ buffer (or creates a new one) to show stdin and stdout of <i>expression</i>.
+			<p>When two arguments are used then a new buffer is always created with the first argument as the name (only available on the command line).
 		</div>
 
 		<h3>&lt;</h3>

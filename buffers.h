@@ -22,6 +22,7 @@ void buffers_show_window(editor_t *editor);
 buffer_t *buffers_find_buffer_from_path(const char *path);
 
 buffer_t *buffers_get_buffer_for_process(void);
+buffer_t *buffers_create_with_name(char *name);
 
 
 #endif

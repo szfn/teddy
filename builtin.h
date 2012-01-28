@@ -6,7 +6,9 @@
 proc kill_line {} {\n\
    go :1\n\
    mark transient\n\
+   mark lines\n\
    move next line\n\
+   go :1\n\
    if {[undo tag] eq \"kill_line\"} {\n\
    	undo fusenext\n\
    }\n\
@@ -278,6 +280,10 @@ proc bindent {direction indentchar} {\n\
 	go $stored_cursor\n\
 }\n\
 \n\
+proc man {args} {\n\
+	bg \"+man/$args+\" \"shell man $args\"\n\
+}\n\
+\n\
 proc lexydef {name args} {\n\
 	lexydef-create $name\n\
 	for {set i 0} {$i < [llength $args]} {set i [expr $i + 2]} {\n\
@@ -417,7 +423,7 @@ lexyassoc java {\\.java$}\n\
 \n\
 lexydef go 0 {\n\
 		{\\<(?:break|default|func|interface|select|case|defer|go|map|struct|chan|else|goto|package|switch|const|fallthrough|if|range|type|continue|for|import|return|var)\\>} keyword\n\
-		\n\
+\n\
 		\"-?(?:0x)[0-9a-fA-F]*\" literal\n\
 		\"-?[0-9][0-9]*(?:\\\\.[0-9]+)?(?:e-[0-9]+?)?\" literal\n\
 		{(?:nil|true|false|iota)} literal\n\

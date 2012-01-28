@@ -446,12 +446,15 @@ static int teddy_move_command(ClientData client_data, Tcl_Interp *interp, int ar
 	} else if (strcmp(argv[2], "softline") == 0) {
 		editor_move_cursor(context_editor, next ? 1 : -1, 0, MOVE_NORMAL, TRUE);
 	} else if (strcmp(argv[2], "line") == 0) {
+		editor_move_cursor(context_editor, 1, 0, MOVE_NORMAL, TRUE);
+		editor_complete_move(context_editor, TRUE);
+		/* old implementation, why like this?
 		real_line_t *n = NULL;
 		n = next ? context_editor->buffer->cursor.line->next : context_editor->buffer->cursor.line->prev;
 		if (n != NULL) {
 			context_editor->buffer->cursor.line = n;
 			editor_complete_move(context_editor, TRUE);
-		}
+		}*/
 	} else if (strcmp(argv[2], "wnwa") == 0) {
 		if (next)
 			buffer_aux_wnwa_next(context_editor->buffer);
@@ -576,12 +579,18 @@ static int teddy_bg_command(ClientData client_data, Tcl_Interp *interp, int argc
 		return TCL_ERROR;
 	}
 
-	if (argc != 2) {
+	const char *codearg;
+	if (argc == 2) {
+		buffer = buffers_get_buffer_for_process();
+		codearg = argv[1];
+	} else if (argc == 3) {
+		buffer = buffers_create_with_name(strdup(argv[1]));
+		codearg = argv[2];
+	} else {
 		Tcl_AddErrorInfo(interp, "Wrong number of arguments to 'bg' command");
 		return TCL_ERROR;
 	}
 
-	buffer = buffers_get_buffer_for_process();
 	if (context_editor->buffer != buffer)
 		buffer_cd(buffer, context_editor->buffer->wd);
 
@@ -599,7 +608,7 @@ static int teddy_bg_command(ClientData client_data, Tcl_Interp *interp, int argc
 	} else if (child != 0) {
 		/* parent code */
 
-		if (!jobs_register(child, masterfd, buffer, argv[1])) {
+		if (!jobs_register(child, masterfd, buffer, codearg)) {
 			Tcl_AddErrorInfo(interp, "Registering job failed, probably exceeded the maximum number of jobs available");
 			return TCL_ERROR;
 		}
@@ -633,7 +642,7 @@ static int teddy_bg_command(ClientData client_data, Tcl_Interp *interp, int argc
 	Tcl_Eval(interp, "fconfigure stdin -translation binary; fconfigure stdout -translation binary; fconfigure stderr -translation binary");
 
 	{
-		int code = Tcl_Eval(interp, argv[1]);
+		int code = Tcl_Eval(interp, codearg);
 		if (code != TCL_OK) {
 			Tcl_Obj *options = Tcl_GetReturnOptions(interp, code);
 			Tcl_Obj *key = Tcl_NewStringObj("-errorinfo", -1);
