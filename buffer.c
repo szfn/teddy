@@ -1040,6 +1040,8 @@ buffer_t *buffer_create(void) {
 	buffer->left_margin = 4.0;
 	buffer->right_margin = 4.0;
 
+	buffer->props = g_hash_table_new_full(g_str_hash, g_str_equal, free, free);
+
 	return buffer;
 }
 
@@ -1056,6 +1058,8 @@ void buffer_free(buffer_t *buffer) {
 			cursor = next;
 		}
 	}
+
+	g_hash_table_destroy(buffer->props);
 
 	undo_free(&(buffer->undo));
 

@@ -89,6 +89,9 @@ typedef struct _buffer_t {
 
 	/* Lexy stuff */
 	real_line_t *lexy_last_update_line;
+
+	/* Scripting support */
+	GHashTable *props;
 } buffer_t;
 
 // utility function to convert first codepoint in utf8 stream into an utf32 codepoint

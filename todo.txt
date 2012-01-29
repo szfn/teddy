@@ -1,8 +1,12 @@
 - bufman doesn't display a window, it switches the current editor to the +bufman+ special buffer (that has special keybindings)
-  - implement buffer command
+  - implement buffer command (except keyprocessor)
+  - implement bufman visualization
   - implement "kill buffer" with specifier
   - implement go with buffer specifier
+  - implement keyprocessor
+  - remove old implementation
 
+- right click on a binary file copies it on the command line (in brackets)
 - splitting of columns, frames (instead of just adding at the end)
 - replace tcl regex engine with TRE
 - interface tabs

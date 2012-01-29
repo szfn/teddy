@@ -369,13 +369,103 @@ buffer_t *buffers_get_buffer_for_process(void) {
 	return buffer;
 }
 
+static void buffer_to_buffer_id(buffer_t *buffer, char *bufferid) {
+	strcpy(bufferid, "@b0");
+	for (int i = 0; i < buffers_allocated; ++i) {
+		if (buffers[i] == buffer) {
+			snprintf(bufferid+2, 15, "%d", i);
+			return;
+		}
+	}
+}
+
+static buffer_t *buffer_id_to_buffer(const char *bufferid) {
+	if (strncmp(bufferid, "@b", 2) != 0) return NULL;
+
+	long bid = strtol(bufferid+2, NULL, 10);
+	if (bid < 0) return NULL;
+	if (bid >= buffers_allocated) return NULL;
+
+	return buffers[bid];
+}
+
 int teddy_buffer_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
+	if (argc < 2) {
+		Tcl_AddErrorInfo(interp, "Wrong number of arguments to 'buffer' command");
+		return TCL_ERROR;
+	}
+
+	if (context_editor == NULL) {
+		Tcl_AddErrorInfo(interp, "buffer command invoked when no editor is active");
+		return TCL_ERROR;
+	}
+
+	if (strcmp(argv[1], "make") == 0) {
+		if (argc != 3) {
+			Tcl_AddErrorInfo(interp, "Wrong number of arguments to 'buffer make' command");
+			return TCL_ERROR;
+		}
+
+		buffer_t *buffer = buffers_create_with_name(strdup(argv[2]));
+
+		char bufferid[20];
+		buffer_to_buffer_id(buffer, bufferid);
+		Tcl_SetResult(interp, bufferid, TCL_VOLATILE);
+	} else if (strcmp(argv[1], "current") == 0) {
+		char bufferid[20];
+		buffer_to_buffer_id(context_editor->buffer, bufferid);
+		Tcl_SetResult(interp, bufferid, TCL_VOLATILE);
+	} else if (strcmp(argv[1], "propget") == 0) {
+		if (argc != 4) {
+			Tcl_AddErrorInfo(interp, "Wrong number of arguments to 'buffer propget' command");
+			return TCL_ERROR;
+		}
+
+		const char *bufferid = argv[2];
+		const char *propname = argv[3];
+
+		buffer_t *buffer = buffer_id_to_buffer(bufferid);
+
+		if (buffer == NULL) {
+			Tcl_AddErrorInfo(interp, "Unknown buffer id");
+			return TCL_ERROR;
+		}
+
+		char *propvalue = g_hash_table_lookup(buffer->props, propname);
+
+		Tcl_SetResult(interp, (propvalue != NULL) ? propvalue : "", TCL_VOLATILE);
+	} else if (strcmp(argv[1], "propset") == 0) {
+		if (argc != 5) {
+			Tcl_AddErrorInfo(interp, "Wrong number of arguments to 'buffer propset' command");
+			return TCL_ERROR;
+		}
+
+		const char *bufferid = argv[2];
+		char *propname = strdup(argv[3]);
+		char *propvalue = strdup(argv[4]);
+
+		if ((propvalue == NULL) || (propname == NULL)) {
+			perror("Out of memory");
+			exit(EXIT_FAILURE);
+		}
+
+		buffer_t *buffer = buffer_id_to_buffer(bufferid);
+
+		if (buffer == NULL) {
+			Tcl_AddErrorInfo(interp, "Unknown buffer id");
+			return TCL_ERROR;
+		}
+
+		g_hash_table_insert(buffer->props, propname, propvalue);
+	} else {
+		Tcl_AddErrorInfo(interp, "Unknown subcommmand of 'buffer' command");
+		return TCL_ERROR;
+	}
+
 	//TODO: implement
-	// - make
-	// - propset
-	// - setkeyprocessor
-	// - current
 	// - ls
 	// - info
+	// - setkeyprocessor
+
 	return TCL_OK;
 }
