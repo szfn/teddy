@@ -219,8 +219,11 @@ static int exec_go(const char *specifier, int where) {
 	tok = strtok_r(sc, ":", &saveptr);
 	if (tok == NULL) { retval = 0; goto exec_go_cleanup; }
 
-	buffer = go_file(context_editor->buffer, tok, false);
-	if (buffer == NULL) { retval = 0; goto exec_go_cleanup; }
+	buffer = buffer_id_to_buffer(tok);
+	if (buffer == NULL) {
+		buffer = go_file(context_editor->buffer, tok, false);
+		if (buffer == NULL) { retval = 0; goto exec_go_cleanup; }
+	}
 
 	editor = go_to_buffer(context_editor, buffer, where);
 	// editor will be NULL here if the user decided to select an editor

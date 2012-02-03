@@ -92,14 +92,14 @@ int teddy_fdclose_command(ClientData client_data, Tcl_Interp *interp, int argc, 
 		return TCL_ERROR;
 	}
 	Tcl_SetObjResult(interp, r);
-	
+
 	return TCL_OK;
 }
 
 int teddy_fddup2_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
 	Tcl_Obj *r;
 	int intr;
-	
+
 	if (argc != 3) {
 		Tcl_AddErrorInfo(interp, "Wrong number of arguments to 'fddup2' command");
 		return TCL_ERROR;
@@ -112,7 +112,7 @@ int teddy_fddup2_command(ClientData client_data, Tcl_Interp *interp, int argc, c
 		return TCL_ERROR;
 	}
 	Tcl_SetObjResult(interp, r);
-	
+
 	return TCL_OK;
 }
 
@@ -141,16 +141,16 @@ int teddy_fdpipe_command(ClientData client_data, Tcl_Interp *interp, int argc, c
 	retlist = Tcl_NewListObj(2, pipeobj);
 	Tcl_DecrRefCount(pipeobj[0]);
 	Tcl_DecrRefCount(pipeobj[1]);
-	
+
 	Tcl_SetObjResult(interp, retlist);
-	
+
 	return TCL_OK;
 }
 
 int teddy_posixfork_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
 	Tcl_Obj *r;
 	int intr;
-	
+
 	if (argc != 1) {
 		Tcl_AddErrorInfo(interp, "Wrong number of arguments to posixfork command");
 		return TCL_ERROR;
@@ -163,7 +163,7 @@ int teddy_posixfork_command(ClientData client_data, Tcl_Interp *interp, int argc
 		return TCL_ERROR;
 	}
 	Tcl_SetObjResult(interp, r);
-	
+
 	return TCL_OK;
 }
 
@@ -172,7 +172,7 @@ int teddy_posixexec_command(ClientData client_data, Tcl_Interp *interp, int argc
 
 	int i;
 	char ** newargv = malloc(sizeof(char *) * argc);
-	
+
 	for (i = 1; i < argc; ++i) {
 		newargv[i-1] = (char *)argv[i];
 	}
@@ -182,7 +182,7 @@ int teddy_posixexec_command(ClientData client_data, Tcl_Interp *interp, int argc
 		Tcl_AddErrorInfo(interp, "Error executing posixexec command");
 		return TCL_ERROR;
 	}
-	
+
 	return TCL_OK;
 }
 
@@ -215,7 +215,7 @@ int teddy_posixwaitpid_command(ClientData client_data, Tcl_Interp *interp, int a
 			return TCL_ERROR;
 		}
 	}
-	
+
 	if (i != argc - 1) {
 		Tcl_AddErrorInfo(interp, "Extraneous arguments given to 'posixwaitpid' command");
 		return TCL_ERROR;
@@ -224,7 +224,7 @@ int teddy_posixwaitpid_command(ClientData client_data, Tcl_Interp *interp, int a
 	pid = atoi(argv[i]);
 
 	r = waitpid(pid, &status, options);
-	
+
 	if (r == -1) {
 		Tcl_AddErrorInfo(interp, "Error executing waitpid command");
 		return TCL_ERROR;
@@ -236,13 +236,12 @@ int teddy_posixwaitpid_command(ClientData client_data, Tcl_Interp *interp, int a
 	Tcl_IncrRefCount(retval[0]);
 	retval[1] = Tcl_NewIntObj(status);
 	Tcl_IncrRefCount(retval[1]);
-	
+
 	retlist = Tcl_NewListObj(2, retval);
+	Tcl_SetObjResult(interp, retlist);
 	Tcl_DecrRefCount(retval[0]);
 	Tcl_DecrRefCount(retval[1]);
-	
-	Tcl_SetObjResult(interp, retlist);
-	
+
 	return TCL_OK;
 }
 

@@ -1,8 +1,5 @@
 - bufman doesn't display a window, it switches the current editor to the +bufman+ special buffer (that has special keybindings)
-  - implement buffer command (except keyprocessor)
-  - implement bufman visualization
   - implement "kill buffer" with specifier
-  - implement go with buffer specifier
   - implement keyprocessor
   - remove old implementation
 
@@ -52,37 +49,6 @@
 https://github.com/agl/critbit
 
 Prototype for bufman in tcl:
-
-proc bufman() {
-	# create a new buffer called +bufman+
-	# bufman variable will contain the string "@b<buffer-id>" where <buffer-id> is the id of the newly created buffer
-	set bufman [buffer make "+bufman+"]
-
-	buffer propset $bufman bufman-previous-buffer [buffer current]
-
-	# switch the current editor to the new buffer, requires implementing 'go' to a buffer-id (in the form "@b<buffer-id>")
-	# and the argument -here for 'go' that skips the selection window and just uses the current editor
-	go -here $bufman
-
-	c "ID\tName\tPath\n"
-
-	# buffer ls returns the current list of buffers
-	foreach buf [buffer ls] {
-		# gets informations about a buffer id
-		set bufinfo [buffer info $buf]
-
-		c [dict get $bufinfo id]
-		c "\t"
-		c [dict get $bufinfo name]
-		c "\t"
-		c [dict get $bufinfo path]
-		c "\n"
-	}
-
-	# Makes bufman special, now keypresses will be processed by a special function instead of the normal editor
-	# this lets us make this buffer a list
-	buffer setkeyprocessor $bufman bufman_keyprocessor
-}
 
 proc bufman_keyprocessor($key) {
 	if {$key eq "Escape"} {

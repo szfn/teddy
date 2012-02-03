@@ -284,6 +284,29 @@ proc man {args} {\n\
 	bg \"+man/$args+\" \"shell man $args\"\n\
 }\n\
 \n\
+proc bufman_exp {} {\n\
+	set bufman [buffer make \"+bufman+\"]\n\
+\n\
+	buffer propset $bufman bufman-previous-buffer [buffer current]\n\
+\n\
+	go -here $bufman\n\
+\n\
+	c \"ID\\tName\\tPath\\n\"\n\
+\n\
+	foreach buf [buffer ls] {\n\
+		set bufinfo [buffer info $buf]\n\
+\n\
+		c [dict get $bufinfo id]\n\
+		c \"\\t\"\n\
+		c [dict get $bufinfo name]\n\
+		c \"\\t\"\n\
+		c [dict get $bufinfo path]\n\
+		c \"\\n\"\n\
+	}\n\
+\n\
+	buffer setkeyprocessor $bufman bufman_keyprocessor\n\
+}\n\
+\n\
 proc lexydef {name args} {\n\
 	lexydef-create $name\n\
 	for {set i 0} {$i < [llength $args]} {set i [expr $i + 2]} {\n\

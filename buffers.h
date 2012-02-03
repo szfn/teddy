@@ -26,4 +26,6 @@ buffer_t *buffers_create_with_name(char *name);
 
 int teddy_buffer_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]);
 
+buffer_t *buffer_id_to_buffer(const char *bufferid);
+
 #endif

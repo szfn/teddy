@@ -379,7 +379,7 @@ static void buffer_to_buffer_id(buffer_t *buffer, char *bufferid) {
 	}
 }
 
-static buffer_t *buffer_id_to_buffer(const char *bufferid) {
+buffer_t *buffer_id_to_buffer(const char *bufferid) {
 	if (strncmp(bufferid, "@b", 2) != 0) return NULL;
 
 	long bid = strtol(bufferid+2, NULL, 10);
@@ -387,6 +387,22 @@ static buffer_t *buffer_id_to_buffer(const char *bufferid) {
 	if (bid >= buffers_allocated) return NULL;
 
 	return buffers[bid];
+}
+
+static void tcl_dict_add_string(Tcl_Obj *dict, const char *key, const char *value) {
+	Tcl_Obj *kobj = Tcl_NewStringObj(key, strlen(key));
+	Tcl_IncrRefCount(kobj);
+	Tcl_Obj *vobj;
+	if (value == NULL) {
+		vobj = Tcl_NewStringObj("", 0);
+	} else {
+		vobj = Tcl_NewStringObj(value, strlen(value));
+	}
+	Tcl_IncrRefCount(vobj);
+
+	Tcl_DictObjPut(interp, dict, kobj, vobj);
+	Tcl_DecrRefCount(kobj);
+	Tcl_DecrRefCount(vobj);
 }
 
 int teddy_buffer_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
@@ -457,15 +473,63 @@ int teddy_buffer_command(ClientData client_data, Tcl_Interp *interp, int argc, c
 		}
 
 		g_hash_table_insert(buffer->props, propname, propvalue);
+	} else if (strcmp(argv[1], "ls") == 0) {
+		Tcl_Obj **retval = malloc(sizeof(Tcl_Obj *) * buffers_allocated);
+
+		if (!retval) {
+			perror("Out of memory");
+			exit(EXIT_FAILURE);
+		}
+
+		int cap = 0;
+		for (int i = 0; i < buffers_allocated; ++i) {
+			if (buffers[i] != NULL) {
+				char bufferid[20];
+				snprintf(bufferid, 15, "@b%d", i);
+				retval[cap] = Tcl_NewStringObj(bufferid, strlen(bufferid));
+				Tcl_IncrRefCount(retval[cap]);
+				++cap;
+			}
+		}
+
+		Tcl_Obj *retlist = Tcl_NewListObj(cap, retval);
+		Tcl_SetObjResult(interp, retlist);
+
+		for (int i = 0; i < cap; ++i) {
+			Tcl_DecrRefCount(retval[i]);
+		}
+
+		free(retval);
+	} else if (strcmp(argv[1], "info") == 0) {
+		if (argc != 3) {
+			Tcl_AddErrorInfo(interp, "Wrong number of arguments to 'buffer info'");
+			return TCL_ERROR;
+		}
+
+		const char *bufferid = argv[2];
+
+		buffer_t *buffer = buffer_id_to_buffer(bufferid);
+
+		if (buffer == NULL) {
+			Tcl_AddErrorInfo(interp, "Unknown buffer id");
+			return TCL_ERROR;
+		}
+
+		Tcl_Obj *ret = Tcl_NewDictObj();
+		Tcl_SetObjResult(interp, ret);
+
+		tcl_dict_add_string(ret, "id", bufferid);
+		tcl_dict_add_string(ret, "name", buffer->name);
+		tcl_dict_add_string(ret, "path", buffer->path);
+
+		return TCL_OK;
+	} else if (strcmp(argv[1], "setkeyprocessor") == 0) {
+		//TODO: save informations
+		return TCL_OK;
 	} else {
 		Tcl_AddErrorInfo(interp, "Unknown subcommmand of 'buffer' command");
 		return TCL_ERROR;
 	}
-
-	//TODO: implement
-	// - ls
-	// - info
-	// - setkeyprocessor
 
 	return TCL_OK;
 }
