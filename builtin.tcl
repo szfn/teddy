@@ -299,6 +299,8 @@ proc bufman_exp {} {
 		c "\n"
 	}
 
+	c "\nRETURN Focus buffer\nDELETE Remove buffer\nESC Returns to previous buffer\n"
+
 	buffer setkeyprocessor $bufman bufman_keyprocessor
 }
 

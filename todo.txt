@@ -1,5 +1,4 @@
 - bufman doesn't display a window, it switches the current editor to the +bufman+ special buffer (that has special keybindings)
-  - implement "kill buffer" with specifier
   - implement keyprocessor
   - remove old implementation
 

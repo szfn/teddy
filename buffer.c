@@ -1041,6 +1041,7 @@ buffer_t *buffer_create(void) {
 	buffer->right_margin = 4.0;
 
 	buffer->props = g_hash_table_new_full(g_str_hash, g_str_equal, free, free);
+	buffer->keyprocessor = NULL;
 
 	return buffer;
 }
@@ -1066,6 +1067,7 @@ void buffer_free(buffer_t *buffer) {
 	free(buffer->name);
 	free(buffer->path);
 	free(buffer->wd);
+	if (buffer->keyprocessor != NULL) free(buffer->keyprocessor);
 	free(buffer);
 }
 

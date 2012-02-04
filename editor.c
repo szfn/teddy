@@ -306,6 +306,8 @@ static gboolean key_press_callback(GtkWidget *widget, GdkEventKey *event, editor
 
 	gtk_widget_get_allocation(editor->drar, &allocation);
 
+	//TODO: keyprocessor invocation here
+
 	if (!ctrl && !alt && !super) {
 		switch(event->keyval) {
 		case GDK_KEY_Delete:

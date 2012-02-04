@@ -524,7 +524,16 @@ int teddy_buffer_command(ClientData client_data, Tcl_Interp *interp, int argc, c
 
 		return TCL_OK;
 	} else if (strcmp(argv[1], "setkeyprocessor") == 0) {
-		//TODO: save informations
+		if (argc != 4) {
+			Tcl_AddErrorInfo(interp, "Wrong number of arguments to 'buffer setkeyprocessor'");
+			return TCL_ERROR;
+		}
+
+		buffer_t *buffer = buffer_id_to_buffer(argv[2]);
+
+		if (buffer->keyprocessor != NULL) free(buffer->keyprocessor);
+		buffer->keyprocessor = strdup(argv[3]);
+
 		return TCL_OK;
 	} else {
 		Tcl_AddErrorInfo(interp, "Unknown subcommmand of 'buffer' command");

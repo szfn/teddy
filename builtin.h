@@ -291,8 +291,6 @@ proc bufman_exp {} {\n\
 \n\
 	go -here $bufman\n\
 \n\
-	c \"ID\\tName\\tPath\\n\"\n\
-\n\
 	foreach buf [buffer ls] {\n\
 		set bufinfo [buffer info $buf]\n\
 \n\
@@ -303,6 +301,8 @@ proc bufman_exp {} {\n\
 		c [dict get $bufinfo path]\n\
 		c \"\\n\"\n\
 	}\n\
+\n\
+	c \"\\nRETURN Focus buffer\\nDELETE Remove buffer\\nESC Returns to previous buffer\\n\"\n\
 \n\
 	buffer setkeyprocessor $bufman bufman_keyprocessor\n\
 }\n\

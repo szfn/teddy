@@ -92,6 +92,7 @@ typedef struct _buffer_t {
 
 	/* Scripting support */
 	GHashTable *props;
+	char *keyprocessor;
 } buffer_t;
 
 // utility function to convert first codepoint in utf8 stream into an utf32 codepoint

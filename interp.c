@@ -877,24 +877,34 @@ static int teddy_kill_command(ClientData client_data, Tcl_Interp *interp, int ar
 
 		return TCL_OK;
 	} else if (argc == 3) {
-		// kill specified process with specified signal
+		// kill specified process with specified signal or specific buffer
 
-		if (argv[1][0] != '-') {
-			Tcl_AddErrorInfo(interp, "Expected a signal specification as first argument for two-argument kill");
-			return TCL_ERROR;
+		if (strcmp(argv[1], "buffer") == 0) {
+			buffer_t *buffer = buffer_id_to_buffer(argv[2]);
+			if (buffer != NULL) {
+				buffers_close(buffer, context_editor->window);
+			} else {
+				Tcl_AddErrorInfo(interp, "Couldn't find specified buffer");
+				return TCL_ERROR;
+			}
+		} else {
+			if (argv[1][0] != '-') {
+				Tcl_AddErrorInfo(interp, "Expected a signal specification as first argument for two-argument kill");
+				return TCL_ERROR;
+			}
+			int signum = parse_signum(argv[1]+1);
+			if (signum < 0) {
+				Tcl_AddErrorInfo(interp, "Can not parse signal specification");
+				return TCL_ERROR;
+			}
+			char *endptr = NULL;
+			int target_pid = (int)strtol(argv[2], &endptr, 10);
+			if ((endptr == NULL) || (*endptr != '\0')) {
+				Tcl_AddErrorInfo(interp, "Invalid pid specification");
+				return TCL_ERROR;
+			}
+			kill(target_pid, signum);
 		}
-		int signum = parse_signum(argv[1]+1);
-		if (signum < 0) {
-			Tcl_AddErrorInfo(interp, "Can not parse signal specification");
-			return TCL_ERROR;
-		}
-		char *endptr = NULL;
-		int target_pid = (int)strtol(argv[2], &endptr, 10);
-		if ((endptr == NULL) || (*endptr != '\0')) {
-			Tcl_AddErrorInfo(interp, "Invalid pid specification");
-			return TCL_ERROR;
-		}
-		kill(target_pid, signum);
 	} else {
 		Tcl_AddErrorInfo(interp, "Too many arguments to 'kill', consult documentation");
 		return TCL_ERROR;
