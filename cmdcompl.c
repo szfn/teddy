@@ -57,7 +57,7 @@ const char *list_internal_commands[] = {
 	"setcfg", "bindkey", "new", "pwf", "pwd", "go", "mark", "cb", "save",
 	"bufman", "undo", "search", "focuscmd", "move", "gohome", "bg", "<",
 	"rgbcolor", "teddyhistory", "interactarg", "s", "c", "cursor", "bindent",
-	"teddy-hack-resize", "kill", "refresh", "buffer",
+	"teddy-hack-resize", "kill", "refresh", "buffer", "load",
 
 	// lexy
 	"lexydef-create", "lexydef-append", "lexassoc", "lexycfg",

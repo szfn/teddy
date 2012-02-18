@@ -943,6 +943,15 @@ static int teddy_refresh_command(ClientData client_data, Tcl_Interp *interp, int
 	return TCL_OK;
 }
 
+static int teddy_load_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
+	if (argc != 2) {
+		Tcl_AddErrorInfo(interp, "Wrong number of arguments supplied to 'load'");
+		return TCL_ERROR;
+	}
+
+	return Tcl_EvalFile(interp, argv[1]);
+}
+
 void interp_init(void) {
 	interp = Tcl_CreateInterp();
 	if (interp == NULL) {
@@ -1006,6 +1015,8 @@ void interp_init(void) {
 	Tcl_CreateCommand(interp, "lexycfg", &lexy_cfg_command, (ClientData)NULL, NULL);
 
 	Tcl_CreateCommand(interp, "buffer", &teddy_buffer_command, (ClientData)NULL, NULL);
+
+	Tcl_CreateCommand(interp, "load", &teddy_load_command, (ClientData)NULL, NULL);
 
 	int code = Tcl_Eval(interp, BUILTIN_TCL_CODE);
 	if (code != TCL_OK) {
