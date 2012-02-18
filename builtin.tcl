@@ -304,6 +304,33 @@ proc bufman_exp {} {
 	buffer setkeyprocessor $bufman bufman_keyprocessor
 }
 
+proc bufman_keyprocessor {key} {
+	set previous [buffer propget [buffer current] bufman-previous-buffer]
+	set bufman [buffer current]
+
+	if {$key eq "Escape"} {
+		kill buffer $bufman
+		go -here $previous
+		return "done"
+	}
+
+	if {$key eq "Return"} {
+		mark transient
+		mark lines
+		set tobuffer [lindex [split [mark get] " "] 0]
+		mark stop
+
+		go -here $previous
+		kill buffer $bufman
+
+		go $tobuffer
+
+		return "done"
+	}
+
+	return "continue"
+}
+
 proc lexydef {name args} {
 	lexydef-create $name
 	for {set i 0} {$i < [llength $args]} {set i [expr $i + 2]} {

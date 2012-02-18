@@ -1,8 +1,12 @@
-- bufman doesn't display a window, it switches the current editor to the +bufman+ special buffer (that has special keybindings)
-  - implement keyprocessor
-  - remove old implementation
-
+- bugfix: segfault when deleting lines with matched braces
+- ability to eval entire tcl files
 - right click on a binary file copies it on the command line (in brackets)
+- fix size reallocation on deleted editor
+- comment region command
+- refresh all buffers
+
+
+- setpgid(<childpid>, 0) after forks
 - splitting of columns, frames (instead of just adding at the end)
 - replace tcl regex engine with TRE
 - interface tabs
@@ -47,29 +51,4 @@
 
 https://github.com/agl/critbit
 
-Prototype for bufman in tcl:
 
-proc bufman_keyprocessor($key) {
-	if {$key eq "Escape"} {
-		go -here [buffer propget [buffer current] bufman-previous-buffer]
-		return
-	}
-
-	if {$key eq "Return"} {
-		# gets current line
-		mark transient
-		mark lines
-		set tobuffer [lindex [split [mark get] " "] 0]
-		mark stop
-
-		set bufman [buffer current]
-		go -here $tobuffer
-
-		if { [buffer current] ne $bufman } {
-			# go succeded, kill current buffer -- this needs to be implemented too
-			kill buffer $bufman
-		}
-
-		return
-	}
-}

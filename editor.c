@@ -294,9 +294,39 @@ void editor_undo_action(editor_t *editor) {
 	gtk_widget_queue_draw(editor->drar);
 }
 
+static void full_keyevent_to_string(guint keyval, int super, int ctrl, int alt, int shift, char *pressed) {
+	const char *converted = keyevent_to_string(keyval);
+
+	if (converted == NULL) {
+		pressed[0] = '\0';
+		return;
+	}
+
+	strcpy(pressed, "");
+
+	if (super) {
+		strcat(pressed, "Super-");
+	}
+
+	if (ctrl) {
+		strcat(pressed, "Ctrl-");
+	}
+
+	if (alt) {
+		strcat(pressed, "Alt-");
+	}
+
+	if (shift) {
+		if ((keyval < 0x21) || (keyval > 0x7e)) {
+			strcat(pressed, "Shift-");
+		}
+	}
+
+	strcat(pressed, converted);
+}
+
 static gboolean key_press_callback(GtkWidget *widget, GdkEventKey *event, editor_t *editor) {
-	char pressed[40];
-	const char *converted;
+	char pressed[40] = "";
 	const char *command;
 	GtkAllocation allocation;
 	int shift = event->state & GDK_SHIFT_MASK;
@@ -306,7 +336,30 @@ static gboolean key_press_callback(GtkWidget *widget, GdkEventKey *event, editor
 
 	gtk_widget_get_allocation(editor->drar, &allocation);
 
-	//TODO: keyprocessor invocation here
+	if (editor->buffer->keyprocessor != NULL) {
+		printf("Keyprocessor invocation\n");
+		full_keyevent_to_string(event->keyval, super, ctrl, alt, shift, pressed);
+		if (pressed[0] != '\0') {
+			const char *eval_argv[] = { editor->buffer->keyprocessor, pressed };
+
+			int code = Tcl_Eval(interp, Tcl_Merge(2, eval_argv));
+
+			if (code == TCL_OK) {
+				const char *result = Tcl_GetStringResult(interp);
+				if (strcmp(result, "done") == 0) return FALSE;
+			} else {
+				Tcl_Obj *options = Tcl_GetReturnOptions(interp, code);
+				Tcl_Obj *key = Tcl_NewStringObj("-errorinfo", -1);
+				Tcl_Obj *stackTrace;
+				Tcl_IncrRefCount(key);
+				Tcl_DictObjGet(NULL, options, key, &stackTrace);
+				Tcl_DecrRefCount(key);
+
+				fprintf(stderr, "TCL Exception: %s\n", Tcl_GetString(stackTrace));
+			}
+			//else: call failed
+		}
+	}
 
 	if (!ctrl && !alt && !super) {
 		switch(event->keyval) {
@@ -417,31 +470,11 @@ static gboolean key_press_callback(GtkWidget *widget, GdkEventKey *event, editor
 		}
 	}
 
-	converted = keyevent_to_string(event->keyval);
-
-	if (converted == NULL) goto im_context;
-
-	strcpy(pressed, "");
-
-	if (super) {
-		strcat(pressed, "Super-");
+	if (strcmp(pressed, "") == 0) {
+		full_keyevent_to_string(event->keyval, super, ctrl, alt, shift, pressed);
 	}
 
-	if (ctrl) {
-		strcat(pressed, "Ctrl-");
-	}
-
-	if (alt) {
-		strcat(pressed, "Alt-");
-	}
-
-	if (shift) {
-		if ((event->keyval < 0x21) || (event->keyval > 0x7e)) {
-			strcat(pressed, "Shift-");
-		}
-	}
-
-	strcat(pressed, converted);
+	if (pressed[0] == '\0') goto im_context;
 
 	command = g_hash_table_lookup(keybindings, pressed);
 	//printf("Keybinding [%s] -> {%s}\n", pressed, command);

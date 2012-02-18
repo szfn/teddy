@@ -920,7 +920,7 @@ static int teddy_refresh_command(ClientData client_data, Tcl_Interp *interp, int
 	}
 
 	if (argc != 1) {
-		Tcl_AddErrorInfo(interp, "No arguments should be supplied to refresh");
+		Tcl_AddErrorInfo(interp, "Wrong number of arguments supplied to refresh (accepted: none or a buffer)");
 		return TCL_ERROR;
 	}
 
