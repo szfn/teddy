@@ -472,13 +472,7 @@ void mouse_open_action(editor_t *editor, lpoint_t *start, lpoint_t *end) {
 
 	const char *go_arg = Tcl_GetStringResult(interp);
 
-	int where = -1;
-
-	if (editor->buffer->path[strlen(editor->buffer->path)-1] == '/') {
-		where = GO_NEW;
-	}
-
-	if (!exec_go(go_arg, where)) {
+	if (!exec_go(go_arg, -1)) {
 		// if this succeeded we could open the file at the specified line and we are done
 		// otherwise the following code runs, we restrict the selection to a word around
 		// the cursor and call search on that
