@@ -1,4 +1,3 @@
-- bugfix: segfault when deleting lines with matched braces
 - ability to eval entire tcl files
 - right click on a binary file copies it on the command line (in brackets)
 - fix size reallocation on deleted editor

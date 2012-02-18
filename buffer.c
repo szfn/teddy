@@ -478,6 +478,7 @@ void buffer_replace_selection(buffer_t *buffer, const char *new_text) {
 	buffer_typeset_from(buffer, start_point.line);
 
 	buffer_unset_mark(buffer);
+	parmatch_invalidate(&(buffer->parmatch));
 
 	if (pre_start_line == NULL) {
 		lexy_update_starting_at(buffer, buffer->real_line, true);
