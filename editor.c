@@ -834,6 +834,9 @@ static gboolean expose_event_callback(GtkWidget *widget, GdkEventExpose *event, 
 
 	GHashTable *ht = g_hash_table_new(g_direct_hash, g_direct_equal);
 
+	cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
+	set_color_cfg(cr, config[CFG_EDITOR_FG_COLOR].intval);	
+
 	int count = 0;
 	for (real_line_t *line = editor->buffer->real_line; line != NULL; line = line->next) {
 		if (((line->start_y + line->y_increment - originy) > 0) && ((line->start_y - editor->buffer->ascent - originy) < allocation.height)) {
@@ -845,7 +848,6 @@ static gboolean expose_event_callback(GtkWidget *widget, GdkEventExpose *event, 
 		editor->buffer->rendered_height += line->y_increment;
 	}
 
-	//set_color_cfg(cr, config[CFG_EDITOR_FG_COLOR].intval);
 	{
 		cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
 		GHashTableIter it;
