@@ -86,6 +86,7 @@ typedef struct _buffer_t {
 	int tab_width;
 	double left_margin;
 	double right_margin;
+	bool enable_horizontal_scrollbar;
 
 	/* Lexy stuff */
 	real_line_t *lexy_last_update_line;

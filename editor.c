@@ -56,16 +56,20 @@ void editor_replace_selection(editor_t *editor, const char *new_text) {
 
 void editor_center_on_cursor(editor_t *editor) {
 	double x, y;
-	double translated_y;
 	GtkAllocation allocation;
 
 	gtk_widget_get_allocation(editor->drar, &allocation);
 	buffer_cursor_position(editor->buffer, &x, &y);
 
-	translated_y = y - gtk_adjustment_get_value(GTK_ADJUSTMENT(editor->adjustment));
+	double translated_y = y - gtk_adjustment_get_value(GTK_ADJUSTMENT(editor->adjustment));
+	double translated_x = x - gtk_adjustment_get_value(GTK_ADJUSTMENT(editor->hadjustment));
 
 	if ((translated_y < 0) || (translated_y > allocation.height)) {
 		gtk_adjustment_set_value(GTK_ADJUSTMENT(editor->adjustment), y - allocation.height / 2);
+	}
+
+	if ((translated_x < 0) || (translated_x > allocation.width)) {
+		gtk_adjustment_set_value(GTK_ADJUSTMENT(editor->hadjustment), x - allocation.width / 2);
 	}
 }
 
@@ -797,7 +801,7 @@ static void draw_cursorline(cairo_t *cr, editor_t *editor) {
 	set_color_cfg(cr, config[CFG_EDITOR_BG_CURSORLINE].intval);
 	cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
 
-	cairo_rectangle(cr, 0, cursor_y-editor->buffer->ascent, allocation.width, editor->buffer->ascent+editor->buffer->descent);
+	cairo_rectangle(cr, cursor_x - allocation.width, cursor_y-editor->buffer->ascent, 2*allocation.width, editor->buffer->ascent+editor->buffer->descent);
 	cairo_fill(cr);
 }
 
@@ -835,7 +839,7 @@ static gboolean expose_event_callback(GtkWidget *widget, GdkEventExpose *event, 
 	GHashTable *ht = g_hash_table_new(g_direct_hash, g_direct_equal);
 
 	cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
-	set_color_cfg(cr, config[CFG_EDITOR_FG_COLOR].intval);	
+	set_color_cfg(cr, config[CFG_EDITOR_FG_COLOR].intval);
 
 	int count = 0;
 	for (real_line_t *line = editor->buffer->real_line; line != NULL; line = line->next) {

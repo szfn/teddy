@@ -418,11 +418,15 @@ static void buffer_line_adjust_glyphs(buffer_t *buffer, real_line_t *line, doubl
 		}
 
 		x += line->glyph_info[i].kerning_correction;
-		if (x+line->glyph_info[i].x_advance > buffer->rendered_width - buffer->right_margin) {
-			y += buffer->line_height;
-			line->end_y = y;
-			y_increment += buffer->line_height;
-			x = buffer->left_margin;
+		if (buffer->enable_horizontal_scrollbar) {
+			if (y + buffer->right_margin > buffer->rendered_width) buffer->rendered_width = y + buffer->right_margin;
+		} else {
+			if (x+line->glyph_info[i].x_advance > buffer->rendered_width - buffer->right_margin) {
+				y += buffer->line_height;
+				line->end_y = y;
+				y_increment += buffer->line_height;
+				x = buffer->left_margin;
+			}
 		}
 		line->glyph_info[i].x = x;
 		line->glyph_info[i].y = y;
@@ -1035,7 +1039,7 @@ buffer_t *buffer_create(void) {
 	buffer->editable = 1;
 	buffer->job = NULL;
 	buffer->default_color = L_NOTHING;
-
+	buffer->enable_horizontal_scrollbar = true;
 
 	asprintf(&(buffer->name), "+unnamed");
 	buffer->path = NULL;
