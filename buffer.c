@@ -579,6 +579,7 @@ uint32_t utf8_to_utf32(const char *text, int *src, int len, bool *valid) {
 
 		if (tail_size >= 8) {
 			code = (uint8_t)text[*src];
+			++(*src);
 			*valid = false;
 			return code;
 		}
@@ -769,6 +770,11 @@ int load_text_file(buffer_t *buffer, const char *filename) {
 		}
 		if (ch == '\n') {
 			text[i] = '\0';
+			if (strlen(text) > 100000) {
+				valid_chars = 0;
+				invalid_chars = 2048;
+				break;
+			}
 			if (*real_line_pp == NULL) *real_line_pp = new_real_line(lineno);
 			buffer_line_insert_utf8_text(buffer, *real_line_pp, text, i, (*real_line_pp)->cap, &valid_chars, &invalid_chars);
 			(*real_line_pp)->prev = prev_line;

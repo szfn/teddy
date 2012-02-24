@@ -74,6 +74,8 @@ static void ansi_append(job_t *job, const char *msg, int len) {
 				buffer->mark_transient = true;
 				buffer_aux_go_line(buffer, -1);
 				buffer_replace_selection(buffer, "");
+			} else {
+				job_append(job, "<esc>", strlen("<esc>"), 0, L_NOTHING);
 			}
 
 			start = i+1;
