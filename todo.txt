@@ -1,6 +1,5 @@
-- ignore escape sequences on +bg+ buffers
-- implement +bg+ buffer setup hook, set as defaults: stayoncmd, disable horzontal scrollbar, switch font to monospaced
-- bug: character in gcc error output isn't found
+- ignore escape sequences on +bg+ buffers (except clear)
+- implement +bg+ buffer setup hook, set as defaults: disable horzontal scrollbar, switch font to monospaced
 - order file suggestions alphabetically
 - order completion suggestion by increasing length (then by popularity)
 

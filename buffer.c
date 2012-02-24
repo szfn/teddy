@@ -576,15 +576,15 @@ uint32_t utf8_to_utf32(const char *text, int *src, int len, bool *valid) {
 	/* get next unicode codepoint in code, advance src */
 	if ((uint8_t)text[*src] > 127) {
 		uint8_t tail_size = utf8_first_byte_processing(text[*src]);
-		++(*src);
 
 		if (tail_size >= 8) {
-			code = text[*src];
+			code = (uint8_t)text[*src];
 			*valid = false;
 			return code;
 		}
 
-		code = text[*src] & first_byte_result_to_mask[tail_size];
+		code = ((uint8_t)text[*src]) & first_byte_result_to_mask[tail_size];
+		++(*src);
 
 		/*printf("   Next char: %02x (%02x)\n", (uint8_t)text[src], (uint8_t)text[src] & 0xC0);*/
 
