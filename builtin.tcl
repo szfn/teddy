@@ -495,3 +495,12 @@ lexydef go 0 {
 	}
 
 lexyassoc go {\.go$}
+
+
+proc clear {} {
+	go 1
+	mark transient
+	go 10000
+	c ""
+}
+

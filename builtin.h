@@ -498,5 +498,14 @@ lexydef go 0 {\n\
 	}\n\
 \n\
 lexyassoc go {\\.go$}\n\
+\n\
+\n\
+proc clear {} {\n\
+	go 1\n\
+	mark transient\n\
+	go 10000\n\
+	c \"\"\n\
+}\n\
+\n\
 "
 #endif

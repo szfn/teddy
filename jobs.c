@@ -50,6 +50,51 @@ static void job_append(job_t *job, const char *msg, int len, int on_new_line, ui
 	}
 }
 
+static void ansi_append(job_t *job, const char *msg, int len) {
+	buffer_t *buffer = job->buffer;
+
+	int start = 0;
+	for (int i = 0; i < len; ++i) {
+		if (msg[i] == 0x1b) {
+			job_append(job, msg+start, i - start, 0, L_NOTHING);
+			++i;
+			if (i >= len) { start = i; continue; }
+			if (msg[i] != '[') { start = i; continue; }
+			++i;
+			if (i >= len) { start = i; continue; }
+
+			for (; i < len; ++i) {
+				if ((msg[i] >= 0x40) && (msg[i] <= 0x7e)) break;
+			}
+
+			if (msg[i] == 'J') {
+				buffer->cursor.line = buffer->real_line;
+				buffer->cursor.glyph = 0;
+				buffer_set_mark_at_cursor(buffer);
+				buffer->mark_transient = true;
+				buffer_aux_go_line(buffer, -1);
+				buffer_replace_selection(buffer, "");
+			}
+
+			start = i+1;
+		} else if (msg[i] == 0x0d) {
+			job_append(job, msg+start, i - start, 0, L_NOTHING);
+			start = i+1;
+
+			buffer->cursor.glyph = 0;
+			buffer_set_mark_at_cursor(buffer);
+			buffer->mark_transient = true;
+			buffer->cursor.glyph = buffer->cursor.line->cap;
+			buffer_replace_selection(buffer, "");
+		}
+	}
+
+	job_append(job, msg+start, len - start, 0, L_NOTHING);
+
+	//TODO:
+	// - remove other escape sequences
+}
+
 static void jobs_child_watch_function(GPid pid, gint status, job_t *job) {
 	char *msg;
 	asprintf(&msg, "~ %d\n", status);
@@ -67,7 +112,7 @@ static gboolean jobs_input_watch_function(GIOChannel *source, GIOCondition condi
 	buf[bytes_read] = '\0';
 
 	if (!job->ratelimit_silenced) {
-		job_append(job, buf, (size_t)bytes_read, 0, L_NOTHING);
+		ansi_append(job, buf, (size_t)bytes_read);
 
 		if (job->current_ratelimit_bucket_start - time(NULL) > RATELIMIT_BUCKET_DURATION_SECS) {
 			if (job->current_ratelimit_bucket_size > RATELIMIT_MAX_BYTES) {
