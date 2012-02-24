@@ -50,10 +50,11 @@ int main(int argc, char *argv[]) {
 	buffers_init();
 	wordcompl_init();
 
+	enum go_file_failure_reason gffr;
 	for (i = 1; i < argc; ++i) {
 		buffer_t *buf;
 		//printf("Will show: %s\n", argv[i]);
-		buf = go_file(NULL, argv[i], true);
+		buf = go_file(NULL, argv[i], true, &gffr);
 		if (buf != NULL) {
 			abuf = buf;
 		}
@@ -76,7 +77,7 @@ int main(int argc, char *argv[]) {
 
 	editor = columns_new(columnset, abuf ? abuf : null_buffer());
 
-	buffer_t *curdir_buf = go_file(NULL, getcwd(NULL, 0), true);
+	buffer_t *curdir_buf = go_file(NULL, getcwd(NULL, 0), true, &gffr);
 	if (curdir_buf != NULL) {
 		editor_t *curdir_ed = columns_new(columnset, curdir_buf);
 		if (editor == NULL) editor = curdir_ed;

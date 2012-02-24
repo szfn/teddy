@@ -96,7 +96,7 @@ typedef struct _buffer_t {
 } buffer_t;
 
 // utility function to convert first codepoint in utf8 stream into an utf32 codepoint
-uint32_t utf8_to_utf32(const char *text, int *src, int len);
+uint32_t utf8_to_utf32(const char *text, int *src, int len, bool *valid);
 
 
 buffer_t *buffer_create(void);

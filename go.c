@@ -11,6 +11,7 @@
 #include "baux.h"
 #include "ctype.h"
 #include "editor.h"
+#include "editor_cmdline.h"
 #include "buffers.h"
 #include "global.h"
 #include "columns.h"
@@ -104,8 +105,9 @@ static int exec_go_position(const char *specifier, editor_t *context_editor, buf
 	return 0;
 }
 
-buffer_t *go_file(buffer_t *base_buffer, const char *filename, bool create) {
+buffer_t *go_file(buffer_t *base_buffer, const char *filename, bool create, enum go_file_failure_reason *gffr) {
 	char *urp = unrealpath((base_buffer != NULL) ? base_buffer->path : NULL, filename);
+	*gffr = GFFR_OTHER;
 
 	if (urp == NULL) {
 		return NULL;
@@ -137,12 +139,15 @@ buffer_t *go_file(buffer_t *base_buffer, const char *filename, bool create) {
 			buffer = NULL;
 		}
 	} else {
-		if (load_text_file(buffer, urp) != 0) {
+		int r = load_text_file(buffer, urp);
+		if (r != 0) {
+			if (r == -2) {
+				*gffr = GFFR_BINARYFILE;
+			}
 			buffer_free(buffer);
 			buffer = NULL;
 		}
 	}
-
 
 	if (buffer != NULL) {
 		buffers_add(buffer);
@@ -201,12 +206,14 @@ editor_t *go_to_buffer(editor_t *editor, buffer_t *buffer, int where) {
 	return editor;
 }
 
-static int exec_go(const char *specifier, int where) {
+static int exec_go(const char *specifier, int where, enum go_file_failure_reason *gffr) {
 	char *sc = NULL;
 	char *saveptr, *tok;
 	buffer_t *buffer = NULL;
 	editor_t *editor = NULL;
 	int retval;
+
+	*gffr = GFFR_OTHER;
 
 	if (exec_go_position(specifier, context_editor, context_editor->buffer)) {
 	    retval = 1;
@@ -221,7 +228,8 @@ static int exec_go(const char *specifier, int where) {
 
 	buffer = buffer_id_to_buffer(tok);
 	if (buffer == NULL) {
-		buffer = go_file(context_editor->buffer, tok, false);
+		buffer = go_file(context_editor->buffer, tok, false, gffr);
+		//printf("buffer = %p gffr = %d\n", buffer, (int)(*gffr));
 		if (buffer == NULL) { retval = 0; goto exec_go_cleanup; }
 	}
 
@@ -286,7 +294,10 @@ int teddy_go_command(ClientData client_data, Tcl_Interp *interp, int argc, const
 		return TCL_ERROR;
 	}
 
-	if (!exec_go(goarg, where)) {
+	enum go_file_failure_reason gffr;
+	if (!exec_go(goarg, where, &gffr)) {
+		if (gffr == GFFR_BINARYFILE) return TCL_OK;
+
 		char *urp = unrealpath(context_editor->buffer->path, goarg);
 		char *msg;
 		GtkWidget *dialog = gtk_dialog_new_with_buttons("Create file", GTK_WINDOW(context_editor->window), GTK_DIALOG_MODAL|GTK_DIALOG_DESTROY_WITH_PARENT, "Yes", 1, "No", 0, NULL);
@@ -472,24 +483,46 @@ void mouse_open_action(editor_t *editor, lpoint_t *start, lpoint_t *end) {
 
 	const char *go_arg = Tcl_GetStringResult(interp);
 
-	if (!exec_go(go_arg, -1)) {
+	enum go_file_failure_reason gffr;
+	if (!exec_go(go_arg, -1, &gffr)) {
 		// if this succeeded we could open the file at the specified line and we are done
-		// otherwise the following code runs, we restrict the selection to a word around
-		// the cursor and call search on that
+		// otherwise we check gffr
 
-		copy_lpoint(start, &cursor);
-		copy_lpoint(end, &cursor);
+		if (gffr == GFFR_BINARYFILE) {
+			// it's was a readable file but it was binary
+			// we should just copy it in the command line
 
-		buffer_aux_wnwa_prev_ex(start);
-		buffer_aux_wnwa_next_ex(end);
+			char *ex = malloc(sizeof(char) * (strlen(go_arg) + 4));
+			if (ex == NULL) {
+				perror("Out of memory");
+				exit(EXIT_FAILURE);
+			}
 
-		// artifact of how wnwa_prev works
-		/*++(start->glyph);
-		if (start->glyph > start->line->cap) start->glyph = start->line->cap;*/
+			strcpy(ex, " {");
+			strcat(ex, go_arg);
+			strcat(ex, "}");
 
-		char *wordsel = buffer_lines_to_text(editor->buffer, start, end);
-		editor_start_search(context_editor, wordsel);
-		free(wordsel);
+			editor_add_to_command_line(editor, ex);
+
+			free(ex);
+		} else {
+			// we either couldn't read the file or it wasn't a file at all, just restrict to the word
+			// around the cursor and call search
+
+			copy_lpoint(start, &cursor);
+			copy_lpoint(end, &cursor);
+
+			buffer_aux_wnwa_prev_ex(start);
+			buffer_aux_wnwa_next_ex(end);
+
+			// artifact of how wnwa_prev works
+			/*++(start->glyph);
+			if (start->glyph > start->line->cap) start->glyph = start->line->cap;*/
+
+			char *wordsel = buffer_lines_to_text(editor->buffer, start, end);
+			editor_start_search(context_editor, wordsel);
+			free(wordsel);
+		}
 	}
 
 	context_editor = NULL;

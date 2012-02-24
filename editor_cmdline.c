@@ -45,7 +45,8 @@ static void move_search_forward(editor_t *editor, gboolean ctrl_g_invoked) {
 	int dst, i;
 
 	for (i = 0, dst = 0; i < len; ) {
-		needle[dst++] = utf8_to_utf32(text, &i, len);
+		bool valid = true;
+		needle[dst++] = utf8_to_utf32(text, &i, len, &valid);
 	}
 
 	bool case_sensitive = should_be_case_sensitive(needle, dst);
@@ -288,8 +289,6 @@ static gboolean entry_default_insert_callback(GtkWidget *widget, GdkEventKey *ev
 
 	}
 
-	//TODO: history scan with up, down - arrow keys
-
 	return FALSE;
 }
 
@@ -354,4 +353,14 @@ void entry_callback_setup(editor_t *r) {
 
 	g_signal_connect(r->entry, "focus-out-event", G_CALLBACK(entry_focusout_callback), r);
 	g_signal_connect(r->entry, "focus-in-event", G_CALLBACK(entry_focusin_callback), r);
+}
+
+void editor_add_to_command_line(editor_t *editor, const char *text) {
+	gtk_widget_grab_focus(editor->entry);
+
+	int i = gtk_editable_get_position(GTK_EDITABLE(editor->entry));
+	int j = i;
+
+	gtk_editable_insert_text(GTK_EDITABLE(editor->entry), text, strlen(text), &j);
+	gtk_editable_set_position(GTK_EDITABLE(editor->entry), i);
 }

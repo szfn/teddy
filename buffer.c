@@ -206,7 +206,7 @@ static void buffer_split_line(buffer_t *buffer, lpoint_t *point) {
 	buffer_real_line_insert(buffer, point->line, copied_segment);
 }
 
-static int buffer_line_insert_utf8_text(buffer_t *buffer, real_line_t *line, const char *text, int len, int insertion_point) {
+static int buffer_line_insert_utf8_text(buffer_t *buffer, real_line_t *line, const char *text, int len, int insertion_point, int *valid_chars, int *invalid_chars) {
 	FT_UInt previous = 0;
 	uint8_t previous_fontidx = 0;
 	int src, dst;
@@ -222,12 +222,20 @@ static int buffer_line_insert_utf8_text(buffer_t *buffer, real_line_t *line, con
 	}
 
 	for (src = 0, dst = insertion_point; src < len; ) {
-		uint32_t code = utf8_to_utf32(text, &src, len);
+		bool valid = true;
+		uint32_t code = utf8_to_utf32(text, &src, len, &valid);
 		FT_UInt glyph_index;
 		cairo_text_extents_t extents;
 		uint8_t fontidx = (code <= 0xffff) ? main_fonts.map[(uint16_t)code] : 0;
 		if (fontidx >= main_fonts.count) fontidx = 0;
 		/*printf("First char: %02x\n", (uint8_t)text[src]);*/
+
+		if ((code < 0x20) && (code != 0x09) && (code != 0x0a) && (code != 0x0d)) {
+			valid = false;
+		}
+
+		if (valid) *valid_chars = *valid_chars + 1;
+		else *invalid_chars = *invalid_chars + 1;
 
 		if (code != 0x09) { // TODO: include all the many non-space blank characters of unicode
 			glyph_index = FT_Get_Char_Index(main_fonts.fonts[fontidx].scaled_face, code);
@@ -302,6 +310,7 @@ static void buffer_insert_multiline_text(buffer_t *buffer, lpoint_t *start_point
 	lpoint_t point;
 	int start = 0;
 	int end = 0;
+	int valid_chars = 0, invalid_chars = 0;
 
 	copy_lpoint(&point, start_point);
 
@@ -310,7 +319,7 @@ static void buffer_insert_multiline_text(buffer_t *buffer, lpoint_t *start_point
 	while (end < strlen(text)) {
 		if ((text[end] == '\n') || (text[end] == '\r')) {
 			//printf("line cap: %d glyph %d\n", line->cap, glyph);
-			point.glyph += buffer_line_insert_utf8_text(buffer, point.line, text+start, end-start, point.glyph);
+			point.glyph += buffer_line_insert_utf8_text(buffer, point.line, text+start, end-start, point.glyph, &valid_chars, &invalid_chars);
 			//printf("    line cap: %d glyph: %d\n", line->cap, glyph);
 			buffer_split_line(buffer, &point);
 
@@ -331,7 +340,7 @@ static void buffer_insert_multiline_text(buffer_t *buffer, lpoint_t *start_point
 						}
 					} else {
 						//printf("(bs) line cap: %d glyph: %d\n", line->cap, glyph);
-						point.glyph += buffer_line_insert_utf8_text(buffer, point.line, text+start, end-start-1, point.glyph);
+						point.glyph += buffer_line_insert_utf8_text(buffer, point.line, text+start, end-start-1, point.glyph, &valid_chars, &invalid_chars);
 						//printf("    line cap: %d glyph: %d\n", line->cap, glyph);
 					}
 					++end;
@@ -346,7 +355,7 @@ static void buffer_insert_multiline_text(buffer_t *buffer, lpoint_t *start_point
 	}
 
 	if (start < end) {
-		point.glyph += buffer_line_insert_utf8_text(buffer, point.line, text+start, end-start, point.glyph);
+		point.glyph += buffer_line_insert_utf8_text(buffer, point.line, text+start, end-start, point.glyph, &valid_chars, &invalid_chars);
 		//printf("(end) line cap: %d glyph: %d\n", line->cap, glyph);
 	}
 
@@ -543,36 +552,51 @@ void buffer_undo(buffer_t *buffer) {
 	}
 }
 
+static char first_byte_result_to_mask[] = { 0xff, 0x3f, 0x1f, 0x0f, 0x00, 0x00, 0x00, 0x00, 0x00 };
+
 static uint8_t utf8_first_byte_processing(uint8_t ch) {
-	if (ch <= 127) return ch;
+	if (ch <= 127) return 0;
 
 	if ((ch & 0xF0) == 0xF0) {
-		if ((ch & 0x0E) == 0x0E) return ch & 0x01;
-		if ((ch & 0x0C) == 0x0C) return ch & 0x03;
-		if ((ch & 0x08) == 0x08) return ch & 0x07;
-		return ch & 0x0F;
+		if ((ch & 0x08) == 0x00) return 3;
+		else return 8; // invalid sequence
 	}
 
-	if ((ch & 0xE0) == 0xE0) return ch & 0x1F;
-	if ((ch & 0xC0) == 0xC0) return ch & 0x3F;
-	if ((ch & 0x80) == 0x80) return ch & 0x7F;
+	if ((ch & 0xE0) == 0xE0) return 2;
+	if ((ch & 0xC0) == 0xC0) return 1;
+	if ((ch & 0x80) == 0x80) return 8; // invalid sequence
 
-	return ch;
+	return 8; // invalid sequence
 }
 
-uint32_t utf8_to_utf32(const char *text, int *src, int len) {
+uint32_t utf8_to_utf32(const char *text, int *src, int len, bool *valid) {
 	uint32_t code;
+	*valid = true;
 
 	/* get next unicode codepoint in code, advance src */
 	if ((uint8_t)text[*src] > 127) {
-		code = utf8_first_byte_processing(text[*src]);
+		uint8_t tail_size = utf8_first_byte_processing(text[*src]);
 		++(*src);
+
+		if (tail_size >= 8) {
+			code = text[*src];
+			*valid = false;
+			return code;
+		}
+
+		code = text[*src] & first_byte_result_to_mask[tail_size];
 
 		/*printf("   Next char: %02x (%02x)\n", (uint8_t)text[src], (uint8_t)text[src] & 0xC0);*/
 
+		int i = 0;
 		for (; (((uint8_t)text[*src] & 0xC0) == 0x80) && (*src < len); ++(*src)) {
 			code <<= 6;
 			code += (text[*src] & 0x3F);
+			++i;
+		}
+
+		if (i != tail_size) {
+			*valid = false;
 		}
 	} else {
 		code = text[*src];
@@ -695,7 +719,7 @@ int load_dir(buffer_t *buffer, const char *dirname) {
 
 int load_text_file(buffer_t *buffer, const char *filename) {
 	FILE *fin = fopen(filename, "r");
-	char ch;
+	int ch;
 	int i = 0;
 	int text_allocation = 10;
 	char *text = malloc(sizeof(char) * text_allocation);
@@ -732,6 +756,8 @@ int load_text_file(buffer_t *buffer, const char *filename) {
 		exit(EXIT_FAILURE);
 	}
 
+	int valid_chars = 0, invalid_chars = 0;
+
 	while ((ch = fgetc(fin)) != EOF) {
 		if (i >= text_allocation) {
 			text_allocation *= 2;
@@ -744,12 +770,18 @@ int load_text_file(buffer_t *buffer, const char *filename) {
 		if (ch == '\n') {
 			text[i] = '\0';
 			if (*real_line_pp == NULL) *real_line_pp = new_real_line(lineno);
-			buffer_line_insert_utf8_text(buffer, *real_line_pp, text, strlen(text), (*real_line_pp)->cap);
+			buffer_line_insert_utf8_text(buffer, *real_line_pp, text, i, (*real_line_pp)->cap, &valid_chars, &invalid_chars);
 			(*real_line_pp)->prev = prev_line;
 			prev_line = *real_line_pp;
 			real_line_pp = &((*real_line_pp)->next);
 			i = 0;
 			++lineno;
+
+			if (valid_chars + invalid_chars > 1024) {
+				if (((float)valid_chars / (float)(valid_chars + invalid_chars)) < 0.75) {
+					break;
+				}
+			}
 		} else {
 			text[i++] = ch;
 		}
@@ -757,7 +789,7 @@ int load_text_file(buffer_t *buffer, const char *filename) {
 
 	text[i] = '\0';
 	if (*real_line_pp == NULL) *real_line_pp = new_real_line(lineno);
-	buffer_line_insert_utf8_text(buffer, *real_line_pp, text, strlen(text), (*real_line_pp)->cap);
+	buffer_line_insert_utf8_text(buffer, *real_line_pp, text, i, (*real_line_pp)->cap, &valid_chars, &invalid_chars);
 	(*real_line_pp)->prev = prev_line;
 
 	buffer->cursor.line = buffer->real_line;
@@ -771,6 +803,12 @@ int load_text_file(buffer_t *buffer, const char *filename) {
 
 	wordcompl_update(buffer);
 	lexy_update_starting_at(buffer, buffer->real_line, false);
+
+	if (valid_chars + invalid_chars > 100) {
+		if ((float)valid_chars / (float)(valid_chars + invalid_chars) < 0.75) {
+			return -2;
+		}
+	}
 
 	return 0;
 }

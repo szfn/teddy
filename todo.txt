@@ -1,10 +1,13 @@
-- ability to eval entire tcl files
-- right click on a binary file copies it on the command line (in brackets)
+- bug: color of extraline dashes is somehow wrong
+- bug: character in gcc error output isn't found
+- order file suggestions alphabetically
+- order completion suggestion by increasing length (then by popularity)
+- ignore escape sequences on +bg+ buffers
+- implement +bg+ buffer setup hook, set as defaults: stayoncmd, disable horzontal scrollbar, switch font to monospaced
+
 - fix size reallocation on deleted editor
 - comment region command
 - refresh all buffers
-
-
 - setpgid(<childpid>, 0) after forks
 - splitting of columns, frames (instead of just adding at the end)
 - replace tcl regex engine with TRE
@@ -29,7 +32,6 @@
 - implement stayoncmd flag for buffers
 - implement lockcmd command that changes the command line of a buffer to always send a specific command
 - implement ability to switch a buffer's main font
-- implement +bg+ buffer setup hook, set as defaults: stayoncmd, disable horzontal scrollbar, switch font to monospaced
 - Ctrl-o move to next editor (keep a stack of editors like windows' windows)
 - command to change buffer font to fixed width (start +bg buffers on fixed width by default)
 - ansi sequences processing
