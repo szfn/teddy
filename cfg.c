@@ -3,7 +3,7 @@
 #include <string.h>
 #include <stdlib.h>
 
-config_item_t config[16];
+config_item_t config[17];
 const char *config_names[] = {
 	"border_color",
 	"default_autoindent",
@@ -16,6 +16,7 @@ const char *config_names[] = {
 	"interactive_search_case_sensitive",
 	"main_font",
 	"main_font_height_reduction",
+	"main_monospace_font",
 	"posbox_bg_color",
 	"posbox_border_color",
 	"posbox_fg_color",
@@ -40,6 +41,7 @@ void cfg_init(void) {
 	setcfg(config + CFG_INTERACTIVE_SEARCH_CASE_SENSITIVE, "2");
 	setcfg(config + CFG_MAIN_FONT, "Arial-11");
 	setcfg(config + CFG_MAIN_FONT_HEIGHT_REDUCTION, "0");
+	setcfg(config + CFG_MAIN_MONOSPACE_FONT, "Monospace-11");
 	setcfg(config + CFG_POSBOX_BG_COLOR, "15654274");
 	setcfg(config + CFG_POSBOX_BORDER_COLOR, "0");
 	setcfg(config + CFG_POSBOX_FG_COLOR, "0");

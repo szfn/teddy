@@ -5,7 +5,8 @@
 #include "cfg.h"
 
 FT_Library library;
-teddy_fontset_t main_fonts;
+teddy_fontset_t variable_main_fonts;
+teddy_fontset_t monospace_main_fonts;
 teddy_font_t posbox_font;
 
 static void teddy_font_init_ex(teddy_font_t *font,  const char *fontfile, double size, int face_index) {
@@ -203,11 +204,13 @@ void teddy_font_real_init(void) {
 	}
 
 	teddy_font_init(&posbox_font, config[CFG_POSBOX_FONT].strval);
-	fontset_init(config[CFG_MAIN_FONT].strval, &main_fonts);
+	fontset_init(config[CFG_MAIN_FONT].strval, &variable_main_fonts);
+	fontset_init(config[CFG_MAIN_MONOSPACE_FONT].strval, &monospace_main_fonts);
 }
 
 
 void teddy_font_real_free(void) {
 	teddy_font_free(&posbox_font);
-	fontset_free(&main_fonts);
+	fontset_free(&variable_main_fonts);
+	fontset_free(&monospace_main_fonts);	
 }

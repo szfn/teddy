@@ -848,7 +848,7 @@ static gboolean expose_event_callback(GtkWidget *widget, GdkEventExpose *event, 
 			uint8_t color = (uint8_t)type;
 			uint8_t fontidx = (uint8_t)(type >> 8);
 			//printf("Printing text with font %d, color %d\n", fontidx, color);
-			cairo_set_scaled_font(cr, main_fonts.fonts[fontidx].cairofont);
+			cairo_set_scaled_font(cr, editor->buffer->font->fonts[fontidx].cairofont);
 			set_color_cfg(cr, lexy_colors[color]);
 			cairo_show_glyphs(cr, gga->glyphs, gga->n);
 			growable_glyph_array_free(gga);

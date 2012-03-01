@@ -1,5 +1,4 @@
 - solarized theme
-- implement +bg+ buffer setup hook, set as defaults: disable horizontal scrollbar, switch font to monospaced
 - order file suggestions alphabetically
 - order completion suggestion by increasing length (then by popularity)
 

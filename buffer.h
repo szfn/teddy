@@ -87,6 +87,7 @@ typedef struct _buffer_t {
 	double left_margin;
 	double right_margin;
 	bool enable_horizontal_scrollbar;
+	teddy_fontset_t *font;
 
 	/* Lexy stuff */
 	real_line_t *lexy_last_update_line;

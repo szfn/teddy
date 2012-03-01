@@ -14,6 +14,26 @@
 #include "lexy.h"
 #include "rd.h"
 #include "interp.h"
+#include "font.h"
+
+static void buffer_init_font_extents(buffer_t *buffer) {
+	cairo_text_extents_t extents;
+	cairo_font_extents_t font_extents;
+
+	cairo_scaled_font_text_extents(buffer->font->fonts[0].cairofont, "M", &extents);
+	buffer->em_advance = extents.width;
+
+	cairo_scaled_font_text_extents(buffer->font->fonts[0].cairofont, "x", &extents);
+	buffer->ex_height = extents.height;
+
+	cairo_scaled_font_text_extents(buffer->font->fonts[0].cairofont, " ", &extents);
+	buffer->space_advance = extents.x_advance;
+
+	cairo_scaled_font_extents(buffer->font->fonts[0].cairofont, &font_extents);
+	buffer->line_height = font_extents.height - config[CFG_MAIN_FONT_HEIGHT_REDUCTION].intval;
+	buffer->ascent = font_extents.ascent;
+	buffer->descent = font_extents.descent;
+}
 
 static void buffer_setup_hook(buffer_t *buffer) {
 	const char *argv[] = { "buffer_setup_hook", buffer->name };
@@ -32,6 +52,9 @@ static void buffer_setup_hook(buffer_t *buffer) {
 
 		if (strcmp(cur_str, "hscroll") == 0) {
 			buffer->enable_horizontal_scrollbar = true;
+		} else if (strcmp(cur_str, "monospaced") == 0) {
+			buffer->font = &monospace_main_fonts;
+			buffer_init_font_extents(buffer);
 		}
 	}
 
@@ -241,8 +264,8 @@ static int buffer_line_insert_utf8_text(buffer_t *buffer, real_line_t *line, con
 		previous_fontidx = line->glyph_info[insertion_point-1].fontidx;
 	}
 
-	for (int i = 0; i < main_fonts.count; ++i) {
-		main_fonts.fonts[i].scaled_face = cairo_ft_scaled_font_lock_face(main_fonts.fonts[i].cairofont);
+	for (int i = 0; i < buffer->font->count; ++i) {
+		buffer->font->fonts[i].scaled_face = cairo_ft_scaled_font_lock_face(buffer->font->fonts[i].cairofont);
 	}
 
 	for (src = 0, dst = insertion_point; src < len; ) {
@@ -250,8 +273,8 @@ static int buffer_line_insert_utf8_text(buffer_t *buffer, real_line_t *line, con
 		uint32_t code = utf8_to_utf32(text, &src, len, &valid);
 		FT_UInt glyph_index;
 		cairo_text_extents_t extents;
-		uint8_t fontidx = (code <= 0xffff) ? main_fonts.map[(uint16_t)code] : 0;
-		if (fontidx >= main_fonts.count) fontidx = 0;
+		uint8_t fontidx = (code <= 0xffff) ? buffer->font->map[(uint16_t)code] : 0;
+		if (fontidx >= buffer->font->count) fontidx = 0;
 		/*printf("First char: %02x\n", (uint8_t)text[src]);*/
 
 		if ((code < 0x20) && (code != 0x09) && (code != 0x0a) && (code != 0x0d)) {
@@ -262,9 +285,9 @@ static int buffer_line_insert_utf8_text(buffer_t *buffer, real_line_t *line, con
 		else *invalid_chars = *invalid_chars + 1;
 
 		if (code != 0x09) { // TODO: include all the many non-space blank characters of unicode
-			glyph_index = FT_Get_Char_Index(main_fonts.fonts[fontidx].scaled_face, code);
+			glyph_index = FT_Get_Char_Index(buffer->font->fonts[fontidx].scaled_face, code);
 		} else {
-			glyph_index = FT_Get_Char_Index(main_fonts.fonts[fontidx].scaled_face, 0x20);
+			glyph_index = FT_Get_Char_Index(buffer->font->fonts[fontidx].scaled_face, 0x20);
 		}
 
 		grow_line(line, dst, 1);
@@ -273,10 +296,10 @@ static int buffer_line_insert_utf8_text(buffer_t *buffer, real_line_t *line, con
 		line->glyph_info[dst].color = buffer->default_color;
 
 		/* Kerning correction for x */
-		if ((previous_fontidx == fontidx) && FT_HAS_KERNING(main_fonts.fonts[fontidx].scaled_face) && previous && glyph_index) {
+		if ((previous_fontidx == fontidx) && FT_HAS_KERNING(buffer->font->fonts[fontidx].scaled_face) && previous && glyph_index) {
 			FT_Vector delta;
 
-			FT_Get_Kerning(main_fonts.fonts[fontidx].scaled_face, previous, glyph_index, FT_KERNING_DEFAULT, &delta);
+			FT_Get_Kerning(buffer->font->fonts[fontidx].scaled_face, previous, glyph_index, FT_KERNING_DEFAULT, &delta);
 
 			line->glyph_info[dst].kerning_correction = delta.x >> 6;
 		} else {
@@ -294,7 +317,7 @@ static int buffer_line_insert_utf8_text(buffer_t *buffer, real_line_t *line, con
 			g.x = 0.0;
 			g.y = 0.0;
 
-			cairo_scaled_font_glyph_extents(main_fonts.fonts[fontidx].cairofont, &g, 1, &extents);
+			cairo_scaled_font_glyph_extents(buffer->font->fonts[fontidx].cairofont, &g, 1, &extents);
 		}
 
 		/*if (code == 0x09) {
@@ -311,10 +334,10 @@ static int buffer_line_insert_utf8_text(buffer_t *buffer, real_line_t *line, con
 
 	if (dst < line->cap) {
 		uint8_t fontidx = line->glyph_info[dst].fontidx;
-		if ((previous_fontidx == fontidx) && FT_HAS_KERNING(main_fonts.fonts[fontidx].scaled_face)) {
+		if ((previous_fontidx == fontidx) && FT_HAS_KERNING(buffer->font->fonts[fontidx].scaled_face)) {
 			FT_Vector delta;
 
-			FT_Get_Kerning(main_fonts.fonts[fontidx].scaled_face, previous, line->glyph_info[dst].glyph_index, FT_KERNING_DEFAULT, &delta);
+			FT_Get_Kerning(buffer->font->fonts[fontidx].scaled_face, previous, line->glyph_info[dst].glyph_index, FT_KERNING_DEFAULT, &delta);
 
 			line->glyph_info[dst].kerning_correction = delta.x >> 6;
 		} else {
@@ -323,8 +346,8 @@ static int buffer_line_insert_utf8_text(buffer_t *buffer, real_line_t *line, con
 
 	}
 
-	for (int i = 0; i < main_fonts.count; ++i) {
-		cairo_ft_scaled_font_unlock_face(main_fonts.fonts[i].cairofont);
+	for (int i = 0; i < buffer->font->count; ++i) {
+		cairo_ft_scaled_font_unlock_face(buffer->font->fonts[i].cairofont);
 	}
 
 	return inserted_glyphs;
@@ -443,7 +466,7 @@ static void buffer_line_adjust_glyphs(buffer_t *buffer, real_line_t *line, doubl
 
 		x += line->glyph_info[i].kerning_correction;
 		if (buffer->enable_horizontal_scrollbar) {
-			if (y + buffer->right_margin > buffer->rendered_width) buffer->rendered_width = y + buffer->right_margin;
+			if (x + buffer->right_margin > buffer->rendered_width) buffer->rendered_width = x + buffer->right_margin;
 		} else {
 			if (x+line->glyph_info[i].x_advance > buffer->rendered_width - buffer->right_margin) {
 				y += buffer->line_height;
@@ -738,14 +761,14 @@ int load_dir(buffer_t *buffer, const char *dirname) {
 	free(buffer->name);
 	buffer->name = buffer_ppp(buffer, true, 20, true);
 
+	buffer_setup_hook(buffer);
+
 	rd(dir, buffer);
 
 	closedir(dir);
 
 	buffer->editable = false;
 	buffer->modified = false;
-
-	buffer_setup_hook(buffer);
 
 	return 0;
 }
@@ -772,6 +795,8 @@ int load_text_file(buffer_t *buffer, const char *filename) {
 	free(buffer->name);
 	buffer->path = realpath(filename, NULL);
 	buffer->name = buffer_ppp(buffer, true, 20, true);
+
+	buffer_setup_hook(buffer);
 
 	{
 		char *name = strrchr(buffer->path, '/');
@@ -847,8 +872,6 @@ int load_text_file(buffer_t *buffer, const char *filename) {
 			return -2;
 		}
 	}
-
-	buffer_setup_hook(buffer);
 
 	return 0;
 }
@@ -1080,25 +1103,9 @@ buffer_t *buffer_create(void) {
 	buffer->lexy_last_update_line = NULL;
 
 	undo_init(&(buffer->undo));
+	buffer->font = &variable_main_fonts;
 
-	{
-		cairo_text_extents_t extents;
-		cairo_font_extents_t font_extents;
-
-		cairo_scaled_font_text_extents(main_fonts.fonts[0].cairofont, "M", &extents);
-		buffer->em_advance = extents.width;
-
-		cairo_scaled_font_text_extents(main_fonts.fonts[0].cairofont, "x", &extents);
-		buffer->ex_height = extents.height;
-
-		cairo_scaled_font_text_extents(main_fonts.fonts[0].cairofont, " ", &extents);
-		buffer->space_advance = extents.x_advance;
-
-		cairo_scaled_font_extents(main_fonts.fonts[0].cairofont, &font_extents);
-		buffer->line_height = font_extents.height - config[CFG_MAIN_FONT_HEIGHT_REDUCTION].intval;
-		buffer->ascent = font_extents.ascent;
-		buffer->descent = font_extents.descent;
-	}
+	buffer_init_font_extents(buffer);
 
 	buffer->real_line = NULL;
 
