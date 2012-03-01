@@ -1091,3 +1091,22 @@ void read_conf(void) {
 
 	free(name);
 }
+
+const char *interp_eval_command(int count, const char *argv[]) {
+	int code = Tcl_Eval(interp, Tcl_Merge(count, argv));
+
+	if (code == TCL_OK) {
+		return Tcl_GetStringResult(interp);
+	} else {
+		Tcl_Obj *options = Tcl_GetReturnOptions(interp, code);
+		Tcl_Obj *key = Tcl_NewStringObj("-errorinfo", -1);
+		Tcl_Obj *stackTrace;
+		Tcl_IncrRefCount(key);
+		Tcl_DictObjGet(NULL, options, key, &stackTrace);
+		Tcl_DecrRefCount(key);
+
+		fprintf(stderr, "TCL Exception: %s\n", Tcl_GetString(stackTrace));
+
+		return NULL;
+	}
+}

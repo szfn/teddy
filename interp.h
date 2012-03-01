@@ -19,6 +19,8 @@ void interp_free(void);
 enum deferred_action interp_eval(editor_t *editor, const char *command);
 void read_conf(void);
 
+const char *interp_eval_command(int count, const char *argv[]);
+
 extern editor_t *context_editor;
 
 #endif

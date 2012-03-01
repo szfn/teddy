@@ -504,3 +504,6 @@ proc clear {} {
 	c ""
 }
 
+proc buffer_setup_hook {buffer-name} {
+	return {}
+}

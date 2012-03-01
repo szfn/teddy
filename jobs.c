@@ -92,9 +92,6 @@ static void ansi_append(job_t *job, const char *msg, int len) {
 	}
 
 	job_append(job, msg+start, len - start, 0, L_NOTHING);
-
-	//TODO:
-	// - remove other escape sequences
 }
 
 static void jobs_child_watch_function(GPid pid, gint status, job_t *job) {

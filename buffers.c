@@ -334,11 +334,11 @@ buffer_t *buffers_find_buffer_from_path(const char *urp) {
 
 buffer_t *buffers_create_with_name(char *name) {
 	buffer_t *buffer = buffer_create();
-	load_empty(buffer);
 	if (buffer->name != NULL) {
 		free(buffer->name);
 	}
 	buffer->name = name;
+	load_empty(buffer);
 
 	buffers_add(buffer);
 

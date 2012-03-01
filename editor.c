@@ -345,23 +345,9 @@ static gboolean key_press_callback(GtkWidget *widget, GdkEventKey *event, editor
 		full_keyevent_to_string(event->keyval, super, ctrl, alt, shift, pressed);
 		if (pressed[0] != '\0') {
 			const char *eval_argv[] = { editor->buffer->keyprocessor, pressed };
+			const char *r = interp_eval_command(2, eval_argv);
 
-			int code = Tcl_Eval(interp, Tcl_Merge(2, eval_argv));
-
-			if (code == TCL_OK) {
-				const char *result = Tcl_GetStringResult(interp);
-				if (strcmp(result, "done") == 0) return FALSE;
-			} else {
-				Tcl_Obj *options = Tcl_GetReturnOptions(interp, code);
-				Tcl_Obj *key = Tcl_NewStringObj("-errorinfo", -1);
-				Tcl_Obj *stackTrace;
-				Tcl_IncrRefCount(key);
-				Tcl_DictObjGet(NULL, options, key, &stackTrace);
-				Tcl_DecrRefCount(key);
-
-				fprintf(stderr, "TCL Exception: %s\n", Tcl_GetString(stackTrace));
-			}
-			//else: call failed
+			if ((r != NULL) && (strcmp(r, "done") == 0)) return FALSE;
 		}
 	}
 

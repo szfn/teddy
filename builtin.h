@@ -507,5 +507,8 @@ proc clear {} {\n\
 	c \"\"\n\
 }\n\
 \n\
+proc buffer_setup_hook {buffer-name} {\n\
+	return {}\n\
+}\n\
 "
 #endif

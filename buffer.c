@@ -13,6 +13,30 @@
 #include "wordcompl.h"
 #include "lexy.h"
 #include "rd.h"
+#include "interp.h"
+
+static void buffer_setup_hook(buffer_t *buffer) {
+	const char *argv[] = { "buffer_setup_hook", buffer->name };
+	interp_eval_command(2, argv);
+
+	Tcl_Obj *r = Tcl_GetObjResult(interp);
+	int len = -1;
+	Tcl_ListObjLength(interp, r, &len);
+
+	for (int i = 0; i < len; ++i) {
+		Tcl_Obj *cur;
+		Tcl_ListObjIndex(interp, r, i, &cur);
+		char *cur_str = Tcl_GetString(cur);
+
+		if (cur_str == NULL) continue;
+
+		if (strcmp(cur_str, "hscroll") == 0) {
+			buffer->enable_horizontal_scrollbar = true;
+		}
+	}
+
+	Tcl_ResetResult(interp);
+}
 
 void buffer_set_mark_at_cursor(buffer_t *buffer) {
 	copy_lpoint(&(buffer->mark), &(buffer->cursor));
@@ -621,6 +645,8 @@ void load_empty(buffer_t *buffer) {
 
 	buffer->cursor.line = buffer->real_line = new_real_line(0);
 	buffer->cursor.glyph = 0;
+
+	buffer_setup_hook(buffer);
 }
 
 void buffer_cd(buffer_t *buffer, const char *wd) {
@@ -718,6 +744,8 @@ int load_dir(buffer_t *buffer, const char *dirname) {
 
 	buffer->editable = false;
 	buffer->modified = false;
+
+	buffer_setup_hook(buffer);
 
 	return 0;
 }
@@ -819,6 +847,8 @@ int load_text_file(buffer_t *buffer, const char *filename) {
 			return -2;
 		}
 	}
+
+	buffer_setup_hook(buffer);
 
 	return 0;
 }
@@ -1039,7 +1069,7 @@ buffer_t *buffer_create(void) {
 	buffer->editable = 1;
 	buffer->job = NULL;
 	buffer->default_color = L_NOTHING;
-	buffer->enable_horizontal_scrollbar = true;
+	buffer->enable_horizontal_scrollbar = false;
 
 	asprintf(&(buffer->name), "+unnamed");
 	buffer->path = NULL;
