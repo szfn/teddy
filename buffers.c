@@ -90,7 +90,6 @@ int buffers_close(buffer_t *buffer, GtkWidget *window) {
 
 	if (buffer->modified) {
 		GtkWidget *dialog;
-		GtkWidget *content_area;
 		GtkWidget *label;
 		char *msg;
 		gint result;
@@ -101,7 +100,6 @@ int buffers_close(buffer_t *buffer, GtkWidget *window) {
 			dialog = gtk_dialog_new_with_buttons("Close Buffer", (window != NULL) ? GTK_WINDOW(window) : GTK_WINDOW(buffers_selector_focus_editor->window), GTK_DIALOG_MODAL|GTK_DIALOG_DESTROY_WITH_PARENT, "Discard changes", DISCARD_CHANGES_RESPONSE, "Cancel", CANCEL_ACTION_RESPONSE, NULL);
 		}
 
-		content_area = gtk_dialog_get_content_area(GTK_DIALOG(dialog));
 		asprintf(&msg, "Buffer [%s] is modified", buffer->name);
 		label = gtk_label_new(msg);
 		free(msg);
@@ -268,9 +266,25 @@ void buffers_add(buffer_t *b) {
 
 		gtk_list_store_append(buffers_list, &mah);
 		char *namename = strrchr(b->name, '/');
+
 		if ((namename == NULL) || (*namename == '\0')) namename = b->name;
-		else  ++namename;
-		gtk_list_store_set(buffers_list, &mah, 0, i, 1, namename, 2, b->name, -1);
+
+		if (strcmp(namename, "/") == 0) {
+			char *nsn = strdup(b->name);
+			if (nsn == NULL) {
+				perror("Out of memory");
+				exit(EXIT_FAILURE);
+			}
+			nsn[strlen(nsn)-1] = '\0';
+			namename = strrchr(nsn, '/');
+			if ((namename == NULL) || (*namename == '\0')) namename = nsn;
+			else ++namename;
+			gtk_list_store_set(buffers_list, &mah, 0, i, 1, namename, 2, b->name, -1);
+			free(nsn);
+		} else {
+			++namename;
+			gtk_list_store_set(buffers_list, &mah, 0, i, 1, namename, 2, b->name, -1);
+		}
 	}
 }
 
