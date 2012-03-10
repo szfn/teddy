@@ -265,25 +265,29 @@ void buffers_add(buffer_t *b) {
 		GtkTreeIter mah;
 
 		gtk_list_store_append(buffers_list, &mah);
-		char *namename = strrchr(b->name, '/');
-
-		if ((namename == NULL) || (*namename == '\0')) namename = b->name;
-
-		if (strcmp(namename, "/") == 0) {
-			char *nsn = strdup(b->name);
-			if (nsn == NULL) {
-				perror("Out of memory");
-				exit(EXIT_FAILURE);
-			}
-			nsn[strlen(nsn)-1] = '\0';
-			namename = strrchr(nsn, '/');
-			if ((namename == NULL) || (*namename == '\0')) namename = nsn;
-			else ++namename;
-			gtk_list_store_set(buffers_list, &mah, 0, i, 1, namename, 2, b->name, -1);
-			free(nsn);
+		if (b->name[0] == '+') {
+			gtk_list_store_set(buffers_list, &mah, 0, i, 1, b->name, 2, b->name, -1);
 		} else {
-			++namename;
-			gtk_list_store_set(buffers_list, &mah, 0, i, 1, namename, 2, b->name, -1);
+			char *namename = strrchr(b->name, '/');
+
+			if ((namename == NULL) || (*namename == '\0')) namename = b->name;
+
+			if (strcmp(namename, "/") == 0) {
+				char *nsn = strdup(b->name);
+				if (nsn == NULL) {
+					perror("Out of memory");
+					exit(EXIT_FAILURE);
+				}
+				nsn[strlen(nsn)-1] = '\0';
+				namename = strrchr(nsn, '/');
+				if ((namename == NULL) || (*namename == '\0')) namename = nsn;
+				else ++namename;
+				gtk_list_store_set(buffers_list, &mah, 0, i, 1, namename, 2, b->name, -1);
+				free(nsn);
+			} else {
+				++namename;
+				gtk_list_store_set(buffers_list, &mah, 0, i, 1, namename, 2, b->name, -1);
+			}
 		}
 	}
 }
