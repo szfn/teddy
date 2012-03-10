@@ -171,6 +171,7 @@ void cmdcompl_init(void) {
 	completions_list = gtk_list_store_new(1, G_TYPE_STRING);
 	completions_tree = gtk_tree_view_new();
 
+	gtk_tree_sortable_set_sort_column_id(GTK_TREE_SORTABLE(completions_list), 0, GTK_SORT_ASCENDING);
 	gtk_tree_view_insert_column_with_attributes(GTK_TREE_VIEW(completions_tree), -1, "Completion", gtk_cell_renderer_text_new(), "text", 0, NULL);
 	gtk_tree_view_set_model(GTK_TREE_VIEW(completions_tree), GTK_TREE_MODEL(completions_list));
 	gtk_tree_view_set_headers_visible(GTK_TREE_VIEW(completions_tree), FALSE);
