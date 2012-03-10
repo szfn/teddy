@@ -507,3 +507,19 @@ proc clear {} {
 proc buffer_setup_hook {buffer-name} {
 	return {}
 }
+
+proc dirrec_ex {directory} {
+	set files [split [exec find $directory -type f ! -path "*/\.*"] "\n"]
+	for {set i 0} {$i < [llength $files]} {incr i} {
+		set cur [lindex $files $i]
+		set curbase [string range $cur [expr [string last "/" $cur] + 1] end]
+		lset files $i "$curbase\t$cur"
+	}
+
+	set files [lsort $files]
+	puts [join $files "\n"]
+}
+
+proc dirrec {directory} {
+	bg "+dirrec/$directory" "dirrec_ex $directory"
+}

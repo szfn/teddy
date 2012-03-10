@@ -1,5 +1,3 @@
-- should be able to switch directory view to recursive (enable scrollbars)
-
 - fix mouse selection
 - fix size reallocation on deleted editor
 - comment region command
