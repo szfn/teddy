@@ -27,14 +27,9 @@
 - fix mark words when used with cursor keys
 - implement stayoncmd flag for buffers
 - implement lockcmd command that changes the command line of a buffer to always send a specific command
-- implement ability to switch a buffer's main font
 - Ctrl-o move to next editor (keep a stack of editors like windows' windows)
-- command to change buffer font to fixed width (start +bg buffers on fixed width by default)
-- ansi sequences processing
-- clear buffer command
 - minimum size of an editor should be its tag alone, and there should be a simple way to minimize an editor
 - 's' command: support normal pcre flags
-- sort buffer menu by buffer name?
 - appending to a buffer that was never displayed doesn't work (for some reason), tons of valgrind exceptions are generated. There is a valid use case for starting commands on an invisible buffer
 - persistence of history
 - ability to persist the status of a window
@@ -42,7 +37,6 @@
 - left+middle -> cut
 - move mouse cursor when searching with mouse
 - use an editor for the command line
-- disabling soft word wrap
 - clang syntax highlighting
 - elastic tabs
 

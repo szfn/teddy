@@ -21,7 +21,7 @@ static void buffer_init_font_extents(buffer_t *buffer) {
 	cairo_font_extents_t font_extents;
 
 	cairo_scaled_font_text_extents(buffer->font->fonts[0].cairofont, "M", &extents);
-	buffer->em_advance = extents.width;
+	buffer->em_advance = extents.x_advance;
 
 	cairo_scaled_font_text_extents(buffer->font->fonts[0].cairofont, "x", &extents);
 	buffer->ex_height = extents.height;
@@ -55,6 +55,11 @@ static void buffer_setup_hook(buffer_t *buffer) {
 		} else if (strcmp(cur_str, "monospaced") == 0) {
 			buffer->font = &monospace_main_fonts;
 			buffer_init_font_extents(buffer);
+#define TABWIDTH_SETUP_HOOK_PREFIX "tabwidth:"
+		} else if (strncmp(cur_str, TABWIDTH_SETUP_HOOK_PREFIX, strlen(TABWIDTH_SETUP_HOOK_PREFIX)) == 0) {
+			buffer->tab_width = atoi(cur_str + strlen(TABWIDTH_SETUP_HOOK_PREFIX));
+		} else if (strcmp(cur_str, "fixedtabs") == 0) {
+			buffer->tab_mode = TAB_FIXED;
 		}
 	}
 
@@ -449,10 +454,10 @@ static void buffer_line_adjust_glyphs(buffer_t *buffer, real_line_t *line, doubl
 			case TAB_MODN: {
 				double size = buffer->tab_width * buffer->em_advance;
 				double to_next_cell = size - fmod(x, size);
-				if (to_next_cell < buffer->em_advance) {
+				/*if (to_next_cell <= buffer->em_advance) {
 					// if it is too small jump to next cell instead
 					to_next_cell += size;
-				}
+				}*/
 				line->glyph_info[i].x_advance = to_next_cell;
 				break;
 			}
