@@ -289,7 +289,12 @@ static void wordcompl_search_prefix(uint16_t *prefix, size_t prefix_len) {
 
 static int wordcompl_wordset_scorecmp(wc_entry_t **ppa, wc_entry_t **ppb) {
 	wc_entry_t *a = *ppa, *b = *ppb;
-	return a->score - b->score;
+
+	if (a->len == b->len) {
+		return a->score - b->score;
+	} else {
+		return a->len - b->len;
+	}
 }
 
 bool wordcompl_complete(editor_t *editor) {

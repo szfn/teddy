@@ -1,6 +1,3 @@
-- order completion suggestion by increasing length (then by popularity)
-
-
 - fix size reallocation on deleted editor
 - comment region command
 - refresh all buffers
