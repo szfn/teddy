@@ -481,7 +481,11 @@ void mouse_open_action(editor_t *editor, lpoint_t *start, lpoint_t *end) {
 		return;
 	}
 
-	const char *go_arg = Tcl_GetStringResult(interp);
+	char *go_arg = strdup(Tcl_GetStringResult(interp));
+	if (go_arg == NULL) {
+		perror("Out of memory");
+		exit(EXIT_FAILURE);
+	}
 
 	enum go_file_failure_reason gffr;
 	if (!exec_go(go_arg, -1, &gffr)) {
@@ -524,6 +528,8 @@ void mouse_open_action(editor_t *editor, lpoint_t *start, lpoint_t *end) {
 			free(wordsel);
 		}
 	}
+
+	free(go_arg);
 
 	context_editor = NULL;
 }
