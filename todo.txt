@@ -1,8 +1,6 @@
 - fix mouse selection
-- fix size reallocation on deleted editor
 - comment region command
 - refresh all buffers
-- setpgid(<childpid>, 0) after forks
 - splitting of columns, frames (instead of just adding at the end)
 - replace tcl regex engine with TRE
 - interface tabs

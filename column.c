@@ -352,6 +352,18 @@ editor_t *column_remove(column_t *column, editor_t *editor) {
 
 	editor->initialization_ended = 0;
 
+	editor_t *editor_before = column_get_editor_before(column, editor);
+
+	if (editor_before != NULL) {
+		GtkAllocation before_allocation;
+		GtkAllocation current_allocation;
+
+		gtk_widget_get_allocation(editor->container, &current_allocation);
+		gtk_widget_get_allocation(editor_before->container, &before_allocation);
+
+		gtk_widget_set_size_request(editor_before->container, -1, before_allocation.height + current_allocation.height);
+	}
+
 	if (idx != -1) {
 		gtk_container_remove(GTK_CONTAINER(column), editor->container);
 		column->editors[idx] = NULL;
