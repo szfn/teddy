@@ -24,7 +24,6 @@
 - implement stayoncmd flag for buffers
 - implement lockcmd command that changes the command line of a buffer to always send a specific command
 - Ctrl-o move to next editor (keep a stack of editors like windows' windows)
-- minimum size of an editor should be its tag alone, and there should be a simple way to minimize an editor
 - 's' command: support normal pcre flags
 - appending to a buffer that was never displayed doesn't work (for some reason), tons of valgrind exceptions are generated. There is a valid use case for starting commands on an invisible buffer
 - persistence of history
