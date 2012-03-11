@@ -453,11 +453,11 @@ static void buffer_line_adjust_glyphs(buffer_t *buffer, real_line_t *line, doubl
 			switch(buffer->tab_mode) {
 			case TAB_MODN: {
 				double size = buffer->tab_width * buffer->em_advance;
-				double to_next_cell = size - fmod(x, size);
-				/*if (to_next_cell <= buffer->em_advance) {
+				double to_next_cell = size - fmod(x - buffer->left_margin, size);
+				if (to_next_cell <= buffer->space_advance/2) {
 					// if it is too small jump to next cell instead
 					to_next_cell += size;
-				}*/
+				}
 				line->glyph_info[i].x_advance = to_next_cell;
 				break;
 			}

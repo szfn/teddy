@@ -1,14 +1,14 @@
-- fix mouse selection
+- improve new frame heuristic
+- better autocompletion: if nothing is selected in the completion menu complete with the longest common prefix
+- splitting of columns instead of just adding at the end
+- fix mouse region selection
 - comment region command
 - refresh all buffers
-- splitting of columns, frames (instead of just adding at the end)
 - replace tcl regex engine with TRE
 - interface tabs
 - TAGS files
-- options for tab character visualization
 - macros
 - gdb integration
-- fix bad rendering perfomance by killing cairo
 - debugger integration (just displaying currently executed line)
 - selection should copy selected text on past not on selection, for better efficiency (selection slowdown is noticeable on mouse selection)
 - extend regular expressions in 's' to be lexically aware
@@ -25,7 +25,6 @@
 - implement lockcmd command that changes the command line of a buffer to always send a specific command
 - Ctrl-o move to next editor (keep a stack of editors like windows' windows)
 - 's' command: support normal pcre flags
-- appending to a buffer that was never displayed doesn't work (for some reason), tons of valgrind exceptions are generated. There is a valid use case for starting commands on an invisible buffer
 - persistence of history
 - ability to persist the status of a window
 - auto-reloading buffers when there is no change and the file on disk was changed
@@ -34,6 +33,7 @@
 - use an editor for the command line
 - clang syntax highlighting
 - elastic tabs
+- resizing with reshandle will resize more editors if one isn't enough to bring the reshandle where it should be
 
 https://github.com/agl/critbit
 

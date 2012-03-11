@@ -341,13 +341,13 @@ column_t *columns_get_column_from_position(columns_t *columns, double x, double 
 	return NULL;
 }
 
-editor_t *columns_get_editor_from_position(columns_t *columns, double x, double y) {
+editor_t *columns_get_editor_from_position(columns_t *columns, double x, double y, bool *ontag) {
 	column_t *column = columns_get_column_from_position(columns, x, y);
 	if (column == NULL) {
 		printf("Column not found\n");
 		return NULL;
 	}
-	return column_get_editor_from_position(column, x, y);
+	return column_get_editor_from_position(column, x, y, ontag);
 }
 
 void columns_swap_columns(columns_t *columns, column_t *cola, column_t *colb) {

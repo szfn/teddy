@@ -2,6 +2,7 @@
 #define __COLUMNS_H__
 
 #include <gtk/gtk.h>
+#include <stdbool.h>
 
 #include "buffer.h"
 #include "editor.h"
@@ -36,7 +37,7 @@ int columns_column_count(columns_t *columns);
 column_t *columns_remove(columns_t *columns, column_t *column, editor_t *editor);
 void columns_remove_others(columns_t *columns, column_t *column, editor_t *editor);
 editor_t *columns_get_buffer(columns_t *columns, buffer_t *buffer);
-editor_t *columns_get_editor_from_position(columns_t *columns, double x, double y);
+editor_t *columns_get_editor_from_position(columns_t *columns, double x, double y, bool *ontag);
 column_t *columns_get_column_from_position(columns_t *columns, double x, double y);
 void columns_swap_columns(columns_t *columns, column_t *cola, column_t *colb);
 bool editor_exists(columns_t *columns, editor_t *editor);

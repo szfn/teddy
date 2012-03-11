@@ -912,7 +912,7 @@ static gboolean expose_event_callback(GtkWidget *widget, GdkEventExpose *event, 
 		gtk_widget_hide(GTK_WIDGET(editor->drarhscroll));
 	} else {
 		gtk_widget_show(GTK_WIDGET(editor->drarhscroll));
-		gtk_adjustment_set_upper(GTK_ADJUSTMENT(editor->hadjustment), editor->buffer->left_margin + editor->buffer->rendered_width);
+		gtk_adjustment_set_upper(GTK_ADJUSTMENT(editor->hadjustment), editor->buffer->left_margin + editor->buffer->rendered_width + editor->buffer->right_margin);
 		gtk_adjustment_set_page_size(GTK_ADJUSTMENT(editor->hadjustment), allocation.width);
 		gtk_adjustment_set_page_increment(GTK_ADJUSTMENT(editor->hadjustment), allocation.width/2);
 		gtk_adjustment_set_step_increment(GTK_ADJUSTMENT(editor->hadjustment), editor->buffer->em_advance);
@@ -976,7 +976,8 @@ static gboolean label_button_press_callback(GtkWidget *widget, GdkEventButton *e
 			double x = event->x + allocation.x;
 			double y = event->y + allocation.y;
 
-			editor_t *target = columns_get_editor_from_position(columnset, x, y);
+			bool ontag;
+			editor_t *target = columns_get_editor_from_position(columnset, x, y, &ontag);
 
 			if ((target != NULL) && (target != editor)) {
 				editor_switch_buffer(target, editor->buffer);
@@ -1019,20 +1020,63 @@ static gboolean label_button_release_callback(GtkWidget *widget, GdkEventButton 
 
 	dragging = false;
 
-	if (!shift && !ctrl && !alt && !super) {
-		editor_t *target = columns_get_editor_from_position(columnset, x, y);
+	if (!ctrl && !alt && !super) {
+		bool ontag = false;
+		editor_t *target = columns_get_editor_from_position(columnset, x, y, &ontag);
 
-		if ((target != NULL) && (target != editor)) {
-			buffer_t *tbuf = target->buffer;
-			editor_switch_buffer(target, editor->buffer);
-			editor_switch_buffer(editor, tbuf);
+		if (shift) ontag = true;
 
-			if (tbuf == null_buffer()) {
-				editor_close_editor(editor);
+		if (target != NULL) {
+			if (ontag && (target != editor)) {
+				buffer_t *tbuf = target->buffer;
+				editor_switch_buffer(target, editor->buffer);
+				editor_switch_buffer(editor, tbuf);
+
+				if (tbuf == null_buffer()) {
+					editor_close_editor(editor);
+				}
+			} else {
+				bool just_resize = false;
+				if (target == editor) {
+					target = column_get_editor_before(editor->column, editor);
+					just_resize = true;
+				} else {
+					if (target->column == editor->column) {
+						editor_t *editor_currently_before = column_get_editor_before(editor->column, editor);
+						if (editor_currently_before == target) {
+							just_resize = true;
+						}
+					}
+				}
+
+				if (just_resize) {
+					GtkAllocation tallocation;
+					gtk_widget_get_allocation(target->container, &tallocation);
+
+					GtkAllocation allocation;
+					gtk_widget_get_allocation(editor->container, &allocation);
+
+					double new_target_size = y - tallocation.y;
+					double new_editor_size = tallocation.height - new_target_size + allocation.height;
+
+					column_resize_editor_pair(target, new_target_size, editor, new_editor_size);
+				} else {
+					buffer_t *buffer = editor->buffer;
+					editor_close_editor(editor);
+					editor = column_new_editor_after(target->column, target, buffer);
+
+					GtkAllocation tallocation;
+					gtk_widget_get_allocation(target->container, &tallocation);
+
+					double new_target_size = y - tallocation.y;
+					double new_editor_size = tallocation.height - new_target_size;
+
+					column_resize_editor_pair(target, new_target_size, editor, new_editor_size);
+				}
 			}
 		}
 		return TRUE;
-	} else if (shift && !ctrl && !alt && !super) {
+	} else if (!shift && ctrl && !alt && !super) {
 		column_t *target_column = columns_get_column_from_position(columnset, x, y);
 		if ((target_column != NULL) && (target_column != editor->column)) {
 			columns_swap_columns(columnset, editor->column, target_column);
