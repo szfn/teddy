@@ -45,7 +45,6 @@ void editor_switch_buffer(editor_t *editor, buffer_t *buffer);
 gint editor_get_height_request(editor_t *editor);
 void editor_center_on_cursor(editor_t *editor);
 
-void editor_complete_edit(editor_t *editor);
 void editor_replace_selection(editor_t *editor, const char *new_text);
 
 /* actions */

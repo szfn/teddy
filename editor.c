@@ -42,16 +42,12 @@ void set_label_text(editor_t *editor) {
 	free(labeltxt);
 }
 
-void editor_complete_edit(editor_t *editor) {
+void editor_replace_selection(editor_t *editor, const char *new_text) {
+	buffer_replace_selection(editor->buffer, new_text);
 	columnset->active_column = editor->column;
 	set_label_text(editor);
 	editor_center_on_cursor(editor);
 	gtk_widget_queue_draw(editor->drar);
-}
-
-void editor_replace_selection(editor_t *editor, const char *new_text) {
-	buffer_replace_selection(editor->buffer, new_text);
-	editor_complete_edit(editor);
 }
 
 void editor_center_on_cursor(editor_t *editor) {

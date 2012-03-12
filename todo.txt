@@ -38,3 +38,13 @@
 https://github.com/agl/critbit
 
 
+new heuristic from acme:
+
+* find the biggest window in activecol (bigw)
+* find the window with the most empty space in activecol (emptyw)
+* (both searches are biased towards the bottom of the column other things being equal)
+* with el = empty space in emptyw:
+  if (el > 15 || (el > 3 && (el > (size(bigw) -1)/2))) use emptyw
+* if activecol == column of the current window, and the current window is at least 2/3 of size(bigw) replace bigw with the current window
+* use bigw by splitting it by 2
+
