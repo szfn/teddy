@@ -180,3 +180,10 @@ void utf32_to_utf8(uint32_t code, char **r, int *cap, int *allocated) {
 
 	return;
 }
+
+bool inside_allocation(double x, double y, GtkAllocation *allocation) {
+	return (x >= allocation->x)
+		&& (x <= allocation->x + allocation->width)
+		&& (y >= allocation->y)
+		&& (y <= allocation->y + allocation->height);
+}

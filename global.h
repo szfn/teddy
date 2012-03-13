@@ -43,5 +43,6 @@ void set_color_cfg(cairo_t *cr, int color);
 GtkWidget *frame_piece(gboolean horizontal);
 void place_frame_piece(GtkWidget *table, gboolean horizontal, int positoin, int length);
 void utf32_to_utf8(uint32_t code, char **r, int *cap, int *allocated);
+bool inside_allocation(double x, double y, GtkAllocation *allocation);
 
 #endif

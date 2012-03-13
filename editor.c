@@ -607,17 +607,14 @@ static void selection_move(editor_t *editor, double x, double y) {
 	gtk_widget_queue_draw(editor->drar);
 }
 
-static bool y_at_border(editor_t *editor, double y, GtkAllocation *allocation) {
-	//return (y > (allocation->height - editor->buffer->line_height)) || (y < editor->buffer->line_height);
-	return (y > allocation->height) || (y < 0);
-}
-
 static gboolean motion_callback(GtkWidget *widget, GdkEventMotion *event, editor_t *editor) {
 	if (editor->mouse_marking) {
 		GtkAllocation allocation;
 		gtk_widget_get_allocation(editor->drar, &allocation);
-		if (!y_at_border(editor, event->y, &allocation)) {
+		if (inside_allocation(event->x, event->y, &allocation)) {
 			selection_move(editor, event->x, event->y);
+		} else {
+			//TODO: start timeout?
 		}
 	}
 

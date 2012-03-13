@@ -425,14 +425,6 @@ editor_t *column_find_buffer_editor(column_t *column, buffer_t *buffer) {
 	return NULL;
 }
 
-static bool inside_allocation(double x, double y, GtkAllocation *allocation) {
-	return (x >= allocation->x)
-		&& (x <= allocation->x + allocation->width)
-		&& (y >= allocation->y)
-		&& (y <= allocation->y + allocation->height);
-}
-
-
 editor_t *column_get_editor_from_position(column_t *column, double x, double y, bool *ontag) {
 	int i;
 	for (i = 0; i < column->editors_allocated; ++i) {
