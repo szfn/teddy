@@ -20,6 +20,8 @@
 #include "wordcompl.h"
 #include "lexy.h"
 
+static GtkTargetEntry selection_clipboard_target_entry = { "UTF8_STRING", 0, 0 };
+
 void set_label_text(editor_t *editor) {
 	char *labeltxt;
 
@@ -113,6 +115,24 @@ static void copy_selection_to_clipboard(editor_t *editor, GtkClipboard *clipboar
 	free(r);
 }
 
+static void editor_get_primary_selection(GtkClipboard *clipboard, GtkSelectionData *selection_data, guint info, editor_t *editor) {
+	lpoint_t start, end;
+	char *r = NULL;
+
+	if (editor->buffer->mark_transient) return;
+
+	buffer_get_selection(editor->buffer, &start, &end);
+
+	if (start.line == NULL) return;
+	if (end.line == NULL) return;
+
+	r  = buffer_lines_to_text(editor->buffer, &start, &end);
+
+	gtk_selection_data_set_text(selection_data, r, -1);
+
+	free(r);
+}
+
 void editor_complete_move(editor_t *editor, gboolean should_move_origin) {
 	wordcompl_stop();
 	gtk_widget_queue_draw(editor->drar);
@@ -127,7 +147,9 @@ void editor_complete_move(editor_t *editor, gboolean should_move_origin) {
 
 	lexy_update_for_move(editor->buffer, editor->buffer->cursor.line);
 
-	copy_selection_to_clipboard(editor, selection_clipboard);
+	if (!editor->buffer->mark_transient && (editor->buffer->mark.line != NULL)) {
+		gtk_clipboard_set_with_data(selection_clipboard, &selection_clipboard_target_entry, 1, (GtkClipboardGetFunc)editor_get_primary_selection, NULL, editor);
+	}
 }
 
 void editor_move_cursor(editor_t *editor, int delta_line, int delta_char, enum MoveCursorSpecial special, gboolean should_move_origin) {
@@ -271,6 +293,9 @@ void editor_mark_action(editor_t *editor) {
 	if (editor->buffer->mark.line == NULL) {
 		buffer_set_mark_at_cursor(editor->buffer);
 	} else {
+		if (!editor->buffer->mark_transient && (editor->buffer->mark.line != NULL)) {
+			copy_selection_to_clipboard(editor, selection_clipboard);
+		}
 		buffer_unset_mark(editor->buffer);
 	}
 	gtk_widget_queue_draw(editor->drar);
@@ -610,7 +635,7 @@ static gboolean scroll_callback(GtkWidget *widget, GdkEventScroll *event, editor
 
 static void selection_move(editor_t *editor, double x, double y) {
 	move_cursor_to_mouse(editor, x, y);
-	copy_selection_to_clipboard(editor, selection_clipboard);
+	gtk_clipboard_set_with_data(selection_clipboard, &selection_clipboard_target_entry, 1, (GtkClipboardGetFunc)editor_get_primary_selection, NULL, editor);
 	//editor_center_on_cursor(editor);
 	editor_include_cursor(editor);
 	gtk_widget_queue_draw(editor->drar);
