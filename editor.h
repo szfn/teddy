@@ -8,6 +8,7 @@
 #include "reshandle.h"
 
 #define LOCKED_COMMAND_LINE_SIZE 256
+#define AUTOSCROLL_TIMO 250
 
 typedef struct _editor_t {
 	buffer_t *buffer;
@@ -33,6 +34,8 @@ typedef struct _editor_t {
 	gboolean ignore_next_entry_keyrelease;
 	gboolean center_on_cursor_after_next_expose;
 	gboolean warp_mouse_after_next_expose;
+
+	glong selection_scroll_timer;
 
 	struct _column_t *column;
 

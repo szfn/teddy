@@ -83,6 +83,15 @@ static void editor_include_cursor(editor_t *editor) {
 	} else if (translated_y > allocation.height) {
 		gtk_adjustment_set_value(GTK_ADJUSTMENT(editor->adjustment), gtk_adjustment_get_value(GTK_ADJUSTMENT(editor->adjustment)) + (translated_y - allocation.height));
 	}
+
+	if (editor->buffer->rendered_width > allocation.width) {
+		double translated_x = x - gtk_adjustment_get_value(GTK_ADJUSTMENT(editor->hadjustment));
+		if ((translated_x - editor->buffer->em_advance) < 0) {
+			gtk_adjustment_set_value(GTK_ADJUSTMENT(editor->hadjustment), gtk_adjustment_get_value(GTK_ADJUSTMENT(editor->hadjustment)) + (translated_x - editor->buffer->em_advance));
+		} else if (translated_x > allocation.width) {
+			gtk_adjustment_set_value(GTK_ADJUSTMENT(editor->hadjustment), gtk_adjustment_get_value(GTK_ADJUSTMENT(editor->hadjustment)) + (translated_x - allocation.width));
+		}
+	}
 }
 
 static void copy_selection_to_clipboard(editor_t *editor, GtkClipboard *clipboard) {
@@ -607,15 +616,41 @@ static void selection_move(editor_t *editor, double x, double y) {
 	gtk_widget_queue_draw(editor->drar);
 }
 
+static gboolean selection_autoscroll(editor_t *editor) {
+	gint x, y;
+	gtk_widget_get_pointer(editor->drar, &x, &y);
+	selection_move(editor, x, y);
+	return TRUE;
+}
+
+static void start_selection_scroll(editor_t *editor) {
+	if (editor->selection_scroll_timer >= 0) return;
+	editor->selection_scroll_timer = g_timeout_add(AUTOSCROLL_TIMO, (GSourceFunc)selection_autoscroll, (gpointer)editor);
+}
+
+static void end_selection_scroll(editor_t *editor) {
+	if (editor->selection_scroll_timer < 0) return;
+	g_source_remove(editor->selection_scroll_timer);
+	editor->selection_scroll_timer = -1;
+}
+
 static gboolean motion_callback(GtkWidget *widget, GdkEventMotion *event, editor_t *editor) {
 	if (editor->mouse_marking) {
 		GtkAllocation allocation;
 		gtk_widget_get_allocation(editor->drar, &allocation);
-		if (inside_allocation(event->x, event->y, &allocation)) {
+
+		gdouble x = event->x + allocation.x, y = event->y + allocation.y;
+
+		//printf("inside allocation x = %d y = %d (x = %d y = %d height = %d width = %d)\n", (int)x, (int)y, (int)allocation.x, (int)allocation.y, (int)allocation.height, (int)allocation.width);
+
+		if (inside_allocation(x, y, &allocation)) {
+			end_selection_scroll(editor);
 			selection_move(editor, event->x, event->y);
 		} else {
-			//TODO: start timeout?
+			start_selection_scroll(editor);
 		}
+	} else {
+		end_selection_scroll(editor);
 	}
 
 	// focus follows mouse
@@ -1090,6 +1125,7 @@ static gboolean editor_focusout_callback(GtkWidget *widget, GdkEventFocus *event
 	wordcompl_stop();
 	editor->cursor_visible = 0;
 	gtk_widget_queue_draw(editor->drar);
+	end_selection_scroll(editor);
 	return FALSE;
 }
 
@@ -1111,6 +1147,8 @@ editor_t *new_editor(GtkWidget *window, column_t *column, buffer_t *buffer) {
 
 	r->drar = gtk_drawing_area_new();
 	r->drarim = gtk_im_multicontext_new();
+
+	r->selection_scroll_timer = -1;
 
 	strcpy(r->locked_command_line, "");
 
