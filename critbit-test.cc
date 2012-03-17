@@ -1,7 +1,11 @@
 #include <string>
+#include <cstring>
+#include <stdlib.h>
 #include <set>
 
+extern "C" {
 #include "critbit.h"
+}
 
 using namespace std;
 
@@ -83,11 +87,30 @@ test_allprefixed() {
   critbit0_clear(&tree);
 }
 
+#include <stdio.h>
+
+static void
+test_common_suffix_for_prefix() {
+critbit0_tree tree = {0};
+
+  static const char *elems[] = {"abb_nab_vz", "abb_nab_lb", "abb_nab_ft", "abb_nab_pr", "abt_nab_lz", "abz_nab_rd", "mabb_nab_gz", NULL};
+
+  for (unsigned i = 0; elems[i]; ++i) critbit0_insert(&tree, elems[i]);
+
+  //Note: leaking memory here
+
+  if (strcmp(critbit0_common_suffix_for_prefix(&tree, "a"), "b") != 0) abort();
+  if (strcmp(critbit0_common_suffix_for_prefix(&tree, "ab"), "") != 0) abort();
+  if (strcmp(critbit0_common_suffix_for_prefix(&tree, "abb"), "_nab_") != 0) abort();
+  if (strcmp(critbit0_common_suffix_for_prefix(&tree, "abb_nab_lz"), "") != 0) abort();
+}
+
 int
 main() {
   test_contains();
   test_delete();
   test_allprefixed();
+  test_common_suffix_for_prefix();
 
   return 0;
 }

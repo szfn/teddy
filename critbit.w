@@ -35,7 +35,6 @@ domain. It can be found at {\tt http://\-github.com/\-agl/\-critbit}.
 We start with the structures used in the crit-bit tree. We'll cover the
 semantics of each of the members of these structures as need arises.
 
-@d _POSIX_C_SOURCE 200112
 @d uint8 uint8_t
 @d uint32 uint32_t
 @f critbit0_node int
@@ -591,3 +590,7 @@ call the callback and we're done.
 
 @<Deal with an external node@>=
   return handle((const char *) top, arg);
+
+@* Addenda.
+@c
+	#include "critbit.addenda.c"
