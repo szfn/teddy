@@ -1,5 +1,3 @@
-- column_remove: if editor_before doesn't exist give the remaining space to editor_after
-- fix mouse region selection
 - improve new frame heuristic
 - better autocompletion: if nothing is selected in the completion menu complete with the longest common prefix
 - splitting of columns instead of just adding at the end

@@ -219,6 +219,25 @@ editor_t *column_get_editor_before(column_t *column, editor_t *editor) {
 	return r;
 }
 
+static editor_t *column_get_editor_after(column_t *column, editor_t *editor) {
+	GList *list = gtk_container_get_children(GTK_CONTAINER(column));
+	GList *cur;
+	editor_t *r;
+
+	for (cur = list; cur != NULL; cur = cur->next) {
+		if (cur->data == editor->container) break;
+	}
+
+	if (cur == NULL) return NULL;
+	if (cur->next == NULL) return NULL;
+
+	r = editors_index_to_editor(column, editors_editor_from_table(column, cur->next->data));
+
+	g_list_free(list);
+
+	return r;
+}
+
 static editor_t *column_get_last(column_t *column) {
 	GList *list = gtk_container_get_children(GTK_CONTAINER(column));
 	GList *cur, *prev = NULL;
@@ -373,6 +392,15 @@ editor_t *column_get_last_editor(column_t *column) {
 	return r;
 }
 
+static void give_height_to_other_editor(editor_t *editor, editor_t *other_editor) {
+	GtkAllocation allocation, other_allocation;
+
+	gtk_widget_get_allocation(editor->container, &allocation);
+	gtk_widget_get_allocation(other_editor->container, &other_allocation);
+
+	gtk_widget_set_size_request(other_editor->container, -1, other_allocation.height + allocation.height);
+}
+
 editor_t *column_remove(column_t *column, editor_t *editor) {
 	int idx = editors_find_editor(column, editor);
 
@@ -383,16 +411,17 @@ editor_t *column_remove(column_t *column, editor_t *editor) {
 
 	editor->initialization_ended = 0;
 
-	editor_t *editor_before = column_get_editor_before(column, editor);
+	{
+		editor_t *editor_before = column_get_editor_before(column, editor);
 
-	if (editor_before != NULL) {
-		GtkAllocation before_allocation;
-		GtkAllocation current_allocation;
-
-		gtk_widget_get_allocation(editor->container, &current_allocation);
-		gtk_widget_get_allocation(editor_before->container, &before_allocation);
-
-		gtk_widget_set_size_request(editor_before->container, -1, before_allocation.height + current_allocation.height);
+		if (editor_before != NULL) {
+			give_height_to_other_editor(editor, editor_before);
+		} else {
+			editor_t *editor_after = column_get_editor_after(column, editor);
+			if (editor_after != NULL) {
+				give_height_to_other_editor(editor, editor_after);
+			}
+		}
 	}
 
 	if (idx != -1) {
