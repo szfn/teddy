@@ -146,10 +146,6 @@ void editor_complete_move(editor_t *editor, gboolean should_move_origin) {
 	}
 
 	lexy_update_for_move(editor->buffer, editor->buffer->cursor.line);
-
-	if (!editor->buffer->mark_transient && (editor->buffer->mark.line != NULL)) {
-		gtk_clipboard_set_with_data(selection_clipboard, &selection_clipboard_target_entry, 1, (GtkClipboardGetFunc)editor_get_primary_selection, NULL, editor);
-	}
 }
 
 void editor_move_cursor(editor_t *editor, int delta_line, int delta_char, enum MoveCursorSpecial special, gboolean should_move_origin) {
@@ -289,13 +285,24 @@ static const char *keyevent_to_string(guint keyval) {
 	}
 }
 
+static void set_primary_selection(editor_t *editor) {
+	if (!editor->buffer->mark_transient && (editor->buffer->mark.line != NULL)) {
+		gtk_clipboard_set_with_data(selection_clipboard, &selection_clipboard_target_entry, 1, (GtkClipboardGetFunc)editor_get_primary_selection, NULL, editor);
+	}
+}
+
+static void freeze_primary_selection(editor_t *editor) {
+	if (!editor->buffer->mark_transient && (editor->buffer->mark.line != NULL)) {
+		copy_selection_to_clipboard(editor, selection_clipboard);
+	}
+}
+
 void editor_mark_action(editor_t *editor) {
 	if (editor->buffer->mark.line == NULL) {
 		buffer_set_mark_at_cursor(editor->buffer);
+		set_primary_selection(editor);
 	} else {
-		if (!editor->buffer->mark_transient && (editor->buffer->mark.line != NULL)) {
-			copy_selection_to_clipboard(editor, selection_clipboard);
-		}
+		freeze_primary_selection(editor);
 		buffer_unset_mark(editor->buffer);
 	}
 	gtk_widget_queue_draw(editor->drar);
@@ -565,8 +572,10 @@ static gboolean button_press_callback(GtkWidget *widget, GdkEventButton *event, 
 
 		if (event->type == GDK_2BUTTON_PRESS) {
 			buffer_change_select_type(editor->buffer, BST_WORDS);
+			set_primary_selection(editor);
 		} else if (event->type == GDK_3BUTTON_PRESS) {
 			buffer_change_select_type(editor->buffer, BST_LINES);
+			set_primary_selection(editor);
 		}
 
 		editor_complete_move(editor, TRUE);
@@ -605,6 +614,8 @@ static gboolean button_release_callback(GtkWidget *widget, GdkEventButton *event
 		editor->buffer->mark.line = NULL;
 		editor->buffer->mark.glyph = -1;
 		gtk_widget_queue_draw(editor->drar);
+	} else {
+		freeze_primary_selection(editor);
 	}
 
 	return TRUE;
@@ -674,6 +685,8 @@ static gboolean motion_callback(GtkWidget *widget, GdkEventMotion *event, editor
 		} else {
 			start_selection_scroll(editor);
 		}
+
+		set_primary_selection(editor);
 	} else {
 		end_selection_scroll(editor);
 	}
