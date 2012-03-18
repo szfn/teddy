@@ -22,7 +22,6 @@
 #include "cfg.h"
 #include "builtin.h"
 #include "research.h"
-#include "wordcompl.h"
 #include "lexy.h"
 
 #define INITFILE ".teddy"
@@ -158,10 +157,7 @@ static void set_tcl_result_to_lpoint(Tcl_Interp *interp, lpoint_t *point) {
 	if (point->line != NULL) {
 		char *r;
 		asprintf(&r, "%d:%d", point->line->lineno+1, point->glyph+1);
-		if (!r) {
-			perror("Out of memory");
-			exit(EXIT_FAILURE);
-		}
+		alloc_assert(r);
 		Tcl_SetResult(interp, r, TCL_VOLATILE);
 		free(r);
 	} else {
@@ -925,10 +921,7 @@ static int teddy_refresh_command(ClientData client_data, Tcl_Interp *interp, int
 	}
 
 	char *path = strdup(context_editor->buffer->path);
-	if (path == NULL) {
-		perror("Out of memory");
-		exit(EXIT_FAILURE);
-	}
+	alloc_assert(path);
 
 	if (null_buffer() == context_editor->buffer) return TCL_OK;
 
@@ -1006,8 +999,6 @@ void interp_init(void) {
 
 	Tcl_CreateCommand(interp, "s", &teddy_research_command, (ClientData)NULL, NULL);
 	Tcl_CreateCommand(interp, "c", &teddy_change_command, (ClientData)NULL, NULL);
-
-	Tcl_CreateCommand(interp, "wordcompl_dump", &teddy_wordcompl_dump_command, (ClientData)NULL, NULL);
 
 	Tcl_CreateCommand(interp, "lexydef-create", &lexy_create_command, (ClientData)NULL, NULL);
 	Tcl_CreateCommand(interp, "lexydef-append", &lexy_append_command, (ClientData)NULL, NULL);

@@ -3,6 +3,8 @@
 
 #include "buffer.h"
 
+#include "compl.h"
+
 /* Moves cursor to first non-whitespace character */
 void buffer_aux_go_first_nonws(buffer_t *buffer);
 
@@ -32,5 +34,10 @@ void buffer_append(buffer_t *buffer, const char *msg, int length, int on_new_lin
 /* basic indentation manipulation functions */
 void buffer_incr_indent(buffer_t *buffer, int count);
 void buffer_decr_indent(buffer_t *buffer, int count);
+
+/* internal word autocompletion functions */
+void buffer_wordcompl_init_charset(void);
+uint16_t *buffer_wordcompl_word_at_cursor(buffer_t *buffer, size_t *prefix_len);
+void buffer_wordcompl_update(buffer_t *buffer, struct completer *c);
 
 #endif

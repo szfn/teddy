@@ -61,10 +61,7 @@ column_t *column_new(GtkWidget *window, gint spacing) {
 	column->editors_allocated = 10;
 	column->editors = malloc(sizeof(editor_t *) * column->editors_allocated);
 	column->fraction = 1.0;
-	if (!(column->editors)) {
-		perror("Out of memory");
-		exit(EXIT_FAILURE);
-	}
+	alloc_assert(column->editors);
 	for (int i = 0; i < column->editors_allocated; ++i) {
 		column->editors[i] = NULL;
 	}
@@ -176,10 +173,7 @@ static void editors_grow(column_t *column) {
 	int i;
 
 	column->editors = realloc(column->editors, sizeof(editor_t *) * column->editors_allocated * 2);
-	if (!(column->editors)) {
-		perror("Out of memory");
-		exit(EXIT_FAILURE);
-	}
+	alloc_assert(column->editors);
 	for (i = column->editors_allocated; i < column->editors_allocated * 2; ++i) {
 		column->editors[i] = NULL;
 	}

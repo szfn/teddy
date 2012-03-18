@@ -2,6 +2,7 @@
 
 #include <gdk/gdk.h>
 
+#include "global.h"
 #include "cfg.h"
 
 FT_Library library;
@@ -153,11 +154,7 @@ static void fontset_init(const char *fontfile, teddy_fontset_t *fontset) {
 	}
 
 	FcCharSet *accumulator = FcCharSetCreate();
-
-	if (!accumulator) {
-		perror("Out of memory");
-		exit(EXIT_FAILURE);
-	}
+	alloc_assert(accumulator);
 
 	int acc_count = 0;
 
@@ -212,5 +209,5 @@ void teddy_font_real_init(void) {
 void teddy_font_real_free(void) {
 	teddy_font_free(&posbox_font);
 	fontset_free(&variable_main_fonts);
-	fontset_free(&monospace_main_fonts);	
+	fontset_free(&monospace_main_fonts);
 }

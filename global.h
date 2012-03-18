@@ -6,6 +6,7 @@
 #include "columns.h"
 #include "buffer.h"
 #include "history.h"
+#include "compl.h"
 
 #include <gtk/gtk.h>
 #include <ft2build.h>
@@ -35,6 +36,8 @@ extern int focus_can_follow_mouse;
 extern history_t *search_history;
 extern history_t *command_history;
 
+struct completer word_completer;
+
 void global_init();
 char *unrealpath(char *absolute_path, const char *relative_path);
 gboolean streq(gconstpointer a, gconstpointer b);
@@ -42,7 +45,13 @@ gboolean streq(gconstpointer a, gconstpointer b);
 void set_color_cfg(cairo_t *cr, int color);
 GtkWidget *frame_piece(gboolean horizontal);
 void place_frame_piece(GtkWidget *table, gboolean horizontal, int positoin, int length);
-void utf32_to_utf8(uint32_t code, char **r, int *cap, int *allocated);
 bool inside_allocation(double x, double y, GtkAllocation *allocation);
+
+void utf32_to_utf8(uint32_t code, char **r, int *cap, int *allocated);
+char *string_utf16_to_utf8(uint16_t *origin, size_t origin_len);
+uint32_t utf8_to_utf32(const char *text, int *src, int len, bool *valid);
+void utf8_remove_truncated_characters_at_end(char *text);
+
+void alloc_assert(void *p);
 
 #endif

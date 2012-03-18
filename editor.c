@@ -17,7 +17,6 @@
 #include "go.h"
 #include "editor_cmdline.h"
 #include "cfg.h"
-#include "wordcompl.h"
 #include "lexy.h"
 
 static GtkTargetEntry selection_clipboard_target_entry = { "UTF8_STRING", 0, 0 };
@@ -44,12 +43,67 @@ void set_label_text(editor_t *editor) {
 	free(labeltxt);
 }
 
+static void editor_absolute_cursor_position(editor_t *editor, double *x, double *y) {
+	buffer_cursor_position(editor->buffer, x, y);
+	*y -= gtk_adjustment_get_value(GTK_ADJUSTMENT(editor->adjustment));
+
+	//printf("x = %g y = %g\n", x, y);
+
+	GtkAllocation allocation;
+	gtk_widget_get_allocation(editor->drar, &allocation);
+	*x += allocation.x; *y += allocation.y;
+
+	gint wpos_x, wpos_y;
+	gdk_window_get_position(gtk_widget_get_window(editor->window), &wpos_x, &wpos_y);
+	*x += wpos_x; *y += wpos_y;
+}
+
+static bool editor_maybe_show_completions(editor_t *editor, bool autoinsert) {
+	size_t wordcompl_prefix_len;
+	uint16_t *prefix = buffer_wordcompl_word_at_cursor(editor->buffer, &wordcompl_prefix_len);
+
+	if (wordcompl_prefix_len == 0) return false;
+
+	bool r = false;
+
+	char *utf8prefix = string_utf16_to_utf8(prefix, wordcompl_prefix_len);
+	char *completion = compl_complete(&word_completer, utf8prefix);
+
+	if (completion != NULL) {
+		bool empty_completion = strcmp(completion, "") == 0;
+
+		if (autoinsert && !empty_completion) editor_replace_selection(editor, completion);
+		double x, y;
+		editor_absolute_cursor_position(editor, &x, &y);
+
+		if (empty_completion) {
+			compl_wnd_show(&word_completer, utf8prefix, x, y, editor->window);
+		} else {
+			char *new_prefix;
+			asprintf(&new_prefix, "%s%s", utf8prefix, completion);
+			alloc_assert(new_prefix);
+			compl_wnd_show(&word_completer, new_prefix, x, y, editor->window);
+			free(new_prefix);
+		}
+		free(completion);
+		r = true;
+	}
+	free(prefix);
+	free(utf8prefix);
+
+	return r;
+}
+
 void editor_replace_selection(editor_t *editor, const char *new_text) {
 	buffer_replace_selection(editor->buffer, new_text);
 	columnset->active_column = editor->column;
 	set_label_text(editor);
 	editor_center_on_cursor(editor);
 	gtk_widget_queue_draw(editor->drar);
+
+	if (compl_wnd_visible(&word_completer)) {
+		editor_maybe_show_completions(editor, false);
+	}
 }
 
 void editor_center_on_cursor(editor_t *editor) {
@@ -134,7 +188,7 @@ static void editor_get_primary_selection(GtkClipboard *clipboard, GtkSelectionDa
 }
 
 void editor_complete_move(editor_t *editor, gboolean should_move_origin) {
-	wordcompl_stop();
+	compl_wnd_hide(&word_completer);
 	gtk_widget_queue_draw(editor->drar);
 
 	editor->cursor_visible = TRUE;
@@ -381,6 +435,7 @@ static gboolean key_press_callback(GtkWidget *widget, GdkEventKey *event, editor
 		printf("Keyprocessor invocation\n");
 		full_keyevent_to_string(event->keyval, super, ctrl, alt, shift, pressed);
 		if (pressed[0] != '\0') {
+			compl_wnd_hide(&word_completer);
 			const char *eval_argv[] = { editor->buffer->keyprocessor, pressed };
 			const char *r = interp_eval_command(2, eval_argv);
 
@@ -413,22 +468,27 @@ static gboolean key_press_callback(GtkWidget *widget, GdkEventKey *event, editor
 
 	/* Default key bindings */
 	if (!shift && !ctrl && !alt && !super) {
-		if (wordcompl_iscompleting()) {
+		if (compl_wnd_visible(&word_completer)) {
 			switch(event->keyval) {
 				case GDK_KEY_Up:
-					wordcompl_up();
+					compl_wnd_up(&word_completer);
 					return TRUE;
 				case GDK_KEY_Down:
-					wordcompl_down();
+				case GDK_KEY_Tab:
+					compl_wnd_down(&word_completer);
 					return TRUE;
 				case GDK_KEY_Escape:
+				case GDK_KEY_Left:
 					return FALSE;
 				case GDK_KEY_Return:
-				case GDK_KEY_Tab:
-					wordcompl_complete_finish(editor);
+				case GDK_KEY_Right: {
+					char *completion = compl_wnd_get(&word_completer);
+					compl_wnd_hide(&word_completer);
+					if (completion != NULL) {
+						editor_replace_selection(editor, completion);
+					}
 					return TRUE;
-				default:
-					wordcompl_stop();
+				}
 			}
 		}
 
@@ -462,11 +522,13 @@ static gboolean key_press_callback(GtkWidget *widget, GdkEventKey *event, editor
 			editor_move_cursor(editor, 0, 0, MOVE_LINE_END, TRUE);
 			return TRUE;
 
-		case GDK_KEY_Tab:
-			if (!wordcompl_complete(editor)) {
+		case GDK_KEY_Tab: {
+			if (!editor_maybe_show_completions(editor, true)) {
 				editor_replace_selection(editor, "\t");
 			}
+
 			return TRUE;
+		}
 
 		case GDK_KEY_Return: {
 			char *r = alloca(sizeof(char) * (editor->buffer->cursor.line->cap + 2));
@@ -496,6 +558,8 @@ static gboolean key_press_callback(GtkWidget *widget, GdkEventKey *event, editor
 			goto im_context;
 		}
 	}
+
+	compl_wnd_hide(&word_completer);
 
 	if (strcmp(pressed, "") == 0) {
 		full_keyevent_to_string(event->keyval, super, ctrl, alt, shift, pressed);
@@ -532,8 +596,8 @@ static gboolean key_release_callback(GtkWidget *widget, GdkEventKey *event, edit
 	if (!shift && !ctrl && !alt && !super) {
 		switch(event->keyval) {
 		case GDK_KEY_Escape:
-			if (wordcompl_iscompleting()) {
-				wordcompl_stop();
+			if (compl_wnd_visible(&word_completer)) {
+				compl_wnd_hide(&word_completer);
 			} else {
 				gtk_widget_grab_focus(editor->entry);
 			}
@@ -773,10 +837,7 @@ static struct growable_glyph_array *growable_glyph_array_init(void) {
 	gga->n = 0;
 	gga->kind = 0;
 	gga->glyphs = malloc(sizeof(cairo_glyph_t) * gga->allocated);
-	if (!(gga->glyphs)) {
-		perror("Out of memory");
-		exit(EXIT_FAILURE);
-	}
+	alloc_assert(gga->glyphs);
 	return gga;
 }
 
@@ -801,7 +862,7 @@ static void draw_line(editor_t *editor, GtkAllocation *allocation, cairo_t *cr, 
 	double cury = line->start_y;
 
 	for (int i = 0; i < line->cap; ++i) {
-		// draws soft wrapping indicators
+		// draws soft wrvoid compl_wnd_hide(struct completer capping indicators
 		if (line->glyph_info[i].y - cury > 0.001) {
 			/* draw ending tract */
 			cairo_set_line_width(cr, 4.0);
@@ -1160,7 +1221,7 @@ static gboolean editor_focusin_callback(GtkWidget *widget, GdkEventFocus *event,
 }
 
 static gboolean editor_focusout_callback(GtkWidget *widget, GdkEventFocus *event, editor_t *editor) {
-	wordcompl_stop();
+	compl_wnd_hide(&word_completer);
 	editor->cursor_visible = 0;
 	gtk_widget_queue_draw(editor->drar);
 	end_selection_scroll(editor);

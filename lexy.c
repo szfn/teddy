@@ -7,6 +7,7 @@
 
 #include <tre/tre.h>
 
+#include "global.h"
 #include "interp.h"
 #include "treint.h"
 
@@ -124,10 +125,7 @@ int lexy_create_command(ClientData client_data, Tcl_Interp *interp, int argc, co
 	} else {
 		//printf("created tokenizer: %s\n", name);
 		lexy_tokenizers[i].tokenizer_name = strdup(name);
-		if (!(lexy_tokenizers[i].tokenizer_name)) {
-			perror("Out of memory");
-			exit(EXIT_FAILURE);
-		}
+		alloc_assert(lexy_tokenizers[i].tokenizer_name);
 		return TCL_OK;
 	}
 }
@@ -168,10 +166,7 @@ static int create_new_state(struct lexy_tokenizer *tokenizer, const char *state_
 				return -1;
 			}
 			tokenizer->status_pointers[i].status_name = strdup(state_name);
-			if (!(tokenizer->status_pointers[i].status_name)) {
-				perror("Out of memory");
-				exit(EXIT_FAILURE);
-			}
+			alloc_assert(tokenizer->status_pointers[i].status_name);
 			tokenizer->status_pointers[i].index = next_row_block;
 			return i;
 		} else {
@@ -254,10 +249,7 @@ int lexy_append_command(ClientData client_data, Tcl_Interp *interp, int argc, co
 	}
 
 	char *fixed_pattern = malloc(sizeof(char) * (strlen(pattern) + strlen("^(?:)") + 1));
-	if (!fixed_pattern) {
-		perror("Out of memory");
-		exit(EXIT_FAILURE);
-	}
+	alloc_assert(fixed_pattern);
 	strcpy(fixed_pattern, "^(?:");
 	strcat(fixed_pattern, pattern);
 	strcat(fixed_pattern, ")");
@@ -270,10 +262,7 @@ int lexy_append_command(ClientData client_data, Tcl_Interp *interp, int argc, co
 		tre_regerror(r, &compiled_pattern, buf, REGERROR_BUF_SIZE);
 		char *msg;
 		asprintf(&msg, "Syntax error in regular expression [%s]: %s\n", fixed_pattern, buf);
-		if (msg == NULL) {
-			perror("Out of memory");
-			exit(EXIT_FAILURE);
-		}
+		alloc_assert(msg);
 		Tcl_AddErrorInfo(interp, msg);
 		free(msg);
 		return TCL_ERROR;

@@ -108,10 +108,7 @@ void cmdcompl_rehash(void) {
 						asprintf(&d_name_copy, "%s", den->d_name);                        if (external_commands_cap >= external_commands_allocated) {
 							external_commands_allocated *= 2;
 							list_external_commands = realloc(list_external_commands, sizeof(char *) * external_commands_allocated);
-							if (list_external_commands == NULL) {
-								perror("Out of memory");
-								exit(EXIT_FAILURE);
-							}
+							alloc_assert(list_external_commands);
 						}
 						list_external_commands[external_commands_cap++] = d_name_copy;
 					}
@@ -160,10 +157,7 @@ void cmdcompl_init(void) {
 	external_commands_cap = 0;
 	external_commands_allocated = 10;
 	list_external_commands = malloc(external_commands_allocated * sizeof(char *));
-	if (list_external_commands == NULL) {
-		perror("Out of memory");
-		exit(EXIT_FAILURE);
-	}
+	alloc_assert(list_external_commands);
 
 	num_found_completions = 0;
 	found_completions_is_incomplete = 0;
@@ -247,10 +241,7 @@ static void cmdcompl_reset(void) {
 
 static void cmdcompl_update_last_request(const char *text, int length) {
 	last_complete_request = malloc(sizeof(char) * (length+1));
-	if (!last_complete_request) {
-		perror("Out of memory");
-		exit(EXIT_FAILURE);
-	}
+	alloc_assert(last_complete_request);
 	strncpy(last_complete_request, text, length);
 	last_complete_request[length] = '\0';
 }
@@ -413,7 +404,7 @@ int cmdcompl_complete(const char *text, int length, char *working_directory) {
 	}
 
 	//printf("\n\n");
-	
+
 	return num_found_completions;
 }
 
@@ -501,7 +492,7 @@ char *cmdcompl_get_completion(const char *text, int *point) {
 	{
 		GtkTreePath *focus_path;
 		GtkTreeIter iter;
-		
+
 		gtk_tree_view_get_cursor(GTK_TREE_VIEW(completions_tree), &focus_path, NULL);
 		if (focus_path == NULL) {
 			gboolean valid = gtk_tree_model_get_iter_first(GTK_TREE_MODEL(completions_list), &iter);
@@ -511,9 +502,9 @@ char *cmdcompl_get_completion(const char *text, int *point) {
 		} else {
 			gtk_tree_model_get_iter(GTK_TREE_MODEL(completions_list), &iter, focus_path);
 		}
-		
+
 		gtk_tree_model_get_value(GTK_TREE_MODEL(completions_list), &iter, 0, &value);
-		
+
 		pick = g_value_get_string(&value);
 
 		if (focus_path != NULL) {
@@ -526,10 +517,7 @@ char *cmdcompl_get_completion(const char *text, int *point) {
 	compl = pick + strlen(last_complete_request);
 
 	r = malloc(sizeof(char) * (strlen(text) + strlen(compl) + 1));
-	if (!r) {
-		perror("Out of memory");
-		exit(EXIT_FAILURE);
-	}
+	alloc_assert(r);
 	strncpy(r, text, *point);
 	strcpy(r+(*point), compl);
 	strcat(r, text+(*point));
@@ -537,8 +525,8 @@ char *cmdcompl_get_completion(const char *text, int *point) {
 	//printf("Completed: [%s]\n", r);
 
 	*point += strlen(compl);
-	
+
 	g_value_unset(&value);
-	
+
 	return r;
 }

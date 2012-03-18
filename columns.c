@@ -51,10 +51,7 @@ columns_t *the_columns_new(GtkWidget *window) {
 	columns->active_column = NULL;
 	columns->columns_allocated = 5;
 	columns->columns = malloc(columns->columns_allocated * sizeof(column_t *));
-	if (!columns->columns) {
-		perror("Out of memory");
-		exit(EXIT_FAILURE);
-	}
+	alloc_assert(columns->columns);
 	for (int i = 0; i < columns->columns_allocated; ++i) {
 		columns->columns[i] = NULL;
 	}
@@ -123,10 +120,7 @@ static void gtk_columns_size_allocate(GtkWidget *widget, GtkAllocation *allocati
 
 static void columns_grow(columns_t *columns) {
 	columns->columns = realloc(columns->columns, columns->columns_allocated * 2 * sizeof(column_t *));
-	if (!(columns->columns)) {
-		perror("Out of memory");
-		exit(EXIT_FAILURE);
-	}
+	alloc_assert(columns->columns);
 
 	for(int i = columns->columns_allocated; i < columns->columns_allocated * 2; ++i) {
 		columns->columns[i] = NULL;

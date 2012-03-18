@@ -432,7 +432,6 @@ static bool mouse_open_select_like_file(editor_t *editor, lpoint_t *cursor, lpoi
 }
 
 void mouse_open_action(editor_t *editor, lpoint_t *start, lpoint_t *end) {
-	bool auto_selection = false;
 	lpoint_t changed_end;
 	lpoint_t cursor;
 
@@ -444,7 +443,6 @@ void mouse_open_action(editor_t *editor, lpoint_t *start, lpoint_t *end) {
 
 	if (end == NULL) {
 		end = &changed_end;
-		auto_selection = true;
 		if (!mouse_open_select_like_file(editor, &cursor, start, end)) return;
 	}
 
@@ -482,10 +480,7 @@ void mouse_open_action(editor_t *editor, lpoint_t *start, lpoint_t *end) {
 	}
 
 	char *go_arg = strdup(Tcl_GetStringResult(interp));
-	if (go_arg == NULL) {
-		perror("Out of memory");
-		exit(EXIT_FAILURE);
-	}
+	alloc_assert(go_arg);
 
 	enum go_file_failure_reason gffr;
 	if (!exec_go(go_arg, -1, &gffr)) {
@@ -497,10 +492,7 @@ void mouse_open_action(editor_t *editor, lpoint_t *start, lpoint_t *end) {
 			// we should just copy it in the command line
 
 			char *ex = malloc(sizeof(char) * (strlen(go_arg) + 4));
-			if (ex == NULL) {
-				perror("Out of memory");
-				exit(EXIT_FAILURE);
-			}
+			alloc_assert(ex);
 
 			strcpy(ex, " {");
 			strcat(ex, go_arg);

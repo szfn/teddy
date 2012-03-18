@@ -180,10 +180,7 @@ static char *automatic_search_and_replace(char *text, regex_t *re, const char *s
 		while (strlen(r) + 1 + ovector[0].rm_so + strlen(subst) >= allocation) {
 			allocation *= 2;
 			r = realloc(r, allocation * sizeof(char));
-			if (r == NULL) {
-				perror("Out of memory");
-				exit(EXIT_FAILURE);
-			}
+			alloc_assert(r);
 		}
 
 		strncat(r, text+start, ovector[0].rm_so);
@@ -194,10 +191,7 @@ static char *automatic_search_and_replace(char *text, regex_t *re, const char *s
 	while (strlen(r) + 1 + strlen(text+start) >= allocation) {
 		allocation *= 2;
 		r = realloc(r, allocation * sizeof(char));
-		if (r == NULL) {
-			perror("Out of memory");
-			exit(EXIT_FAILURE);
-		}
+		alloc_assert(r);
 	}
 	strcat(r, text+start);
 
@@ -213,10 +207,7 @@ static void start_regexp_search(editor_t *editor, const char *regexp, const char
 		tre_regerror(r, &research_regexp, buf, REGERROR_BUF_SIZE);
 		char *msg;
 		asprintf(&msg, "Sytanx error in regular expression [%s]: %s\n", regexp, buf);
-		if (msg == NULL) {
-			perror("Out of memory");
-			exit(EXIT_FAILURE);
-		}
+		alloc_assert(msg);
 		quick_message(editor,"Regex Syntax Error", msg);
 		free(msg);
 		return;

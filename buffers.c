@@ -176,19 +176,12 @@ int buffers_close(buffer_t *buffer, GtkWidget *window) {
 void buffers_init(void) {
 	process_buffers_counter = 0;
 
-	{
-		int i;
-		buffers_allocated = 10;
-		buffers = malloc(sizeof(buffer_t *) * buffers_allocated);
+	buffers_allocated = 10;
+	buffers = malloc(sizeof(buffer_t *) * buffers_allocated);
+	alloc_assert(buffers);
 
-		for (i = 0; i < buffers_allocated; ++i) {
-			buffers[i] = NULL;
-		}
-
-		if (!buffers) {
-			perror("Out of memory");
-			exit(EXIT_FAILURE);
-		}
+	for (int i = 0; i < buffers_allocated; ++i) {
+		buffers[i] = NULL;
 	}
 
 	buffers[0] = buffer_create();
@@ -245,10 +238,7 @@ void buffers_init(void) {
 static void buffers_grow() {
 	int i;
 	buffers = realloc(buffers, sizeof(buffer_t *) * buffers_allocated * 2);
-	if (!buffers) {
-		perror("Out of memory");
-		exit(EXIT_FAILURE);
-	}
+	alloc_assert(buffers);
 	for (i = buffers_allocated; i < buffers_allocated * 2; ++i) {
 		buffers[i] = NULL;
 	}
@@ -283,10 +273,7 @@ void buffers_add(buffer_t *b) {
 
 			if (strcmp(namename, "/") == 0) {
 				char *nsn = strdup(b->name);
-				if (nsn == NULL) {
-					perror("Out of memory");
-					exit(EXIT_FAILURE);
-				}
+				alloc_assert(nsn);
 				nsn[strlen(nsn)-1] = '\0';
 				namename = strrchr(nsn, '/');
 				if ((namename == NULL) || (*namename == '\0')) namename = nsn;
@@ -486,11 +473,8 @@ int teddy_buffer_command(ClientData client_data, Tcl_Interp *interp, int argc, c
 		const char *bufferid = argv[2];
 		char *propname = strdup(argv[3]);
 		char *propvalue = strdup(argv[4]);
-
-		if ((propvalue == NULL) || (propname == NULL)) {
-			perror("Out of memory");
-			exit(EXIT_FAILURE);
-		}
+		alloc_assert(propvalue);
+		alloc_assert(propname);
 
 		buffer_t *buffer = buffer_id_to_buffer(bufferid);
 
@@ -502,11 +486,7 @@ int teddy_buffer_command(ClientData client_data, Tcl_Interp *interp, int argc, c
 		g_hash_table_insert(buffer->props, propname, propvalue);
 	} else if (strcmp(argv[1], "ls") == 0) {
 		Tcl_Obj **retval = malloc(sizeof(Tcl_Obj *) * buffers_allocated);
-
-		if (!retval) {
-			perror("Out of memory");
-			exit(EXIT_FAILURE);
-		}
+		alloc_assert(retval);
 
 		int cap = 0;
 		for (int i = 0; i < buffers_allocated; ++i) {

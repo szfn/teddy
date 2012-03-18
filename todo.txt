@@ -1,19 +1,20 @@
-- improve new frame heuristic
 - better autocompletion: if nothing is selected in the completion menu complete with the longest common prefix
+
+- dirrec exclude binary files
+- bugfix: history search doesn't work anymore (gtk exceptions are thrown)
+- improve new frame heuristic
 - splitting of columns instead of just adding at the end
 - tutorial
 
 - comment region command
 - refresh all buffers
 - replace tcl regex engine with TRE
-- interface tabs
 - TAGS files
 - macros
 - gdb integration
 - debugger integration (just displaying currently executed line)
 - selection should copy selected text on past not on selection, for better efficiency (selection slowdown is noticeable on mouse selection)
 - extend regular expressions in 's' to be lexically aware
-- disable selection when another application becomes the owner of the primary selection buffer
 - word movement, word selection and tokenization should be tied to syntax analysis
 - change perror to show error windows
 - implement | command that filters selected content through external command
@@ -35,8 +36,6 @@
 - clang syntax highlighting
 - elastic tabs
 - resizing with reshandle will resize more editors if one isn't enough to bring the reshandle where it should be
-
-https://github.com/agl/critbit
 
 
 new heuristic from acme:

@@ -10,7 +10,6 @@
 #include "cfg.h"
 #include "columns.h"
 #include "baux.h"
-#include "wordcompl.h"
 #include "lexy.h"
 #include "rd.h"
 #include "interp.h"
@@ -419,11 +418,7 @@ void freeze_selection(buffer_t *buffer, selection_t *selection, lpoint_t *start,
 		freeze_point(&(selection->start), &(buffer->cursor));
 		freeze_point(&(selection->end), &(buffer->cursor));
 		selection->text = malloc(sizeof(char));
-
-		if (selection->text == NULL) {
-			perror("Out of memory");
-			exit(EXIT_FAILURE);
-		}
+		alloc_assert(selection->text);
 
 		selection->text[0] = '\0';
 	} else {
@@ -608,61 +603,6 @@ void buffer_undo(buffer_t *buffer) {
 	}
 }
 
-static char first_byte_result_to_mask[] = { 0xff, 0x3f, 0x1f, 0x0f, 0x00, 0x00, 0x00, 0x00, 0x00 };
-
-static uint8_t utf8_first_byte_processing(uint8_t ch) {
-	if (ch <= 127) return 0;
-
-	if ((ch & 0xF0) == 0xF0) {
-		if ((ch & 0x08) == 0x00) return 3;
-		else return 8; // invalid sequence
-	}
-
-	if ((ch & 0xE0) == 0xE0) return 2;
-	if ((ch & 0xC0) == 0xC0) return 1;
-	if ((ch & 0x80) == 0x80) return 8; // invalid sequence
-
-	return 8; // invalid sequence
-}
-
-uint32_t utf8_to_utf32(const char *text, int *src, int len, bool *valid) {
-	uint32_t code;
-	*valid = true;
-
-	/* get next unicode codepoint in code, advance src */
-	if ((uint8_t)text[*src] > 127) {
-		uint8_t tail_size = utf8_first_byte_processing(text[*src]);
-
-		if (tail_size >= 8) {
-			code = (uint8_t)text[*src];
-			++(*src);
-			*valid = false;
-			return code;
-		}
-
-		code = ((uint8_t)text[*src]) & first_byte_result_to_mask[tail_size];
-		++(*src);
-
-		/*printf("   Next char: %02x (%02x)\n", (uint8_t)text[src], (uint8_t)text[src] & 0xC0);*/
-
-		int i = 0;
-		for (; (((uint8_t)text[*src] & 0xC0) == 0x80) && (*src < len); ++(*src)) {
-			code <<= 6;
-			code += (text[*src] & 0x3F);
-			++i;
-		}
-
-		if (i != tail_size) {
-			*valid = false;
-		}
-	} else {
-		code = text[*src];
-		++(*src);
-	}
-
-	return code;
-}
-
 void load_empty(buffer_t *buffer) {
 	if (buffer->has_filename) {
 		return;
@@ -698,16 +638,12 @@ char *buffer_ppp(buffer_t *buffer, bool include_filename, int reqlen, bool alway
 	}
 
 	char *compr = malloc(sizeof(char) * (strlen(source) + 1));
-	if (compr == NULL) {
-		perror("Out of memory");
-		exit(EXIT_FAILURE);
-	}
+	alloc_assert(compr);
 
 	if (!always_home && (strlen(source) < reqlen)) {
 		strcpy(compr, source);
 		return compr;
 	}
-
 
 	int i = 0, j = 0;
 
@@ -869,7 +805,7 @@ int load_text_file(buffer_t *buffer, const char *filename) {
 
 	fclose(fin);
 
-	wordcompl_update(buffer);
+	buffer_wordcompl_update(buffer, &word_completer);
 	lexy_update_starting_at(buffer, buffer->real_line, false);
 
 	if (valid_chars + invalid_chars > 100) {
@@ -921,13 +857,7 @@ char *buffer_lines_to_text(buffer_t *buffer, lpoint_t *startp, lpoint_t *endp) {
 
 
 		if (line == endp->line) break;
-		else {
-			if (cap >= allocated) {
-				allocated *= 2;
-				r = realloc(r, sizeof(char)*allocated);
-			}
-			r[cap++] = '\n';
-		}
+		else utf32_to_utf8((uint32_t)'\n', &r, &cap, &allocated);
 	}
 
 	if (cap >= allocated) {
@@ -973,7 +903,7 @@ void save_to_text_file(buffer_t *buffer) {
 	}
 
 	buffer_spaceman_on_save(buffer);
-	wordcompl_update(buffer);
+	buffer_wordcompl_update(buffer, &word_completer);
 
 	char *r; {
 		lpoint_t startp = { buffer->real_line, 0 };

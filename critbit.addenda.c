@@ -25,5 +25,7 @@ char *critbit0_common_suffix_for_prefix(critbit0_tree *t, const char *u) {
 
 	if (first_differing_byte < 0) return strdup("");
 
+	if (strncmp((const char *)p, u, ulen) != 0) return NULL;
+
 	return strndup(((const char *)p)+ulen, first_differing_byte-ulen);
 }

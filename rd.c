@@ -27,10 +27,7 @@ struct entries {
 static void entry_init(struct entries *es, size_t initial_allocation) {
 	es->allocated = initial_allocation;
 	es->v = malloc(sizeof(struct entry) * initial_allocation);
-	if (es->v == NULL) {
-		perror("Out of memory");
-		exit(EXIT_FAILURE);
-	}
+	alloc_assert(es->v);
 	es->cur = 0;
 }
 
@@ -45,17 +42,11 @@ static void entry_append(struct entries *es, const char *name, ino_t inode, unsi
 	if (es->cur >= es->allocated) {
 		es->allocated *= 2;
 		es->v = realloc(es->v, sizeof(struct entry) * es->allocated);
-		if (es->v == NULL) {
-			perror("Out of memory");
-			exit(EXIT_FAILURE);
-		}
+		alloc_assert(es->v);
 	}
 
 	es->v[es->cur].name = strdup(name);
-	if (es->v[es->cur].name == NULL) {
-		perror("Out of memory");
-		exit(EXIT_FAILURE);
-	}
+	alloc_assert(es->v[es->cur].name);
 	es->v[es->cur].inode = inode;
 	es->v[es->cur].type = d_type;
 	++(es->cur);

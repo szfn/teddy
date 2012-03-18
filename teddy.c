@@ -13,9 +13,9 @@
 #include "colors.h"
 #include "cfg.h"
 #include "research.h"
-#include "wordcompl.h"
 #include "lexy.h"
 #include "rd.h"
+#include "baux.h"
 
 static gboolean delete_callback(GtkWidget *widget, GdkEvent *event, gpointer data) {
 	//TODO: terminate all processes
@@ -39,6 +39,10 @@ int main(int argc, char *argv[]) {
 	init_colors();
 
 	cmdcompl_init();
+
+	buffer_wordcompl_init_charset();
+	compl_init(&word_completer);
+
 	lexy_init();
 	interp_init();
 
@@ -48,7 +52,6 @@ int main(int argc, char *argv[]) {
 
 	jobs_init();
 	buffers_init();
-	wordcompl_init();
 
 	enum go_file_failure_reason gffr;
 	for (i = 1; i < argc; ++i) {

@@ -5,6 +5,9 @@
 #include "global.h"
 #include "cfg.h"
 
+#define WORDCOMPL_UPDATE_RADIUS 250
+#define MINIMUM_WORDCOMPL_WORD_LEN 3
+
 void buffer_aux_go_first_nonws_or_0(buffer_t *buffer) {
 	int old_cursor_glyph = buffer->cursor.glyph;
 	buffer_aux_go_first_nonws(buffer);
@@ -134,3 +137,85 @@ void buffer_append(buffer_t *buffer, const char *msg, int length, int on_new_lin
 	free(text);
 }
 
+bool wordcompl_charset[0x10000];
+
+void buffer_wordcompl_init_charset(void) {
+	for (uint32_t i = 0; i < 0x10000; ++i) {
+		if (u_isalnum(i)) {
+			wordcompl_charset[i] = true;
+		} else if (i == 0x5f) { // underscore
+			wordcompl_charset[i] = true;
+		} else {
+			wordcompl_charset[i] = false;
+		}
+	}
+}
+
+uint16_t *buffer_wordcompl_word_at_cursor(buffer_t *buffer, size_t *prefix_len) {
+	*prefix_len = 0;
+
+	if (buffer->cursor.line == NULL) return NULL;
+
+	int start;
+	for (start = buffer->cursor.glyph-1; start >= 0; --start) {
+		uint32_t code = buffer->cursor.line->glyph_info[start].code;
+		if ((code >= 0x10000) || (!wordcompl_charset[code])) { break; }
+	}
+
+	++start;
+
+	if (start ==  buffer->cursor.glyph) return NULL;
+
+	*prefix_len = buffer->cursor.glyph - start;
+	uint16_t *prefix = malloc(sizeof(uint16_t) * *prefix_len);
+	alloc_assert(prefix);
+
+	for (int i = 0; i < *prefix_len; ++i) prefix[i] = buffer->cursor.line->glyph_info[start+i].code;
+
+	return prefix;
+}
+
+static void buffer_wordcompl_update_line(real_line_t *line, struct completer *c) {
+	int start = -1;
+	for (int i = 0; i < line->cap; ++i) {
+		if (start < 0) {
+			if (line->glyph_info[i].code > 0x10000) continue;
+			if (wordcompl_charset[line->glyph_info[i].code]) start = i;
+		} else {
+			if ((line->glyph_info[i].code >= 0x10000) || !wordcompl_charset[line->glyph_info[i].code]) {
+				if (i - start >= MINIMUM_WORDCOMPL_WORD_LEN) {
+					int allocated = i-start, cap = 0;
+					char *r = malloc(allocated * sizeof(char));
+
+					for (int j = 0; j < i-start; ++j) {
+						utf32_to_utf8(line->glyph_info[j+start].code, &r, &cap, &allocated);
+					}
+
+					utf32_to_utf8(0, &r, &cap, &allocated);
+
+					compl_add(c, r);
+					free(r);
+				}
+				start = -1;
+			}
+		}
+	}
+}
+
+void buffer_wordcompl_update(buffer_t *buffer, struct completer *c) {
+	int count = WORDCOMPL_UPDATE_RADIUS;
+	for (real_line_t *line = buffer->cursor.line; line != NULL; line = line->prev) {
+		--count;
+		if (count <= 0) break;
+
+		buffer_wordcompl_update_line(line, c);
+	}
+
+	count = WORDCOMPL_UPDATE_RADIUS;
+	for (real_line_t *line = buffer->cursor.line->next; line != NULL; line = line->next) {
+		--count;
+		if (count <= 0) break;
+
+		buffer_wordcompl_update_line(line, c);
+	}
+}
