@@ -257,6 +257,8 @@ uint32_t utf8_to_utf32(const char *text, int *src, int len, bool *valid) {
 }
 
 void utf8_remove_truncated_characters_at_end(char *text) {
+	if (!text) return;
+
 	int src = 0, len = strlen(text);
 
 	for (; src < len; ) {

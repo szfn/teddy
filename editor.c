@@ -43,7 +43,7 @@ void set_label_text(editor_t *editor) {
 	free(labeltxt);
 }
 
-static void editor_absolute_cursor_position(editor_t *editor, double *x, double *y) {
+static void editor_absolute_cursor_position(editor_t *editor, double *x, double *y, double *alty) {
 	buffer_cursor_position(editor->buffer, x, y);
 	*y -= gtk_adjustment_get_value(GTK_ADJUSTMENT(editor->adjustment));
 
@@ -56,6 +56,8 @@ static void editor_absolute_cursor_position(editor_t *editor, double *x, double 
 	gint wpos_x, wpos_y;
 	gdk_window_get_position(gtk_widget_get_window(editor->window), &wpos_x, &wpos_y);
 	*x += wpos_x; *y += wpos_y;
+
+	*alty = *y - editor->buffer->line_height;
 }
 
 static bool editor_maybe_show_completions(editor_t *editor, bool autoinsert) {
@@ -73,16 +75,16 @@ static bool editor_maybe_show_completions(editor_t *editor, bool autoinsert) {
 		bool empty_completion = strcmp(completion, "") == 0;
 
 		if (autoinsert && !empty_completion) editor_replace_selection(editor, completion);
-		double x, y;
-		editor_absolute_cursor_position(editor, &x, &y);
+		double x, y, alty;
+		editor_absolute_cursor_position(editor, &x, &y, &alty);
 
 		if (empty_completion) {
-			compl_wnd_show(&word_completer, utf8prefix, x, y, editor->window);
+			compl_wnd_show(&word_completer, utf8prefix, x, y, alty, editor->window);
 		} else {
 			char *new_prefix;
 			asprintf(&new_prefix, "%s%s", utf8prefix, completion);
 			alloc_assert(new_prefix);
-			compl_wnd_show(&word_completer, new_prefix, x, y, editor->window);
+			compl_wnd_show(&word_completer, new_prefix, x, y, alty, editor->window);
 			free(new_prefix);
 		}
 		free(completion);

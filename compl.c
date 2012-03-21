@@ -2,6 +2,35 @@
 
 #include "global.h"
 
+static gboolean compl_wnd_expose_callback(GtkWidget *widget, GdkEventExpose *event, struct completer *c) {
+	GtkAllocation allocation;
+
+	gtk_widget_get_allocation(c->window, &allocation);
+
+	gint wpos_x, wpos_y;
+	gdk_window_get_position(gtk_widget_get_window(c->window), &wpos_x, &wpos_y);
+
+	double x = wpos_x + allocation.width, y = wpos_y + allocation.height;
+
+	GdkDisplay *display = gdk_display_get_default();
+	GdkScreen *screen = gdk_display_get_default_screen(display);
+
+	gint screen_width = gdk_screen_get_width(screen);
+	gint screen_height = gdk_screen_get_height(screen);
+
+	//printf("bottom right corner (%g, %g) screen width: %d height: %d\n", x, y, screen_width, screen_height);
+
+	if (x > screen_width) {
+		gtk_window_move(GTK_WINDOW(c->window), allocation.x + screen_width - x - 5, allocation.y);
+	}
+
+	if (y > screen_height) {
+		gtk_window_move(GTK_WINDOW(c->window), allocation.x, c->alty - allocation.height);
+	}
+
+	return FALSE;
+}
+
 void compl_init(struct completer *c) {
 	c->cbt.root = NULL;
 	c->list = gtk_list_store_new(1, G_TYPE_STRING);
@@ -16,6 +45,7 @@ void compl_init(struct completer *c) {
 	gtk_window_set_decorated(GTK_WINDOW(c->window), FALSE);
 
 	g_signal_connect(G_OBJECT(c->window), "delete-event", G_CALLBACK(gtk_widget_hide_on_delete), NULL);
+	g_signal_connect(G_OBJECT(c->tree), "expose_event", G_CALLBACK(compl_wnd_expose_callback), c);
 
 	{
 		GtkWidget *frame = gtk_table_new(0, 0, FALSE);
@@ -61,10 +91,16 @@ static int compl_wnd_fill_callback(const char *entry, void *p) {
 	return 1;
 }
 
-void compl_wnd_show(struct completer *c, const char *prefix, double x, double y, GtkWidget *parent) {
+void compl_wnd_show(struct completer *c, const char *prefix, double x, double y, double alty, GtkWidget *parent) {
 	c->size = 0;
+	c->alty = alty;
 	gtk_list_store_clear(c->list);
 	critbit0_allprefixed(&(c->cbt), prefix, compl_wnd_fill_callback, (void *)c);
+
+	if (c->size == 0) {
+		compl_wnd_hide(c);
+		return;
+	}
 
 	gtk_window_set_transient_for(GTK_WINDOW(c->window), GTK_WINDOW(parent));
 
