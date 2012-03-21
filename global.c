@@ -167,7 +167,7 @@ void utf32_to_utf8(uint32_t code, char **r, int *cap, int *allocated) {
 	}
 
 	for (int i = inc; i > 0; --i) {
-		(*r)[*cap+i] = ((uint8_t)code & 0x2f) + 0x80;
+		(*r)[*cap+i] = ((uint8_t)code & 0x3f) + 0x80;
 		code >>= 6;
 	}
 
