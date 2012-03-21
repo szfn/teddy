@@ -1,20 +1,19 @@
-#ifndef __CMDCOMPL_H__
-#define __CMDCOMPL_H__
+#ifndef __CMDCOMPL__
+#define __CMDCOMPL__
 
-#include "editor.h"
+#include "critbit.h"
+#include "compl.h"
 
-extern const char *command_list[];
+struct clcompleter {
+	struct completer c; /* completer for commands */
 
-void cmdcompl_init(void);
-void cmdcompl_free(void);
-int cmdcompl_complete(const char *text, int length, char *working_directory);
-void cmdcompl_show(editor_t *editor, int cursor_position);
-void cmdcompl_hide(void);
-int cmdcompl_isvisible(void);
+	critbit0_tree cbt;
+	char *absdir;
+};
 
-void cmdcompl_move_to_prev(void);
-void cmdcompl_move_to_next(void);
-
-char *cmdcompl_get_completion(const char *text, int *point);
+void cmdcompl_init(struct clcompleter *c);
+void cmdcompl_free(struct clcompleter *c);
+char *cmdcompl_complete(struct clcompleter *c, const char *text, const char *working_directory);
+void cmdcompl_wnd_show(struct clcompleter *c, const char *text, const char *working_directory, double x, double y, double alty, GtkWidget *parent);
 
 #endif

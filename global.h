@@ -7,6 +7,7 @@
 #include "buffer.h"
 #include "history.h"
 #include "compl.h"
+#include "cmdcompl.h"
 
 #include <gtk/gtk.h>
 #include <ft2build.h>
@@ -36,7 +37,8 @@ extern int focus_can_follow_mouse;
 extern history_t *search_history;
 extern history_t *command_history;
 
-struct completer word_completer;
+extern struct completer word_completer;
+extern struct clcompleter cmd_completer;
 
 void global_init();
 char *unrealpath(char *absolute_path, const char *relative_path);

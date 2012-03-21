@@ -15,6 +15,9 @@ GHashTable *keybindings;
 history_t *search_history;
 history_t *command_history;
 
+struct completer word_completer;
+struct clcompleter cmd_completer;
+
 int focus_can_follow_mouse = 1;
 
 gboolean streq(gconstpointer a, gconstpointer b) {

@@ -8,7 +8,6 @@
 #include "buffers.h"
 #include "columns.h"
 #include "interp.h"
-#include "cmdcompl.h"
 #include "jobs.h"
 #include "colors.h"
 #include "cfg.h"
@@ -38,8 +37,8 @@ int main(int argc, char *argv[]) {
 	cfg_init();
 	init_colors();
 
-	cmdcompl_init();
 
+	cmdcompl_init(&cmd_completer);
 	buffer_wordcompl_init_charset();
 	compl_init(&word_completer);
 
@@ -95,7 +94,8 @@ int main(int argc, char *argv[]) {
 	buffers_free();
 	columns_free(columnset);
 	interp_free();
-	cmdcompl_free();
+	compl_free(&word_completer);
+	cmdcompl_free(&cmd_completer);
 	teddy_font_real_free();
 
 	return 0;

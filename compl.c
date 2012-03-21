@@ -82,24 +82,30 @@ char *compl_complete(struct completer *c, const char *prefix) {
 	return r;
 }
 
-static int compl_wnd_fill_callback(const char *entry, void *p) {
-	struct completer *c = (struct completer *)p;
+void compl_add_to_list(struct completer *c, const char *text) {
 	GtkTreeIter mah;
 	gtk_list_store_append(c->list, &mah);
-	gtk_list_store_set(c->list, &mah, 0, entry, -1);
+	gtk_list_store_set(c->list, &mah, 0, text, -1);
 	++(c->size);
+}
+
+static int compl_wnd_fill_callback(const char *entry, void *p) {
+	struct completer *c = (struct completer *)p;
+	compl_add_to_list(c, entry);
 	return 1;
 }
 
-void compl_wnd_show(struct completer *c, const char *prefix, double x, double y, double alty, GtkWidget *parent) {
+void compl_wnd_show(struct completer *c, const char *prefix, double x, double y, double alty, GtkWidget *parent, bool show_empty) {
 	c->size = 0;
 	c->alty = alty;
 	gtk_list_store_clear(c->list);
 	critbit0_allprefixed(&(c->cbt), prefix, compl_wnd_fill_callback, (void *)c);
 
-	if (c->size == 0) {
-		compl_wnd_hide(c);
-		return;
+	if (!show_empty) {
+		if (c->size == 0) {
+			compl_wnd_hide(c);
+			return;
+		}
 	}
 
 	gtk_window_set_transient_for(GTK_WINDOW(c->window), GTK_WINDOW(parent));
@@ -182,7 +188,6 @@ char *compl_wnd_get(struct completer *c) {
 	}
 
 	if (c->prefix_len >= strlen(pick)) {
-		// something went wrong
 		return NULL;
 	}
 
@@ -202,4 +207,8 @@ void compl_wnd_hide(struct completer *c) {
 
 bool compl_wnd_visible(struct completer *c) {
 	return c->visible;
+}
+
+void compl_free(struct completer *c) {
+	critbit0_clear(&(c->cbt));
 }

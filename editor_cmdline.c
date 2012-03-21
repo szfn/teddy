@@ -5,10 +5,11 @@
 #include <stdbool.h>
 
 #include "global.h"
-#include "cmdcompl.h"
 #include "interp.h"
 #include "cfg.h"
 #include "lexy.h"
+#include "cmdcompl.h"
+#include "compl.h"
 
 static bool should_be_case_sensitive(uint32_t *needle, int len) {
 	if (config[CFG_INTERACTIVE_SEARCH_CASE_SENSITIVE].intval == 0) return false;
@@ -164,6 +165,52 @@ void editor_start_search(editor_t *editor, const char *initial_search_term) {
 	*/
 }
 
+static void editor_cmdline_cursor_position(editor_t *editor, double *x, double *y, double *alty) {
+	PangoLayout *layout = gtk_entry_get_layout(GTK_ENTRY(editor->entry));
+	PangoRectangle real_pos;
+	gint layout_offset_x, layout_offset_y;
+	gint final_x, final_y;
+	GtkAllocation allocation;
+	gint wpos_x, wpos_y;
+
+	gtk_widget_get_allocation(editor->entry, &allocation);
+	//gtk_window_get_position(GTK_WINDOW(editor->window), &wpos_x, &wpos_y);
+	gdk_window_get_position(gtk_widget_get_window(editor->window), &wpos_x, &wpos_y);
+	gtk_entry_get_layout_offsets(GTK_ENTRY(editor->entry), &layout_offset_x, &layout_offset_y);
+
+	pango_layout_get_cursor_pos(layout, gtk_entry_text_index_to_layout_index(GTK_ENTRY(editor->entry), gtk_editable_get_position(GTK_EDITABLE(editor->entry))), &real_pos, NULL);
+
+	pango_extents_to_pixels(NULL, &real_pos);
+
+	final_y = wpos_y + allocation.y + allocation.height;
+	final_x = wpos_x + allocation.x + layout_offset_x + real_pos.x;
+
+	*x = final_x;
+	*y = final_y;
+	*alty = wpos_y + allocation.y;
+}
+
+static void complete(editor_t *editor, const char *completion) {
+	const char *text = gtk_entry_get_text(GTK_ENTRY(editor->entry));
+	int position = gtk_editable_get_position(GTK_EDITABLE(editor->entry));
+
+	char *new_text;
+	new_text = malloc(sizeof(char) * (strlen(text) + strlen(completion) + 1));
+	alloc_assert(new_text);
+
+	new_text[0] = '\0';
+	strncpy(new_text, text, position);
+	strcpy(new_text+position, completion);
+	strcat(new_text, text+position);
+
+	printf("new text: [%s] [position: %d] (old text: %s)\n", new_text, position, text);
+
+	gtk_entry_set_text(GTK_ENTRY(editor->entry), new_text);
+	gtk_editable_set_position(GTK_EDITABLE(editor->entry), position+strlen(completion));
+
+	free(new_text);
+}
+
 static gboolean entry_default_insert_callback(GtkWidget *widget, GdkEventKey *event, editor_t *editor) {
 	/*
 	int shift = event->state & GDK_SHIFT_MASK;
@@ -177,10 +224,10 @@ static gboolean entry_default_insert_callback(GtkWidget *widget, GdkEventKey *ev
 		return TRUE;
 	}
 
-	if (cmdcompl_isvisible()) {
+	if (compl_wnd_visible(&(cmd_completer.c))) {
 		switch (event->keyval) {
 		case GDK_KEY_Escape:
-			cmdcompl_hide();
+			compl_wnd_hide(&(cmd_completer.c));
 			return TRUE;
 		case GDK_KEY_Up:
 		case GDK_KEY_Down:
@@ -188,21 +235,21 @@ static gboolean entry_default_insert_callback(GtkWidget *widget, GdkEventKey *ev
 		case GDK_KEY_Tab:
 		case GDK_KEY_Return:
 			{
-				int point = gtk_editable_get_position(GTK_EDITABLE(editor->entry));
-				char *nt = cmdcompl_get_completion(gtk_entry_get_text(GTK_ENTRY(editor->entry)), &point);
-				gtk_entry_set_text(GTK_ENTRY(editor->entry), nt);
-				gtk_editable_set_position(GTK_EDITABLE(editor->entry), point);
-				free(nt);
-				cmdcompl_hide();
+				char *nt = compl_wnd_get(&(cmd_completer.c));
+				compl_wnd_hide(&(cmd_completer.c));
+				if (nt != NULL) {
+					complete(editor, nt);
+					free(nt);
+				}
 			}
 			return TRUE;
 		default:
-			cmdcompl_hide();
+			compl_wnd_hide(&(cmd_completer.c));
 			return FALSE;
 		}
 	} else {
 		if (event->keyval != GDK_KEY_Tab) {
-			cmdcompl_hide();
+			compl_wnd_hide(&(cmd_completer.c));
 		}
 
 		if (ctrl && (event->keyval == GDK_KEY_r)) {
@@ -272,16 +319,33 @@ static gboolean entry_default_insert_callback(GtkWidget *widget, GdkEventKey *ev
 
 			//printf("Completion start %d end %d\n", i+1, end);
 
-			if (cmdcompl_complete(text+i+1, end-i-1, editor->buffer->wd) == 1) {
-				char *nt = cmdcompl_get_completion(gtk_entry_get_text(GTK_ENTRY(editor->entry)), &end);
-				if (nt != NULL) {
-					gtk_entry_set_text(GTK_ENTRY(editor->entry), nt);
-					gtk_editable_set_position(GTK_EDITABLE(editor->entry), end);
-					free(nt);
+			char *prefix = strndup(text+i+1, end-i-1);
+			alloc_assert(prefix);
+
+			char *completion = cmdcompl_complete(&cmd_completer, prefix, editor->buffer->wd);
+
+			if (completion != NULL) {
+				bool empty_completion = strcmp(completion, "") == 0;
+
+				if (!empty_completion) {
+					complete(editor, completion);
 				}
-			} else {
-				cmdcompl_show(editor, i+1);
+
+				double x, y, alty;
+				editor_cmdline_cursor_position(editor, &x, &y, &alty);
+
+				if (empty_completion) {
+					cmdcompl_wnd_show(&cmd_completer, prefix, editor->buffer->wd, x, y, alty, editor->window);
+				} else {
+					char *new_prefix;
+					asprintf(&new_prefix, "%s%s", prefix, completion);
+					cmdcompl_wnd_show(&cmd_completer, new_prefix, editor->buffer->wd, x, y, alty, editor->window);
+					free(new_prefix);
+				}
+				free(completion);
 			}
+
+			free(prefix);
 
 			return TRUE;
 		}
@@ -298,16 +362,16 @@ static gboolean entry_key_press_callback(GtkWidget *widget, GdkEventKey *event, 
 		history_index_reset(command_history);
 		return TRUE;
 	case GDK_KEY_Up:
-		if (cmdcompl_isvisible()) {
-			cmdcompl_move_to_prev();
+		if (compl_wnd_visible(&(cmd_completer.c))) {
+			compl_wnd_up(&(cmd_completer.c));
 		} else {
 			history_index_next(command_history);
 			history_substitute_with_index(command_history, editor);
 		}
 		return TRUE;
 	case GDK_KEY_Down:
-		if (cmdcompl_isvisible()) {
-			cmdcompl_move_to_next();
+		if (compl_wnd_visible(&(cmd_completer.c))) {
+			compl_wnd_down(&(cmd_completer.c));
 		} else {
 			history_index_prev(command_history);
 			history_substitute_with_index(command_history, editor);
@@ -337,7 +401,7 @@ static gboolean entry_focusout_callback(GtkWidget *widget, GdkEventFocus *event,
 	g_signal_handler_disconnect(editor->entry, editor->current_entry_handler_id);
 	editor->current_entry_handler_id = g_signal_connect(editor->entry, "key-release-event", G_CALLBACK(entry_default_insert_callback), editor);
 	focus_can_follow_mouse = 1;
-	cmdcompl_hide();
+	compl_wnd_hide(&(cmd_completer.c));
 	history_index_reset(command_history);
 	return FALSE;
 }

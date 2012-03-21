@@ -9,6 +9,7 @@
 
 #include <stdbool.h>
 
+#include "global.h"
 #include "baux.h"
 #include "lexy.h"
 
