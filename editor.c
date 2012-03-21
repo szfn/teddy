@@ -1179,16 +1179,18 @@ static gboolean label_button_release_callback(GtkWidget *widget, GdkEventButton 
 				}
 
 				if (just_resize) {
-					GtkAllocation tallocation;
-					gtk_widget_get_allocation(target->container, &tallocation);
+					if (target != NULL) {
+						GtkAllocation tallocation;
+						gtk_widget_get_allocation(target->container, &tallocation);
 
-					GtkAllocation allocation;
-					gtk_widget_get_allocation(editor->container, &allocation);
+						GtkAllocation allocation;
+						gtk_widget_get_allocation(editor->container, &allocation);
 
-					double new_target_size = y - tallocation.y;
-					double new_editor_size = tallocation.height - new_target_size + allocation.height;
+						double new_target_size = y - tallocation.y;
+						double new_editor_size = tallocation.height - new_target_size + allocation.height;
 
-					column_resize_editor_pair(target, new_target_size, editor, new_editor_size);
+						column_resize_editor_pair(target, new_target_size, editor, new_editor_size);
+					}
 				} else {
 					buffer_t *buffer = editor->buffer;
 					editor_close_editor(editor);
