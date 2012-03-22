@@ -203,20 +203,73 @@ static void complete(editor_t *editor, const char *completion) {
 	strcpy(new_text+position, completion);
 	strcat(new_text, text+position);
 
-	printf("new text: [%s] [position: %d] (old text: %s)\n", new_text, position, text);
-
 	gtk_entry_set_text(GTK_ENTRY(editor->entry), new_text);
 	gtk_editable_set_position(GTK_EDITABLE(editor->entry), position+strlen(completion));
 
 	free(new_text);
 }
 
-static gboolean entry_default_insert_callback(GtkWidget *widget, GdkEventKey *event, editor_t *editor) {
-	/*
-	int shift = event->state & GDK_SHIFT_MASK;
-	int alt = event->state & GDK_MOD1_MASK;
-	int super = event->state & GDK_SUPER_MASK;*/
+static void maybe_show_cmdcompl(editor_t *editor, bool auto_insert) {
+	const char *text;
+	int end, i;
 
+	end = gtk_editable_get_position(GTK_EDITABLE(editor->entry));
+	text = gtk_entry_get_text(GTK_ENTRY(editor->entry));
+
+	for (i = end-1; i >= 0; --i) {
+		if (u_isalnum(text[i])) continue;
+		if (text[i] == '-') continue;
+		if (text[i] == '_') continue;
+		if (text[i] == '/') continue;
+		if (text[i] == '~') continue;
+		if (text[i] == ':') continue;
+		if (text[i] == '.') continue;
+		//printf("Breaking on [%c] %d (text: %s)\n", text[i], i, text);
+		break;
+	}
+
+	//printf("Completion start %d end %d\n", i+1, end);
+
+	char *prefix = strndup(text+i+1, end-i-1);
+	alloc_assert(prefix);
+
+	double x, y, alty;
+	editor_cmdline_cursor_position(editor, &x, &y, &alty);
+
+	if (!auto_insert) {
+		cmdcompl_wnd_show(&cmd_completer, prefix, editor->buffer->wd, x, y, alty, editor->window);
+		return;
+	}
+
+	char *completion = cmdcompl_complete(&cmd_completer, prefix, editor->buffer->wd);
+
+	if (completion != NULL) {
+		bool empty_completion = strcmp(completion, "") == 0;
+
+		if (!empty_completion) {
+			complete(editor, completion);
+		}
+
+		editor_cmdline_cursor_position(editor, &x, &y, &alty);
+
+		if (empty_completion) {
+			cmdcompl_wnd_show(&cmd_completer, prefix, editor->buffer->wd, x, y, alty, editor->window);
+		} else {
+			char *new_prefix;
+			asprintf(&new_prefix, "%s%s", prefix, completion);
+			cmdcompl_wnd_show(&cmd_completer, new_prefix, editor->buffer->wd, x, y, alty, editor->window);
+			free(new_prefix);
+		}
+		free(completion);
+	}
+
+	free(prefix);
+}
+
+static gboolean entry_default_insert_callback(GtkWidget *widget, GdkEventKey *event, editor_t *editor) {
+	//int shift = event->state & GDK_SHIFT_MASK;
+	int alt = event->state & GDK_MOD1_MASK;
+	int super = event->state & GDK_SUPER_MASK;
 	int ctrl = event->state & GDK_CONTROL_MASK;
 
 	if (editor->ignore_next_entry_keyrelease) {
@@ -227,13 +280,16 @@ static gboolean entry_default_insert_callback(GtkWidget *widget, GdkEventKey *ev
 	if (compl_wnd_visible(&(cmd_completer.c))) {
 		switch (event->keyval) {
 		case GDK_KEY_Escape:
+		case GDK_KEY_Left:
 			compl_wnd_hide(&(cmd_completer.c));
 			return TRUE;
 		case GDK_KEY_Up:
 		case GDK_KEY_Down:
 			return TRUE;
 		case GDK_KEY_Tab:
+			return TRUE;
 		case GDK_KEY_Return:
+		case GDK_KEY_Right:
 			{
 				char *nt = compl_wnd_get(&(cmd_completer.c));
 				compl_wnd_hide(&(cmd_completer.c));
@@ -244,11 +300,12 @@ static gboolean entry_default_insert_callback(GtkWidget *widget, GdkEventKey *ev
 			}
 			return TRUE;
 		default:
-			compl_wnd_hide(&(cmd_completer.c));
+			//compl_wnd_hide(&(cmd_completer.c));
+			maybe_show_cmdcompl(editor, false);
 			return FALSE;
 		}
 	} else {
-		if (event->keyval != GDK_KEY_Tab) {
+		if (ctrl || alt || super) {
 			compl_wnd_hide(&(cmd_completer.c));
 		}
 
@@ -299,58 +356,10 @@ static gboolean entry_default_insert_callback(GtkWidget *widget, GdkEventKey *ev
 		}
 
 		if (event->keyval == GDK_KEY_Tab) {
-			const char *text;
-			int end, i;
-
-			end = gtk_editable_get_position(GTK_EDITABLE(editor->entry));
-			text = gtk_entry_get_text(GTK_ENTRY(editor->entry));
-
-			for (i = end-1; i >= 0; --i) {
-				if (u_isalnum(text[i])) continue;
-				if (text[i] == '-') continue;
-				if (text[i] == '_') continue;
-				if (text[i] == '/') continue;
-				if (text[i] == '~') continue;
-				if (text[i] == ':') continue;
-				if (text[i] == '.') continue;
-				//printf("Breaking on [%c] %d (text: %s)\n", text[i], i, text);
-				break;
-			}
-
-			//printf("Completion start %d end %d\n", i+1, end);
-
-			char *prefix = strndup(text+i+1, end-i-1);
-			alloc_assert(prefix);
-
-			char *completion = cmdcompl_complete(&cmd_completer, prefix, editor->buffer->wd);
-
-			if (completion != NULL) {
-				bool empty_completion = strcmp(completion, "") == 0;
-
-				if (!empty_completion) {
-					complete(editor, completion);
-				}
-
-				double x, y, alty;
-				editor_cmdline_cursor_position(editor, &x, &y, &alty);
-
-				if (empty_completion) {
-					cmdcompl_wnd_show(&cmd_completer, prefix, editor->buffer->wd, x, y, alty, editor->window);
-				} else {
-					char *new_prefix;
-					asprintf(&new_prefix, "%s%s", prefix, completion);
-					cmdcompl_wnd_show(&cmd_completer, new_prefix, editor->buffer->wd, x, y, alty, editor->window);
-					free(new_prefix);
-				}
-				free(completion);
-			}
-
-			free(prefix);
+			maybe_show_cmdcompl(editor, true);
 
 			return TRUE;
 		}
-
-
 	}
 
 	return FALSE;

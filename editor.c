@@ -64,7 +64,10 @@ static bool editor_maybe_show_completions(editor_t *editor, bool autoinsert) {
 	size_t wordcompl_prefix_len;
 	uint16_t *prefix = buffer_wordcompl_word_at_cursor(editor->buffer, &wordcompl_prefix_len);
 
-	if (wordcompl_prefix_len == 0) return false;
+	if (wordcompl_prefix_len == 0) {
+		compl_wnd_hide(&word_completer);
+		return false;
+	}
 
 	bool r = false;
 
@@ -78,7 +81,7 @@ static bool editor_maybe_show_completions(editor_t *editor, bool autoinsert) {
 		double x, y, alty;
 		editor_absolute_cursor_position(editor, &x, &y, &alty);
 
-		if (empty_completion) {
+		if (empty_completion || !autoinsert) {
 			compl_wnd_show(&word_completer, utf8prefix, x, y, alty, editor->window, false);
 		} else {
 			char *new_prefix;
@@ -89,7 +92,10 @@ static bool editor_maybe_show_completions(editor_t *editor, bool autoinsert) {
 		}
 		free(completion);
 		r = true;
+	} else {
+		compl_wnd_hide(&word_completer);
 	}
+
 	free(prefix);
 	free(utf8prefix);
 

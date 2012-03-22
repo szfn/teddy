@@ -98,6 +98,12 @@ static int compl_wnd_fill_callback(const char *entry, void *p) {
 void compl_wnd_show(struct completer *c, const char *prefix, double x, double y, double alty, GtkWidget *parent, bool show_empty) {
 	c->size = 0;
 	c->alty = alty;
+
+	if (strcmp(prefix, "") == 0) {
+		compl_wnd_hide(c);
+		return;
+	}
+
 	gtk_list_store_clear(c->list);
 	critbit0_allprefixed(&(c->cbt), prefix, compl_wnd_fill_callback, (void *)c);
 
