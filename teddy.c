@@ -37,6 +37,8 @@ int main(int argc, char *argv[]) {
 	cfg_init();
 	init_colors();
 
+	history_init(&command_history);
+	history_init(&search_history);
 
 	cmdcompl_init(&cmd_completer);
 	buffer_wordcompl_init_charset();
@@ -62,6 +64,11 @@ int main(int argc, char *argv[]) {
 		}
 	}
 
+	{
+		const char *loadhistory[] = { "loadhistory" };
+		interp_eval_command(1, loadhistory);
+	}
+
 	window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
 
 	gtk_window_set_title(GTK_WINDOW(window), "teddy");
@@ -73,7 +80,6 @@ int main(int argc, char *argv[]) {
 	go_init(window);
 	columnset = the_columns_new(window);
 	research_init(window);
-
 
 	gtk_widget_show_all(window);
 
@@ -97,6 +103,9 @@ int main(int argc, char *argv[]) {
 	compl_free(&word_completer);
 	cmdcompl_free(&cmd_completer);
 	teddy_font_real_free();
+
+	history_free(&search_history);
+	history_free(&command_history);
 
 	return 0;
 }

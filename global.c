@@ -12,8 +12,8 @@ columns_t *columnset = NULL;
 
 GHashTable *keybindings;
 
-history_t *search_history;
-history_t *command_history;
+struct history search_history;
+struct history command_history;
 
 struct completer word_completer;
 struct clcompleter cmd_completer;
@@ -21,7 +21,7 @@ struct clcompleter cmd_completer;
 int focus_can_follow_mouse = 1;
 
 gboolean streq(gconstpointer a, gconstpointer b) {
-	return (strcmp(a, b) == 0);
+	return strcmp(a, b) == 0;
 }
 
 void global_init() {
@@ -36,9 +36,6 @@ void global_init() {
 	}
 
 	keybindings = g_hash_table_new(g_str_hash, streq);
-
-	search_history = history_new();
-	command_history = history_new();
 }
 
 void global_free() {

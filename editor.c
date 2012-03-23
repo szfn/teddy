@@ -82,12 +82,12 @@ static bool editor_maybe_show_completions(editor_t *editor, bool autoinsert) {
 		editor_absolute_cursor_position(editor, &x, &y, &alty);
 
 		if (empty_completion || !autoinsert) {
-			compl_wnd_show(&word_completer, utf8prefix, x, y, alty, editor->window, false);
+			compl_wnd_show(&word_completer, utf8prefix, x, y, alty, editor->window, false, false);
 		} else {
 			char *new_prefix;
 			asprintf(&new_prefix, "%s%s", utf8prefix, completion);
 			alloc_assert(new_prefix);
-			compl_wnd_show(&word_completer, new_prefix, x, y, alty, editor->window, false);
+			compl_wnd_show(&word_completer, new_prefix, x, y, alty, editor->window, false, false);
 			free(new_prefix);
 		}
 		free(completion);
@@ -490,7 +490,7 @@ static gboolean key_press_callback(GtkWidget *widget, GdkEventKey *event, editor
 					return FALSE;
 				case GDK_KEY_Return:
 				case GDK_KEY_Right: {
-					char *completion = compl_wnd_get(&word_completer);
+					char *completion = compl_wnd_get(&word_completer, false);
 					compl_wnd_hide(&word_completer);
 					if (completion != NULL) {
 						editor_replace_selection(editor, completion);

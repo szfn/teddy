@@ -1,29 +1,38 @@
-#ifndef __HISTORY_H__
-#define __HISTORY_H__
+#ifndef __HISTORY__
+#define __HISTORY__
 
 #include <gtk/gtk.h>
 #include <tcl.h>
 
-#include "editor.h"
+#include "compl.h"
 
-typedef struct _history_t {
-	GtkWidget *history_window;
-	GtkWidget *history_tree;
-	GtkListStore *history_list;
+#define HISTORY_SIZE 512
+
+struct history_item {
+	time_t timestamp;
+	char *wd;
+	char *entry;
+};
+
+struct history {
+	struct completer c;
+	struct history_item items[HISTORY_SIZE];
+
 	int index;
-} history_t;
+	int cap;
 
-/*struct _editor_t;*/
+	int unsaved;
+};
 
-history_t *history_new(void);
-void history_add(history_t *history, const char *text);
-void history_pick(history_t *history, struct _editor_t *editor);
-int teddy_history_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]);
+void history_init(struct history *h);
+void history_free(struct history *h);
 
-void history_index_reset(history_t *history);
-void history_index_next(history_t *history);
-void history_index_prev(history_t *history);
-void history_substitute_with_index(history_t *history, struct _editor_t *editor);
+void history_add(struct history *h, time_t timestamp, const char *wd, const char *entry, bool counted);
+int teddy_history_command(ClientData client_data, Tcl_Interp*interp, int argc, const char *argv[]);
 
+void history_index_next(struct history *h);
+void history_index_prev(struct history *h);
+void history_index_reset(struct history *h);
+char *history_index_get(struct history *h);
 
 #endif

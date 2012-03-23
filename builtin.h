@@ -526,5 +526,19 @@ proc dirrec_ex {directory} {\n\
 proc dirrec {directory} {\n\
 	bg \"+dirrec/$directory\" \"dirrec_ex $directory\"\n\
 }\n\
+\n\
+proc loadhistory {} {\n\
+	set histf $::env(HOME)/.teddy_history\n\
+	puts \"history file: $histf\"\n\
+	if {[catch {set f [open $histf RDONLY]} err]} {\n\
+		puts \"No history\"\n\
+		return\n\
+	}\n\
+	while {[gets $f line] >= 0} {\n\
+		split $line \"\\t\"\n\
+		teddyhistory cmd add [lindex $line 0] [lindex $line 1] [lindex $line 2]\n\
+	}\n\
+	close $f\n\
+}\n\
 "
 #endif

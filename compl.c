@@ -95,13 +95,15 @@ static int compl_wnd_fill_callback(const char *entry, void *p) {
 	return 1;
 }
 
-void compl_wnd_show(struct completer *c, const char *prefix, double x, double y, double alty, GtkWidget *parent, bool show_empty) {
+void compl_wnd_show(struct completer *c, const char *prefix, double x, double y, double alty, GtkWidget *parent, bool show_empty, bool show_empty_prefix) {
 	c->size = 0;
 	c->alty = alty;
 
-	if (strcmp(prefix, "") == 0) {
-		compl_wnd_hide(c);
-		return;
+	if (!show_empty_prefix) {
+		if (strcmp(prefix, "") == 0) {
+			compl_wnd_hide(c);
+			return;
+		}
 	}
 
 	gtk_list_store_clear(c->list);
@@ -173,7 +175,7 @@ void compl_wnd_down(struct completer *c) {
 	gtk_tree_path_free(path);
 }
 
-char *compl_wnd_get(struct completer *c) {
+char *compl_wnd_get(struct completer *c, bool all) {
 	GtkTreePath *focus_path;
 	GtkTreeIter iter;
 
@@ -197,7 +199,7 @@ char *compl_wnd_get(struct completer *c) {
 		return NULL;
 	}
 
-	char *r = strdup(pick+c->prefix_len);
+	char *r = strdup(all ? pick : (pick+c->prefix_len));
 	alloc_assert(r);
 
 	g_value_unset(&value);

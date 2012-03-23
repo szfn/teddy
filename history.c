@@ -1,193 +1,146 @@
 #include "history.h"
 
 #include <stdlib.h>
+#include <string.h>
 
-#include "editor.h"
-#include "interp.h"
 #include "global.h"
+#include "interp.h"
 
-static gboolean history_select_callback(GtkTreeView *widget, GtkTreePath *path, GtkTreeViewColumn *column, history_t *history) {
-	gtk_dialog_response(GTK_DIALOG(history->history_window), 10);
-	return TRUE;
+void history_init(struct history *h) {
+	compl_init(&(h->c));
+	memset(h->items, 0, sizeof(struct history_item) * HISTORY_SIZE);
+	h->index = 0;
+	h->cap = 0;
+	h->unsaved = 0;
 }
 
-history_t *history_new(void) {
-	history_t *r = malloc(sizeof(history_t));
+static void history_item_free(struct history_item *it) {
+	if (it->wd != NULL) free(it->wd);
+	if (it->entry != NULL) free(it->entry);
 
-	r->history_tree = gtk_tree_view_new();
-	r->history_list = gtk_list_store_new(1, G_TYPE_STRING);
-
-	gtk_tree_view_insert_column_with_attributes(GTK_TREE_VIEW(r->history_tree), -1, "Entry", gtk_cell_renderer_text_new(), "text", 0, NULL);
-	gtk_tree_view_set_model(GTK_TREE_VIEW(r->history_tree), GTK_TREE_MODEL(r->history_list));
-	gtk_tree_view_set_headers_visible(GTK_TREE_VIEW(r->history_tree), FALSE);
-	gtk_tree_view_set_search_column(GTK_TREE_VIEW(r->history_tree), 1);
-
-	r->history_window = gtk_dialog_new();
-	gtk_window_set_destroy_with_parent(GTK_WINDOW(r->history_window), TRUE);
-
-	GtkWidget *scroll_window = gtk_scrolled_window_new(NULL, NULL);
-	gtk_container_add(GTK_CONTAINER(scroll_window), r->history_tree);
-
-	gtk_container_add(GTK_CONTAINER(gtk_dialog_get_content_area(GTK_DIALOG(r->history_window))), scroll_window);
-
-	gtk_window_set_default_size(GTK_WINDOW(r->history_window), 400, 300);
-
-	g_signal_connect(G_OBJECT(r->history_window), "delete-event", G_CALLBACK(gtk_widget_hide_on_delete), NULL);
-	g_signal_connect(G_OBJECT(r->history_tree), "row-activated", G_CALLBACK(history_select_callback), r);
-
-	r->index = 0;
-
-	return r;
+	it->wd = NULL;
+	it->entry = NULL;
 }
 
-void history_add(history_t *history, const char *text) {
-	GtkTreeIter mah;
-	gtk_list_store_insert(history->history_list, &mah, 0);
-	gtk_list_store_set(history->history_list, &mah, 0, text, -1);
+void history_free(struct history *h) {
+	compl_free(&(h->c));
+
+	for (int i = 0; i < HISTORY_SIZE; ++i) {
+		history_item_free(h->items + i);
+	}
 }
 
-int teddy_history_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
-	history_t *history;
-	int idx, i;
-	gboolean valid;
-	GtkTreeIter iter;
+void history_add(struct history *h, time_t timestamp, const char *wd, const char *entry, bool counted) {
+	compl_add(&(h->c), entry);
 
-	if (context_editor == NULL) {
-		Tcl_AddErrorInfo(interp, "Can not call 'teddyhistory' command without a current editor");
-		return TCL_ERROR;
+	struct history_item *prev = h->items + ((h->cap-1 < 0) ? (HISTORY_SIZE - 1) : h->cap-1);
+
+	if (prev->entry != NULL) {
+		if ((strcmp(prev->wd, wd) == 0) && (strcmp(prev->entry, entry) == 0)) return;
 	}
 
-	if (argc != 3) {
+	h->index = (h->cap)++;
+
+	struct history_item *it = h->items + h->index;
+
+	history_item_free(it);
+
+	it->timestamp = timestamp;
+
+	if (wd != NULL) {
+		alloc_assert(it->wd = strdup(wd));
+	} else {
+		it->wd = NULL;
+	}
+
+	if (entry != NULL) {
+		alloc_assert(it->entry = strdup(entry));
+	} else {
+		it->entry = NULL;
+	}
+
+	h->index = h->cap;
+
+	if (counted) {
+		++(h->unsaved);
+	}
+
+	if (h->unsaved >= 10) {
+		char *dst;
+		asprintf(&dst, "%s/.teddy_history", getenv("HOME"));
+		alloc_assert(dst);
+		FILE *out = fopen(dst, "a+");
+		if (!out) {
+			perror("Can't output history");
+			return;
+		}
+		free(dst);
+
+		for (int i = 10; i > 0; --i) {
+			it = h->items + ((h->cap - i < 0) ? (HISTORY_SIZE - h->cap + i) : (h->cap - i));
+			if (it->entry == NULL) continue;
+			fprintf(out, "%ld\t%s\t%s\n", it->timestamp, it->wd, it->entry);
+		}
+
+		h->unsaved = 0;
+
+		fclose(out);
+	}
+}
+
+int teddy_history_command(ClientData client_data, Tcl_Interp*interp, int argc, const char *argv[]) {
+	if (argc < 3) {
 		Tcl_AddErrorInfo(interp, "Wrong number of arguments to 'teddyhistory' command");
 		return TCL_ERROR;
 	}
 
+	struct history *h;
 	if (strcmp(argv[1], "cmd") == 0) {
-		history = command_history;
+		h = &command_history;
 	} else if (strcmp(argv[1], "search") == 0) {
-		history = search_history;
+		h = &search_history;
 	} else {
 		Tcl_AddErrorInfo(interp, "Wrong first argument for 'teddyhistory' command, must be 'cmd' or 'search'");
 		return TCL_ERROR;
 	}
 
-	idx = atoi(argv[2]);
-
-	valid = gtk_tree_model_get_iter_first(GTK_TREE_MODEL(history->history_list), &iter);
-
-	for (i = 1; i < idx; ++i) {
-       if (!valid) break;
-       valid = gtk_tree_model_iter_next(GTK_TREE_MODEL(history->history_list), &iter);
-	}
-
-	if (valid) {
-		GValue value = {0};
-		const char *pick;
-
-		gtk_tree_model_get_value(GTK_TREE_MODEL(history->history_list), &iter, 0, &value);
-
-		pick = g_value_get_string(&value);
-
-		if (pick != NULL) {
-           Tcl_SetResult(interp, (char *)pick, TCL_VOLATILE);
-		} else {
-           Tcl_SetResult(interp, "", TCL_VOLATILE);
+	if (strcmp(argv[2], "add") == 0) {
+		if (argc < 6) {
+			Tcl_AddErrorInfo(interp, "Wrong number of arguments to 'teddyhistory' add command");
+			return TCL_ERROR;
 		}
 
-		g_value_unset(&value);
+		const char *timestamp_str = argv[3];
+		const char *wd = argv[4];
+		const char *entry  = argv[5];
+
+		history_add(h, atol(timestamp_str), wd, entry, false);
+		return TCL_OK;
 	} else {
-		Tcl_SetResult(interp, "", TCL_VOLATILE);
-	}
+		int idx = atoi(argv[2]);
 
-	return TCL_OK;
-}
+		struct history_item *it = h->items + idx;
 
-void history_pick(history_t *history, editor_t *editor) {
-	int r;
-
-	gtk_window_set_transient_for(GTK_WINDOW(history->history_window), GTK_WINDOW(editor->window));
-	gtk_window_set_modal(GTK_WINDOW(history->history_window), TRUE);
-	gtk_widget_show_all(history->history_window);
-	gtk_widget_grab_focus(history->history_tree);
-	r = gtk_dialog_run(GTK_DIALOG(history->history_window));
-	gtk_widget_hide(history->history_window);
-
-	if (r == 10) {
-		GtkTreePath *focus_path;
-		GtkTreeIter iter;
-		const char *pick;
-		GValue value = {0};
-
-		gtk_tree_view_get_cursor(GTK_TREE_VIEW(history->history_tree), &focus_path, NULL);
-		if (focus_path == NULL) {
-			gboolean valid = gtk_tree_model_get_iter_first(GTK_TREE_MODEL(history->history_list), &iter);
-			if (!valid) {
-				return;
-			}
-		} else {
-			gtk_tree_model_get_iter(GTK_TREE_MODEL(history->history_list), &iter, focus_path);
-		}
-
-		gtk_tree_model_get_value(GTK_TREE_MODEL(history->history_list), &iter, 0, &value);
-
-		pick = g_value_get_string(&value);
-
-		gtk_entry_set_text(GTK_ENTRY(editor->entry), pick);
-		gtk_editable_set_position(GTK_EDITABLE(editor->entry), -1);
-
-		if (focus_path != NULL) {
-			gtk_tree_path_free(focus_path);
-		}
-
-		g_value_unset(&value);
+		Tcl_SetResult(interp, (it->entry != NULL) ? it->entry : "", TCL_VOLATILE);
+		return TCL_OK;
 	}
 }
 
-void history_index_reset(history_t *history) {
-	history->index = 0;
+void history_index_next(struct history *h) {
+	--(h->index);
+	if (h->index < 0) h->index = HISTORY_SIZE-1;
+	if (h->items[h->index].entry == NULL) h->index = h->cap;
 }
 
-void history_index_next(history_t *history) {
-	++(history->index);
+void history_index_prev(struct history *h) {
+	if (h->index == h->cap) return;
+	h->index = (h->index + 1) % HISTORY_SIZE;
 }
 
-void history_index_prev(history_t *history) {
-	--(history->index);
+void history_index_reset(struct history *h) {
+	h->index = h->cap;
 }
 
-void history_substitute_with_index(history_t *history, editor_t *editor) {
-	if (history->index <= 0) {
-		history->index = 0;
-		gtk_entry_set_text(GTK_ENTRY(editor->entry), "");
-		gtk_editable_set_position(GTK_EDITABLE(editor->entry), -1);
-		return;
-	}
-
-	GtkTreeIter iter;
-	gboolean valid = gtk_tree_model_get_iter_first(GTK_TREE_MODEL(history->history_list), &iter);
-
-	for (int i = 1; i < history->index; ++i) {
-       if (!valid) {  break; }
-       valid = gtk_tree_model_iter_next(GTK_TREE_MODEL(history->history_list), &iter);
-	}
-
-	if (valid) {
-		GValue value = {0};
-		const char *pick;
-
-		gtk_tree_model_get_value(GTK_TREE_MODEL(history->history_list), &iter, 0, &value);
-
-		pick = g_value_get_string(&value);
-
-		if (pick != NULL) {
-			gtk_entry_set_text(GTK_ENTRY(editor->entry), pick);
-			gtk_editable_set_position(GTK_EDITABLE(editor->entry), -1);
-		}
-
-		g_value_unset(&value);
-	} else {
-		history->index = 0;
-		gtk_entry_set_text(GTK_ENTRY(editor->entry), "");
-		gtk_editable_set_position(GTK_EDITABLE(editor->entry), -1);
-	}
+char *history_index_get(struct history *h) {
+	return h->items[h->index].entry;
 }

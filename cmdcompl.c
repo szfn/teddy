@@ -200,7 +200,7 @@ static int cmdcompl_wnd_fill_extra(const char *entry, void *p) {
 }
 
 void cmdcompl_wnd_show(struct clcompleter *c, const char *text, const char *working_directory, double x, double y, double alty, GtkWidget *parent) {
-	compl_wnd_show(&(c->c), text, x, y, alty, parent, true);
+	compl_wnd_show(&(c->c), text, x, y, alty, parent, true, false);
 
 	load_directory_completions(c, text, working_directory);
 

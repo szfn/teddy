@@ -107,6 +107,37 @@ static void move_search_forward(editor_t *editor, gboolean ctrl_g_invoked) {
 	gtk_widget_queue_draw(editor->drar);
 }
 
+static void editor_cmdline_cursor_position(editor_t *editor, bool atstart, double *x, double *y, double *alty) {
+	PangoLayout *layout = gtk_entry_get_layout(GTK_ENTRY(editor->entry));
+	PangoRectangle real_pos;
+	gint layout_offset_x, layout_offset_y;
+	gint final_x, final_y;
+	GtkAllocation allocation;
+	gint wpos_x, wpos_y;
+
+	gtk_widget_get_allocation(editor->entry, &allocation);
+	//gtk_window_get_position(GTK_WINDOW(editor->window), &wpos_x, &wpos_y);
+	gdk_window_get_position(gtk_widget_get_window(editor->window), &wpos_x, &wpos_y);
+	gtk_entry_get_layout_offsets(GTK_ENTRY(editor->entry), &layout_offset_x, &layout_offset_y);
+
+	pango_layout_get_cursor_pos(layout, gtk_entry_text_index_to_layout_index(GTK_ENTRY(editor->entry), atstart ? 0 : gtk_editable_get_position(GTK_EDITABLE(editor->entry))), &real_pos, NULL);
+
+	pango_extents_to_pixels(NULL, &real_pos);
+
+	final_y = wpos_y + allocation.y + allocation.height;
+	final_x = wpos_x + allocation.x + layout_offset_x + real_pos.x;
+
+	*x = final_x;
+	*y = final_y;
+	*alty = wpos_y + allocation.y;
+}
+
+static void history_pick(struct history *h, editor_t *editor) {
+	double x, y, alty;
+	editor_cmdline_cursor_position(editor, true, &x, &y, &alty);
+	compl_wnd_show(&(h->c), gtk_entry_get_text(GTK_ENTRY(editor->entry)), x, y, alty, editor->window, false, true);
+}
+
 static gboolean entry_search_insert_callback(GtkWidget *widget, GdkEventKey *event, gpointer data) {
 	editor_t *editor = (editor_t*)data;
 	int shift = event->state & GDK_SHIFT_MASK;
@@ -135,7 +166,7 @@ static gboolean entry_search_insert_callback(GtkWidget *widget, GdkEventKey *eve
 	}
 
 	if (ctrl && (event->keyval == GDK_KEY_r)) {
-		history_pick(command_history, editor);
+		history_pick(&command_history, editor);
 		editor->ignore_next_entry_keyrelease = 1;
 		return TRUE;
 	}
@@ -163,31 +194,6 @@ void editor_start_search(editor_t *editor, const char *initial_search_term) {
 	/* not needed gtk_entry_set_text seems to generate a move_search_forward through the event automatically
 	if (initial_search_term != NULL) move_search_forward(editor, TRUE);
 	*/
-}
-
-static void editor_cmdline_cursor_position(editor_t *editor, double *x, double *y, double *alty) {
-	PangoLayout *layout = gtk_entry_get_layout(GTK_ENTRY(editor->entry));
-	PangoRectangle real_pos;
-	gint layout_offset_x, layout_offset_y;
-	gint final_x, final_y;
-	GtkAllocation allocation;
-	gint wpos_x, wpos_y;
-
-	gtk_widget_get_allocation(editor->entry, &allocation);
-	//gtk_window_get_position(GTK_WINDOW(editor->window), &wpos_x, &wpos_y);
-	gdk_window_get_position(gtk_widget_get_window(editor->window), &wpos_x, &wpos_y);
-	gtk_entry_get_layout_offsets(GTK_ENTRY(editor->entry), &layout_offset_x, &layout_offset_y);
-
-	pango_layout_get_cursor_pos(layout, gtk_entry_text_index_to_layout_index(GTK_ENTRY(editor->entry), gtk_editable_get_position(GTK_EDITABLE(editor->entry))), &real_pos, NULL);
-
-	pango_extents_to_pixels(NULL, &real_pos);
-
-	final_y = wpos_y + allocation.y + allocation.height;
-	final_x = wpos_x + allocation.x + layout_offset_x + real_pos.x;
-
-	*x = final_x;
-	*y = final_y;
-	*alty = wpos_y + allocation.y;
 }
 
 static void complete(editor_t *editor, const char *completion) {
@@ -234,7 +240,7 @@ static void maybe_show_cmdcompl(editor_t *editor, bool auto_insert) {
 	alloc_assert(prefix);
 
 	double x, y, alty;
-	editor_cmdline_cursor_position(editor, &x, &y, &alty);
+	editor_cmdline_cursor_position(editor, false, &x, &y, &alty);
 
 	if (!auto_insert) {
 		cmdcompl_wnd_show(&cmd_completer, prefix, editor->buffer->wd, x, y, alty, editor->window);
@@ -250,7 +256,7 @@ static void maybe_show_cmdcompl(editor_t *editor, bool auto_insert) {
 			complete(editor, completion);
 		}
 
-		editor_cmdline_cursor_position(editor, &x, &y, &alty);
+		editor_cmdline_cursor_position(editor, false, &x, &y, &alty);
 
 		if (empty_completion) {
 			cmdcompl_wnd_show(&cmd_completer, prefix, editor->buffer->wd, x, y, alty, editor->window);
@@ -285,13 +291,12 @@ static gboolean entry_default_insert_callback(GtkWidget *widget, GdkEventKey *ev
 			return TRUE;
 		case GDK_KEY_Up:
 		case GDK_KEY_Down:
-			return TRUE;
 		case GDK_KEY_Tab:
 			return TRUE;
 		case GDK_KEY_Return:
 		case GDK_KEY_Right:
 			{
-				char *nt = compl_wnd_get(&(cmd_completer.c));
+				char *nt = compl_wnd_get(&(cmd_completer.c), false);
 				compl_wnd_hide(&(cmd_completer.c));
 				if (nt != NULL) {
 					complete(editor, nt);
@@ -304,13 +309,39 @@ static gboolean entry_default_insert_callback(GtkWidget *widget, GdkEventKey *ev
 			maybe_show_cmdcompl(editor, false);
 			return FALSE;
 		}
+	} else if (compl_wnd_visible(&(command_history.c))) {
+		switch (event->keyval) {
+		case GDK_KEY_Escape:
+		case GDK_KEY_Left:
+			compl_wnd_hide(&(command_history.c));
+			return TRUE;
+		case GDK_KEY_Up:
+		case GDK_KEY_Down:
+		case GDK_KEY_Tab:
+			return TRUE;
+		case GDK_KEY_Return:
+		case GDK_KEY_Right:
+			{
+				char *nt = compl_wnd_get(&(command_history.c), true);
+				compl_wnd_hide(&(command_history.c));
+				if (nt != NULL) {
+					gtk_entry_set_text(GTK_ENTRY(editor->entry), nt);
+					gtk_editable_set_position(GTK_EDITABLE(editor->entry), strlen(nt));
+					free(nt);
+				}
+			}
+			return TRUE;
+		default:
+			history_pick(&command_history, editor);
+		}
 	} else {
 		if (ctrl || alt || super) {
 			compl_wnd_hide(&(cmd_completer.c));
+			compl_wnd_hide(&(command_history.c));
 		}
 
 		if (ctrl && (event->keyval == GDK_KEY_r)) {
-			history_pick(command_history, editor);
+			history_pick(&command_history, editor);
 			editor->ignore_next_entry_keyrelease = 1;
 			return TRUE;
 		}
@@ -326,7 +357,7 @@ static gboolean entry_default_insert_callback(GtkWidget *widget, GdkEventKey *ev
 			if (editor->locked_command_line[0] == '\0') {
 				const char *command = gtk_entry_get_text(GTK_ENTRY(editor->entry));
 				da = interp_eval(editor, command);
-				history_add(command_history, command);
+				history_add(&command_history, time(NULL), editor->buffer->wd, command, true);
 			} else { // locked_command_line was set therefore what was specified is an argument to a pre-established command
 				const char *argument = gtk_entry_get_text(GTK_ENTRY(editor->entry));
 				if (argument[0] == '\0') {
@@ -365,29 +396,38 @@ static gboolean entry_default_insert_callback(GtkWidget *widget, GdkEventKey *ev
 	return FALSE;
 }
 
+static void history_substitute_with_index(struct history *h, editor_t *editor) {
+	char *r = history_index_get(h);
+	gtk_entry_set_text(GTK_ENTRY(editor->entry), (r != NULL) ? r : "");
+}
+
 static gboolean entry_key_press_callback(GtkWidget *widget, GdkEventKey *event, editor_t *editor) {
 	switch(event->keyval) {
 	case GDK_KEY_Tab:
-		history_index_reset(command_history);
+		history_index_reset(&command_history);
 		return TRUE;
 	case GDK_KEY_Up:
 		if (compl_wnd_visible(&(cmd_completer.c))) {
 			compl_wnd_up(&(cmd_completer.c));
+		} else if (compl_wnd_visible(&(command_history.c))) {
+			compl_wnd_up(&(command_history.c));
 		} else {
-			history_index_next(command_history);
-			history_substitute_with_index(command_history, editor);
+			history_index_next(&command_history);
+			history_substitute_with_index(&command_history, editor);
 		}
 		return TRUE;
 	case GDK_KEY_Down:
 		if (compl_wnd_visible(&(cmd_completer.c))) {
 			compl_wnd_down(&(cmd_completer.c));
+		} else if (compl_wnd_visible(&(command_history.c))) {
+			compl_wnd_down(&(command_history.c));
 		} else {
-			history_index_prev(command_history);
-			history_substitute_with_index(command_history, editor);
+			history_index_prev(&command_history);
+			history_substitute_with_index(&command_history, editor);
 		}
 		return TRUE;
 	default:
-		history_index_reset(command_history);
+		history_index_reset(&command_history);
 		return FALSE;
 	}
 }
@@ -396,7 +436,7 @@ static gboolean entry_focusout_callback(GtkWidget *widget, GdkEventFocus *event,
 	editor->label_state = "cmd";
 	set_label_text(editor);
 	if (editor->search_mode) {
-		history_add(search_history, gtk_entry_get_text(GTK_ENTRY(editor->entry)));
+		history_add(&search_history, time(NULL), NULL, gtk_entry_get_text(GTK_ENTRY(editor->entry)), true);
 		gtk_entry_set_text(GTK_ENTRY(editor->entry), "");
 	}
 
@@ -411,7 +451,8 @@ static gboolean entry_focusout_callback(GtkWidget *widget, GdkEventFocus *event,
 	editor->current_entry_handler_id = g_signal_connect(editor->entry, "key-release-event", G_CALLBACK(entry_default_insert_callback), editor);
 	focus_can_follow_mouse = 1;
 	compl_wnd_hide(&(cmd_completer.c));
-	history_index_reset(command_history);
+	compl_wnd_hide(&(command_history.c));
+	history_index_reset(&command_history);
 	return FALSE;
 }
 

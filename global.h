@@ -34,8 +34,8 @@ extern GHashTable *keybindings;
 
 extern int focus_can_follow_mouse;
 
-extern history_t *search_history;
-extern history_t *command_history;
+extern struct history search_history;
+extern struct history command_history;
 
 extern struct completer word_completer;
 extern struct clcompleter cmd_completer;
