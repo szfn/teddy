@@ -4,8 +4,9 @@
 
 #include "global.h"
 #include "cfg.h"
+#include "buffers.h"
 
-#define WORDCOMPL_UPDATE_RADIUS 250
+#define WORDCOMPL_UPDATE_RADIUS 1000
 #define MINIMUM_WORDCOMPL_WORD_LEN 3
 
 void buffer_aux_go_first_nonws_or_0(buffer_t *buffer) {
@@ -175,7 +176,7 @@ uint16_t *buffer_wordcompl_word_at_cursor(buffer_t *buffer, size_t *prefix_len) 
 	return prefix;
 }
 
-static void buffer_wordcompl_update_line(real_line_t *line, struct completer *c) {
+static void buffer_wordcompl_update_line(real_line_t *line, critbit0_tree *c) {
 	int start = -1;
 	for (int i = 0; i < line->cap; ++i) {
 		if (start < 0) {
@@ -193,7 +194,7 @@ static void buffer_wordcompl_update_line(real_line_t *line, struct completer *c)
 
 					utf32_to_utf8(0, &r, &cap, &allocated);
 
-					compl_add(c, r);
+					critbit0_insert(c, r);
 					free(r);
 				}
 				start = -1;
@@ -202,20 +203,27 @@ static void buffer_wordcompl_update_line(real_line_t *line, struct completer *c)
 	}
 }
 
-void buffer_wordcompl_update(buffer_t *buffer, struct completer *c) {
+void buffer_wordcompl_update(buffer_t *buffer, critbit0_tree *cbt) {
+	critbit0_clear(cbt);
+
+	real_line_t *start = buffer->cursor.line;
+	if (start == NULL) start = buffer->real_line;
+
 	int count = WORDCOMPL_UPDATE_RADIUS;
-	for (real_line_t *line = buffer->cursor.line; line != NULL; line = line->prev) {
+	for (real_line_t *line = start; line != NULL; line = line->prev) {
 		--count;
 		if (count <= 0) break;
 
-		buffer_wordcompl_update_line(line, c);
+		buffer_wordcompl_update_line(line, cbt);
 	}
 
 	count = WORDCOMPL_UPDATE_RADIUS;
-	for (real_line_t *line = buffer->cursor.line->next; line != NULL; line = line->next) {
+	for (real_line_t *line = start->next; line != NULL; line = line->next) {
 		--count;
 		if (count <= 0) break;
 
-		buffer_wordcompl_update_line(line, c);
+		buffer_wordcompl_update_line(line, cbt);
 	}
+
+	word_completer_full_update();
 }

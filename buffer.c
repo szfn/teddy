@@ -805,7 +805,7 @@ int load_text_file(buffer_t *buffer, const char *filename) {
 
 	fclose(fin);
 
-	buffer_wordcompl_update(buffer, &word_completer);
+	buffer_wordcompl_update(buffer, &(buffer->cbt));
 	lexy_update_starting_at(buffer, buffer->real_line, false);
 
 	if (valid_chars + invalid_chars > 100) {
@@ -903,7 +903,7 @@ void save_to_text_file(buffer_t *buffer) {
 	}
 
 	buffer_spaceman_on_save(buffer);
-	buffer_wordcompl_update(buffer, &word_completer);
+	buffer_wordcompl_update(buffer, &(buffer->cbt));
 
 	char *r; {
 		lpoint_t startp = { buffer->real_line, 0 };
@@ -1063,6 +1063,8 @@ buffer_t *buffer_create(void) {
 
 	buffer->props = g_hash_table_new_full(g_str_hash, g_str_equal, free, free);
 	buffer->keyprocessor = NULL;
+
+	buffer->cbt.root = NULL;
 
 	return buffer;
 }

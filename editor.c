@@ -1174,6 +1174,9 @@ static gboolean label_button_release_callback(GtkWidget *widget, GdkEventButton 
 			} else {
 				bool just_resize = false;
 				if (target == editor) {
+					if (ontag) {
+						return TRUE;
+					}
 					target = column_get_editor_before(editor->column, editor);
 					just_resize = true;
 				} else {

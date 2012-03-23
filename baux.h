@@ -38,6 +38,6 @@ void buffer_decr_indent(buffer_t *buffer, int count);
 /* internal word autocompletion functions */
 void buffer_wordcompl_init_charset(void);
 uint16_t *buffer_wordcompl_word_at_cursor(buffer_t *buffer, size_t *prefix_len);
-void buffer_wordcompl_update(buffer_t *buffer, struct completer *c);
+void buffer_wordcompl_update(buffer_t *buffer, critbit0_tree *cbt);
 
 #endif

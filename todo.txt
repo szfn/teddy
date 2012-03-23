@@ -1,10 +1,8 @@
-- better autocompletion: if nothing is selected in the completion menu complete with the longest common prefix
-
-- dirrec exclude binary files
-- bugfix: history search doesn't work anymore (gtk exceptions are thrown)
+- dirrec with arguments
 - improve new frame heuristic
 - splitting of columns instead of just adding at the end
 - tutorial
+- manual fix for tabs in directory view
 
 - comment region command
 - refresh all buffers
@@ -27,7 +25,6 @@
 - implement lockcmd command that changes the command line of a buffer to always send a specific command
 - Ctrl-o move to next editor (keep a stack of editors like windows' windows)
 - 's' command: support normal pcre flags
-- persistence of history
 - ability to persist the status of a window
 - auto-reloading buffers when there is no change and the file on disk was changed
 - left+middle -> cut

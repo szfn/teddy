@@ -28,4 +28,6 @@ int teddy_buffer_command(ClientData client_data, Tcl_Interp *interp, int argc, c
 
 buffer_t *buffer_id_to_buffer(const char *bufferid);
 
+void word_completer_full_update(void);
+
 #endif

@@ -5,6 +5,8 @@
 #include "editor.h"
 #include "go.h"
 
+#include "critbit.h"
+
 #include <gdk/gdkkeysyms.h>
 #include <glib-object.h>
 
@@ -548,4 +550,19 @@ int teddy_buffer_command(ClientData client_data, Tcl_Interp *interp, int argc, c
 	}
 
 	return TCL_OK;
+}
+
+static int refill_word_completer(const char *entry, void *p) {
+	compl_add(&word_completer, entry);
+	return 1;
+}
+
+void word_completer_full_update(void) {
+	critbit0_clear(&(word_completer.cbt));
+
+	for (int i = 0; i < buffers_allocated; ++i) {
+		if (buffers[i] == NULL) continue;
+
+		critbit0_allprefixed(&(buffers[i]->cbt), "", refill_word_completer, NULL);
+	}
 }

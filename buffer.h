@@ -12,6 +12,7 @@
 #include "jobs.h"
 #include "point.h"
 #include "parmatch.h"
+#include "critbit.h"
 
 typedef struct _my_glyph_info_t {
 	double kerning_correction;
@@ -95,6 +96,9 @@ typedef struct _buffer_t {
 	/* Scripting support */
 	GHashTable *props;
 	char *keyprocessor;
+
+	/* autocompletion */
+	critbit0_tree cbt;
 } buffer_t;
 
 buffer_t *buffer_create(void);
