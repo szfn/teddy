@@ -1,6 +1,4 @@
-- dirrec with arguments
 - improve new frame heuristic
-- splitting of columns instead of just adding at the end
 - tutorial
 - manual fix for tabs in directory view
 

@@ -27,7 +27,7 @@ extern columns_t *columnset;
 extern GHashTable *keybindings;
 
 #define MAX_LINES_HEIGHT_REQUEST 80
-#define MIN_LINES_HEIGHT_REQUEST 3
+#define MIN_LINES_HEIGHT_REQUEST 0
 #define MIN_EM_COLUMN_SIZE_ATTEMPTED 50
 
 #define SPACEMAN_SAVE_RADIUS 150

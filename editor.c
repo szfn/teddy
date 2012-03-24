@@ -1364,7 +1364,10 @@ gint editor_get_height_request(editor_t *editor) {
 	int lines = buffer_real_line_count(editor->buffer);
 	if (lines > MAX_LINES_HEIGHT_REQUEST) lines = MAX_LINES_HEIGHT_REQUEST;
 	if (lines < MIN_LINES_HEIGHT_REQUEST) lines = MIN_LINES_HEIGHT_REQUEST;
-	return (lines+2) * editor->buffer->line_height;
+	GtkAllocation allocation;
+	gtk_widget_get_allocation(editor->label, &allocation);
+	return lines * editor->buffer->line_height + allocation.height;
+
 }
 
 void editor_free(editor_t *editor) {

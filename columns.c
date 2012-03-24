@@ -220,12 +220,6 @@ editor_t *columns_new_after(columns_t *columns, column_t *column, buffer_t *buff
 
 editor_t *columns_new(columns_t *columns, buffer_t *buffer) {
 	return columns_new_after(columns, columns_get_last(columns), buffer);
-
-	//printf("Resize mode: %d\n", gtk_container_get_resize_mode(GTK_CONTAINER(columns_hbox)));
-
-
-
-
 }
 
 void columns_free(columns_t *columns) {
@@ -403,6 +397,16 @@ static column_t **columns_ordered_columns(columns_t *columns, int *numcol) {
 
 	return r;
 }
+
+/* New heuristic
+ - if this isn't the null buffer try to find a null buffer's frame to take over
+  * if this is a garbage buffer attempt first the rightmost column
+  * otherwise attempt first the current column
+ - if there is a very large column split it
+ - if the new frame is garbage try to use the rightmost column
+ - if the new frame is good try to use the current column
+ - take over the current buffer
+*/
 
 editor_t *heuristic_new_frame(columns_t *columns, editor_t *spawning_editor, buffer_t *buffer) {
 	int garbage = (buffer->name[0] == '+'); // when the garbage flag is set we want to put the buffer in a frame to the right

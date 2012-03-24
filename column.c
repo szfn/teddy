@@ -232,27 +232,6 @@ static editor_t *column_get_editor_after(column_t *column, editor_t *editor) {
 	return r;
 }
 
-static editor_t *column_get_last(column_t *column) {
-	GList *list = gtk_container_get_children(GTK_CONTAINER(column));
-	GList *cur, *prev = NULL;
-	GtkWidget *w;
-
-	for (cur = list; cur != NULL; cur = cur->next) {
-		prev = cur;
-	}
-
-	if (prev == NULL) return NULL;
-
-	w = prev->data;
-
-	g_list_free(list);
-
-	{
-		int idx = editors_editor_from_table(column, w);
-		return editors_index_to_editor(column, idx);
-	}
-}
-
 static int column_add_editor_to_array(column_t *column, editor_t *editor) {
 	int i;
 
@@ -289,35 +268,67 @@ static void column_add_after(column_t *column, editor_t *before_editor, editor_t
 }
 
 static int column_add(column_t *column, editor_t *editor) {
-	editor_t *last_editor = column_get_last(column);
-
 	column_add_editor_to_array(column, editor);
 
-	if (last_editor != NULL) {
+	GList *list = gtk_container_get_children(GTK_CONTAINER(column));
+	int j = 0;
+
+	GList *biggest_children = NULL;
+	double biggest_children_height = 0.0;
+	int biggest_children_idx = -1;
+
+	GList *emptiest_children = NULL;
+	double emptiest_children_emptyness = 0.0;
+	int emptiest_children_idx = -1;
+
+	for (GList *cur = list; cur != NULL; cur = cur->next, ++j) {
 		GtkAllocation allocation;
-		double last_editor_real_size;
-		double new_height;
+		gtk_widget_get_allocation(cur->data, &allocation);
 
-		gtk_widget_get_allocation(last_editor->container, &allocation);
-		last_editor_real_size = editor_get_height_request(last_editor);
-
-		if (allocation.height * 0.40 > allocation.height - last_editor_real_size) {
-			new_height = allocation.height * 0.40;
-		} else {
-			new_height = allocation.height - last_editor_real_size;
+		if ((biggest_children == NULL) || (allocation.height >= (biggest_children_height - editor->buffer->line_height))) {
+			biggest_children = cur;
+			biggest_children_idx = j;
+			biggest_children_height = allocation.height;
 		}
 
-		if (new_height < 50) {
-			// Not enough space
-			return 0;
-		}
+		double emptyness = allocation.height - editor_get_height_request(editors_index_to_editor(column, editors_editor_from_table(column, cur->data)));
 
-		gtk_widget_set_size_request(editor->container, -1, new_height);
-		gtk_widget_set_size_request(last_editor->container, -1, allocation.height - new_height);
+		if (emptyness > editor->buffer->line_height) {
+			if ((emptiest_children == NULL) || (emptyness >= emptiest_children_emptyness - editor->buffer->line_height)) {
+				emptiest_children = cur;
+				emptiest_children_idx = j;
+				emptiest_children_emptyness = emptyness;
+			}
+		}
+	}
+
+	if ((biggest_children != NULL) && (biggest_children_height * 0.50 < 50)) {
+		/* not enough space */
+		g_list_free(list);
+		return 0;
 	}
 
 	gtk_container_add(GTK_CONTAINER(column), editor->container);
 	gtk_box_set_child_packing(GTK_BOX(column), editor->container, TRUE, TRUE, 1, GTK_PACK_START);
+
+	if ((emptiest_children != NULL) && (emptiest_children_emptyness >= 3 * editor->buffer->line_height)) {
+		GtkAllocation allocation;
+		gtk_widget_get_allocation(emptiest_children->data, &allocation);
+
+		gtk_widget_set_size_request(editor->container, -1, emptiest_children_emptyness);
+		gtk_widget_set_size_request(emptiest_children->data, -1, allocation.height - emptiest_children_emptyness);
+
+		gtk_box_reorder_child(GTK_BOX(column), editor->container, emptiest_children_idx+1);
+	} else if (biggest_children != NULL) {
+		double new_height = biggest_children_height * 0.50;
+
+		gtk_widget_set_size_request(editor->container, -1, new_height);
+		gtk_widget_set_size_request(biggest_children->data, -1, new_height);
+
+		gtk_box_reorder_child(GTK_BOX(column), editor->container, biggest_children_idx+1);
+	}
+
+	g_list_free(list);
 
 	gtk_widget_show_all(GTK_WIDGET(column));
 	gtk_widget_queue_draw(GTK_WIDGET(column));
