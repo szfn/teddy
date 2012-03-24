@@ -31,6 +31,7 @@ GType gtk_columns_get_type(void) G_GNUC_CONST;
 columns_t *the_columns_new(GtkWidget *window);
 void columns_free(columns_t *columns);
 editor_t *columns_new(columns_t *columns, buffer_t *buffer);
+editor_t *columns_new_after(columns_t *columns, column_t *column, buffer_t *buffer);
 void columns_replace_buffer(columns_t *columns, buffer_t *buffer);
 column_t *columns_get_column_before(columns_t *columns, column_t *column);
 int columns_column_count(columns_t *columns);

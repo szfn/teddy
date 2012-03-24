@@ -37,6 +37,8 @@ static gboolean reshandle_expose_callback(GtkWidget *widget, GdkEventExpose *eve
 }
 
 static gboolean reshandle_button_press_callback(GtkWidget *widget, GdkEventButton *event, reshandle_t *reshandle) {
+	int shift = event->state & GDK_SHIFT_MASK;
+
 	if ((event->type == GDK_BUTTON_PRESS) && (event->button == 1)) {
 		reshandle->origin_x = event->x;
 		reshandle->origin_y = event->y;
@@ -56,13 +58,18 @@ static gboolean reshandle_button_press_callback(GtkWidget *widget, GdkEventButto
 	}
 
 	if ((event->type == GDK_BUTTON_PRESS) && (event->button == 3)) {
-		editor_t *new_editor = column_new_editor(reshandle->editor->column, null_buffer());
-		if (new_editor == NULL) {
-			heuristic_new_frame(columnset, reshandle->editor, null_buffer());
+		if (shift) {
+			editor_t *new_editor = columns_new_after(columnset, reshandle->editor->column, null_buffer());
+			if (new_editor != NULL) editor_grab_focus(new_editor, true);
 		} else {
-           editor_grab_focus(new_editor, true);
+			editor_t *new_editor = column_new_editor(reshandle->editor->column, null_buffer());
+			if (new_editor == NULL) {
+				heuristic_new_frame(columnset, reshandle->editor, null_buffer());
+			} else {
+				editor_grab_focus(new_editor, true);
+			}
+			return TRUE;
 		}
-		return TRUE;
 	}
 
 	return FALSE;
