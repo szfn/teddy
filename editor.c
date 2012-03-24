@@ -428,6 +428,15 @@ static void full_keyevent_to_string(guint keyval, int super, int ctrl, int alt, 
 	strcat(pressed, converted);
 }
 
+static void editor_complete(editor_t *editor) {
+	char *completion = compl_wnd_get(&word_completer, false);
+	compl_wnd_hide(&word_completer);
+	if (completion != NULL) {
+		editor_replace_selection(editor, completion);
+		free(completion);
+	}
+}
+
 static gboolean key_press_callback(GtkWidget *widget, GdkEventKey *event, editor_t *editor) {
 	char pressed[40] = "";
 	const char *command;
@@ -483,19 +492,18 @@ static gboolean key_press_callback(GtkWidget *widget, GdkEventKey *event, editor
 					return TRUE;
 				case GDK_KEY_Down:
 				case GDK_KEY_Tab:
-					compl_wnd_down(&word_completer);
+					if (word_completer.common_suffix != NULL) {
+						editor_replace_selection(editor, word_completer.common_suffix);
+					} else {
+						compl_wnd_down(&word_completer);
+					}
 					return TRUE;
 				case GDK_KEY_Escape:
 				case GDK_KEY_Left:
 					return FALSE;
 				case GDK_KEY_Return:
 				case GDK_KEY_Right: {
-					char *completion = compl_wnd_get(&word_completer, false);
-					compl_wnd_hide(&word_completer);
-					if (completion != NULL) {
-						editor_replace_selection(editor, completion);
-						free(completion);
-					}
+					editor_complete(editor);
 					return TRUE;
 				}
 			}

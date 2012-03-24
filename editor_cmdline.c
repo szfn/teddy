@@ -272,6 +272,25 @@ static void maybe_show_cmdcompl(editor_t *editor, bool auto_insert) {
 	free(prefix);
 }
 
+static void entry_complete(editor_t *editor) {
+	char *nt = compl_wnd_get(&(cmd_completer.c), false);
+	compl_wnd_hide(&(cmd_completer.c));
+	if (nt != NULL) {
+		complete(editor, nt);
+		free(nt);
+	}
+}
+
+static void entry_history_complete(editor_t *editor) {
+	char *nt = compl_wnd_get(&(command_history.c), true);
+	compl_wnd_hide(&(command_history.c));
+	if (nt != NULL) {
+		gtk_entry_set_text(GTK_ENTRY(editor->entry), nt);
+		gtk_editable_set_position(GTK_EDITABLE(editor->entry), strlen(nt));
+		free(nt);
+	}
+}
+
 static gboolean entry_default_insert_callback(GtkWidget *widget, GdkEventKey *event, editor_t *editor) {
 	//int shift = event->state & GDK_SHIFT_MASK;
 	int alt = event->state & GDK_MOD1_MASK;
@@ -292,17 +311,13 @@ static gboolean entry_default_insert_callback(GtkWidget *widget, GdkEventKey *ev
 		case GDK_KEY_Up:
 		case GDK_KEY_Down:
 		case GDK_KEY_Tab:
+			if (compl_wnd_size(&(cmd_completer.c)) == 1) {
+				entry_complete(editor);
+			}
 			return TRUE;
 		case GDK_KEY_Return:
 		case GDK_KEY_Right:
-			{
-				char *nt = compl_wnd_get(&(cmd_completer.c), false);
-				compl_wnd_hide(&(cmd_completer.c));
-				if (nt != NULL) {
-					complete(editor, nt);
-					free(nt);
-				}
-			}
+			entry_complete(editor);
 			return TRUE;
 		default:
 			//compl_wnd_hide(&(cmd_completer.c));
@@ -318,18 +333,13 @@ static gboolean entry_default_insert_callback(GtkWidget *widget, GdkEventKey *ev
 		case GDK_KEY_Up:
 		case GDK_KEY_Down:
 		case GDK_KEY_Tab:
+			if (compl_wnd_size(&(command_history.c)) == 1) {
+				entry_history_complete(editor);
+			}
 			return TRUE;
 		case GDK_KEY_Return:
 		case GDK_KEY_Right:
-			{
-				char *nt = compl_wnd_get(&(command_history.c), true);
-				compl_wnd_hide(&(command_history.c));
-				if (nt != NULL) {
-					gtk_entry_set_text(GTK_ENTRY(editor->entry), nt);
-					gtk_editable_set_position(GTK_EDITABLE(editor->entry), strlen(nt));
-					free(nt);
-				}
-			}
+			entry_history_complete(editor);
 			return TRUE;
 		default:
 			history_pick(&command_history, editor);

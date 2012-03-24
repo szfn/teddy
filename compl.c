@@ -35,6 +35,7 @@ void compl_init(struct completer *c) {
 	c->cbt.root = NULL;
 	c->list = gtk_list_store_new(1, G_TYPE_STRING);
 	c->tree = gtk_tree_view_new();
+	c->common_suffix = NULL;
 
 	gtk_tree_view_insert_column_with_attributes(GTK_TREE_VIEW(c->tree), -1, "Completion", gtk_cell_renderer_text_new(), "text", 0, NULL);
 	gtk_tree_view_set_model(GTK_TREE_VIEW(c->tree), GTK_TREE_MODEL(c->list));
@@ -114,6 +115,17 @@ void compl_wnd_show(struct completer *c, const char *prefix, double x, double y,
 			compl_wnd_hide(c);
 			return;
 		}
+	}
+
+	if (c->common_suffix != NULL) {
+		free(c->common_suffix);
+		c->common_suffix = NULL;
+	}
+
+	c->common_suffix = critbit0_common_suffix_for_prefix(&(c->cbt), prefix);
+	if (strcmp(c->common_suffix, "") == 0) {
+		free(c->common_suffix);
+		c->common_suffix = NULL;
 	}
 
 	gtk_window_set_transient_for(GTK_WINDOW(c->window), GTK_WINDOW(parent));
@@ -211,6 +223,10 @@ void compl_wnd_hide(struct completer *c) {
 	if (!(c->visible)) return;
 	gtk_widget_hide(c->window);
 	c->visible = false;
+	if (c->common_suffix != NULL) {
+		free(c->common_suffix);
+		c->common_suffix = NULL;
+	}
 }
 
 bool compl_wnd_visible(struct completer *c) {
@@ -219,4 +235,12 @@ bool compl_wnd_visible(struct completer *c) {
 
 void compl_free(struct completer *c) {
 	critbit0_clear(&(c->cbt));
+	if (c->common_suffix != NULL) {
+		free(c->common_suffix);
+		c->common_suffix = NULL;
+	}
+}
+
+int compl_wnd_size(struct completer *c) {
+	return c->size;
 }

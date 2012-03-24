@@ -16,6 +16,8 @@ struct completer {
 	size_t size;
 	size_t prefix_len;
 	double alty;
+
+	char *common_suffix;
 };
 
 void compl_init(struct completer *c);
@@ -26,6 +28,7 @@ void compl_wnd_show(struct completer *c, const char *prefix, double x, double y,
 void compl_wnd_up(struct completer *c);
 void compl_wnd_down(struct completer *c);
 char *compl_wnd_get(struct completer *c, bool all);
+int compl_wnd_size(struct completer *c);
 void compl_wnd_hide(struct completer *c);
 bool compl_wnd_visible(struct completer *c);
 void compl_free(struct completer *c);
