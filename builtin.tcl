@@ -508,25 +508,61 @@ proc buffer_setup_hook {buffer-name} {
 	return {}
 }
 
-proc dirrec_ex {directory} {
+proc dirrec_ex {directory args} {
+	puts "Files $args in $directory"
+
 	set files [split [exec find $directory -type f ! -path "*/\.*"] "\n"]
+	set filtered_files {}
+	set name_max_len 0
 	for {set i 0} {$i < [llength $files]} {incr i} {
 		set cur [lindex $files $i]
 		set curbase [string range $cur [expr [string last "/" $cur] + 1] end]
-		lset files $i "$curbase\t$cur"
+
+		set appended 0
+		if {[llength $args] == 0} {
+			lappend filtered_files [list $curbase $cur]
+			set appended 1
+		} else {
+			foreach re $args {
+				if {[regexp $re $curbase]} {
+					lappend filtered_files [list $curbase $cur]
+					set appended 1
+					break
+				}
+			}
+		}
+
+		if {$appended} {
+			if {[string length $curbase] > $name_max_len} {
+				if {$name_max_len == 0 || $name_max_len + 4 >= [string length $curbase]} {
+					set name_max_len [string length $curbase]
+				}
+			}
+		}
 	}
 
-	set files [lsort $files]
-	puts [join $files "\n"]
+	for {set i 0} {$i < [llength $filtered_files]} {incr i} {
+		set cur [lindex $filtered_files $i]
+		set name [lindex $cur 0]
+		set path [lindex $cur 1]
+
+		set padding [expr $name_max_len - [string length $name] + 2]
+		if {$padding <= 0} { set padding 2 }
+		set padding [string repeat " " $padding]
+
+		lset filtered_files $i "$name$padding$path"
+	}
+
+	set filtered_files [lsort $filtered_files]
+	puts [join $filtered_files "\n"]
 }
 
-proc dirrec {directory} {
-	bg "+dirrec/$directory" "dirrec_ex $directory"
+proc dirrec {directory args} {
+	bg "+dirrec/$directory" "dirrec_ex $directory $args"
 }
 
 proc loadhistory {} {
 	set histf $::env(HOME)/.teddy_history
-	puts "history file: $histf"
 	if {[catch {set f [open $histf RDONLY]} err]} {
 		puts "No history"
 		return

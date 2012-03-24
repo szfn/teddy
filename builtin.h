@@ -511,25 +511,61 @@ proc buffer_setup_hook {buffer-name} {\n\
 	return {}\n\
 }\n\
 \n\
-proc dirrec_ex {directory} {\n\
+proc dirrec_ex {directory args} {\n\
+	puts \"Files $args in $directory\"\n\
+\n\
 	set files [split [exec find $directory -type f ! -path \"*/\\.*\"] \"\\n\"]\n\
+	set filtered_files {}\n\
+	set name_max_len 0\n\
 	for {set i 0} {$i < [llength $files]} {incr i} {\n\
 		set cur [lindex $files $i]\n\
 		set curbase [string range $cur [expr [string last \"/\" $cur] + 1] end]\n\
-		lset files $i \"$curbase\\t$cur\"\n\
+\n\
+		set appended 0\n\
+		if {[llength $args] == 0} {\n\
+			lappend filtered_files [list $curbase $cur]\n\
+			set appended 1\n\
+		} else {\n\
+			foreach re $args {\n\
+				if {[regexp $re $curbase]} {\n\
+					lappend filtered_files [list $curbase $cur]\n\
+					set appended 1\n\
+					break\n\
+				}\n\
+			}\n\
+		}\n\
+\n\
+		if {$appended} {\n\
+			if {[string length $curbase] > $name_max_len} {\n\
+				if {$name_max_len == 0 || $name_max_len + 4 >= [string length $curbase]} {\n\
+					set name_max_len [string length $curbase]\n\
+				}\n\
+			}\n\
+		}\n\
 	}\n\
 \n\
-	set files [lsort $files]\n\
-	puts [join $files \"\\n\"]\n\
+	for {set i 0} {$i < [llength $filtered_files]} {incr i} {\n\
+		set cur [lindex $filtered_files $i]\n\
+		set name [lindex $cur 0]\n\
+		set path [lindex $cur 1]\n\
+\n\
+		set padding [expr $name_max_len - [string length $name] + 2]\n\
+		if {$padding <= 0} { set padding 2 }\n\
+		set padding [string repeat \" \" $padding]\n\
+\n\
+		lset filtered_files $i \"$name$padding$path\"\n\
+	}\n\
+\n\
+	set filtered_files [lsort $filtered_files]\n\
+	puts [join $filtered_files \"\\n\"]\n\
 }\n\
 \n\
-proc dirrec {directory} {\n\
-	bg \"+dirrec/$directory\" \"dirrec_ex $directory\"\n\
+proc dirrec {directory args} {\n\
+	bg \"+dirrec/$directory\" \"dirrec_ex $directory $args\"\n\
 }\n\
 \n\
 proc loadhistory {} {\n\
 	set histf $::env(HOME)/.teddy_history\n\
-	puts \"history file: $histf\"\n\
 	if {[catch {set f [open $histf RDONLY]} err]} {\n\
 		puts \"No history\"\n\
 		return\n\
