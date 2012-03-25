@@ -107,9 +107,17 @@ void rd(DIR *dir, buffer_t *buffer) {
 	char cur[255] = "";
 	bool first = true;
 
+	int max_len = 8;
+
+	int count = 0;
+
 	for (int i = 0; i < es.cur; ++i) {
+		int es_len = strlen(es.v[i].name);
+
+		if (es_len > max_len) max_len = es_len;
+
 		//printf("Comparing [%s] [%s]\n", cur, es.v[i].name);
-		if ((cur[0] == '\0') || strncmp(cur, es.v[i].name, strlen(cur)) != 0) {
+		if ((cur[0] == '\0') || (count > 0) || strncmp(cur, es.v[i].name, strlen(cur)) != 0) {
 			if (!first) rdapp(buffer, "\n", L_NOTHING);
 			char *dot = strchr(es.v[i].name, '.');
 			if (dot != NULL) {
@@ -125,8 +133,10 @@ void rd(DIR *dir, buffer_t *buffer) {
 				//printf("No dot found\n");
 				cur[0] = '\0';
 			}
+			count = 0;
 		} else {
 			rdapp(buffer, "\t", L_NOTHING);
+			++count;
 		}
 
 		first = false;
@@ -141,6 +151,8 @@ void rd(DIR *dir, buffer_t *buffer) {
 	}
 
 	rdapp(buffer, "\n", L_NOTHING);
+
+	buffer->tab_width = max_len * 2.0/3.0;
 
 	entry_free(&es);
 }

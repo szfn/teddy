@@ -1,44 +1,30 @@
-- manual fix for tabs in directory view
 - tutorial
 
 - comment region command
+- implement command to create a scratch buffer
+- ability to persist the status of a window
+- auto-reloading buffers when there is no change and the file on disk was changed
+- resizing with reshandle will resize more editors if one isn't enough to bring the reshandle where it should be
 - refresh all buffers
 - replace tcl regex engine with TRE
 - TAGS files
 - macros
-- gdb integration
 - debugger integration (just displaying currently executed line)
 - selection should copy selected text on past not on selection, for better efficiency (selection slowdown is noticeable on mouse selection)
 - extend regular expressions in 's' to be lexically aware
 - word movement, word selection and tokenization should be tied to syntax analysis
-- change perror to show error windows
 - implement | command that filters selected content through external command
 - make easy way to reindent though external filter
-- cmdcompl shoul build the list of internal commands dynamically
-- command line autocompletion shouldn't include commands unless it's the first word con the command line
-- implement command to create a scratch buffer
 - fix mark words when used with cursor keys
 - implement stayoncmd flag for buffers
 - implement lockcmd command that changes the command line of a buffer to always send a specific command
 - Ctrl-o move to next editor (keep a stack of editors like windows' windows)
 - 's' command: support normal pcre flags
-- ability to persist the status of a window
-- auto-reloading buffers when there is no change and the file on disk was changed
 - left+middle -> cut
 - move mouse cursor when searching with mouse
 - use an editor for the command line
 - clang syntax highlighting
 - elastic tabs
-- resizing with reshandle will resize more editors if one isn't enough to bring the reshandle where it should be
 
 
-new heuristic from acme:
-
-* find the biggest window in activecol (bigw)
-* find the window with the most empty space in activecol (emptyw)
-* (both searches are biased towards the bottom of the column other things being equal)
-* with el = empty space in emptyw:
-  if (el > 15 || (el > 3 && (el > (size(bigw) -1)/2))) use emptyw
-* if activecol == column of the current window, and the current window is at least 2/3 of size(bigw) replace bigw with the current window
-* use bigw by splitting it by 2
 
