@@ -158,23 +158,23 @@ static void gtk_column_size_allocate(GtkWidget *widget, GtkAllocation *allocatio
 }
 
 void column_free(column_t *column) {
-	int i;
-	for (i = 0; i < column->editors_allocated; ++i) {
+	for (int i = 0; i < column->editors_allocated; ++i) {
 		if (column->editors[i] != NULL) {
 			editor_free(column->editors[i]);
 			column->editors[i] = NULL;
 		}
 	}
 	free(column->editors);
+	if (columnset->active_column == column) {
+		columnset->active_column = NULL;
+	}
 	//g_object_unref(G_OBJECT(column));
 }
 
 static void editors_grow(column_t *column) {
-	int i;
-
 	column->editors = realloc(column->editors, sizeof(editor_t *) * column->editors_allocated * 2);
 	alloc_assert(column->editors);
-	for (i = column->editors_allocated; i < column->editors_allocated * 2; ++i) {
+	for (int i = column->editors_allocated; i < column->editors_allocated * 2; ++i) {
 		column->editors[i] = NULL;
 	}
 	column->editors_allocated *= 2;
@@ -182,8 +182,7 @@ static void editors_grow(column_t *column) {
 
 
 static int editors_find_editor(column_t *column, editor_t *editor) {
-	int i;
-	for (i = 0; i < column->editors_allocated; ++i) {
+	for (int i = 0; i < column->editors_allocated; ++i) {
 		if (column->editors[i] == editor) return i;
 	}
 	return -1;
