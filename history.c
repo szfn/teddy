@@ -30,13 +30,21 @@ void history_free(struct history *h) {
 	}
 }
 
+static bool strnulleq(const char *a, const char *b) {
+	if ((a == NULL) || (b == NULL)) {
+		return (a == NULL) && (b == NULL);
+	}
+
+	return strcmp(a, b) == 0;
+}
+
 void history_add(struct history *h, time_t timestamp, const char *wd, const char *entry, bool counted) {
 	compl_add(&(h->c), entry);
 
 	struct history_item *prev = h->items + ((h->cap-1 < 0) ? (HISTORY_SIZE - 1) : h->cap-1);
 
 	if (prev->entry != NULL) {
-		if ((strcmp(prev->wd, wd) == 0) && (strcmp(prev->entry, entry) == 0)) return;
+		if (strnulleq(prev->wd, wd) && strnulleq(prev->entry, entry)) return;
 	}
 
 	h->index = (h->cap)++;

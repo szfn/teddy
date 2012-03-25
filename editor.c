@@ -1096,7 +1096,7 @@ static gboolean hscrolled_callback(GtkAdjustment *adj, gpointer data) {
 bool dragging = false;
 
 static gboolean label_button_press_callback(GtkWidget *widget, GdkEventButton *event, editor_t *editor) {
-	int shift = event->state & GDK_SHIFT_MASK;
+	int ctrl = event->state & GDK_CONTROL_MASK;
 
 	if (event->button == 1) {
 		if (event->type == GDK_2BUTTON_PRESS) {
@@ -1136,7 +1136,7 @@ static gboolean label_button_press_callback(GtkWidget *widget, GdkEventButton *e
 	}
 
 	if ((event->type == GDK_BUTTON_PRESS) && (event->button == 3)) {
-		if (shift) {
+		if (ctrl) {
 			editor_t *new_editor = columns_new_after(columnset, editor->column, null_buffer());
 			if (new_editor != NULL) editor_grab_focus(new_editor, true);
 		} else {
@@ -1151,6 +1151,64 @@ static gboolean label_button_press_callback(GtkWidget *widget, GdkEventButton *e
 	}
 
 	return FALSE;
+}
+
+static void tag_drag_behaviour(bool ontag, editor_t *source, editor_t *target, double y) {
+	if (source == NULL) return;
+	if (target == NULL) return;
+
+	buffer_t *tbuf = target->buffer;
+	buffer_t *sbuf = source->buffer;
+
+	if (ontag) { // dragging on a tag means we want to swap buffers
+		if (target == source) return; // nothing to swap
+
+		if ((sbuf == null_buffer()) && (tbuf == null_buffer())) return; // both were null, don't swap
+
+		editor_switch_buffer(target, sbuf);
+		editor_switch_buffer(source, tbuf);
+
+		if (tbuf == null_buffer()) {
+			// target buffer was the null buffer, close origin, we don't keep empty frames around
+			editor_close_editor(source);
+		}
+	} else { // dragging inside the area, this means we want to move the frame (but it could also be a resize)
+		editor_t *above_source = column_get_editor_before(source->column, source);
+		if ((target == source) || (target == above_source)) {
+			// moving an editor inside itself or inside the editor above it means we want to resize it
+
+			if (above_source == NULL) return; // attempted resize but there is nothing above the source editor
+
+			GtkAllocation a_above;
+			gtk_widget_get_allocation(above_source->container, &a_above);
+
+			GtkAllocation a_source;
+			gtk_widget_get_allocation(source->container, &a_source);
+
+			double new_above_size = y - a_above.y;
+			double new_source_size = a_above.height - new_above_size + a_source.height;
+
+			column_resize_editor_pair(above_source, new_above_size, source, new_source_size);
+		} else if ((tbuf == null_buffer()) && (sbuf != null_buffer())) {
+			// we dragged into a null buffer, take it over
+			editor_switch_buffer(target, sbuf);
+			editor_close_editor(source);
+		} else {
+			// actually moving source somewhere else
+
+			buffer_t *sbuf = source->buffer;
+			editor_close_editor(source);
+			source = column_new_editor_after(target->column, target, sbuf);
+
+			GtkAllocation tallocation;
+			gtk_widget_get_allocation(target->container, &tallocation);
+
+			double new_target_size = y - tallocation.y;
+			double new_source_size = tallocation.height - new_target_size;
+
+			column_resize_editor_pair(target, new_target_size, source, new_source_size);
+		}
+	}
 }
 
 static gboolean label_button_release_callback(GtkWidget *widget, GdkEventButton *event, editor_t *editor) {
@@ -1177,60 +1235,8 @@ static gboolean label_button_release_callback(GtkWidget *widget, GdkEventButton 
 
 		if (shift) ontag = true;
 
-		if (target != NULL) {
-			if (ontag && (target != editor)) {
-				buffer_t *tbuf = target->buffer;
-				editor_switch_buffer(target, editor->buffer);
-				editor_switch_buffer(editor, tbuf);
+		tag_drag_behaviour(ontag, editor, target, y);
 
-				if (tbuf == null_buffer()) {
-					editor_close_editor(editor);
-				}
-			} else {
-				bool just_resize = false;
-				if (target == editor) {
-					if (ontag) {
-						return TRUE;
-					}
-					target = column_get_editor_before(editor->column, editor);
-					just_resize = true;
-				} else {
-					if (target->column == editor->column) {
-						editor_t *editor_currently_before = column_get_editor_before(editor->column, editor);
-						if (editor_currently_before == target) {
-							just_resize = true;
-						}
-					}
-				}
-
-				if (just_resize) {
-					if (target != NULL) {
-						GtkAllocation tallocation;
-						gtk_widget_get_allocation(target->container, &tallocation);
-
-						GtkAllocation allocation;
-						gtk_widget_get_allocation(editor->container, &allocation);
-
-						double new_target_size = y - tallocation.y;
-						double new_editor_size = tallocation.height - new_target_size + allocation.height;
-
-						column_resize_editor_pair(target, new_target_size, editor, new_editor_size);
-					}
-				} else {
-					buffer_t *buffer = editor->buffer;
-					editor_close_editor(editor);
-					editor = column_new_editor_after(target->column, target, buffer);
-
-					GtkAllocation tallocation;
-					gtk_widget_get_allocation(target->container, &tallocation);
-
-					double new_target_size = y - tallocation.y;
-					double new_editor_size = tallocation.height - new_target_size;
-
-					column_resize_editor_pair(target, new_target_size, editor, new_editor_size);
-				}
-			}
-		}
 		return TRUE;
 	} else if (!shift && ctrl && !alt && !super) {
 		column_t *target_column = columns_get_column_from_position(columnset, x, y);

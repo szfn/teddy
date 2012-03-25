@@ -123,7 +123,7 @@ void compl_wnd_show(struct completer *c, const char *prefix, double x, double y,
 	}
 
 	c->common_suffix = critbit0_common_suffix_for_prefix(&(c->cbt), prefix);
-	if (strcmp(c->common_suffix, "") == 0) {
+	if ((c->common_suffix != NULL) && (strcmp(c->common_suffix, "") == 0)) {
 		free(c->common_suffix);
 		c->common_suffix = NULL;
 	}

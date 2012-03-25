@@ -1,6 +1,5 @@
-- improve new frame heuristic
-- tutorial
 - manual fix for tabs in directory view
+- tutorial
 
 - comment region command
 - refresh all buffers
