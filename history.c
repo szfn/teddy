@@ -127,9 +127,18 @@ int teddy_history_command(ClientData client_data, Tcl_Interp*interp, int argc, c
 	} else {
 		int idx = atoi(argv[2]);
 
-		struct history_item *it = h->items + idx;
+		idx = (h->cap - idx) % HISTORY_SIZE;
 
-		Tcl_SetResult(interp, (it->entry != NULL) ? it->entry : "", TCL_VOLATILE);
+		if (idx < 0) idx = -idx;
+
+		if (idx >= 0) {
+			struct history_item *it = h->items + idx;
+
+			Tcl_SetResult(interp, (it->entry != NULL) ? it->entry : "", TCL_VOLATILE);
+		} else {
+			Tcl_SetResult(interp, "", TCL_VOLATILE);
+		}
+
 		return TCL_OK;
 	}
 }
