@@ -69,8 +69,6 @@ static bool editor_maybe_show_completions(editor_t *editor, bool autoinsert) {
 		return false;
 	}
 
-	bool r = false;
-
 	char *utf8prefix = string_utf16_to_utf8(prefix, wordcompl_prefix_len);
 	char *completion = compl_complete(&word_completer, utf8prefix);
 
@@ -91,7 +89,6 @@ static bool editor_maybe_show_completions(editor_t *editor, bool autoinsert) {
 			free(new_prefix);
 		}
 		free(completion);
-		r = true;
 	} else {
 		compl_wnd_hide(&word_completer);
 	}
@@ -99,7 +96,7 @@ static bool editor_maybe_show_completions(editor_t *editor, bool autoinsert) {
 	free(prefix);
 	free(utf8prefix);
 
-	return r;
+	return true;
 }
 
 void editor_replace_selection(editor_t *editor, const char *new_text) {

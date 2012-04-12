@@ -568,7 +568,7 @@ proc loadhistory {} {
 		return
 	}
 	while {[gets $f line] >= 0} {
-		split $line "\t"
+		set line [split $line "\t"]
 		teddyhistory cmd add [lindex $line 0] [lindex $line 1] [lindex $line 2]
 	}
 	close $f
