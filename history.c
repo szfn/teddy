@@ -49,6 +49,10 @@ void history_add(struct history *h, time_t timestamp, const char *wd, const char
 
 	h->index = (h->cap)++;
 
+	if (h->index >= HISTORY_SIZE) {
+		h->index = h->cap = 0;
+	}
+
 	struct history_item *it = h->items + h->index;
 
 	history_item_free(it);
