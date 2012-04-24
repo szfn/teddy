@@ -413,7 +413,7 @@ lexydef python 0 {\n\
 		\"-?(?:0[xX])[0-9a-fA-F]*\" literal\n\
 		\"\\<None|True|False\\>\" literal\n\
 \n\
-		{\\<$[a-zA-Z_][a-zA-Z0-9_]*\\>} id\n\
+		{\\<[a-zA-Z_][a-zA-Z0-9_]*\\>} id\n\
 \n\
 		{(?:r|u|ur|R|U|UR|Ur|uR|b|B|br|Br|bR|BR)?\"\"\"} lstringq:string\n\
 		{(?:r|u|ur|R|U|UR|Ur|uR|b|B|br|Br|bR|BR)?'''} lstringq:string\n\
@@ -478,7 +478,7 @@ lexydef go 0 {\n\
 		\"-?[0-9][0-9]*(?:\\\\.[0-9]+)?(?:e-[0-9]+?)?\" literal\n\
 		{(?:nil|true|false|iota)} literal\n\
 \n\
-		{\\<$[a-zA-Z_][a-zA-Z0-9_]*\\>} id\n\
+		{\\<[a-zA-Z_][a-zA-Z0-9_]*\\>} id\n\
 \n\
 		\"//.*$\" comment\n\
 		\"/\\\\*\" comment:comment\n\
