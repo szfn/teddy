@@ -121,13 +121,22 @@ void editor_center_on_cursor(editor_t *editor) {
 	double translated_y = y - gtk_adjustment_get_value(GTK_ADJUSTMENT(editor->adjustment));
 	double translated_x = x - gtk_adjustment_get_value(GTK_ADJUSTMENT(editor->hadjustment));
 
-	if ((translated_y < 0) || (translated_y > allocation.height)) {
-		gtk_adjustment_set_value(GTK_ADJUSTMENT(editor->adjustment), y - allocation.height / 2);
+	if ((editor->buffer->cursor.line == NULL) || (editor->buffer->cursor.line->prev == NULL)) {
+		gtk_adjustment_set_value(GTK_ADJUSTMENT(editor->adjustment), 0);
+	} else {
+		if ((translated_y < 0) || (translated_y > allocation.height)) {
+			gtk_adjustment_set_value(GTK_ADJUSTMENT(editor->adjustment), y - allocation.height / 2);
+		}
 	}
 
-	if ((translated_x < 0) || (translated_x > allocation.width)) {
-		gtk_adjustment_set_value(GTK_ADJUSTMENT(editor->hadjustment), x - allocation.width / 2);
+	if (editor->buffer->cursor.glyph == 0) {
+		gtk_adjustment_set_value(GTK_ADJUSTMENT(editor->hadjustment), 0);
+	} else {
+		if ((translated_x < 0) || (translated_x > allocation.width)) {
+			gtk_adjustment_set_value(GTK_ADJUSTMENT(editor->hadjustment), x - allocation.width / 2);
+		}
 	}
+
 }
 
 static void editor_include_cursor(editor_t *editor) {
