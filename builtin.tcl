@@ -441,7 +441,7 @@ lexydef python 0 {
 lexyassoc python {\.py$}
 
 lexydef java 0 {
-		{\<(?:abstract|continue|for|new|switch|assert|default|goto|package|synchronized|boolean|do|if|private|this|break|double|implements|protected|throw|byte|else|import|public|throws|case|enum|instanceof|return|transient|catch|extends|int|short|trychar|final|interface|static|void|class|finally|long|strictfp|volatile|const|float|native|super|while)\>} keyword
+		{\<(?:abstract|continue|for|new|switch|assert|default|goto|package|synchronized|boolean|do|if|private|this|break|double|implements|protected|throw|byte|else|import|public|throws|case|enum|instanceof|return|transient|catch|extends|int|short|try|char|final|interface|static|void|class|finally|long|strictfp|volatile|const|float|native|super|while)\>} keyword
 
 		"-?(?:0x)[0-9a-fA-F]*" literal
 		"-?[0-9][0-9]*(?:\\.[0-9]+)?(?:e-[0-9]+?)?" literal

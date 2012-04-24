@@ -444,7 +444,7 @@ lexydef python 0 {\n\
 lexyassoc python {\\.py$}\n\
 \n\
 lexydef java 0 {\n\
-		{\\<(?:abstract|continue|for|new|switch|assert|default|goto|package|synchronized|boolean|do|if|private|this|break|double|implements|protected|throw|byte|else|import|public|throws|case|enum|instanceof|return|transient|catch|extends|int|short|trychar|final|interface|static|void|class|finally|long|strictfp|volatile|const|float|native|super|while)\\>} keyword\n\
+		{\\<(?:abstract|continue|for|new|switch|assert|default|goto|package|synchronized|boolean|do|if|private|this|break|double|implements|protected|throw|byte|else|import|public|throws|case|enum|instanceof|return|transient|catch|extends|int|short|try|char|final|interface|static|void|class|finally|long|strictfp|volatile|const|float|native|super|while)\\>} keyword\n\
 \n\
 		\"-?(?:0x)[0-9a-fA-F]*\" literal\n\
 		\"-?[0-9][0-9]*(?:\\\\.[0-9]+)?(?:e-[0-9]+?)?\" literal\n\
