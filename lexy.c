@@ -484,7 +484,10 @@ void lexy_update_starting_at(buffer_t *buffer, real_line_t *start_line, bool qui
 	real_line_t *line;
 	for (line = start_line; line != NULL; line = line->next) {
 		if ((line->lexy_state_start != state) || (line->lexy_state_start == 0xff) || (count < 2)) {
-			if (state == 0xff) state = line->lexy_state_start;
+			if (state == 0xff) {
+				if (line->lexy_state_start == 0xff) line->lexy_state_start = 0;
+				state = line->lexy_state_start;
+			}
 			lexy_update_line(line, tokenizer, &state);
 		} else {
 			if (quick_exit) return;
