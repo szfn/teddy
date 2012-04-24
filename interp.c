@@ -920,6 +920,11 @@ static int teddy_refresh_command(ClientData client_data, Tcl_Interp *interp, int
 		return TCL_ERROR;
 	}
 
+	if (context_editor->buffer->name != NULL) {
+		// do not refresh special buffers
+		if (context_editor->buffer->name[0] == '+') return TCL_OK;
+	}
+
 	char *path = strdup(context_editor->buffer->path);
 	alloc_assert(path);
 
