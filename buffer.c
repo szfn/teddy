@@ -708,7 +708,7 @@ int load_dir(buffer_t *buffer, const char *dirname) {
 
 	closedir(dir);
 
-	buffer->editable = false;
+	//buffer->editable = false;
 	buffer->modified = false;
 
 	return 0;
