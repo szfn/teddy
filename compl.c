@@ -7,6 +7,11 @@ static gboolean compl_wnd_expose_callback(GtkWidget *widget, GdkEventExpose *eve
 
 	gtk_widget_get_allocation(c->window, &allocation);
 
+	if (allocation.width > 640) {
+		allocation.width = 640;
+		gtk_widget_set_allocation(c->window, &allocation);
+	}
+
 	gint wpos_x, wpos_y;
 	gdk_window_get_position(gtk_widget_get_window(c->window), &wpos_x, &wpos_y);
 
