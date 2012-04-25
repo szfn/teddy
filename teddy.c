@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <fontconfig/fontconfig.h>
 
+#include "git.compilation.date.h"
 #include "global.h"
 #include "go.h"
 #include "undo.h"
@@ -71,7 +72,7 @@ int main(int argc, char *argv[]) {
 
 	window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
 
-	gtk_window_set_title(GTK_WINDOW(window), "teddy");
+	gtk_window_set_title(GTK_WINDOW(window), GIT_COMPILATION_DATE);
 	gtk_window_set_default_size(GTK_WINDOW(window), 1024, 680);
 
 	g_signal_connect(G_OBJECT(window), "delete-event", G_CALLBACK(delete_callback), NULL);
