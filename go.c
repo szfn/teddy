@@ -368,6 +368,11 @@ static gboolean go_key_press_callback(GtkWidget *widget, GdkEventKey *event, gpo
 	return FALSE;
 }
 
+static gboolean go_switch_window_expose_callback(GtkWidget *widget, GdkEventExpose *event, void *data) {
+	gtk_widget_grab_focus(widget);
+	return FALSE;
+}
+
 void go_init(GtkWidget *window) {
 	GtkWidget *vbox = gtk_vbox_new(FALSE, 4);
 	GtkWidget *button_current = gtk_button_new_with_mnemonic("_Current frame");
@@ -394,6 +399,8 @@ void go_init(GtkWidget *window) {
 	g_signal_connect(G_OBJECT(button_select), "clicked", G_CALLBACK(go_button_clicked), switch_window_results + GO_SELECT);
 
 	g_signal_connect(G_OBJECT(go_switch_window), "key-press-event", G_CALLBACK(go_key_press_callback), NULL);
+
+	g_signal_connect(G_OBJECT(go_switch_window), "expose_event", G_CALLBACK(go_switch_window_expose_callback), NULL);
 
 	gtk_container_add(GTK_CONTAINER(gtk_dialog_get_content_area(GTK_DIALOG(go_switch_window))), vbox);
 
