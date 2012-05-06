@@ -11,6 +11,10 @@ struct _buffer_t;
 #define RATELIMIT_BUCKET_DURATION_SECS 5
 #define RATELIMIT_MAX_BYTES 10000
 
+#define ANSI_SEQ_MAX_LEN 32
+
+enum ansi_state { ANSI_NORMAL = 0, ANSI_ESCAPE };
+
 typedef struct _job_t {
 	int used;
 	pid_t child_pid;
@@ -25,6 +29,10 @@ typedef struct _job_t {
 	bool ratelimit_silenced;
 	time_t current_ratelimit_bucket_start;
 	long current_ratelimit_bucket_size;
+
+	enum ansi_state ansi_state;
+	char ansiseq[ANSI_SEQ_MAX_LEN];
+	int ansiseq_cap;
 } job_t;
 
 #define MAX_JOBS 128

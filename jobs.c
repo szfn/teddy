@@ -14,7 +14,7 @@
 
 #include "global.h"
 
-#define JOBS_READ_BUFFER_SIZE 128
+#define JOBS_READ_BUFFER_SIZE 2048
 
 void jobs_init(void) {
 	int i;
@@ -51,63 +51,84 @@ static void job_append(job_t *job, const char *msg, int len, int on_new_line, ui
 	}
 }
 
+static void ansi_append_escape(job_t *job) {
+	if (job->ansiseq[0] != '[') return;
+
+	buffer_t *buffer = job->buffer;
+	const char command_char = job->ansiseq[job->ansiseq_cap-1];
+
+	if (command_char == 'J') {
+		buffer->cursor.line = buffer->real_line;
+		buffer->cursor.glyph = 0;
+		buffer_set_mark_at_cursor(buffer);
+		buffer->mark_transient = true;
+		buffer_aux_go_line(buffer, -1);
+		buffer_replace_selection(buffer, "");
+	} else if (command_char == 'm') {
+		if (job->ansiseq_cap != 3) return;
+		if (job->ansiseq[1] == '0') {
+			job->buffer->default_color = L_NOTHING;
+		} else if (job->ansiseq[1] == '1') {
+			job->buffer->default_color = L_STRING;
+		}
+	} else {
+		job_append(job, "<esc>", strlen("<esc>"), 0, 0xff);
+
+		/*
+		printf("esc is [");
+		for (int j = esc_start; j <= i; ++j) {
+			printf("%c", msg[j]);
+		}
+		printf("]\n");*/
+	}
+}
+
 static void ansi_append(job_t *job, const char *msg, int len) {
 	buffer_t *buffer = job->buffer;
 
 	int start = 0;
 	for (int i = 0; i < len; ++i) {
-		if (msg[i] == 0x1b) { /* ansi escape sequence "processing" */
-			job_append(job, msg+start, i - start, 0, 0xff);
-			++i;
-			if (i >= len) { start = i; continue; }
-			if (msg[i] != '[') { start = i; continue; }
-			++i;
-			if (i >= len) { start = i; continue; }
+		switch (job->ansi_state) {
+		case ANSI_NORMAL:
+			if (msg[i] == 0x0d) {
+				job_append(job, msg+start, i - start, 0, 0xff);
+				start = i+1;
 
-			int esc_start = i;
-
-			for (; i < len; ++i) {
-				if ((msg[i] >= 0x40) && (msg[i] <= 0x7e)) break;
-			}
-
-			if (msg[i] == 'J') {
-				buffer->cursor.line = buffer->real_line;
 				buffer->cursor.glyph = 0;
 				buffer_set_mark_at_cursor(buffer);
 				buffer->mark_transient = true;
-				buffer_aux_go_line(buffer, -1);
+				buffer->cursor.glyph = buffer->cursor.line->cap;
 				buffer_replace_selection(buffer, "");
-			} else if (msg[i] == 'm') {
-				if (msg[esc_start] == '0') {
-					job->buffer->default_color = L_NOTHING;
-				} else if (msg[esc_start] == '1') {
-					job->buffer->default_color = L_STRING;
-				}
-			} else {
-				job_append(job, "<esc>", strlen("<esc>"), 0, 0xff);
+			} else if (msg[i] == 0x1b) { /* ANSI escape */
+				job_append(job, msg+start, i - start, 0, 0xff);
+				job->ansi_state = ANSI_ESCAPE;
+				job->ansiseq_cap = 0;
+			}
+			break;
 
-				/*
-				printf("esc is [");
-				for (int j = esc_start; j <= i; ++j) {
-					printf("%c", msg[j]);
+		case ANSI_ESCAPE:
+			if (job->ansiseq_cap >= ANSI_SEQ_MAX_LEN-1) {
+				start = i+1;
+				job->ansi_state = ANSI_NORMAL;
+			} else {
+				job->ansiseq[job->ansiseq_cap] = msg[i];
+				++(job->ansiseq_cap);
+				if (job->ansiseq_cap > 1) {
+					if ((msg[i] >= 0x40) && (msg[i] <= 0x7e)) {
+						start = i+1;
+						job->ansi_state = ANSI_NORMAL;
+						job->ansiseq[job->ansiseq_cap] = '\0';
+						ansi_append_escape(job);
+					}
 				}
-				printf("]\n");*/
 			}
 
-			start = i+1;
-		} else if (msg[i] == 0x0d) {
-			job_append(job, msg+start, i - start, 0, 0xff);
-			start = i+1;
-
-			buffer->cursor.glyph = 0;
-			buffer_set_mark_at_cursor(buffer);
-			buffer->mark_transient = true;
-			buffer->cursor.glyph = buffer->cursor.line->cap;
-			buffer_replace_selection(buffer, "");
+			break;
 		}
 	}
 
-	if (start < len) job_append(job, msg+start, len - start, 0, 0xff);
+	if ((job->ansi_state == ANSI_NORMAL) && (start < len))
+		job_append(job, msg+start, len - start, 0, 0xff);
 }
 
 static void jobs_child_watch_function(GPid pid, gint status, job_t *job) {
@@ -194,6 +215,8 @@ int jobs_register(pid_t child_pid, int masterfd, struct _buffer_t *buffer, const
 	jobs[i].ratelimit_silenced = false;
 	jobs[i].current_ratelimit_bucket_start = 0;
 	jobs[i].current_ratelimit_bucket_size = 0;
+
+	jobs[i].ansi_state = ANSI_NORMAL;
 
 	{
 		GError *error = NULL;

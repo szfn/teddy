@@ -1,4 +1,3 @@
-- bug: (m w)
 - implement command to create a scratch buffer
 - path compression too aggressive on directories (last segment should not be compressed)
 
