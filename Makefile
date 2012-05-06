@@ -39,8 +39,8 @@ obj/critbit.o: critbit.c critbit.addenda.c
 builtin.h: builtin.tcl builtin-create.pl
 	perl builtin-create.pl
 
-git.compilation.date.h: $(OBJS)
-	./make.git.compilation.date.sh
+git.date.h: $(OBJS)
+	./make.git.date.sh
 
 # compile and generate dependency info
 obj/%.o: %.c

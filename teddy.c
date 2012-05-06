@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <fontconfig/fontconfig.h>
 
-#include "git.compilation.date.h"
+#include "git.date.h"
 #include "global.h"
 #include "go.h"
 #include "undo.h"
