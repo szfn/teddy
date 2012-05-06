@@ -1,21 +1,21 @@
 BASIC SET (not an editor without this)
 × keyboard editing keys
 × opening of empty file
-- save
-- copy/paste (using system's clipboard)
-- undo (without redo)
+× save
+× copy/paste (using system's clipboard)
+× undo (without redo)
 
 NORMAL SET (not an editor I would use without this)
-- word movement keys (ctrl-left, ctrl-right)
-- highlighting
-- multiple panels
-- search
-- search & replace
+× word movement keys (ctrl-left, ctrl-right)
+× highlighting
+× multiple panels
+× search
+× search & replace
 
 ADVANCED SET (actual goal)
-- hidden buffer
-- command line
-- autocompletion
+× hidden buffer
+× command line
+× autocompletion
 
 LUXURY SET
 - elastic tabs
