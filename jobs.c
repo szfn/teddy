@@ -39,9 +39,10 @@ static void job_destroy(job_t *job) {
 }
 
 static void job_append(job_t *job, const char *msg, int len, int on_new_line, uint8_t color) {
-	job->buffer->default_color = color;
+	uint8_t saved_color = job->buffer->default_color;
+	if (color != 0xff) job->buffer->default_color = color;
 	buffer_append(job->buffer, msg, len, on_new_line);
-	job->buffer->default_color = L_NOTHING;
+	if (color != 0xff) job->buffer->default_color = saved_color;
 
 	editor_t *editor = columns_get_buffer(columnset, job->buffer);
 	if (editor != NULL) {
@@ -55,13 +56,15 @@ static void ansi_append(job_t *job, const char *msg, int len) {
 
 	int start = 0;
 	for (int i = 0; i < len; ++i) {
-		if (msg[i] == 0x1b) {
-			job_append(job, msg+start, i - start, 0, L_NOTHING);
+		if (msg[i] == 0x1b) { /* ansi escape sequence "processing" */
+			job_append(job, msg+start, i - start, 0, 0xff);
 			++i;
 			if (i >= len) { start = i; continue; }
 			if (msg[i] != '[') { start = i; continue; }
 			++i;
 			if (i >= len) { start = i; continue; }
+
+			int esc_start = i;
 
 			for (; i < len; ++i) {
 				if ((msg[i] >= 0x40) && (msg[i] <= 0x7e)) break;
@@ -74,13 +77,26 @@ static void ansi_append(job_t *job, const char *msg, int len) {
 				buffer->mark_transient = true;
 				buffer_aux_go_line(buffer, -1);
 				buffer_replace_selection(buffer, "");
+			} else if (msg[i] == 'm') {
+				if (msg[esc_start] == '0') {
+					job->buffer->default_color = L_NOTHING;
+				} else if (msg[esc_start] == '1') {
+					job->buffer->default_color = L_STRING;
+				}
 			} else {
-				job_append(job, "<esc>", strlen("<esc>"), 0, L_NOTHING);
+				job_append(job, "<esc>", strlen("<esc>"), 0, 0xff);
+
+				/*
+				printf("esc is [");
+				for (int j = esc_start; j <= i; ++j) {
+					printf("%c", msg[j]);
+				}
+				printf("]\n");*/
 			}
 
 			start = i+1;
 		} else if (msg[i] == 0x0d) {
-			job_append(job, msg+start, i - start, 0, L_NOTHING);
+			job_append(job, msg+start, i - start, 0, 0xff);
 			start = i+1;
 
 			buffer->cursor.glyph = 0;
@@ -91,7 +107,7 @@ static void ansi_append(job_t *job, const char *msg, int len) {
 		}
 	}
 
-	job_append(job, msg+start, len - start, 0, L_NOTHING);
+	if (start < len) job_append(job, msg+start, len - start, 0, 0xff);
 }
 
 static void jobs_child_watch_function(GPid pid, gint status, job_t *job) {
@@ -173,6 +189,7 @@ int jobs_register(pid_t child_pid, int masterfd, struct _buffer_t *buffer, const
 	jobs[i].buffer->job = jobs+i;
 
 	jobs[i].pipe_from_child = g_io_channel_unix_new(masterfd);
+	g_io_channel_set_encoding(jobs[i].pipe_from_child, NULL, NULL);
 
 	jobs[i].ratelimit_silenced = false;
 	jobs[i].current_ratelimit_bucket_start = 0;

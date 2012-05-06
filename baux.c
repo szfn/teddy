@@ -130,6 +130,7 @@ void buffer_append(buffer_t *buffer, const char *msg, int length, int on_new_lin
 	}
 
 	text = malloc(sizeof(char) * (length + 1));
+	alloc_assert(text);
 	strncpy(text, msg, length);
 	text[length] = '\0';
 
@@ -187,6 +188,7 @@ static void buffer_wordcompl_update_line(real_line_t *line, critbit0_tree *c) {
 				if (i - start >= MINIMUM_WORDCOMPL_WORD_LEN) {
 					int allocated = i-start, cap = 0;
 					char *r = malloc(allocated * sizeof(char));
+					alloc_assert(r);
 
 					for (int j = 0; j < i-start; ++j) {
 						utf32_to_utf8(line->glyph_info[j+start].code, &r, &cap, &allocated);
