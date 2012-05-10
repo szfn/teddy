@@ -661,6 +661,17 @@ char *buffer_ppp(buffer_t *buffer, bool include_filename, int reqlen, bool alway
 
 	char *lastslash = strrchr(source, '/');
 
+	if (lastslash != NULL) {
+		bool found = false;
+		for (--lastslash; lastslash > source; --lastslash) {
+			if (*lastslash == '/') {
+				found = true;
+				break;
+			}
+		}
+		if (!found) lastslash = NULL;
+	}
+
 	while((i + strlen(source+j)) > reqlen) {
 		if (source+j == lastslash) break;
 		if (source[j] == '\0') break;
