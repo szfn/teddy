@@ -135,6 +135,20 @@
 			<p>Shows buffer manager.
 		</div>
 
+		<h3>buffer</h3>
+		<div class="ind">
+			<p>Various buffer manipulation tools:
+			<ul>
+				<li><tt>buffer make <i>name</i></tt> creates a buffer with the given name, returns the buffer id
+				<li><tt>buffer scratch</tt> creates or moves focus to the +scratch+ buffer
+				<li><tt>buffer current</tt> returns the buffer id for the current buffer
+				<li><tt>buffer porpget <i>buffer-id</i> <i>prop-name</i></tt> returns the value of a property for a buffer
+				<li><tt>buffer propset <i>buffer-id</i> <i>prop-name</i> <i>prop-value</i></tt> sets a property for a buffer
+				<li><tt>buffer ls</tt> returns the list of buffers
+				<li><tt>buffer info <i>buffer-id</i></tt> returns informations about a buffer
+			</ul>
+		</div>
+
 		<h3>kill</h3>
 		<div class="ind">
 			<p><b>Syntax:</b> <tt>kill <b>[</b> -<i>signal-specifier</i> <b>]</b> <b>[</b> process <b>|</b> buffer <b>|</b> <i>pid</i> <b>]</b></tt>
