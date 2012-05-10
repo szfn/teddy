@@ -443,6 +443,33 @@ int teddy_buffer_command(ClientData client_data, Tcl_Interp *interp, int argc, c
 		char bufferid[20];
 		buffer_to_buffer_id(buffer, bufferid);
 		Tcl_SetResult(interp, bufferid, TCL_VOLATILE);
+	} else if (strcmp(argv[1], "scratch") == 0) {
+		if (argc != 2) {
+			Tcl_AddErrorInfo(interp, "Wrong number of arguments to 'buffer scratch' command");
+			return TCL_ERROR;
+		}
+
+		if (context_editor == NULL) {
+			Tcl_AddErrorInfo(interp, "Can not call 'buffer scratch' when no editor is active");
+			return TCL_ERROR;
+		}
+
+		int i;
+
+		for (i = 0; i < buffers_allocated; ++i) {
+			if (buffers[i] == NULL) continue;
+			if (strcmp(buffers[i]->name, "+scrach+") == 0) break;
+		}
+
+		buffer_t *buffer;
+
+		if (i >= buffers_allocated) {
+			buffer = buffers_create_with_name(strdup("+scratch+"));
+		} else {
+			buffer = buffers[i];
+		}
+
+		go_to_buffer(context_editor, buffer, -1);
 	} else if (strcmp(argv[1], "current") == 0) {
 		char bufferid[20];
 		buffer_to_buffer_id(context_editor->buffer, bufferid);
