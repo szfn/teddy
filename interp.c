@@ -564,6 +564,25 @@ static int teddy_setenv_command(ClientData client_data, Tcl_Interp *interp, int 
 
 }
 
+static void configure_for_bg_execution(Tcl_Interp *interp) {
+	context_editor = NULL;
+	
+	setenv("TERM", "ansi", 1);
+	setenv("PAGER", "", 1);
+	setenv("SHELL", "teddy", 1);
+
+	Tcl_SetVar(interp, "backgrounded", "1", TCL_GLOBAL_ONLY);
+	Tcl_CreateCommand(interp, "setenv", &teddy_setenv_command, (ClientData)NULL, NULL);
+
+	Tcl_HideCommand(interp, "unknown", "_non_backgrounded_unknown");
+	Tcl_Eval(interp, "rename backgrounded_unknown unknown");
+	Tcl_HideCommand(interp, "bg", "_non_backgrounded_bg");
+	Tcl_CreateCommand(interp, "bg", &teddy_backgrounded_bg_command, (ClientData)NULL, NULL);
+
+	// Without this tcl screws up the newline character on its own output, it tries to output cr + lf and the terminal converts lf again, resulting in an output of cr + cr + lf, other c programs seem to behave correctly
+	Tcl_Eval(interp, "fconfigure stdin -translation binary; fconfigure stdout -translation binary; fconfigure stderr -translation binary");
+}
+
 static int teddy_bg_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
 	pid_t child;
 	int masterfd;
@@ -577,8 +596,13 @@ static int teddy_bg_command(ClientData client_data, Tcl_Interp *interp, int argc
 
 	const char *codearg;
 	if (argc == 2) {
-		buffer = buffers_get_buffer_for_process();
-		codearg = argv[1];
+		if (strcmp(argv[1], "-setup") == 0) {
+			configure_for_bg_execution(interp);
+			return TCL_OK;
+		} else {
+			buffer = buffers_get_buffer_for_process();
+			codearg = argv[1];
+		}
 	} else if (argc == 3) {
 		buffer = buffers_create_with_name(strdup(argv[1]));
 		codearg = argv[2];
@@ -614,28 +638,7 @@ static int teddy_bg_command(ClientData client_data, Tcl_Interp *interp, int argc
 
 	/* child code here */
 
-	setenv("TERM", "ansi", 1);
-	setenv("PAGER", "", 1);
-	setenv("SHELL", "teddy", 1);
-
-	Tcl_CreateCommand(interp, "fdopen", &teddy_fdopen_command, (ClientData)NULL, NULL);
-	Tcl_CreateCommand(interp, "fdclose", &teddy_fdclose_command, (ClientData)NULL, NULL);
-	Tcl_CreateCommand(interp, "fddup2", &teddy_fddup2_command, (ClientData)NULL, NULL);
-	Tcl_CreateCommand(interp, "fdpipe", &teddy_fdpipe_command, (ClientData)NULL, NULL);
-	Tcl_CreateCommand(interp, "posixfork", &teddy_posixfork_command, (ClientData)NULL, NULL);
-	Tcl_CreateCommand(interp, "posixexec", &teddy_posixexec_command, (ClientData)NULL, NULL);
-	Tcl_CreateCommand(interp, "posixwaitpid", &teddy_posixwaitpid_command, (ClientData)NULL, NULL);
-	Tcl_CreateCommand(interp, "posixexit", &teddy_posixexit_command, (ClientData)NULL, NULL);
-	Tcl_SetVar(interp, "backgrounded", "1", TCL_GLOBAL_ONLY);
-	Tcl_CreateCommand(interp, "setenv", &teddy_setenv_command, (ClientData)NULL, NULL);
-
-	Tcl_HideCommand(interp, "unknown", "_non_backgrounded_unknown");
-	Tcl_Eval(interp, "rename backgrounded_unknown unknown");
-	Tcl_HideCommand(interp, "bg", "_non_backgrounded_bg");
-	Tcl_CreateCommand(interp, "bg", &teddy_backgrounded_bg_command, (ClientData)NULL, NULL);
-
-	// Without this tcl screws up the newline character on its own output, it tries to output cr + lf and the terminal converts lf again, resulting in an output of cr + cr + lf, other c programs seem to behave correctly
-	Tcl_Eval(interp, "fconfigure stdin -translation binary; fconfigure stdout -translation binary; fconfigure stderr -translation binary");
+	configure_for_bg_execution(interp);
 
 	{
 		int code = Tcl_Eval(interp, codearg);
@@ -1015,6 +1018,17 @@ void interp_init(void) {
 
 	Tcl_CreateCommand(interp, "load", &teddy_load_command, (ClientData)NULL, NULL);
 
+	Tcl_CreateCommand(interp, "fdopen", &teddy_fdopen_command, (ClientData)NULL, NULL);
+	Tcl_CreateCommand(interp, "fdclose", &teddy_fdclose_command, (ClientData)NULL, NULL);
+	Tcl_CreateCommand(interp, "fddup2", &teddy_fddup2_command, (ClientData)NULL, NULL);
+	Tcl_CreateCommand(interp, "fdpipe", &teddy_fdpipe_command, (ClientData)NULL, NULL);
+	Tcl_CreateCommand(interp, "posixfork", &teddy_posixfork_command, (ClientData)NULL, NULL);
+	Tcl_CreateCommand(interp, "posixexec", &teddy_posixexec_command, (ClientData)NULL, NULL);
+	Tcl_CreateCommand(interp, "posixwaitpid", &teddy_posixwaitpid_command, (ClientData)NULL, NULL);
+	Tcl_CreateCommand(interp, "posixexit", &teddy_posixexit_command, (ClientData)NULL, NULL);
+
+	Tcl_CreateCommand(interp, "fd2channel", &teddy_fd2channel_command, (ClientData)NULL, NULL);
+
 	int code = Tcl_Eval(interp, BUILTIN_TCL_CODE);
 	if (code != TCL_OK) {
 		Tcl_Obj *options = Tcl_GetReturnOptions(interp, code);
@@ -1051,12 +1065,22 @@ enum deferred_action interp_eval(editor_t *editor, const char *command) {
 		Tcl_DictObjGet(NULL, options, key, &stackTrace);
 		Tcl_DecrRefCount(key);
 
-		quick_message(context_editor, "TCL Error", Tcl_GetString(stackTrace));
-		//TODO: if the error string is very long use a buffer instead
+		if (context_editor != NULL) {
+			quick_message(context_editor, "TCL Error", Tcl_GetString(stackTrace));
+			//TODO: if the error string is very long use a buffer instead
+		} else {
+			fprintf(stderr, "TCL Error: %s\n", Tcl_GetString(stackTrace));
+			exit(1);
+		}
 	} else {
 		const char *result = Tcl_GetStringResult(interp);
 		if (strcmp(result, "") != 0) {
-			quick_message(context_editor, "TCL Result", result);
+			if (context_editor != NULL) {
+				quick_message(context_editor, "TCL Result", result);
+			} else {
+				fprintf(stderr, "%s", result);
+				exit(0);
+			}
 		}
 	}
 

@@ -1,3 +1,6 @@
+- forlines control structure
+- refactoring cb
+
 - tutorial
 
 - comment region command
@@ -12,7 +15,6 @@
 - selection should copy selected text on past not on selection, for better efficiency (selection slowdown is noticeable on mouse selection)
 - extend regular expressions in 's' to be lexically aware
 - word movement, word selection and tokenization should be tied to syntax analysis
-- implement | command that filters selected content through external command
 - make easy way to reindent though external filter
 - fix mark words when used with cursor keys
 - implement stayoncmd flag for buffers

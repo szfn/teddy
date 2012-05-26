@@ -185,13 +185,80 @@ proc shell {args} {
 }
 
 proc unknown {args} {
-   set margs shell
-   lappend margs {*}$args
-   bg $margs
+   if {[string index [lindex $args 0] 0] eq "|"} {
+      lset args 0 [string range [lindex $args 0] 1 end]
+      | {*}$args
+   } else {
+      # normal unknown code
+      set margs shell
+      lappend margs {*}$args
+      bg $margs
+   }
 }
 
 proc backgrounded_unknown {args} {
    shell {*}$args
+}
+
+proc | {args} {
+   global backgrounded
+   if {$backgrounded} {
+      error "shellpipe called on a backgrounded interpreter"
+   }
+
+   set text [c]
+
+   set pipe [fdpipe]
+   set outpipe [fdpipe]
+   set errpipe [fdpipe]
+   set pid [posixfork]
+
+   if {$pid < 0} {
+      error "fork failed in shellpipe command"
+   }
+
+   if {$pid == 0} {
+      # new default standard input is pipe's input side
+      fdclose [lindex $pipe 1]
+      fddup2 [lindex $pipe 0] 0
+      fdclose [lindex $pipe 0]
+
+      # new default standard output is outpipe's output side
+      fdclose [lindex $outpipe 0]
+      fddup2 [lindex $outpipe 1] 1
+      fdclose [lindex $outpipe 1]
+
+      # new default standard error is errpipe's output side
+      fdclose [lindex $errpipe 0]
+      fddup2 [lindex $errpipe 1] 2
+      fdclose [lindex $errpipe 1]
+
+      bg -setup
+
+      posixexit [shell [lindex $args 0] {*}[lrange $args 1 end]]
+   } else {
+      fdclose [lindex $pipe 0]
+      fdclose [lindex $outpipe 1]
+      fdclose [lindex $errpipe 1]
+
+      set sub_input [fd2channel [lindex $pipe 1] write]
+      set sub_output [fd2channel [lindex $outpipe 0] read]
+      set sub_error [fd2channel [lindex $errpipe 0] read]
+
+      puts $sub_input $text
+      close $sub_input
+
+      set replacement [read $sub_output]
+      set error_text [read $sub_error]
+      set r [posixwaitpid $pid]
+      close $sub_output
+
+      if {[lindex $r 1] == 0} {
+          c $replacement
+      } else {
+          error $error_text
+      }
+   }
 }
 
 set parenthesis_list { "(" ")" "{" "}" "[" "]" "<" ">" "\"" "\'" }
@@ -385,7 +452,7 @@ lexyassoc c {\.c$}
 lexyassoc c {\.h$}
 
 lexydef tcl 0 {
-		{\<(?:after|error|lappend|platform|tcl_findLibrary|append|eval|lassign|platform::shell|tcl_startOfNextWord|apply|exec|lindex|proc|tcl_startOfPreviousWord|array|exit|linsert|puts|tcl_wordBreakAfter|auto_execok|expr	list|pwd|tcl_wordBreakBefore|auto_import|fblocked|llength|re_syntax|tcltest|auto_load|fconfigure|load|read|tclvars|auto_mkindex|fcopy|lrange|refchan|tell|auto_mkindex_old|file|lrepeat|regexp|time|auto_qualify|fileevent|lreplace|registry|tm|auto_reset|filename|lreverse|regsub|trace|bgerror|flush|lsearch|rename|unknown|binary|for|lset|return|unload|break|foreach|lsort||unset|catch|format|mathfunc|scan|update|cd|gets|mathop|seek|uplevel|chan|glob|memory|set|upvar|clock|global|msgcat|socket|variable|close|history|namespace|source|vwait|concat|http|open|split|while|continue|if|package|string|dde|incr|parray|subst|dict|info|pid|switch|encoding|interp|pkg::create|eof|join|pkg_mkIndex|tcl_endOfWord)\>} keyword
+		{\<(?:after|error|lappend|platform|tcl_findLibrary|append|eval|lassign|platform::shell|tcl_startOfNextWord|apply|exec|lindex|proc|tcl_startOfPreviousWord|array|exit|linsert|puts|tcl_wordBreakAfter|auto_execok|expr	list|pwd|tcl_wordBreakBefore|auto_import|fblocked|llength|re_syntax|tcltest|auto_load|fconfigure|load|read|tclvars|auto_mkindex|fcopy|lrange|refchan|tell|auto_mkindex_old|file|lrepeat|regexp|time|auto_qualify|fileevent|lreplace|registry|tm|auto_reset|filename|lreverse|regsub|trace|bgerror|flush|lsearch|rename|unknown|binary|for|lset|return|unload|break|foreach|lsort||unset|catch|format|mathfunc|scan|update|cd|gets|mathop|seek|uplevel|chan|glob|memory|set|upvar|clock|global|msgcat|socket|variable|close|history|namespace|source|vwait|concat|http|open|split|while|continue|if|else|package|string|dde|incr|parray|subst|dict|info|pid|switch|encoding|interp|pkg::create|eof|join|pkg_mkIndex|tcl_endOfWord)\>} keyword
 
 		{\<$[a-zA-Z_][a-zA-Z0-9_]*\>} id
 		{"} string:string

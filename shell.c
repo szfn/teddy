@@ -234,7 +234,7 @@ int teddy_posixwaitpid_command(ClientData client_data, Tcl_Interp *interp, int a
 
 	retval[0] = Tcl_NewIntObj(r);
 	Tcl_IncrRefCount(retval[0]);
-	retval[1] = Tcl_NewIntObj(status);
+	retval[1] = Tcl_NewIntObj(WEXITSTATUS(status));
 	Tcl_IncrRefCount(retval[1]);
 
 	retlist = Tcl_NewListObj(2, retval);
@@ -252,6 +252,37 @@ int teddy_posixexit_command(ClientData client_data, Tcl_Interp *interp, int argc
 	}
 
 	exit(atoi(argv[1]));
+
+	return TCL_OK;
+}
+
+int teddy_fd2channel_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
+	if (argc != 3) {
+		Tcl_AddErrorInfo(interp, "fd2channel command can not be called without an argument");
+		return TCL_ERROR;
+	}
+
+	int fd = atoi(argv[1]);
+	const char *type = argv[2];
+
+	if (fd < 0) {
+		Tcl_AddErrorInfo(interp, "Wrong argument to fd2channel (not a file descriptor)");
+		return TCL_ERROR;
+	}
+
+	int readOrWrite;
+
+	if (strcmp(type, "read") == 0) {
+		readOrWrite = TCL_READABLE;
+	} else if (strcmp(type, "write") == 0) {
+		readOrWrite = TCL_WRITABLE;
+	} else {
+		Tcl_AddErrorInfo(interp, "Wrong argument to fd2channel (not read or write)");
+	}
+
+	Tcl_Channel chan = Tcl_MakeFileChannel(fd, readOrWrite);
+	Tcl_RegisterChannel(interp, chan);
+	Tcl_SetResult(interp, Tcl_GetChannelName(chan), NULL);
 
 	return TCL_OK;
 }

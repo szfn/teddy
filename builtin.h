@@ -188,13 +188,80 @@ proc shell {args} {\n\
 }\n\
 \n\
 proc unknown {args} {\n\
-   set margs shell\n\
-   lappend margs {*}$args\n\
-   bg $margs\n\
+   if {[string index [lindex $args 0] 0] eq \"|\"} {\n\
+      lset args 0 [string range [lindex $args 0] 1 end]\n\
+      | {*}$args\n\
+   } else {\n\
+      # normal unknown code\n\
+      set margs shell\n\
+      lappend margs {*}$args\n\
+      bg $margs\n\
+   }\n\
 }\n\
 \n\
 proc backgrounded_unknown {args} {\n\
    shell {*}$args\n\
+}\n\
+\n\
+proc | {args} {\n\
+   global backgrounded\n\
+   if {$backgrounded} {\n\
+      error \"shellpipe called on a backgrounded interpreter\"\n\
+   }\n\
+\n\
+   set text [c]\n\
+\n\
+   set pipe [fdpipe]\n\
+   set outpipe [fdpipe]\n\
+   set errpipe [fdpipe]\n\
+   set pid [posixfork]\n\
+\n\
+   if {$pid < 0} {\n\
+      error \"fork failed in shellpipe command\"\n\
+   }\n\
+\n\
+   if {$pid == 0} {\n\
+      # new default standard input is pipe's input side\n\
+      fdclose [lindex $pipe 1]\n\
+      fddup2 [lindex $pipe 0] 0\n\
+      fdclose [lindex $pipe 0]\n\
+\n\
+      # new default standard output is outpipe's output side\n\
+      fdclose [lindex $outpipe 0]\n\
+      fddup2 [lindex $outpipe 1] 1\n\
+      fdclose [lindex $outpipe 1]\n\
+\n\
+      # new default standard error is errpipe's output side\n\
+      fdclose [lindex $errpipe 0]\n\
+      fddup2 [lindex $errpipe 1] 2\n\
+      fdclose [lindex $errpipe 1]\n\
+\n\
+      bg -setup\n\
+\n\
+      posixexit [shell [lindex $args 0] {*}[lrange $args 1 end]]\n\
+   } else {\n\
+      fdclose [lindex $pipe 0]\n\
+      fdclose [lindex $outpipe 1]\n\
+      fdclose [lindex $errpipe 1]\n\
+\n\
+      set sub_input [fd2channel [lindex $pipe 1] write]\n\
+      set sub_output [fd2channel [lindex $outpipe 0] read]\n\
+      set sub_error [fd2channel [lindex $errpipe 0] read]\n\
+\n\
+      puts $sub_input $text\n\
+      close $sub_input\n\
+\n\
+      set replacement [read $sub_output]\n\
+      set error_text [read $sub_error]\n\
+      set r [posixwaitpid $pid]\n\
+      close $sub_output\n\
+\n\
+      if {[lindex $r 1] == 0} {\n\
+          c $replacement\n\
+      } else {\n\
+          error $error_text\n\
+      }\n\
+   }\n\
 }\n\
 \n\
 set parenthesis_list { \"(\" \")\" \"{\" \"}\" \"[\" \"]\" \"<\" \">\" \"\\\"\" \"\\'\" }\n\
@@ -388,7 +455,7 @@ lexyassoc c {\\.c$}\n\
 lexyassoc c {\\.h$}\n\
 \n\
 lexydef tcl 0 {\n\
-		{\\<(?:after|error|lappend|platform|tcl_findLibrary|append|eval|lassign|platform::shell|tcl_startOfNextWord|apply|exec|lindex|proc|tcl_startOfPreviousWord|array|exit|linsert|puts|tcl_wordBreakAfter|auto_execok|expr	list|pwd|tcl_wordBreakBefore|auto_import|fblocked|llength|re_syntax|tcltest|auto_load|fconfigure|load|read|tclvars|auto_mkindex|fcopy|lrange|refchan|tell|auto_mkindex_old|file|lrepeat|regexp|time|auto_qualify|fileevent|lreplace|registry|tm|auto_reset|filename|lreverse|regsub|trace|bgerror|flush|lsearch|rename|unknown|binary|for|lset|return|unload|break|foreach|lsort||unset|catch|format|mathfunc|scan|update|cd|gets|mathop|seek|uplevel|chan|glob|memory|set|upvar|clock|global|msgcat|socket|variable|close|history|namespace|source|vwait|concat|http|open|split|while|continue|if|package|string|dde|incr|parray|subst|dict|info|pid|switch|encoding|interp|pkg::create|eof|join|pkg_mkIndex|tcl_endOfWord)\\>} keyword\n\
+		{\\<(?:after|error|lappend|platform|tcl_findLibrary|append|eval|lassign|platform::shell|tcl_startOfNextWord|apply|exec|lindex|proc|tcl_startOfPreviousWord|array|exit|linsert|puts|tcl_wordBreakAfter|auto_execok|expr	list|pwd|tcl_wordBreakBefore|auto_import|fblocked|llength|re_syntax|tcltest|auto_load|fconfigure|load|read|tclvars|auto_mkindex|fcopy|lrange|refchan|tell|auto_mkindex_old|file|lrepeat|regexp|time|auto_qualify|fileevent|lreplace|registry|tm|auto_reset|filename|lreverse|regsub|trace|bgerror|flush|lsearch|rename|unknown|binary|for|lset|return|unload|break|foreach|lsort||unset|catch|format|mathfunc|scan|update|cd|gets|mathop|seek|uplevel|chan|glob|memory|set|upvar|clock|global|msgcat|socket|variable|close|history|namespace|source|vwait|concat|http|open|split|while|continue|if|else|package|string|dde|incr|parray|subst|dict|info|pid|switch|encoding|interp|pkg::create|eof|join|pkg_mkIndex|tcl_endOfWord)\\>} keyword\n\
 \n\
 		{\\<$[a-zA-Z_][a-zA-Z0-9_]*\\>} id\n\
 		{\"} string:string\n\

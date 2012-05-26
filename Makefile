@@ -1,5 +1,5 @@
 CFLAGS=`pkg-config --cflags gtk+-2.0` -Wall -D_FORTIFY_SOURCE=2 -g -D_GNU_SOURCE -I/usr/include/tcl8.5 -std=c99
-LIBS=`pkg-config --libs gtk+-2.0` -ltcl8.5 -lfontconfig -licuuc -lutil -ltre
+LIBS=`pkg-config --libs gtk+-2.0` -ltcl8.5 -lfontconfig -licuuc -lutil -ltre -lm
 OBJS := obj/teddy.o obj/buffer.o obj/font.o obj/editor.o obj/buffers.o obj/columns.o obj/column.o obj/interp.o obj/global.o obj/undo.o obj/reshandle.o obj/go.o obj/baux.o obj/history.o obj/jobs.o obj/shell.o obj/colors.o obj/point.o obj/editor_cmdline.o obj/cfg.o obj/research.o obj/parmatch.o obj/compl.o obj/lexy.o obj/treint.o obj/rd.o obj/critbit.o obj/cmdcompl.o
 
 all: bin/teddy
