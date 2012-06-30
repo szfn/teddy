@@ -242,14 +242,14 @@ static int teddy_cb_command(ClientData client_data, Tcl_Interp *interp, int argc
 	}
 
 	if (argc == 2) {
-		if (strcmp(argv[1], "copy") == 0) {
-			editor_copy_action(context_editor);
-		} else if (strcmp(argv[1], "cut") == 0) {
-			editor_cut_action(context_editor);
-		} else if (strcmp(argv[1], "paste") == 0) {
-			editor_insert_paste(context_editor, default_clipboard);
-		} else if (strcmp(argv[1], "ppaste") == 0) {
-			editor_insert_paste(context_editor, selection_clipboard);
+		if (strcmp(argv[1], "get") == 0) {
+			gchar *text = gtk_clipboard_wait_for_text(default_clipboard);
+			Tcl_SetResult(interp, (text != NULL) ? text : "", TCL_VOLATILE);
+			return TCL_OK;
+		} else if (strcmp(argv[1], "pget") == 0) {
+			gchar *text = gtk_clipboard_wait_for_text(selection_clipboard);
+			Tcl_SetResult(interp, (text != NULL) ? text : "", TCL_VOLATILE);
+			return TCL_OK;
 		} else {
 			Tcl_AddErrorInfo(interp, "Wrong argument to 'cb' command");
 			return TCL_ERROR;
@@ -401,41 +401,19 @@ static int teddy_focuscmd_command(ClientData client_data, Tcl_Interp *interp, in
 	return TCL_OK;
 }
 
-enum teddy_move_command_operation_t {
-	TMCO_NONE = 0,
-	TMCO_DEL,
-	TMCO_CUT
-};
-
 static int teddy_move_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
 	int next;
-	enum teddy_move_command_operation_t operation = TMCO_NONE;
 	if (context_editor == NULL) {
 		Tcl_AddErrorInfo(interp, "No editor open, can not execute 'move' command");
 		return TCL_ERROR;
 	}
 
-	if ((argc < 3) || (argc > 4)) {
-		Tcl_AddErrorInfo(interp, "Wrong number of arguments to 'move' command, usage: move <prev|next> <char|wnwa|softline> [del|cut]");
+	if (argc != 3) {
+		Tcl_AddErrorInfo(interp, "Wrong number of arguments to 'move' command, usage: move <prev|next> <char|wnwa|softline>");
 		return TCL_ERROR;
 	}
 
 	next = (strcmp(argv[1], "next") == 0);
-
-	if (argc == 4) {
-		if (strcmp(argv[3], "del") == 0) {
-			operation = TMCO_DEL;
-		} else if (strcmp(argv[3], "cut") == 0) {
-			operation = TMCO_CUT;
-		} else {
-			Tcl_AddErrorInfo(interp, "Unknown action argument to 'move' command");
-			return TCL_ERROR;
-		}
-	}
-
-	if (operation != TMCO_NONE) {
-		editor_mark_action(context_editor);
-	}
 
 	if (strcmp(argv[2], "char") == 0) {
 		editor_move_cursor(context_editor, 0, next ? 1 : -1, MOVE_NORMAL, TRUE);
@@ -458,20 +436,8 @@ static int teddy_move_command(ClientData client_data, Tcl_Interp *interp, int ar
 			buffer_aux_wnwa_prev(context_editor->buffer);
 		editor_complete_move(context_editor, TRUE);
 	} else {
-		if (operation != TMCO_NONE)
 		Tcl_AddErrorInfo(interp, "Unknown argument to 'move' command");
 		return TCL_ERROR;
-	}
-
-	switch(operation) {
-	case TMCO_DEL:
-		editor_replace_selection(context_editor, "");
-		break;
-	case TMCO_CUT:
-		editor_cut_action(context_editor);
-		break;
-	default: // TMCO_NONE -- nothing is done
-		break;
 	}
 
 	return TCL_OK;
@@ -566,7 +532,7 @@ static int teddy_setenv_command(ClientData client_data, Tcl_Interp *interp, int 
 
 static void configure_for_bg_execution(Tcl_Interp *interp) {
 	context_editor = NULL;
-	
+
 	setenv("TERM", "ansi", 1);
 	setenv("PAGER", "", 1);
 	setenv("SHELL", "teddy", 1);

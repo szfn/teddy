@@ -165,22 +165,7 @@ static void editor_include_cursor(editor_t *editor) {
 }
 
 static void copy_selection_to_clipboard(editor_t *editor, GtkClipboard *clipboard) {
-	lpoint_t start, end;
-	char *r = NULL;
 
-	if (editor->buffer->mark_transient) return;
-
-	buffer_get_selection(editor->buffer, &start, &end);
-
-	if (start.line == NULL) return;
-	if (end.line == NULL) return;
-
-	r  = buffer_lines_to_text(editor->buffer, &start, &end);
-
-	if (strcmp(r, "") != 0)
-		gtk_clipboard_set_text(clipboard, r, -1);
-
-	free(r);
 }
 
 static void editor_get_primary_selection(GtkClipboard *clipboard, GtkSelectionData *selection_data, guint info, editor_t *editor) {
@@ -360,9 +345,25 @@ static void set_primary_selection(editor_t *editor) {
 }
 
 static void freeze_primary_selection(editor_t *editor) {
-	if (!editor->buffer->mark_transient && (editor->buffer->mark.line != NULL)) {
-		copy_selection_to_clipboard(editor, selection_clipboard);
-	}
+	if (editor->buffer->mark_transient) return;
+	if (editor->buffer->mark.line == NULL) return;
+
+	lpoint_t start, end;
+	char *r = NULL;
+
+	if (editor->buffer->mark_transient) return;
+
+	buffer_get_selection(editor->buffer, &start, &end);
+
+	if (start.line == NULL) return;
+	if (end.line == NULL) return;
+
+	r  = buffer_lines_to_text(editor->buffer, &start, &end);
+
+	if (strcmp(r, "") != 0)
+		gtk_clipboard_set_text(selection_clipboard, r, -1);
+
+	free(r);
 }
 
 void editor_mark_action(editor_t *editor) {
@@ -374,22 +375,6 @@ void editor_mark_action(editor_t *editor) {
 		buffer_unset_mark(editor->buffer);
 	}
 	gtk_widget_queue_draw(editor->drar);
-}
-
-void editor_copy_action(editor_t *editor) {
-	if (editor->buffer->mark.line != NULL) {
-		copy_selection_to_clipboard(editor, default_clipboard);
-		buffer_unset_mark(editor->buffer);
-		gtk_widget_queue_draw(editor->drar);
-	}
-}
-
-void editor_cut_action(editor_t *editor) {
-	if (editor->buffer->mark.line != NULL) {
-		copy_selection_to_clipboard(editor, default_clipboard);
-		editor_replace_selection(editor, "");
-		gtk_widget_queue_draw(editor->drar);
-	}
 }
 
 void editor_save_action(editor_t *editor) {

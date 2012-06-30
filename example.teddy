@@ -22,10 +22,10 @@ lexycfg literal [rgbcolor "dark brown"]
 bindkey Ctrl-Space mark
 bindkey Ctrl-Shift-Space {mark lines}
 
-bindkey Ctrl-c {cb copy}
-bindkey Ctrl-v {cb paste}
-bindkey Ctrl-x {cb cut}
-bindkey Ctrl-y {cb ppaste}
+bindkey Ctrl-c {cb put [c]; mark stop}
+bindkey Ctrl-v {c [cb get]}
+bindkey Ctrl-x {cb put [c]; c ""}
+bindkey Ctrl-y {c [cb pget]}
 
 bindkey Ctrl-u undo
 
@@ -44,7 +44,7 @@ bindkey Ctrl-End {go -1}
 
 bindkey Ctrl-l {interactarg go}
 
-bindkey Ctrl-Backspace {move prev wnwa del}
+bindkey Ctrl-Backspace {mark start; move prev wnwa; cb pput [c]; c ""}
 bindkey Ctrl-k kill_line
 
 bindkey Ctrl-, {bindent decr "\t"}

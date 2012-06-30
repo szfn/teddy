@@ -1,8 +1,13 @@
-- forlines control structure
-- refactoring cb
+- 's' movement
+
+
+- bg defaulting to have horizontal scrollbars and monospaced fonts
+
+- better dirrec/rd with a graphical tree
+- autoclear bg buffer
 
 - tutorial
-
+- forlines control structure
 - comment region command
 - ability to persist the status of a window
 - auto-reloading buffers when there is no change and the file on disk was changed

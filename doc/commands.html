@@ -185,13 +185,18 @@
 
 		<h3>cb</h3>
 		<div class="ind">
-			<p><b>Syntax:</b> <tt>cb <b>[</b> copy <b>|</b> cut <b>|</b> paste <b>|</b> ppaste <b>|</b> put <i>text</i> <b>|</b> pput <i>text</i> <b>]</b></tt>
+			<p><b>Syntax:</b> <tt>cb <b>[</b>  <b>|</b> cut <b>|</b> get <b>|</b> pget <b>|</b> put <i>text</i> <b>|</b> pput <i>text</i> <b>]</b></tt>
 			<p><ul>
-				<li><tt>cb copy</tt>: copies selection to X11 default clipboard buffer
-				<li><tt>cb cut</tt>: cuts selection to X11 default clipboard buffer
-				<li><tt>cb paste</tt>: paste from X11 default clipboard buffer
-				<li><tt>cb ppaste</tt>: paste selection from X11 selection buffer (there is no copy to X11 selection buffer because everything selected gets automatically copied to primary clipboard)
-				<li><tt>cb put</tt> and <tt>cb pput</tt> save their argument either in the clipboard bufer or the primary selection buffer, respectively.
+				<li><tt>cb get</tt>: returns contents of X11 default clipboard
+				<li><tt>cb pget</tt>: returns contents of X11 selection clipboard
+				<li><tt>cb put</tt>: copies text argument to X11 default clipboard
+				<li><tt>cb pput</tt>: copies text argument to X11 selection clipboard
+			</ul>
+
+			<p>Use this command in combination with "c" to implement the standard clipboard manipulation commands:
+			<p><ul><li>Copy is: <tt>cb put [c]; mark stop</tt>
+			<li>Cut is: <tt>cb put [c]; c ""</tt>
+			<li>Paste is: <tt>c [cb get]</tt>
 			</ul>
 		</div>
 
@@ -209,8 +214,8 @@
 
 		<h3>move</h3>
 		<div class="ind">
-			<p><b>Syntax:</b> <tt>move <b>(</b>prev<b>|</b>next<b>)</b> <b>(</b>char<b>|</b>wnwa<b>)</b> <b>[</b>del<b>|</b>cut<b>]</b></tt>
-			<p>Moves by one character or one word (actually wnwa is word-non-word-alternation). If del or cut is specified the text between the old and new position of the cursor is cut or deleted.
+			<p><b>Syntax:</b> <tt>move <b>(</b>prev<b>|</b>next<b>)</b> <b>(</b>char<b>|</b>wnwa<b>)</b></tt>
+			<p>Moves by one character or one word (actually wnwa is word-non-word-alternation).
 		</div>
 
 		<h3>gohome</h3>
