@@ -54,6 +54,14 @@ proc grep {args} {
 	unknown grep -n {*}$args
 }
 
-proc gg {args} {
-	git gui {*}$args
+proc buffer_setup_hook {name} {
+	if { [string range $name 0 2] == "+bg" } {
+		return { hscroll monospaced tabwidth:8 }
+	} elseif { [string range $name 0 3] == "+man" } {
+		return { hscroll monospaced }
+	} elseif { [string range $name 0 6] == "+dirrec"} {
+		return { hscroll monospaced tabwidth:8 }
+	} else {
+		return { }
+	}
 }
