@@ -1,6 +1,3 @@
-- bg defaulting to have horizontal scrollbars and monospaced fonts
-- autoclear bg buffer
-
 - better dirrec/rd with a graphical tree
  - rd is more graphical
  - directories can be expanded and closed in rd

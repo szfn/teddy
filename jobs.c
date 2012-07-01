@@ -35,6 +35,14 @@ static void job_destroy(job_t *job) {
 
 	job->buffer->job = NULL;
 
+	job->buffer->cursor.line = job->buffer->real_line;
+	job->buffer->cursor.glyph = 0;
+	editor_t *editor = columns_get_buffer(columnset, job->buffer);
+	if (editor != NULL) {
+		editor_center_on_cursor(editor);
+		gtk_widget_queue_draw(editor->drar);	
+	}
+
 	job->used = 0;
 }
 
@@ -226,6 +234,8 @@ int jobs_register(pid_t child_pid, int masterfd, struct _buffer_t *buffer, const
 	}
 
 	jobs[i].pipe_from_child_source_id = g_io_add_watch(jobs[i].pipe_from_child, G_IO_IN|G_IO_HUP, (GIOFunc)(jobs_input_watch_function), jobs+i);
+
+	buffer_aux_clear(buffer);
 
 	char *pp = buffer_ppp(buffer, false, 20, true);
 	char *msg;

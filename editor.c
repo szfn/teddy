@@ -164,10 +164,6 @@ static void editor_include_cursor(editor_t *editor) {
 	}
 }
 
-static void copy_selection_to_clipboard(editor_t *editor, GtkClipboard *clipboard) {
-
-}
-
 static void editor_get_primary_selection(GtkClipboard *clipboard, GtkSelectionData *selection_data, guint info, editor_t *editor) {
 	lpoint_t start, end;
 	char *r = NULL;

@@ -229,3 +229,12 @@ void buffer_wordcompl_update(buffer_t *buffer, critbit0_tree *cbt) {
 
 	word_completer_full_update();
 }
+
+void buffer_aux_clear(buffer_t *buffer) {
+	if (buffer->real_line == NULL) return;
+	buffer->mark.line = buffer->real_line;
+	buffer->mark.glyph = 0;
+	for (buffer->cursor.line = buffer->real_line; buffer->cursor.line->next != NULL; buffer->cursor.line = buffer->cursor.line->next);
+	buffer->cursor.glyph = buffer->cursor.line->cap;
+	buffer_replace_selection(buffer, "");
+}
