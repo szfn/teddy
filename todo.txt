@@ -1,10 +1,13 @@
-- 's' movement
-
-
 - bg defaulting to have horizontal scrollbars and monospaced fonts
+- autoclear bg buffer
 
 - better dirrec/rd with a graphical tree
-- autoclear bg buffer
+ - rd is more graphical
+ - directories can be expanded and closed in rd
+ - clicking in rd buffer is special (associate metainformation with entire path to each line)
+ - dirrec will expand everything
+ - enter will 'go' to the current file
+
 
 - tutorial
 - forlines control structure

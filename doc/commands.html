@@ -228,8 +228,18 @@
 
 		<h3>s (search and replace)</h3>
 		<div class="ind">
-			<p><b>Syntax:</b> <tt>s <i>regexp</i> <b>[</b> <i>substitution</i> <b>]</b> </tt>
-			<p>Search and substitute text with regular expressions. If only one argument is given shows the user's all the matches of <i>regexp</i> in the buffer. If <i>substitution</i> is also given will show all matches and ask the user where to make the selection. If both arguments are given AND the selection is active the replacement of all <i>regexp</i> matches with <i>substitution</i> inside the selection happens automatically.
+			<p><b>Syntax:</b> <tt>s <b>[</b> <i>options<i> <b>]</b> <i>regexp</i> <b>[</b> <i>substitution</i> <b>]</b> </tt>
+
+			<p>The s command has two modes: interactive and non-interactive. In interactive mode it will cycle through all the matches and, if <i>substitution</i> is passed, ask the user if the match should be replaced.
+			<p>Interactive mode is the default, non-interactive mode is enabled when a selection is active or some options are passed. If a selection is active substitutions inside the selection area are made automatically.
+			<p>Options of <tt>s</tt> are:
+
+			<p><ul>
+			<li><tt>-0</tt> moves the cursor to the beginning of the first match, returns true if one is found (non-interactive, no substitution).
+			<li><tt>-$</tt> moves the cursor to the end of the first match, returns true if one is found (non-interactive, no substitution).
+			<li><tt>-sel</tt> selects the first match, returns true if one is found (non-interactive, no substitution).
+			<li><tt>-line</tt> limits search to the current line instead of the entire file (both interactive and non-interactive).
+			</ul>
 		</div>
 
 		<h3>c (change)</h3>
