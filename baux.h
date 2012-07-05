@@ -43,4 +43,6 @@ void buffer_wordcompl_update(buffer_t *buffer, critbit0_tree *cbt);
 // removes all text from a buffer
 void buffer_aux_clear(buffer_t *buffer);
 
+bool buffer_aux_is_directory(buffer_t *buffer);
+
 #endif

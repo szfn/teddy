@@ -71,26 +71,23 @@ static void entry_sort(struct entries *es) {
 
 char type_identifier[0xff+1];
 
-static void rdapp(buffer_t *buffer, const char *c, uint8_t color) {
+static void rdrs(buffer_t *buffer, const char *c, uint8_t color) {
 	buffer->default_color = color;
-	buffer_append(buffer, c, strlen(c), false);
+	buffer_replace_selection(buffer, c);
 	buffer->default_color = L_NOTHING;
 }
 
-void rd(DIR *dir, buffer_t *buffer) {
+static void rd_insert(buffer_t *buffer, DIR *dir, int depth) {
 	struct entries es;
 	entry_init(&es, 100);
 
 	struct dirent entry;
 	struct dirent *result;
 
-	rdapp(buffer, buffer->path, L_KEYWORD);
-	rdapp(buffer, ":\n", L_KEYWORD);
-
 	for (;;) {
 		int r = readdir_r(dir, &entry, &result);
 		if (r != 0) {
-			rdapp(buffer, "Error reading directory\n", L_COMMENT);
+			rdrs(buffer, "Error reading directory\n", L_COMMENT);
 			break;
 		}
 		if (result == NULL) {
@@ -104,55 +101,31 @@ void rd(DIR *dir, buffer_t *buffer) {
 
 	entry_sort(&es);
 
-	char cur[255] = "";
-	bool first = true;
-
-	int max_len = 8;
-
-	int count = 0;
-
 	for (int i = 0; i < es.cur; ++i) {
-		int es_len = strlen(es.v[i].name);
-
-		if (es_len > max_len) max_len = es_len;
-
-		//printf("Comparing [%s] [%s]\n", cur, es.v[i].name);
-		if ((cur[0] == '\0') || (count > 0) || strncmp(cur, es.v[i].name, strlen(cur)) != 0) {
-			if (!first) rdapp(buffer, "\n", L_NOTHING);
-			char *dot = strchr(es.v[i].name, '.');
-			if (dot != NULL) {
-				int len = dot - es.v[i].name;
-				if (len < 254) {
-					strncpy(cur, es.v[i].name, len+1);
-					cur[len+1] = '\0';
-				} else {
-					//printf("len: %d\n", len);
-					cur[0] = '\0';
-				}
-			} else {
-				//printf("No dot found\n");
-				cur[0] = '\0';
-			}
-			count = 0;
-		} else {
-			rdapp(buffer, "\t", L_NOTHING);
-			++count;
+		for (int d = 0; d < depth-1; ++d) {
+			rdrs(buffer, "\u2502d\ue652", L_NOTHING);
 		}
 
-		first = false;
+		if (depth > 0) {
+			if (i == es.cur-1) {
+				rdrs(buffer, "\u2515", L_NOTHING);
+			} else {
+				rdrs(buffer, "\u251d", L_NOTHING);
+			}
+		}
+
+		rdrs(buffer, (es.v[i].type == DT_DIR) ? "\ue650" : "\ue652", L_STRING);
+		rdrs(buffer, es.v[i].name, (es.v[i].type == DT_DIR) ? L_STRING : L_NOTHING);
 
 		char id = type_identifier[es.v[i].type];
-		rdapp(buffer, es.v[i].name, (es.v[i].type == DT_DIR) ? L_STRING : L_NOTHING);
 		if (id != ' ') {
-			char z[2] = { 0, 0 };
+			char z[] = { 0, 0 };
 			z[0] = id;
-			rdapp(buffer, z, L_COMMENT);
+			rdrs(buffer, z, L_COMMENT);
 		}
+
+		if (i != es.cur-1) rdrs(buffer, "\n", L_NOTHING);
 	}
-
-	rdapp(buffer, "\n", L_NOTHING);
-
-	buffer->tab_width = max_len * 2.0/3.0;
 
 	entry_free(&es);
 }
@@ -172,3 +145,122 @@ void rd_init(void) {
 	order_by_d_type[DT_SOCK] = 40; type_identifier[DT_SOCK] = '=';
 	order_by_d_type[DT_UNKNOWN] = 70; type_identifier[DT_UNKNOWN] = '?';
 }
+
+void rd(DIR *dir, buffer_t *buffer) {
+	rdrs(buffer, buffer->path, L_KEYWORD);
+	rdrs(buffer, ":\n", L_KEYWORD);
+
+	rd_insert(buffer, dir, 0);
+	rdrs(buffer, "\n", L_NOTHING);
+	buffer->cursor.line = buffer->real_line;
+	buffer->cursor.glyph = 0;
+
+	//rdrs(buffer, "\n", L_NOTHING);
+
+	buffer->enable_horizontal_scrollbar = true;
+	buffer->editable = 0;
+}
+
+static int find_start(real_line_t *line) {
+	//TODO: cercare al contrario <- IMPORTANTE
+	int i;
+	for (i = 0; i < line->cap; ++i) {
+		if ((line->glyph_info[i].code == 0xe650) || (line->glyph_info[i].code == 0xe651) || (line->glyph_info[i].code == 0xe652)) {
+			break;
+		}
+	}
+
+	return (i >= line->cap) ? -1 : i;
+}
+
+void rd_open(editor_t *editor) {
+	if (editor->buffer == NULL) return;
+
+	real_line_t *cursor_line = editor->buffer->cursor.line;
+	if (cursor_line == NULL) return;
+
+	int i = find_start(cursor_line);
+
+	if (i >= cursor_line->cap) return;
+
+	if (cursor_line->glyph_info[i].code == 0xe650) {
+		lpoint_t start, end;
+		start.line = end.line = cursor_line;
+		start.glyph = i;
+		end.glyph = i+1;
+
+		editor->buffer->editable = 1;
+
+		editor->buffer->mark = start;
+		editor->buffer->cursor = end;
+		rdrs(editor->buffer, "\ue651", L_STRING);
+		editor->buffer->mark.line = NULL; editor->buffer->mark.glyph = 0;
+
+		start.glyph = i+1;
+		end.glyph = cursor_line->cap;
+
+		char *text = buffer_lines_to_text(editor->buffer, &start, &end);
+		char *directory = malloc(sizeof(char) * (1+strlen(editor->buffer->wd) + strlen(text)));
+
+		strcpy(directory, editor->buffer->wd);
+		strcat(directory, text);
+
+		free(text);
+
+		DIR *dir = opendir(directory);
+		free(directory);
+
+		if (dir != NULL) {
+			editor->buffer->cursor.glyph = editor->buffer->cursor.line->cap;
+			rdrs(editor->buffer, "\n", L_NOTHING);
+			rd_insert(editor->buffer, dir, i/2+1);
+			closedir(dir);
+		}
+
+		editor->buffer->editable = 0;
+		editor->buffer->modified = 0;
+
+		editor->buffer->cursor = start;
+	} else if (cursor_line->glyph_info[i].code == 0xe651) {
+		lpoint_t start, end;
+
+		start.line = end.line = cursor_line;
+		start.glyph = i;
+		end.glyph = i+1;
+
+		editor->buffer->editable = 1;
+
+		editor->buffer->mark = start;
+		editor->buffer->cursor = end;
+		rdrs(editor->buffer, "\ue650", L_STRING);
+		editor->buffer->mark.line = NULL; editor->buffer->mark.glyph = 0;
+
+		start.glyph = end.glyph = 0;
+		start.line = cursor_line->next;
+
+		if (start.line != NULL) {
+			for (end.line = start.line; end.line != NULL; end.line = end.line->next) {
+				if (i >= end.line->cap) continue;
+				int c = end.line->glyph_info[i].code;
+				if ((c == 0xe650) || (c == 0xe652)) break;
+			}
+
+			if (end.line != NULL) {
+				editor->buffer->mark = start;
+				editor->buffer->cursor = end;
+				buffer_replace_selection(editor->buffer, "");
+			}
+		}
+
+		editor->buffer->editable = 0;
+		editor->buffer->modified = 0;
+
+		editor->buffer->cursor.line = cursor_line; editor->buffer->cursor.glyph = i;
+	} else {
+		printf("File selected should go\n");
+		//TODO: go to file
+	}
+}
+
+//TODO:
+// - versioni di buffer_replace_selection e buffer_lines_to_text che prendono due punti invece di usare mark e cursor

@@ -18,6 +18,7 @@
 #include "editor_cmdline.h"
 #include "cfg.h"
 #include "lexy.h"
+#include "rd.h"
 
 static GtkTargetEntry selection_clipboard_target_entry = { "UTF8_STRING", 0, 0 };
 
@@ -535,15 +536,20 @@ static gboolean key_press_callback(GtkWidget *widget, GdkEventKey *event, editor
 		}
 
 		case GDK_KEY_Return: {
-			char *r = alloca(sizeof(char) * (editor->buffer->cursor.line->cap + 2));
-			if (config[CFG_DEFAULT_AUTOINDENT].intval) {
-				buffer_indent_newline(editor->buffer, r);
+			if (buffer_aux_is_directory(editor->buffer)) {
+				rd_open(editor);
+				gtk_widget_queue_draw(editor->drar);
 			} else {
-				r[0] = '\n';
-				r[1] = '\0';
+				char *r = alloca(sizeof(char) * (editor->buffer->cursor.line->cap + 2));
+				if (config[CFG_DEFAULT_AUTOINDENT].intval) {
+					buffer_indent_newline(editor->buffer, r);
+				} else {
+					r[0] = '\n';
+					r[1] = '\0';
+				}
+				editor_replace_selection(editor, r);
+				return TRUE;
 			}
-			editor_replace_selection(editor, r);
-			return TRUE;
 		}
 		case GDK_KEY_Escape:
 			return TRUE;
@@ -935,6 +941,8 @@ static gboolean expose_event_callback(GtkWidget *widget, GdkEventExpose *event, 
 
 	if (selection_target_buffer != NULL) {
 		gdk_window_set_cursor(gtk_widget_get_window(editor->drar), gdk_cursor_new(GDK_ICON));
+	} else if (buffer_aux_is_directory(editor->buffer)) {
+		gdk_window_set_cursor(gtk_widget_get_window(editor->drar), gdk_cursor_new(GDK_ARROW));
 	} else {
 		gdk_window_set_cursor(gtk_widget_get_window(editor->drar), gdk_cursor_new(GDK_XTERM));
 	}

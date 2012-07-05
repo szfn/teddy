@@ -12,7 +12,7 @@ int teddy_fdopen_command(ClientData client_data, Tcl_Interp *interp, int argc, c
 	int i, intr;
 	int flags = 0;
 	Tcl_Obj *r;
-	
+
 	if (argc < 3) {
 		Tcl_AddErrorInfo(interp, "Wrong number of arguments ot 'fdopen' command");
 		return TCL_ERROR;
@@ -66,13 +66,13 @@ int teddy_fdopen_command(ClientData client_data, Tcl_Interp *interp, int argc, c
 	}
 
 	intr = open(argv[i], flags);
-	r = Tcl_NewIntObj(intr);
 	if (intr == -1) {
 		Tcl_AddErrorInfo(interp, "Error executing fdopen");
 		return TCL_ERROR;
 	}
+	r = Tcl_NewIntObj(intr);
 	Tcl_SetObjResult(interp, r);
-	
+
 	return TCL_OK;
 }
 

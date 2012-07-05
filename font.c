@@ -4,26 +4,102 @@
 
 #include "global.h"
 #include "cfg.h"
+#include FT_ERRORS_H
 
 FT_Library library;
 teddy_fontset_t variable_main_fonts;
 teddy_fontset_t monospace_main_fonts;
 teddy_font_t posbox_font;
 
-static void teddy_font_init_ex(teddy_font_t *font,  const char *fontfile, double size, int face_index) {
+const char graphics[] = "STARTFONT 2.1\n\
+COMMENT Graphics font for directory trees\n\
+FONT teddygraph.16.font\n\
+SIZE 16 75 75\n\
+FONTBOUNDINGBOX 14 14 0 0\n\
+STARTPROPERTIES 7\n\
+PIXEL_SIZE 16\n\
+POINT_SIZE 160\n\
+FONT_ASCENT 14\n\
+FONT_DESCENT 0\n\
+CHARSET_REGISTRY \"iso10646\"\n\
+CHARSET_ENCODING \"1\"\n\
+DEFAULT_CHAR 0\n\
+ENDPROPERTIES\n\
+CHARS 2\n\
+STARTCHAR U+E650\n\
+ENCODING 58960\n\
+SWIDTH 812 0\n\
+DWIDTH 13 0\n\
+BBX 13 14 0 0\n\
+BITMAP\n\
+0000\n\
+0000\n\
+3fe0\n\
+2020\n\
+2220\n\
+2220\n\
+2fa0\n\
+2220\n\
+2220\n\
+2020\n\
+3fe0\n\
+0000\n\
+0000\n\
+0000\n\
+ENDCHAR\n\
+STARTCHAR U+E651\n\
+ENCODING 58961\n\
+SWIDTH 812 0\n\
+DWIDTH 13 0\n\
+BBX 13 14 0 0\n\
+BITMAP\n\
+0000\n\
+0000\n\
+3fe0\n\
+2020\n\
+2020\n\
+2020\n\
+2fa0\n\
+2020\n\
+2020\n\
+2020\n\
+3fe0\n\
+0000\n\
+0000\n\
+0000\n\
+ENDCHAR\n\
+STARTCHAR U+E652\n\
+ENCODING 58962\n\
+SWIDTH 812 0\n\
+DWIDTH 13 0\n\
+BBX 13 14 0 0\n\
+BITMAP\n\
+0000\n\
+0000\n\
+0000\n\
+0000\n\
+0000\n\
+0000\n\
+0000\n\
+0000\n\
+0000\n\
+0000\n\
+0000\n\
+0000\n\
+0000\n\
+ENDCHAR\n\
+ENDFONT\n";
+
+static void teddy_finish_init_font(teddy_font_t *font, double size, bool set_ft_size) {
 	gdouble dpi = gdk_screen_get_resolution(gdk_screen_get_default());
 	double text_size = dpi / 72.0 * size;
 
-	int error = FT_New_Face(library, (const char *)fontfile, face_index, &(font->face));
-	if (error) {
-		printf("Error loading freetype font\n");
-		exit(EXIT_FAILURE);
-	}
-
-	error = FT_Set_Char_Size(font->face, 0, size * 64, dpi, dpi);
-	if (error) {
-		printf("Error loading freetype font\n");
-		exit(EXIT_FAILURE);
+	if (set_ft_size) {
+		int error = FT_Set_Char_Size(font->face, 0, size * 64, dpi, dpi);
+		if (error) {
+			printf("Error loading freetype font %02X\n", error);
+			exit(EXIT_FAILURE);
+		}
 	}
 
 	font->cairoface = cairo_ft_font_face_create_for_ft_face(font->face, FT_LOAD_FORCE_AUTOHINT);
@@ -36,6 +112,16 @@ static void teddy_font_init_ex(teddy_font_t *font,  const char *fontfile, double
 	cairo_font_options_set_hint_style(font->font_options, CAIRO_HINT_STYLE_SLIGHT);
 
 	font->cairofont = cairo_scaled_font_create(font->cairoface, &(font->font_size_matrix), &(font->font_ctm), font->font_options);
+}
+
+static void teddy_font_init_ex(teddy_font_t *font,  const char *fontfile, double size, int face_index) {
+	int error = FT_New_Face(library, (const char *)fontfile, face_index, &(font->face));
+	if (error) {
+		printf("Error loading freetype font\n");
+		exit(EXIT_FAILURE);
+	}
+
+	teddy_finish_init_font(font, size, true);
 }
 
 static void fontconfig_init_from_pattern(FcPattern *match, teddy_font_t *font) {
@@ -183,8 +269,24 @@ static void fontset_init(const char *fontfile, teddy_fontset_t *fontset) {
 
 			FcCharSetMerge(accumulator, cset, NULL);
 			acc_count += c;
+
+			if (fontset->count >= 0xfe) break;
 		}
 	}
+
+	teddy_font_t *graphics_font = fontset->fonts+fontset->count;
+	FT_Open_Args graphics_open_args = { FT_OPEN_MEMORY, graphics, sizeof(graphics), NULL, NULL, 0, 0, NULL };
+	int error = FT_Open_Face(library, &graphics_open_args, 0, &(graphics_font->face));
+	if (error) {
+		printf("Error loading builtin font\n");
+		exit(EXIT_FAILURE);
+	}
+	teddy_finish_init_font(graphics_font, 16, false);
+
+	fontset->map[0xE650] = fontset->count;
+	fontset->map[0xE651] = fontset->count;
+	fontset->map[0xE652] = fontset->count;
+	++(fontset->count);
 }
 
 static void fontset_free(teddy_fontset_t *fontset) {
@@ -211,3 +313,4 @@ void teddy_font_real_free(void) {
 	fontset_free(&variable_main_fonts);
 	fontset_free(&monospace_main_fonts);
 }
+

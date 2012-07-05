@@ -414,9 +414,9 @@ static bool mouse_open_select_like_file(editor_t *editor, lpoint_t *cursor, lpoi
 	start->line = cursor->line;
 	end->line = cursor->line;
 
-	for (int i = cursor->glyph-1; i > 0; --i) {
+	for (int i = cursor->glyph-1; i >= 0; --i) {
 		uint32_t code = start->line->glyph_info[i].code;
-		if ((code == 0x20) || (code == 0x09)) {
+		if ((code == 0x20) || (code == 0x09) || (code == 0xe650) || (code == 0xe651) || (code == 0xe652)) {
 			start->glyph = i+1;
 			break;
 		}

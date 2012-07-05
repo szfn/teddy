@@ -494,6 +494,19 @@ static void buffer_typeset_from(buffer_t *buffer, real_line_t *start_line) {
 	}
 }
 
+void buffer_replace_region(buffer_t *buffer, const char *new_text, lpoint_t *start, lpoint_t *end) {
+	lpoint_t mark_save = buffer->mark;
+	lpoint_t cursor_save = buffer->cursor;
+
+	buffer->mark = *end;
+	buffer->cursor = *start;
+
+	buffer_replace_selection(buffer, new_text);
+
+	buffer->mark = mark_save;
+	buffer->cursor = cursor_save;
+}
+
 void buffer_replace_selection(buffer_t *buffer, const char *new_text) {
 	lpoint_t start_point, end_point;
 	real_line_t *pre_start_line;

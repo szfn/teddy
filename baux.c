@@ -238,3 +238,10 @@ void buffer_aux_clear(buffer_t *buffer) {
 	buffer->cursor.glyph = buffer->cursor.line->cap;
 	buffer_replace_selection(buffer, "");
 }
+
+bool buffer_aux_is_directory(buffer_t *buffer) {
+	if (buffer == NULL) return false;
+	if (buffer->name == NULL) return false;
+
+	return (buffer->name[strlen(buffer->name) - 1] == '/');
+}
