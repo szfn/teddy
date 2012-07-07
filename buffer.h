@@ -135,6 +135,7 @@ void buffer_update_parmatch(buffer_t *buffer);
 
 // replace current selection with new_text (main editing function)
 void buffer_replace_selection(buffer_t *buffer, const char *new_text);
+void buffer_replace_region(buffer_t *buffer, const char *new_text, lpoint_t *start, lpoint_t *end);
 
 // undo
 void buffer_undo(buffer_t *buffer);

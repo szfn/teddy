@@ -1,9 +1,11 @@
 - better dirrec/rd with a graphical tree
- - rd is more graphical
- - directories can be expanded and closed in rd
- - clicking in rd buffer is special (associate metainformation with entire path to each line)
+ - make sure that right click knows about depth
+ - right click on directory should show expand as an option
  - dirrec will expand everything
- - enter will 'go' to the current file
+
+- at end of job run s "<current directory>/" "./"
+
+- bug: "echo something > output" results in failure
 
 
 - tutorial

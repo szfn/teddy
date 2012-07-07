@@ -12,6 +12,8 @@
 #include "global.h"
 #include "baux.h"
 #include "lexy.h"
+#include "go.h"
+#include "editor_cmdline.h"
 
 struct entry {
 	char *name;
@@ -77,6 +79,12 @@ static void rdrs(buffer_t *buffer, const char *c, uint8_t color) {
 	buffer->default_color = L_NOTHING;
 }
 
+static void rdrr(buffer_t *buffer, const char *c, uint8_t color, lpoint_t *start, lpoint_t *end) {
+	buffer->default_color = color;
+	buffer_replace_region(buffer, c, start, end);
+	buffer->default_color = L_NOTHING;
+}
+
 static void rd_insert(buffer_t *buffer, DIR *dir, int depth) {
 	struct entries es;
 	entry_init(&es, 100);
@@ -103,7 +111,8 @@ static void rd_insert(buffer_t *buffer, DIR *dir, int depth) {
 
 	for (int i = 0; i < es.cur; ++i) {
 		for (int d = 0; d < depth-1; ++d) {
-			rdrs(buffer, "\u2502d\ue652", L_NOTHING);
+			//rdrs(buffer, "\u2502\ue652", L_NOTHING);
+			rdrs(buffer, "\u2502", L_NOTHING);
 		}
 
 		if (depth > 0) {
@@ -162,15 +171,57 @@ void rd(DIR *dir, buffer_t *buffer) {
 }
 
 static int find_start(real_line_t *line) {
-	//TODO: cercare al contrario <- IMPORTANTE
 	int i;
-	for (i = 0; i < line->cap; ++i) {
+	for (i = line->cap-1; i >= 0; --i) {
 		if ((line->glyph_info[i].code == 0xe650) || (line->glyph_info[i].code == 0xe651) || (line->glyph_info[i].code == 0xe652)) {
 			break;
 		}
 	}
 
-	return (i >= line->cap) ? -1 : i;
+	return i;
+}
+
+char *rd_get_path(buffer_t *buffer, real_line_t *cursor_line, int i) {
+	lpoint_t start, end;
+	start.line = end.line = cursor_line;
+
+	start.glyph = i+1;
+	end.glyph = cursor_line->cap;
+
+	char *text = buffer_lines_to_text(buffer, &start, &end);
+
+	if (i == 0) {
+
+		char *path = malloc(sizeof(char) * (1+strlen(buffer->wd) + strlen(text)));
+
+		strcpy(path, buffer->wd);
+		strcat(path, text);
+
+		free(text);
+
+		return path;
+	} else {
+		real_line_t *directory_line;
+		for (directory_line = cursor_line->prev; directory_line != NULL; directory_line = directory_line->prev) {
+			if (i-1 >= directory_line->cap) continue;
+			if (directory_line->glyph_info[i-1].code == 0xe651) {
+				char *directory_path = rd_get_path(buffer, directory_line, i-1);
+
+				char *path = malloc(sizeof(char) * (1 + strlen(directory_path) + strlen(text)));
+
+				strcpy(path, directory_path);
+				strcat(path, text);
+
+				free(directory_path);
+				free(text);
+
+				return path;
+			}
+		}
+	}
+
+	free(text);
+	return NULL;
 }
 
 void rd_open(editor_t *editor) {
@@ -191,29 +242,21 @@ void rd_open(editor_t *editor) {
 
 		editor->buffer->editable = 1;
 
-		editor->buffer->mark = start;
-		editor->buffer->cursor = end;
-		rdrs(editor->buffer, "\ue651", L_STRING);
-		editor->buffer->mark.line = NULL; editor->buffer->mark.glyph = 0;
+		rdrr(editor->buffer, "\ue651", L_STRING, &start, &end);
 
-		start.glyph = i+1;
-		end.glyph = cursor_line->cap;
+		char *path = rd_get_path(editor->buffer, cursor_line, i);
 
-		char *text = buffer_lines_to_text(editor->buffer, &start, &end);
-		char *directory = malloc(sizeof(char) * (1+strlen(editor->buffer->wd) + strlen(text)));
+		if (path == NULL) return;
 
-		strcpy(directory, editor->buffer->wd);
-		strcat(directory, text);
+		//printf("Expanding: <%s> <%d>\n", path, i+1);
 
-		free(text);
-
-		DIR *dir = opendir(directory);
-		free(directory);
+		DIR *dir = opendir(path);
+		free(path);
 
 		if (dir != NULL) {
 			editor->buffer->cursor.glyph = editor->buffer->cursor.line->cap;
 			rdrs(editor->buffer, "\n", L_NOTHING);
-			rd_insert(editor->buffer, dir, i/2+1);
+			rd_insert(editor->buffer, dir, i+1);
 			closedir(dir);
 		}
 
@@ -230,37 +273,51 @@ void rd_open(editor_t *editor) {
 
 		editor->buffer->editable = 1;
 
-		editor->buffer->mark = start;
-		editor->buffer->cursor = end;
-		rdrs(editor->buffer, "\ue650", L_STRING);
-		editor->buffer->mark.line = NULL; editor->buffer->mark.glyph = 0;
+		rdrr(editor->buffer, "\ue650", L_STRING, &start, &end);
 
 		start.glyph = end.glyph = 0;
 		start.line = cursor_line->next;
 
 		if (start.line != NULL) {
-			for (end.line = start.line; end.line != NULL; end.line = end.line->next) {
+			for (end.line = start.line->next; end.line != NULL; end.line = end.line->next) {
 				if (i >= end.line->cap) continue;
 				int c = end.line->glyph_info[i].code;
-				if ((c == 0xe650) || (c == 0xe652)) break;
+				if ((c == 0xe650) || (c == 0xe651) || (c == 0xe652)) break;
 			}
 
 			if (end.line != NULL) {
-				editor->buffer->mark = start;
-				editor->buffer->cursor = end;
-				buffer_replace_selection(editor->buffer, "");
+				buffer_replace_region(editor->buffer, "", &start, &end);
 			}
 		}
+
 
 		editor->buffer->editable = 0;
 		editor->buffer->modified = 0;
 
 		editor->buffer->cursor.line = cursor_line; editor->buffer->cursor.glyph = i;
+		editor->buffer->mark.line = NULL; editor->buffer->mark.glyph = 0;
 	} else {
-		printf("File selected should go\n");
-		//TODO: go to file
+		char *path = rd_get_path(editor->buffer, cursor_line, i);
+		//printf("File selected should go <%s>\n", path);
+
+		enum go_file_failure_reason gffr;
+		buffer_t *target_buffer = go_file(editor->buffer, path, false, &gffr);
+
+		if (target_buffer != NULL) go_to_buffer(editor, target_buffer, -1);
+		else if (gffr == GFFR_BINARYFILE) {
+			char *ex = malloc(sizeof(char) * (strlen(path) + 4));
+			alloc_assert(ex);
+
+			strcpy(ex, " {");
+			strcat(ex, path);
+			strcat(ex, "}");
+
+			editor->ignore_next_entry_keyrelease = true;
+			editor_add_to_command_line(editor, ex);
+
+			free(ex);
+		}
+
+		free(path);
 	}
 }
-
-//TODO:
-// - versioni di buffer_replace_selection e buffer_lines_to_text che prendono due punti invece di usare mark e cursor
