@@ -415,21 +415,15 @@ static int teddy_move_command(ClientData client_data, Tcl_Interp *interp, int ar
 
 	next = (strcmp(argv[1], "next") == 0);
 
+	bool ret = false;
 	if (strcmp(argv[2], "char") == 0) {
-		editor_move_cursor(context_editor, 0, next ? 1 : -1, MOVE_NORMAL, TRUE);
+		ret = editor_move_cursor(context_editor, 0, next ? 1 : -1, MOVE_NORMAL, TRUE);
 	} else if (strcmp(argv[2], "softline") == 0) {
-		editor_move_cursor(context_editor, next ? 1 : -1, 0, MOVE_NORMAL, TRUE);
+		ret = editor_move_cursor(context_editor, next ? 1 : -1, 0, MOVE_NORMAL, TRUE);
 	} else if (strcmp(argv[2], "line") == 0) {
-		editor_move_cursor(context_editor, 1, 0, MOVE_NORMAL, TRUE);
-		editor_complete_move(context_editor, TRUE);
-		/* old implementation, why like this?
-		real_line_t *n = NULL;
-		n = next ? context_editor->buffer->cursor.line->next : context_editor->buffer->cursor.line->prev;
-		if (n != NULL) {
-			context_editor->buffer->cursor.line = n;
-			editor_complete_move(context_editor, TRUE);
-		}*/
+		ret = editor_move_cursor(context_editor, 1, 0, MOVE_NORMAL, TRUE);
 	} else if (strcmp(argv[2], "wnwa") == 0) {
+		ret = true;
 		if (next)
 			buffer_aux_wnwa_next(context_editor->buffer);
 		else
@@ -439,6 +433,8 @@ static int teddy_move_command(ClientData client_data, Tcl_Interp *interp, int ar
 		Tcl_AddErrorInfo(interp, "Unknown argument to 'move' command");
 		return TCL_ERROR;
 	}
+
+	Tcl_SetResult(interp, ret ? "true" : "false", TCL_VOLATILE);
 
 	return TCL_OK;
 }

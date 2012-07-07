@@ -1,14 +1,9 @@
-- better dirrec/rd with a graphical tree
- - make sure that right click knows about depth
- - right click on directory should show expand as an option
- - dirrec will expand everything
+- Ctrl-o move to next editor (keep a stack of editors like windows' windows)
+- bug: "echo something > output" results in failure
 
 - at end of job run s "<current directory>/" "./"
 
-- bug: "echo something > output" results in failure
 
-
-- tutorial
 - forlines control structure
 - comment region command
 - ability to persist the status of a window
@@ -17,7 +12,6 @@
 - refresh all buffers
 - replace tcl regex engine with TRE
 - TAGS files
-- macros
 - debugger integration (just displaying currently executed line)
 - selection should copy selected text on past not on selection, for better efficiency (selection slowdown is noticeable on mouse selection)
 - extend regular expressions in 's' to be lexically aware
@@ -26,7 +20,6 @@
 - fix mark words when used with cursor keys
 - implement stayoncmd flag for buffers
 - implement lockcmd command that changes the command line of a buffer to always send a specific command
-- Ctrl-o move to next editor (keep a stack of editors like windows' windows)
 - 's' command: support normal pcre flags
 - left+middle -> cut
 - move mouse cursor when searching with mouse

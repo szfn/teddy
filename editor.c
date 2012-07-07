@@ -198,17 +198,19 @@ void editor_complete_move(editor_t *editor, gboolean should_move_origin) {
 	lexy_update_for_move(editor->buffer, editor->buffer->cursor.line);
 }
 
-void editor_move_cursor(editor_t *editor, int delta_line, int delta_char, enum MoveCursorSpecial special, gboolean should_move_origin) {
+bool editor_move_cursor(editor_t *editor, int delta_line, int delta_char, enum MoveCursorSpecial special, gboolean should_move_origin) {
+	bool ret = true; // will stay true if all requested movements can be completed correctly
+
 	while (delta_line < 0) {
 		real_line_t *to = editor->buffer->cursor.line->prev;
-		if (to == NULL) break;
+		if (to == NULL) { ret = false; break; }
 		editor->buffer->cursor.line = to;
 		++delta_line;
 	}
 
 	while (delta_line > 0) {
 		real_line_t *to = editor->buffer->cursor.line->next;
-		if (to == NULL) break;
+		if (to == NULL) { ret = false; break; }
 		editor->buffer->cursor.line = to;
 		--delta_line;
 	}
@@ -219,8 +221,14 @@ void editor_move_cursor(editor_t *editor, int delta_line, int delta_char, enum M
 	if ((delta_char != 0) || (special != MOVE_NORMAL)) {
 		editor->buffer->cursor.glyph += delta_char;
 
-		if (editor->buffer->cursor.glyph < 0) editor->buffer->cursor.glyph = 0;
-		if (editor->buffer->cursor.glyph > editor->buffer->cursor.line->cap) editor->buffer->cursor.glyph = editor->buffer->cursor.line->cap;
+		if (editor->buffer->cursor.glyph < 0) {
+			ret = false;
+			editor->buffer->cursor.glyph = 0;
+		}
+		if (editor->buffer->cursor.glyph > editor->buffer->cursor.line->cap) {
+			ret = false;
+			editor->buffer->cursor.glyph = editor->buffer->cursor.line->cap;
+		}
 
 		if (special == MOVE_LINE_START) {
 			editor->buffer->cursor.glyph = 0;
@@ -232,6 +240,8 @@ void editor_move_cursor(editor_t *editor, int delta_line, int delta_char, enum M
 	buffer_extend_selection_by_select_type(editor->buffer);
 
 	editor_complete_move(editor, should_move_origin);
+
+	return ret;
 }
 
 static void text_entry_callback(GtkIMContext *context, gchar *str, gpointer data) {
@@ -670,9 +680,9 @@ static gboolean button_press_callback(GtkWidget *widget, GdkEventButton *event, 
 		// here we check if the new cursor position (the one we created by clicking with the mouse) is inside the old selection area, in that case we do execute the mouse_open_action function on the selection. If no selection was active then we create one around the cursor and execute the mouse_open_action function on that
 		if (start.line == NULL) {
 			copy_lpoint(&start, &(editor->buffer->cursor));
-			mouse_open_action(editor, &start, NULL);
+			mouse_open_action(editor, &start, NULL, -1);
 		} else if (inbetween_lpoint(&start, &(editor->buffer->cursor), &end)) {
-			mouse_open_action(editor, &start, &end);
+			mouse_open_action(editor, &start, &end, -1);
 		}
 	}
 

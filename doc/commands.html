@@ -113,6 +113,7 @@
 				<li><tt><i>line number</i>:<i>column specifier</i></tt> will move the cursor to the specified position.
 				<li><tt><i>filename</i></tt> opens the specified file or directory, will ask to create it if it doesn't exist.
 				<li><tt><i>filename</i>:<i>position specifier</i></tt> opens the specified file and moves the cursor to the specified position (composed of a line number and an optional column specifier).
+				<li>if the character alone is passed the command will try to determine its argument from the current position / selection in the buffer, like right clicking would
 			</ul>
 			<p>If the command requests opening an already opened file or directory go will focus the already opened buffer, if the buffer if visible, if the buffer is not visible or if the command requests to open a new buffer a window will be shown to let the user select which editor to use for the buffer, unless the first argument was -here, -current or -new.
 		</div>
@@ -214,8 +215,9 @@
 
 		<h3>move</h3>
 		<div class="ind">
-			<p><b>Syntax:</b> <tt>move <b>(</b>prev<b>|</b>next<b>)</b> <b>(</b>char<b>|</b>wnwa<b>)</b></tt>
-			<p>Moves by one character or one word (actually wnwa is word-non-word-alternation).
+			<p><b>Syntax:</b> <tt>move <b>(</b>prev<b>|</b>next<b>)</b> <b>(</b>char<b>|</b>wnwa<b>|</b>line<b>)</b></tt>
+			<p>Moves by one character, one word (actually wnwa is word-non-word-alternation) or one line.
+			<p>Will return true if moving was possible
 		</div>
 
 		<h3>gohome</h3>

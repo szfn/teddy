@@ -578,57 +578,23 @@ proc buffer_setup_hook {buffer-name} {\n\
 	return {}\n\
 }\n\
 \n\
-proc dirrec_ex {directory args} {\n\
-	puts \"Files $args in $directory\"\n\
+proc dirrec {} {\n\
+	if {[string index [pwf] end] ne \"/\"} {\n\
+		return\n\
+	}\n\
 \n\
-	set files [split [exec find $directory -type f ! -path \"*/\\.*\"] \"\\n\"]\n\
-	set filtered_files {}\n\
-	set name_max_len 0\n\
-	for {set i 0} {$i < [llength $files]} {incr i} {\n\
-		set cur [lindex $files $i]\n\
-		set curbase [string range $cur [expr [string last \"/\" $cur] + 1] end]\n\
+	set saved_cursor [cursor]\n\
 \n\
-		set appended 0\n\
-		if {[llength $args] == 0} {\n\
-			lappend filtered_files [list $curbase $cur]\n\
-			set appended 1\n\
-		} else {\n\
-			foreach re $args {\n\
-				if {[regexp $re $curbase]} {\n\
-					lappend filtered_files [list $curbase $cur]\n\
-					set appended 1\n\
-					break\n\
-				}\n\
-			}\n\
-		}\n\
+	go 1\n\
 \n\
-		if {$appended} {\n\
-			if {[string length $curbase] > $name_max_len} {\n\
-				if {$name_max_len == 0 || $name_max_len + 4 >= [string length $curbase]} {\n\
-					set name_max_len [string length $curbase]\n\
-				}\n\
-			}\n\
+	while {[move next line]} {\n\
+		if {[s -0 -line \"\\ue650\"]} {\n\
+			go &\n\
+			go :0\n\
 		}\n\
 	}\n\
 \n\
-	for {set i 0} {$i < [llength $filtered_files]} {incr i} {\n\
-		set cur [lindex $filtered_files $i]\n\
-		set name [lindex $cur 0]\n\
-		set path [lindex $cur 1]\n\
-\n\
-		set padding [expr $name_max_len - [string length $name] + 2]\n\
-		if {$padding <= 0} { set padding 2 }\n\
-		set padding [string repeat \" \" $padding]\n\
-\n\
-		lset filtered_files $i \"$name$padding$path\"\n\
-	}\n\
-\n\
-	set filtered_files [lsort $filtered_files]\n\
-	puts [join $filtered_files \"\\n\"]\n\
-}\n\
-\n\
-proc dirrec {directory args} {\n\
-	bg \"+dirrec/$directory\" \"dirrec_ex $directory $args\"\n\
+	go $saved_cursor\n\
 }\n\
 \n\
 proc loadhistory {} {\n\

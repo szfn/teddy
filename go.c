@@ -16,6 +16,7 @@
 #include "global.h"
 #include "columns.h"
 #include "lexy.h"
+#include "rd.h"
 
 GtkWidget *go_switch_label;
 GtkWidget *go_switch_window;
@@ -294,6 +295,20 @@ int teddy_go_command(ClientData client_data, Tcl_Interp *interp, int argc, const
 		return TCL_ERROR;
 	}
 
+	if (strcmp(goarg, "&") == 0) {
+		lpoint_t start, end;
+		buffer_get_selection(context_editor->buffer, &start, &end);
+
+		if (start.line == NULL) {
+			copy_lpoint(&start, &(context_editor->buffer->cursor));
+			mouse_open_action(context_editor, &start, NULL, where);
+		} else {
+			mouse_open_action(context_editor, &start, &end, where);
+		}
+
+		return TCL_OK;
+	}
+
 	enum go_file_failure_reason gffr;
 	if (!exec_go(goarg, where, &gffr)) {
 		if (gffr == GFFR_BINARYFILE) return TCL_OK;
@@ -438,7 +453,12 @@ static bool mouse_open_select_like_file(editor_t *editor, lpoint_t *cursor, lpoi
 	return true;
 }
 
-void mouse_open_action(editor_t *editor, lpoint_t *start, lpoint_t *end) {
+void mouse_open_action(editor_t *editor, lpoint_t *start, lpoint_t *end, int where) {
+	if (buffer_aux_is_directory(editor->buffer)) {
+		rd_open(editor);
+		return;
+	}
+
 	lpoint_t changed_end;
 	lpoint_t cursor;
 
@@ -490,7 +510,7 @@ void mouse_open_action(editor_t *editor, lpoint_t *start, lpoint_t *end) {
 	alloc_assert(go_arg);
 
 	enum go_file_failure_reason gffr;
-	if (!exec_go(go_arg, -1, &gffr)) {
+	if (!exec_go(go_arg, where, &gffr)) {
 		// if this succeeded we could open the file at the specified line and we are done
 		// otherwise we check gffr
 
