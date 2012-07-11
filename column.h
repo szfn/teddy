@@ -45,5 +45,6 @@ editor_t *column_get_editor_from_position(column_t *column, double x, double y, 
 double column_get_occupied_space(column_t *column);
 bool column_editor_exists(column_t *column, editor_t *editor);
 void column_resize_editor_pair(editor_t *first, double first_size, editor_t *second, double second_size);
+editor_t *column_get_next_editor(column_t *column, editor_t *editor);
 
 #endif

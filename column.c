@@ -396,6 +396,20 @@ editor_t *column_get_last_editor(column_t *column) {
 	return r;
 }
 
+editor_t *column_get_next_editor(column_t *column, editor_t *editor) {
+	GList *list = gtk_container_get_children(GTK_CONTAINER(column));
+	for (GList *cur = list; cur != NULL; cur = cur->next) {
+		if (cur->data == editor->container) {
+			if (cur->next != NULL) {
+				return editors_index_to_editor(column, editors_editor_from_table(column, cur->next->data));
+			} else {
+				return NULL;
+			}
+		}
+	}
+	return NULL;
+}
+
 static void give_height_to_other_editor(editor_t *editor, editor_t *other_editor) {
 	GtkAllocation allocation, other_allocation;
 

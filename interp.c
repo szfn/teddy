@@ -293,7 +293,15 @@ static int teddy_bufman_command(ClientData client_data, Tcl_Interp *interp, int 
 		return TCL_ERROR;
 	}
 
-	if (argc != 1) {\
+	if (argc == 2) {
+		if (strcmp(argv[1], "next-editor") == 0) {
+			columns_next_editor(columnset, context_editor);
+			return TCL_OK;
+		} else {
+			Tcl_AddErrorInfo(interp, "Wrong argument to 'bufman' command");
+			return TCL_ERROR;
+		}
+	} else if (argc != 1) {
 		Tcl_AddErrorInfo(interp, "Wrong number of arguments to 'bufman' command");
 		return TCL_ERROR;
 	}

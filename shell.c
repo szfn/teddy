@@ -4,6 +4,7 @@
 #include <unistd.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <errno.h>
 #include <string.h>
 #include <sys/wait.h>
 #include <sys/types.h>
@@ -65,9 +66,16 @@ int teddy_fdopen_command(ClientData client_data, Tcl_Interp *interp, int argc, c
 		return TCL_ERROR;
 	}
 
-	intr = open(argv[i], flags);
+	intr = open(argv[i], flags, S_IRWXU | S_IRWXG);
 	if (intr == -1) {
-		Tcl_AddErrorInfo(interp, "Error executing fdopen");
+#define FDOPEN_ERROR ": "
+		char *err = strerror(errno);
+		char *e = malloc(sizeof(char) * (strlen(err) + strlen(FDOPEN_ERROR) + strlen(argv[i]) + 1));
+		strcpy(e, argv[i]);
+		strcat(e, FDOPEN_ERROR);
+		strcat(e, err);
+		Tcl_AddErrorInfo(interp, e);
+		free(e);
 		return TCL_ERROR;
 	}
 	r = Tcl_NewIntObj(intr);
@@ -282,7 +290,7 @@ int teddy_fd2channel_command(ClientData client_data, Tcl_Interp *interp, int arg
 
 	Tcl_Channel chan = Tcl_MakeFileChannel(fd, readOrWrite);
 	Tcl_RegisterChannel(interp, chan);
-	Tcl_SetResult(interp, Tcl_GetChannelName(chan), NULL);
+	Tcl_SetResult(interp, Tcl_GetChannelName(chan), TCL_VOLATILE);
 
 	return TCL_OK;
 }

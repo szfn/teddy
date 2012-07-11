@@ -1,5 +1,4 @@
-- Ctrl-o move to next editor (keep a stack of editors like windows' windows)
-- bug: "echo something > output" results in failure
+- check default behaviour
 
 - at end of job run s "<current directory>/" "./"
 

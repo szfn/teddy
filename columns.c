@@ -151,6 +151,31 @@ static column_t *columns_get_last(columns_t *columns) {
 	return NULL;
 }
 
+static column_t *columns_get_next_column(columns_t *columns, column_t *column) {
+	GList *list = gtk_container_get_children(GTK_CONTAINER(columns));
+	GList *cur;
+
+	column_t *first_column = (column_t *)list->data;
+
+	column_t *r;
+
+	for (cur = list; cur != NULL; cur  = cur->next) {
+		if (cur->data == GTK_WIDGET(column)) {
+			if (cur->next != NULL) {
+				r = (column_t *)cur->next->data;
+				break;
+			} else {
+				r = first_column;
+				break;
+			}
+		}
+	}
+
+	g_list_free(list);
+
+	return r;
+}
+
 static column_t *columns_widget_to_column(columns_t *columns, GtkWidget *w) {
 	int i;
 	for (i = 0; i < columns->columns_allocated; ++i) {
@@ -481,3 +506,21 @@ void columns_reallocate(columns_t *columns) {
 	gtk_columns_size_allocate(GTK_WIDGET(columns), &(GTK_WIDGET(columns)->allocation));
 }
 
+void columns_next_editor(columns_t *columns, editor_t *editor) {
+	column_t *column = editor->column;
+
+	editor = column_get_next_editor(column, editor);
+
+	if (editor != NULL) {
+		editor_grab_focus(editor, true);
+	} else {
+		for (int i = 0; i < columns->columns_allocated; ++i) {
+			column = columns_get_next_column(columns, column);
+			editor = column_get_first_editor(column);
+			if (editor != NULL) {
+				editor_grab_focus(editor, true);
+				break;
+			}
+		}
+	}
+}

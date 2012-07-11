@@ -22,8 +22,8 @@ proc shell_perform_redirection {redirection} {
    switch -exact $open_direction {
       ">" {
          if {$redirected_descriptor eq ""} {set redirected_descriptor 1}
-         #puts "Sending $redirected_descriptor to $target"
-         set fd [fdopen -wronly $target]
+         if {$target eq ""} { error "Output redirect without filename" }
+         set fd [fdopen -wronly -trunc -creat $target]
          fddup2 $fd $redirected_descriptor
          fdclose $fd
       }
@@ -33,6 +33,7 @@ proc shell_perform_redirection {redirection} {
       }
       "<" {
          if {$redirected_descriptor eq ""} {set redirected_descriptor 0}
+         if {$target eq ""} { error "Input redirect without filename" }
          set fd [fdopen -rdonly $target]
          fddup2 $fd $redirected_descriptor
          fdclose $fd
@@ -43,7 +44,7 @@ proc shell_perform_redirection {redirection} {
       }
       ">>" {
          if {$redirected_descriptor eq ""} {set redirected_descriptor 1}
-         set fd [fdopen -wronly -append $target]
+         set fd [fdopen -creat -wronly -append $target]
          fddup2 $fd $redirected_descriptor
          fdclose $fd
       }

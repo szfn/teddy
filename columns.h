@@ -43,6 +43,7 @@ column_t *columns_get_column_from_position(columns_t *columns, double x, double 
 void columns_swap_columns(columns_t *columns, column_t *cola, column_t *colb);
 bool editor_exists(columns_t *columns, editor_t *editor);
 void columns_reallocate(columns_t *columns);
+void columns_next_editor(columns_t *columns, editor_t *editor);
 
 editor_t *heuristic_new_frame(columns_t *columns, editor_t *spawning_editor, buffer_t *buffer);
 
