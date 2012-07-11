@@ -33,10 +33,10 @@ void cfg_init(void) {
 	setcfg(config + CFG_BORDER_COLOR, "0");
 	setcfg(config + CFG_DEFAULT_AUTOINDENT, "1");
 	setcfg(config + CFG_DEFAULT_SPACEMAN, "1");
-	setcfg(config + CFG_EDITOR_BG_COLOR, "255");
+	setcfg(config + CFG_EDITOR_BG_COLOR, "16777215");
 	setcfg(config + CFG_EDITOR_BG_CURSORLINE, "13882323");
-	setcfg(config + CFG_EDITOR_FG_COLOR, "16777215");
-	setcfg(config + CFG_EDITOR_SEL_COLOR, "16777215");
+	setcfg(config + CFG_EDITOR_FG_COLOR, "0");
+	setcfg(config + CFG_EDITOR_SEL_COLOR, "0");
 	setcfg(config + CFG_FOCUS_FOLLOWS_MOUSE, "1");
 	setcfg(config + CFG_INTERACTIVE_SEARCH_CASE_SENSITIVE, "2");
 	setcfg(config + CFG_MAIN_FONT, "Arial-11");

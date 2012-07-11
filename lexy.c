@@ -100,7 +100,7 @@ void lexy_init(void) {
 	}
 
 	for (int i = 0; i < 0xff; ++i) {
-		lexy_colors[i] = 16777215;
+		lexy_colors[i] = 0;
 	}
 }
 

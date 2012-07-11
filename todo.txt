@@ -1,7 +1,5 @@
 - check default behaviour
 
-- at end of job run s "<current directory>/" "./"
-
 
 - forlines control structure
 - comment region command
