@@ -32,6 +32,8 @@ extern GHashTable *keybindings;
 
 #define SPACEMAN_SAVE_RADIUS 150
 
+#define INITFILE ".teddy"
+
 extern int focus_can_follow_mouse;
 
 extern struct history search_history;

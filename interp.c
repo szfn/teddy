@@ -24,8 +24,6 @@
 #include "research.h"
 #include "lexy.h"
 
-#define INITFILE ".teddy"
-
 Tcl_Interp *interp;
 editor_t *context_editor = NULL;
 enum deferred_action deferred_action_to_return;

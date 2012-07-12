@@ -16,6 +16,7 @@
 #include "lexy.h"
 #include "rd.h"
 #include "baux.h"
+#include "autoconf.h"
 
 static gboolean delete_callback(GtkWidget *widget, GdkEvent *event, gpointer data) {
 	//TODO: terminate all processes
@@ -23,11 +24,36 @@ static gboolean delete_callback(GtkWidget *widget, GdkEvent *event, gpointer dat
 	return TRUE;
 }
 
+void autoconf_maybe(void) {
+	const char *home = getenv("HOME");
+	char *name;
+
+	asprintf(&name, "%s/%s", home, INITFILE);
+	FILE *f = fopen(name, "r");
+
+	if (f) {
+		fclose(f);
+		free(name);
+		return;
+	}
+
+	f = fopen(name, "w");
+	if (f) {
+		fprintf(f, "%s\n", AUTOCONF_TEDDY);
+		//printf("autoconf is: <%s>\n", AUTOCONF_TEDDY);
+		fclose(f);
+	}
+
+	free(name);
+}
+
 int main(int argc, char *argv[]) {
 	GtkWidget *window;
 	editor_t *editor;
 	buffer_t *abuf = NULL;
 	int i;
+
+	autoconf_maybe();
 
 	gtk_init(&argc, &argv);
 

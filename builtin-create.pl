@@ -2,24 +2,31 @@
 use warnings;
 use strict;
 
-open my $out, '>', 'builtin.h' or die "Couldn't output builtin.h: $!";
-open my $in, '<', 'builtin.tcl' or die "Couldn't read builtin.tcl: $!";
+sub create_header {
+	my ($output_name, $input_name, $guard_name, $define_name) = @_;
 
-print $out "#ifndef __BUILTIN_TCL__\n";
-print $out "#define __BUILTIN_TCL__\n";
+	open my $out, '>', $output_name or die "Couldn't output $output_name: $!";
+	open my $in, '<', $input_name or die "Couldn't read $input_name: $!";
 
-print $out "\n#define BUILTIN_TCL_CODE \"";
+	print $out "#ifndef $guard_name\n";
+	print $out "#define $guard_name\n";
 
-while (<$in>) {
-	chomp;
-	s:\\:\\\\:g;
-	s:":\\":g;
-	print $out "$_\\n\\\n";
+	print $out "\n#define $define_name \"";
+
+	while (<$in>) {
+		chomp;
+		s:\\:\\\\:g;
+		s:":\\":g;
+		print $out "$_\\n\\\n";
+	}
+
+	print $out "\"\n";
+
+	print $out "#endif\n";
+
+	close $in;
+	close $out;
 }
 
-print $out "\"\n";
-
-print $out "#endif\n";
-
-close $in;
-close $out;
+create_header("builtin.h", "builtin.tcl", "__BUILTIN_TCL__", "BUILTIN_TCL_CODE");
+create_header("autoconf.h", "example.teddy", "__AUTOCONF_TEDDY__", "AUTOCONF_TEDDY");

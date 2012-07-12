@@ -36,7 +36,7 @@ bin/critbit.pdf: critbit.w
 
 obj/critbit.o: critbit.c critbit.addenda.c
 
-builtin.h: builtin.tcl builtin-create.pl
+builtin.h: builtin.tcl builtin-create.pl example.teddy
 	perl builtin-create.pl
 
 git.date.h: $(OBJS)
