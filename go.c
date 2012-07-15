@@ -475,7 +475,7 @@ void mouse_open_action(editor_t *editor, lpoint_t *start, lpoint_t *end, int whe
 
 	if (end->line != start->line) {
 		char *r = buffer_lines_to_text(editor->buffer, start, end);
-		interp_eval(editor, r);
+		interp_eval(editor, r, true);
 		free(r);
 		return;
 	}

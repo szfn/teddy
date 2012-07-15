@@ -591,7 +591,7 @@ static gboolean key_press_callback(GtkWidget *widget, GdkEventKey *event, editor
 	//printf("Keybinding [%s] -> {%s}\n", pressed, command);
 
 	if (command != NULL) {
-		interp_eval(editor, command);
+		interp_eval(editor, command, false);
 	}
 
 	return TRUE;

@@ -366,7 +366,7 @@ static gboolean entry_default_insert_callback(GtkWidget *widget, GdkEventKey *ev
 			enum deferred_action da;
 			if (editor->locked_command_line[0] == '\0') {
 				const char *command = gtk_entry_get_text(GTK_ENTRY(editor->entry));
-				da = interp_eval(editor, command);
+				da = interp_eval(editor, command, true);
 				history_add(&command_history, time(NULL), editor->buffer->wd, command, true);
 			} else { // locked_command_line was set therefore what was specified is an argument to a pre-established command
 				const char *argument = gtk_entry_get_text(GTK_ENTRY(editor->entry));
@@ -374,7 +374,7 @@ static gboolean entry_default_insert_callback(GtkWidget *widget, GdkEventKey *ev
 					da = NOTHING;
 				} else {
 					const char *eval_args[] = { editor->locked_command_line, argument };
-					da = interp_eval(editor, Tcl_Merge(2, eval_args));
+					da = interp_eval(editor, Tcl_Merge(2, eval_args), true);
 				}
 			}
 

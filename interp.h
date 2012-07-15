@@ -16,7 +16,7 @@ extern Tcl_Interp *interp;
 
 void interp_init(void);
 void interp_free(void);
-enum deferred_action interp_eval(editor_t *editor, const char *command);
+enum deferred_action interp_eval(editor_t *editor, const char *command, bool show_ret);
 void read_conf(void);
 
 const char *interp_eval_command(int count, const char *argv[]);

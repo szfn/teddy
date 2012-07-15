@@ -1015,7 +1015,7 @@ void interp_free(void) {
 	Tcl_DeleteInterp(interp);
 }
 
-enum deferred_action interp_eval(editor_t *editor, const char *command) {
+enum deferred_action interp_eval(editor_t *editor, const char *command, bool show_ret) {
 	int code;
 
 	context_editor = editor;
@@ -1041,13 +1041,15 @@ enum deferred_action interp_eval(editor_t *editor, const char *command) {
 			exit(1);
 		}
 	} else {
-		const char *result = Tcl_GetStringResult(interp);
-		if (strcmp(result, "") != 0) {
-			if (context_editor != NULL) {
-				quick_message(context_editor, "TCL Result", result);
-			} else {
-				fprintf(stderr, "%s", result);
-				exit(0);
+		if (show_ret) {
+			const char *result = Tcl_GetStringResult(interp);
+			if (strcmp(result, "") != 0) {
+				if (context_editor != NULL) {
+					quick_message(context_editor, "TCL Result", result);
+				} else {
+					fprintf(stderr, "%s", result);
+					exit(0);
+				}
 			}
 		}
 	}
