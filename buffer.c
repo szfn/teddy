@@ -1256,11 +1256,6 @@ void buffer_line_clean_trailing_spaces(buffer_t *buffer, real_line_t *line) {
 	if (buffer->cursor.line == line) {
 		if (buffer->cursor.glyph > line->cap) buffer->cursor.glyph = line->cap;
 	}
-
-	editor_t *editor = columns_get_buffer(columnset, buffer);
-	if (editor != NULL) {
-		gtk_widget_queue_draw(editor->label);
-	}
 }
 
 void buffer_change_select_type(buffer_t *buffer, enum select_type select_type) {

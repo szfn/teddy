@@ -22,26 +22,45 @@
 
 static GtkTargetEntry selection_clipboard_target_entry = { "UTF8_STRING", 0, 0 };
 
-void set_label_text(editor_t *editor) {
-	char *labeltxt;
+static void gtk_teditor_class_init(editor_class *klass);
+static void gtk_teditor_init(editor_t *editor);
 
-	if (strcmp(editor->label_state, "cmd") == 0) {
-		if (editor->locked_command_line[0] != '\0') {
-			asprintf(&labeltxt, " %s | cmd<%s>", editor->buffer->name, editor->locked_command_line);
-		} else {
-			asprintf(&labeltxt, " %s>", editor->buffer->name);
-		}
-	} else {
-		asprintf(&labeltxt, " %s | %s>", editor->buffer->name, editor->label_state);
+GType gtk_teditor_get_type(void) {
+	static GType teditor_type = 0;
+
+	if (!teditor_type) {
+		static const GTypeInfo teditor_info = {
+			sizeof(editor_class),
+			NULL,
+			NULL,
+			(GClassInitFunc)gtk_teditor_class_init,
+			NULL,
+			NULL,
+			sizeof(editor_t),
+			0,
+			(GInstanceInitFunc)gtk_teditor_init,
+		};
+
+		teditor_type = g_type_register_static(GTK_TYPE_TABLE, "editor_t", &teditor_info, 0);
 	}
 
-	editor->reshandle->modified = editor->buffer->modified;
+	return teditor_type;
+}
 
-	gtk_label_set_text(GTK_LABEL(editor->label), labeltxt);
-	gtk_widget_queue_draw(editor->label);
-	gtk_widget_queue_draw(editor->reshandle->resdr);
+static void gtk_teditor_class_init(editor_class *class) {
+//	GtkWidgetClass *widget_class = (GtkWidgetClass *)class;
+}
 
-	free(labeltxt);
+static void gtk_teditor_init(editor_t *editor) {
+}
+
+void set_label_text(editor_t *editor) {
+	tframe_t *frame;
+	find_editor_for_buffer(editor->buffer, NULL, &frame, NULL);
+
+	tframe_set_title(frame, editor->buffer->name);
+	tframe_set_modified(frame, editor->buffer->modified);
+	gtk_widget_queue_draw(GTK_WIDGET(frame));
 }
 
 static void editor_absolute_cursor_position(editor_t *editor, double *x, double *y, double *alty) {
@@ -102,7 +121,7 @@ static bool editor_maybe_show_completions(editor_t *editor, bool autoinsert) {
 
 void editor_replace_selection(editor_t *editor, const char *new_text) {
 	buffer_replace_selection(editor->buffer, new_text);
-	columnset->active_column = editor->column;
+	columns_set_active(columnset, editor->column);
 	set_label_text(editor);
 	editor_center_on_cursor(editor);
 	gtk_widget_queue_draw(editor->drar);
@@ -260,30 +279,20 @@ void editor_insert_paste(editor_t *editor, GtkClipboard *clipboard) {
 	g_free(text);
 }
 
-void quick_message(editor_t *editor, const char *title, const char *msg) {
-	GtkWidget *dialog = gtk_dialog_new_with_buttons(title, GTK_WINDOW(editor->window), GTK_DIALOG_MODAL|GTK_DIALOG_DESTROY_WITH_PARENT, GTK_STOCK_OK, GTK_RESPONSE_ACCEPT, NULL);
-	GtkWidget *content_area = gtk_dialog_get_content_area(GTK_DIALOG(dialog));
-	GtkWidget *label = gtk_label_new(msg);
-
-	g_signal_connect_swapped(dialog, "response", G_CALLBACK(gtk_widget_destroy), dialog);
-
-	gtk_container_add(GTK_CONTAINER(content_area), label);
-	gtk_widget_show_all(dialog);
-	gtk_dialog_run(GTK_DIALOG(dialog));
-}
-
 void editor_close_editor(editor_t *editor) {
-	if (column_editor_count(editor->column) > 1) {
-		editor = column_remove(editor->column, editor);
+	tframe_t *frame;
+
+	find_editor_for_buffer(editor->buffer, NULL, &frame, NULL);
+
+	if (column_frame_number(editor->column) > 1) {
+		column_remove(editor->column, frame);
 	} else {
 		if (editor->buffer == null_buffer()) {
-			column_t *column = columns_remove(columnset, editor->column, editor);
-			editor = column_get_first_editor(column);
+			columns_remove(columnset, editor->column);
 		} else {
 			editor_switch_buffer(editor, null_buffer());
 		}
 	}
-	editor_grab_focus(editor, false);
 }
 
 void editor_switch_buffer(editor_t *editor, buffer_t *buffer) {
@@ -391,7 +400,7 @@ void editor_save_action(editor_t *editor) {
 
 void editor_undo_action(editor_t *editor) {
 	buffer_undo(editor->buffer);
-	columnset->active_column = editor->column;
+	columns_set_active(columnset, editor->column);
 	gtk_widget_queue_draw(editor->drar);
 }
 
@@ -619,7 +628,7 @@ static gboolean key_release_callback(GtkWidget *widget, GdkEventKey *event, edit
 			if (compl_wnd_visible(&word_completer)) {
 				compl_wnd_hide(&word_completer);
 			} else {
-				gtk_widget_grab_focus(editor->entry);
+				// TODO: move focus to command line
 			}
 			return TRUE;
 		}
@@ -944,11 +953,6 @@ static gboolean expose_event_callback(GtkWidget *widget, GdkEventExpose *event, 
 	GtkAllocation allocation;
 	gtk_widget_get_allocation(widget, &allocation);
 
-	if (!(editor->initialization_ended)) {
-		gdk_window_set_cursor(gtk_widget_get_window(editor->label), gdk_cursor_new(GDK_FLEUR));
-		editor->initialization_ended = 1;
-	}
-
 	if (selection_target_buffer != NULL) {
 		gdk_window_set_cursor(gtk_widget_get_window(editor->drar), gdk_cursor_new(GDK_ICON));
 	} else if (buffer_aux_is_directory(editor->buffer)) {
@@ -1098,162 +1102,6 @@ static gboolean hscrolled_callback(GtkAdjustment *adj, gpointer data) {
 	return TRUE;
 }
 
-bool dragging = false;
-
-static gboolean label_button_press_callback(GtkWidget *widget, GdkEventButton *event, editor_t *editor) {
-	int ctrl = event->state & GDK_CONTROL_MASK;
-
-	if (event->button == 1) {
-		if (event->type == GDK_2BUTTON_PRESS) {
-			dragging = false;
-
-			if (column_remove_others(editor->column, editor) == 0) {
-				columns_remove_others(columnset, editor->column, editor);
-			}
-			return TRUE;
-		} else {
-			dragging = true;
-		}
-	}
-
-	if ((event->type == GDK_BUTTON_PRESS) && (event->button == 2)) {
-		if (dragging) {
-			dragging = false;
-
-			GtkAllocation allocation;
-
-			gtk_widget_get_allocation(widget, &allocation);
-
-			double x = event->x + allocation.x;
-			double y = event->y + allocation.y;
-
-			bool ontag;
-			editor_t *target = columns_get_editor_from_position(columnset, x, y, &ontag);
-
-			if ((target != NULL) && (target != editor)) {
-				editor_switch_buffer(target, editor->buffer);
-				editor_close_editor(editor);
-			}
-		} else {
-			editor_close_editor(editor);
-		}
-		return TRUE;
-	}
-
-	if ((event->type == GDK_BUTTON_PRESS) && (event->button == 3)) {
-		if (ctrl) {
-			editor_t *new_editor = columns_new_after(columnset, editor->column, null_buffer());
-			if (new_editor != NULL) editor_grab_focus(new_editor, true);
-		} else {
-			editor_t *new_editor = column_new_editor(editor->column, null_buffer());
-			if (new_editor == NULL) {
-				heuristic_new_frame(columnset, editor, null_buffer());
-			} else {
-				editor_grab_focus(new_editor, true);
-			}
-		}
-		return TRUE;
-	}
-
-	return FALSE;
-}
-
-static void tag_drag_behaviour(bool ontag, editor_t *source, editor_t *target, double y) {
-	if (source == NULL) return;
-	if (target == NULL) return;
-
-	buffer_t *tbuf = target->buffer;
-	buffer_t *sbuf = source->buffer;
-
-	if (ontag) { // dragging on a tag means we want to swap buffers
-		if (target == source) return; // nothing to swap
-
-		if ((sbuf == null_buffer()) && (tbuf == null_buffer())) return; // both were null, don't swap
-
-		editor_switch_buffer(target, sbuf);
-		editor_switch_buffer(source, tbuf);
-
-		if (tbuf == null_buffer()) {
-			// target buffer was the null buffer, close origin, we don't keep empty frames around
-			editor_close_editor(source);
-		}
-	} else { // dragging inside the area, this means we want to move the frame (but it could also be a resize)
-		editor_t *above_source = column_get_editor_before(source->column, source);
-		if ((target == source) || (target == above_source)) {
-			// moving an editor inside itself or inside the editor above it means we want to resize it
-
-			if (above_source == NULL) return; // attempted resize but there is nothing above the source editor
-
-			GtkAllocation a_above;
-			gtk_widget_get_allocation(above_source->container, &a_above);
-
-			GtkAllocation a_source;
-			gtk_widget_get_allocation(source->container, &a_source);
-
-			double new_above_size = y - a_above.y;
-			double new_source_size = a_above.height - new_above_size + a_source.height;
-
-			column_resize_editor_pair(above_source, new_above_size, source, new_source_size);
-		} else if ((tbuf == null_buffer()) && (sbuf != null_buffer())) {
-			// we dragged into a null buffer, take it over
-			editor_switch_buffer(target, sbuf);
-			editor_close_editor(source);
-		} else {
-			// actually moving source somewhere else
-
-			buffer_t *sbuf = source->buffer;
-			editor_close_editor(source);
-			source = column_new_editor_after(target->column, target, sbuf);
-
-			GtkAllocation tallocation;
-			gtk_widget_get_allocation(target->container, &tallocation);
-
-			double new_target_size = y - tallocation.y;
-			double new_source_size = tallocation.height - new_target_size;
-
-			column_resize_editor_pair(target, new_target_size, source, new_source_size);
-		}
-	}
-}
-
-static gboolean label_button_release_callback(GtkWidget *widget, GdkEventButton *event, editor_t *editor) {
-	GtkAllocation allocation;
-	double x, y;
-	int shift = event->state & GDK_SHIFT_MASK;
-	int ctrl = event->state & GDK_CONTROL_MASK;
-	int alt = event->state & GDK_MOD1_MASK;
-	int super = event->state & GDK_SUPER_MASK;
-
-	gtk_widget_get_allocation(widget, &allocation);
-
-	x = event->x + allocation.x;
-	y = event->y + allocation.y;
-
-	if (event->button != 1) return FALSE;
-	if (!dragging) return FALSE;
-
-	dragging = false;
-
-	if (!ctrl && !alt && !super) {
-		bool ontag = false;
-		editor_t *target = columns_get_editor_from_position(columnset, x, y, &ontag);
-
-		if (shift) ontag = true;
-
-		tag_drag_behaviour(ontag, editor, target, y);
-
-		return TRUE;
-	} else if (!shift && ctrl && !alt && !super) {
-		column_t *target_column = columns_get_column_from_position(columnset, x, y);
-		if ((target_column != NULL) && (target_column != editor->column)) {
-			columns_swap_columns(columnset, editor->column, target_column);
-		}
-		return TRUE;
-	}
-
-	return FALSE;
-}
-
 static gboolean editor_focusin_callback(GtkWidget *widget, GdkEventFocus *event, editor_t *editor) {
 	editor->cursor_visible = 1;
 	gtk_widget_queue_draw(editor->drar);
@@ -1269,7 +1117,8 @@ static gboolean editor_focusout_callback(GtkWidget *widget, GdkEventFocus *event
 }
 
 editor_t *new_editor(GtkWidget *window, column_t *column, buffer_t *buffer) {
-	editor_t *r = malloc(sizeof(editor_t));
+	GtkWidget *editor_widget = g_object_new(GTK_TYPE_TEDITOR, NULL);
+	editor_t *r = GTK_TEDITOR(editor_widget);
 
 	r->column = column;
 	r->window = window;
@@ -1288,8 +1137,6 @@ editor_t *new_editor(GtkWidget *window, column_t *column, buffer_t *buffer) {
 	r->drarim = gtk_im_multicontext_new();
 
 	r->selection_scroll_timer = -1;
-
-	strcpy(r->locked_command_line, "");
 
 	gtk_widget_add_events(r->drar, GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK | GDK_POINTER_MOTION_MASK);
 
@@ -1313,79 +1160,17 @@ editor_t *new_editor(GtkWidget *window, column_t *column, buffer_t *buffer) {
 	g_signal_connect(G_OBJECT(r->drarim), "commit", G_CALLBACK(text_entry_callback), r);
 
 
-	{
-		GtkWidget *drarscroll = gtk_vscrollbar_new((GtkAdjustment *)(r->adjustment = gtk_adjustment_new(0.0, 0.0, 1.0, 1.0, 1.0, 1.0)));
-		r->drarhscroll = gtk_hscrollbar_new((GtkAdjustment *)(r->hadjustment = gtk_adjustment_new(0.0, 0.0, 1.0, 1.0, 1.0, 1.0)));
-		GtkWidget *tag = gtk_hbox_new(FALSE, 0);
-		GtkBorder bor = { 0, 0, 0, 0 };
-		GtkWidget *event_box = gtk_event_box_new();
-		GtkWidget *table = gtk_table_new(0, 0, FALSE);
+	GtkWidget *drarscroll = gtk_vscrollbar_new((GtkAdjustment *)(r->adjustment = gtk_adjustment_new(0.0, 0.0, 1.0, 1.0, 1.0, 1.0)));
+	r->drarhscroll = gtk_hscrollbar_new((GtkAdjustment *)(r->hadjustment = gtk_adjustment_new(0.0, 0.0, 1.0, 1.0, 1.0, 1.0)));
 
-		r->container = table;
+	gtk_table_attach(GTK_TABLE(r), r->drar, 0, 1, 0, 1, GTK_EXPAND | GTK_FILL, GTK_EXPAND | GTK_FILL, 0, 0);
+	gtk_table_attach(GTK_TABLE(r), drarscroll, 1, 2, 0, 1, 0, GTK_EXPAND|GTK_FILL, 0, 0);
+	gtk_table_attach(GTK_TABLE(r), r->drarhscroll, 0, 1, 1, 2, GTK_EXPAND|GTK_FILL, 0, 0, 0);
 
-		r->reshandle = reshandle_new(column, r);
-		r->label = gtk_label_new("");
-		r->entry = gtk_entry_new();
-
-		gtk_container_add(GTK_CONTAINER(event_box), r->label);
-
-		gtk_widget_set_size_request(r->entry, 10, 16);
-		gtk_entry_set_inner_border(GTK_ENTRY(r->entry), &bor);
-		gtk_entry_set_has_frame(GTK_ENTRY(r->entry), FALSE);
-		gtk_widget_modify_font(r->entry, elements_font_description);
-		gtk_widget_modify_font(r->label, elements_font_description);
-
-		entry_callback_setup(r);
-
-		r->label_state = "cmd";
-		set_label_text(r);
-
-		gtk_widget_add_events(event_box, GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK);
-
-		g_signal_connect(event_box, "button-press-event", G_CALLBACK(label_button_press_callback), r);
-		g_signal_connect(event_box, "button-release-event", G_CALLBACK(label_button_release_callback), r);
-
-		gtk_container_add(GTK_CONTAINER(tag), r->reshandle->resdr);
-		gtk_container_add(GTK_CONTAINER(tag), event_box);
-		gtk_container_add(GTK_CONTAINER(tag), r->entry);
-
-		gtk_box_set_child_packing(GTK_BOX(tag), r->reshandle->resdr, FALSE, FALSE, 0, GTK_PACK_START);
-		gtk_box_set_child_packing(GTK_BOX(tag), event_box, FALSE, FALSE, 0, GTK_PACK_START);
-		gtk_box_set_child_packing(GTK_BOX(tag), r->entry, TRUE, TRUE, 0, GTK_PACK_END);
-
-		place_frame_piece(table, TRUE, 0, 2); // top frame
-		place_frame_piece(table, FALSE, 2, 5); // right frame
-
-		gtk_table_attach(GTK_TABLE(table), tag, 0, 2, 1, 2, GTK_EXPAND | GTK_FILL, 0, 0, 0);
-
-		place_frame_piece(table, TRUE, 2, 2); // command line frame
-
-		gtk_table_attach(GTK_TABLE(table), r->drar, 0, 1, 3, 4, GTK_EXPAND | GTK_FILL, GTK_EXPAND | GTK_FILL, 0, 0);
-		gtk_table_attach(GTK_TABLE(table), drarscroll, 1, 2, 3, 4, 0, GTK_EXPAND|GTK_FILL, 0, 0);
-		gtk_table_attach(GTK_TABLE(table), r->drarhscroll, 0, 1, 4, 5, GTK_EXPAND|GTK_FILL, 0, 0, 0);
-
-		g_signal_connect(G_OBJECT(drarscroll), "value_changed", G_CALLBACK(scrolled_callback), (gpointer)r);
-		g_signal_connect(G_OBJECT(r->drarhscroll), "value_changed", G_CALLBACK(hscrolled_callback), (gpointer)r);
-	}
+	g_signal_connect(G_OBJECT(drarscroll), "value_changed", G_CALLBACK(scrolled_callback), (gpointer)r);
+	g_signal_connect(G_OBJECT(r->drarhscroll), "value_changed", G_CALLBACK(hscrolled_callback), (gpointer)r);
 
 	return r;
-}
-
-gint editor_get_height_request(editor_t *editor) {
-	int lines = buffer_real_line_count(editor->buffer);
-	if (lines > MAX_LINES_HEIGHT_REQUEST) lines = MAX_LINES_HEIGHT_REQUEST;
-	if (lines < MIN_LINES_HEIGHT_REQUEST) lines = MIN_LINES_HEIGHT_REQUEST;
-	GtkAllocation allocation;
-	gtk_widget_get_allocation(editor->label, &allocation);
-	return lines * editor->buffer->line_height + allocation.height;
-
-}
-
-void editor_free(editor_t *editor) {
-	editor->initialization_ended = 0;
-	reshandle_free(editor->reshandle);
-	//gtk_widget_destroy(editor->table);
-	free(editor);
 }
 
 void editor_grab_focus(editor_t *editor, bool warp) {

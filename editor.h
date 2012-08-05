@@ -10,7 +10,15 @@
 #define LOCKED_COMMAND_LINE_SIZE 256
 #define AUTOSCROLL_TIMO 250
 
+#define GTK_TYPE_TEDITOR (gtk_teditor_get_type())
+#define GTK_TEDITOR(obj) (G_TYPE_CHECK_INSTANCE_CAST((obj), GTK_TYPE_TEDITOR, editor_t))
+#define GTK_TEDITOR_CLASS(klass) (G_TYPE_CHECK_CLASS_CAST((klass), GTK_TYPE_TEDITOR, editor_class))
+#define GTK_IS_TEDITOR(obj) (G_TYPE_CHECK_INSTANCE_TYPE((obj), GTK_TYPE_TEDITOR))
+#define GTK_TEDITOR_GET_CLASS(obj) (G_TYPE_INSTANCE_GET_CLASS((obj), GTK_TYPE_TEDITOR, editor_class))
+
 typedef struct _editor_t {
+	GtkTable table;
+
 	buffer_t *buffer;
 	GtkWidget *window;
 
@@ -22,11 +30,6 @@ typedef struct _editor_t {
 	int initialization_ended;
 	int mouse_marking;
 
-	GtkWidget *container;
-	reshandle_t *reshandle;
-	GtkWidget *label;
-	GtkWidget *entry;
-	const char *label_state;
 	gboolean search_mode;
 	gulong current_entry_handler_id;
 	gboolean search_failed;
@@ -41,6 +44,12 @@ typedef struct _editor_t {
 
 	char locked_command_line[LOCKED_COMMAND_LINE_SIZE];
 } editor_t;
+
+typedef struct _editor_class {
+	GtkTableClass parent_class;
+} editor_class;
+
+GType gtk_teditor_get_type(void) G_GNUC_CONST;
 
 editor_t *new_editor(GtkWidget *window, struct _column_t *column, buffer_t *buffer);
 void editor_free(editor_t *editor);

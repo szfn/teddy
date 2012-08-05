@@ -1,14 +1,28 @@
-- columns, column, frame and editor all become gobject classes
+- port columns, column, tframe and editor improvements
+- port foundry
+- per buffer configuration (better)
+
+- remove editor->column
+- remove editor->initialization_ended
+- remove buffer->name
+- tag_drag_behaviour should work on frames not editors
+
+- keyboard marking should behave like mouse marking and not constantly update the clipboard with serialized data
 - tabs (and no hidden buffers)
 - project indexing and searching (with tag files support)
+- remove complex directory visualization (and graphic builtin font)
+- rethink interpreter, working directory concept, "in" command
+- slash all special mouse actions, add menus and close buttons
 - go-able things become links
 - single, spacious, command line
-- automatically pop-up autocompletion
+- automatically pop-up autocompletion and update autocompletions when leaving dirty rows
 - autoreload stuff when changed on disk
 - transparent overlay for searching and replacing
 - guessing indentation (dtrt-indent mode1)
 - auto-equalize indentation on paste
 - multiprocess highlighting
+- sloppy focus (change focus only when the mouse moves to a different frame) and disable warping
+- macro recording
 
 - comment region command
 - ability to persist the status of a window

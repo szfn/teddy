@@ -1,0 +1,345 @@
+#include "tframe.h"
+
+#include "columns.h"
+#include "global.h"
+
+typedef struct _tframe_t {
+	GtkTable table;
+	GtkWidget *content;
+
+	struct _columns_t *columns;
+
+	GtkWidget *tag;
+	GtkWidget *label;
+	GtkWidget *resdr;
+
+	double fraction;
+	bool modified;
+
+	double origin_x, origin_y;
+	bool moving;
+	struct _column_t *motion_col, *motion_prev_col;
+	struct _tframe_t *motion_prev_tf;
+} tframe_t;
+
+typedef struct _tframe_class {
+	GtkTableClass parent_class;
+} tframe_class;
+
+
+static void gtk_tframe_class_init(tframe_class *klass);
+static void gtk_tframe_init(tframe_t *tframe);
+
+GType gtk_tframe_get_type(void) {
+	static GType tframe_type = 0;
+
+	if (!tframe_type) {
+		static const GTypeInfo tframe_info = {
+			sizeof(tframe_class),
+			NULL,
+			NULL,
+			(GClassInitFunc)gtk_tframe_class_init,
+			NULL,
+			NULL,
+			sizeof(tframe_t),
+			0,
+			(GInstanceInitFunc)gtk_tframe_init,
+		};
+
+		tframe_type = g_type_register_static(GTK_TYPE_TABLE, "tframe_t", &tframe_info, 0);
+	}
+
+	return tframe_type;
+}
+
+static void gtk_tframe_class_init(tframe_class *class) {
+	// override methods here
+}
+
+static void gtk_tframe_init(tframe_t *tframe) {
+}
+
+static gboolean reshandle_expose_callback(GtkWidget *widget, GdkEventExpose *event, tframe_t *tf) {
+	cairo_t *cr = gdk_cairo_create(widget->window);
+	GtkAllocation allocation;
+
+	gtk_widget_get_allocation(widget, &allocation);
+
+	cairo_set_source_rgb(cr, 136.0/256, 136.0/256, 204.0/256);
+
+	cairo_rectangle(cr, 2, 2, allocation.width-4, allocation.height-4);
+	cairo_fill(cr);
+
+	cairo_rectangle(cr, 4, 4, allocation.width - 8, allocation.height - 8);
+	if (tf->modified) {
+		cairo_set_source_rgb(cr, 0.0, 0.0, 153.0/256);
+	} else {
+		cairo_set_source_rgb(cr, 1.0, 1.0, 1.0);
+	}
+
+	cairo_fill(cr);
+
+	cairo_destroy(cr);
+
+	return TRUE;
+}
+
+static gboolean reshandle_map_callback(GtkWidget *widget, GdkEvent *event, tframe_t *tf) {
+	gdk_window_set_cursor(gtk_widget_get_window(widget), gdk_cursor_new(GDK_TOP_LEFT_CORNER));
+	return FALSE;
+}
+
+static gboolean reshandle_button_press_callback(GtkWidget *widget, GdkEventButton *event, tframe_t *tf) {
+	if ((event->type == GDK_BUTTON_PRESS) && (event->button == 1)) {
+		column_t *col, *prev_col;
+		tframe_t *prev_tf;
+
+		if (!columns_find_frame(tf->columns, tf, &prev_col, &col, NULL, &prev_tf, NULL)) return TRUE;
+
+		tf->origin_x = event->x;
+		tf->origin_y = event->y;
+		tf->moving = true;
+
+		tf->motion_col = col;
+		tf->motion_prev_col = prev_col;
+		tf->motion_prev_tf = prev_tf;
+
+		return TRUE;
+	}
+
+	return FALSE;
+}
+
+static gboolean reshandle_motion_callback(GtkWidget *widget, GdkEventMotion *event, tframe_t *tf) {
+	if (!tf->moving) return TRUE;
+
+	return TRUE;
+}
+
+static gboolean reshandle_button_release_callback(GtkWidget *widget, GdkEventButton *event, tframe_t *tf) {
+	tf->moving = false;
+
+	double changey = event->y - tf->origin_y;
+	double changex = event->x - tf->origin_x;
+
+	if (tf->motion_prev_tf != NULL) {
+		GtkAllocation allocation;
+
+		gtk_widget_get_allocation(GTK_WIDGET(tf->motion_col), &allocation);
+		double change_fraction = changey / allocation.height * 10.0;
+
+		tframe_fraction_set(tf, tframe_fraction(tf) - change_fraction);
+		tframe_fraction_set(tf->motion_prev_tf, tframe_fraction(tf->motion_prev_tf) + change_fraction);
+
+		if (tframe_fraction(tf) < 0) {
+			tframe_fraction_set(tf->motion_prev_tf, tframe_fraction(tf->motion_prev_tf) + tframe_fraction(tf));
+			tframe_fraction_set(tf, 0.0);
+		}
+
+		if (tframe_fraction(tf->motion_prev_tf) < 0) {
+			tframe_fraction_set(tf, tframe_fraction(tf) + tframe_fraction(tf->motion_prev_tf));
+			tframe_fraction_set(tf->motion_prev_tf, 0.0);
+		}
+
+		gtk_column_size_allocate(GTK_WIDGET(tf->motion_col), &(GTK_WIDGET(tf->motion_col)->allocation));
+	}
+
+	if (tf->motion_prev_col != NULL) {
+		GtkAllocation allocation;
+
+		gtk_widget_get_allocation(GTK_WIDGET(tf->columns), &allocation);
+		double change_fraction = changex / allocation.width * 10.0;
+
+		column_fraction_set(tf->motion_col, column_fraction(tf->motion_col) - change_fraction);
+		column_fraction_set(tf->motion_prev_col, column_fraction(tf->motion_prev_col) + change_fraction);
+
+		if (column_fraction(tf->motion_col) < 0) {
+			column_fraction_set(tf->motion_prev_col, column_fraction(tf->motion_prev_col) + column_fraction(tf->motion_col));
+			column_fraction_set(tf->motion_col, 0.0);
+		}
+
+		if (column_fraction(tf->motion_prev_col) < 0) {
+			column_fraction_set(tf->motion_col, column_fraction(tf->motion_col) + column_fraction(tf->motion_prev_col));
+			column_fraction_set(tf->motion_prev_col, 0.0);
+		}
+
+		gtk_columns_size_allocate(GTK_WIDGET(tf->columns), &(GTK_WIDGET(tf->columns)->allocation));
+	}
+
+	gtk_widget_queue_draw(GTK_WIDGET(tf->columns));
+
+	return TRUE;
+}
+
+bool dragging = false;
+
+static gboolean label_button_press_callback(GtkWidget *widget, GdkEventButton *event, tframe_t *frame) {
+	column_t *col;
+	if (!columns_find_frame(columnset, frame, NULL, &col, NULL, NULL, NULL, NULL)) return TRUE;
+
+	if (event->button == 1) {
+		if (event->type == GDK_2BUTTON_PRESS) {
+			dragging = false;
+
+			if (column_remove_others(col, frame) == 0) {
+				columns_remove_others(columnset, col);
+			}
+			return TRUE;
+		} else {
+			dragging = true;
+		}
+	}
+
+	if ((event->type == GDK_BUTTON_PRESS) && (event->button == 2)) {
+		column_remove(col, frame);
+		return TRUE;
+	}
+
+	return FALSE;
+}
+
+static void tag_drag_behaviour(tframe_t *source, tframe_t *target, double y) {
+	if (source == NULL) return;
+	if (target == NULL) return;
+
+	tframe_t *before_tf;
+	column_t *source_col;
+
+	if (!columns_find_frame(columnset, source, NULL, &source_col, NULL, &before_tf, NULL)) return;
+
+	buffer_t *sbuf = NULL;
+	if (GTK_IS_TEDITOR(source->content)) {
+		sbuf = GTK_TEDITOR(source->content)->buffer;
+	}
+
+	buffer_t *tbuf = NULL;
+	if (GTK_IS_TEDITOR(target->content)) {
+		tbuf = GTK_TEDITOR(target->content)->buffer;
+	}
+
+	if ((target == source) || (target == before_tf)) {
+		// moving an editor inside itself or inside the editor above it means we want to resize it
+
+		if (before_tf == NULL) return; // attempted resize but there is nothing above the source editor
+
+		GtkAllocation a_above;
+		gtk_widget_get_allocation(above_source->container, &a_above);
+
+		GtkAllocation a_source;
+		gtk_widget_get_allocation(source->container, &a_source);
+
+		double new_above_size = y - a_above.y;
+		double new_source_size = a_above.height - new_above_size + a_source.height;
+
+		column_resize_frame_pair(above_source, new_above_size, source, new_source_size);
+	} else if ((tbuf == null_buffer()) && (sbuf != null_buffer())) {
+		// we dragged into a null buffer, take it over
+		editor_switch_buffer(GTK_TEDITOR(target), sbuf);
+		column_remove(source_col, source);
+	} else {
+		// actually moving source somewhere else
+
+		column_t *target_col;
+		if (!columns_find_frame(columnset, target, NULL, &target_col, NULL, NULL, NULL)) return;
+
+		column_remove(source_col, source);
+		column_add_after(target_col, target, source);
+
+		GtkAllocation tallocation;
+		gtk_widget_get_allocation(target->container, &tallocation);
+
+		double new_target_size = y - tallocation.y;
+		double new_source_size = tallocation.height - new_target_size;
+
+		column_resize_frame_pair(target, new_target_size, source, new_source_size);
+	}
+}
+
+static gboolean label_button_release_callback(GtkWidget *widget, GdkEventButton *event, tframe_t *tf) {
+	GtkAllocation allocation;
+	gtk_widget_get_allocation(widget, &allocation);
+
+	double x = event->x + allocation.x;
+	double y = event->y + allocation.y;
+
+	if (event->button != 1) return FALSE;
+	if (!dragging) return FALSE;
+
+	dragging = false;
+
+	bool ontag = false;
+	tframe_t *target = columns_get_frame_from_position(columnset, x, y, &ontag);
+
+	tag_drag_behaviour(frame, target, y);
+
+	return TRUE;
+}
+
+tframe_t *tframe_new(const char *title, GtkWidget *content, columns_t *columns) {
+	GtkWidget *tframe_widget = g_object_new(GTK_TYPE_TFRAME, NULL);
+	tframe_t *r = GTK_TFRAME(tframe_widget);
+	GtkTable *t = GTK_TABLE(r);
+
+	r->columns = columns;
+
+	r->fraction = 1.0;
+	r->modified = false;
+
+	r->moving = false;
+
+	gtk_table_set_homogeneous(t, FALSE);
+
+	r->tag = gtk_hbox_new(FALSE, 0);
+
+	r->label = gtk_label_new(title);
+	r->resdr = gtk_drawing_area_new();
+	gtk_widget_set_size_request(r->resdr, 14, 14);
+
+	gtk_widget_add_events(r->resdr, GDK_BUTTON_PRESS_MASK|GDK_BUTTON_RELEASE_MASK|GDK_POINTER_MOTION_MASK|GDK_POINTER_MOTION_HINT_MASK|GDK_STRUCTURE_MASK);
+
+	g_signal_connect(G_OBJECT(r->resdr), "expose_event", G_CALLBACK(reshandle_expose_callback), r);
+	g_signal_connect(G_OBJECT(r->resdr), "map_event", G_CALLBACK(reshandle_map_callback), r);
+	g_signal_connect(G_OBJECT(r->resdr), "button_press_event", G_CALLBACK(reshandle_button_press_callback), r);
+	g_signal_connect(G_OBJECT(r->resdr), "motion_notify_event", G_CALLBACK(reshandle_motion_callback), r);
+	g_signal_connect(G_OBJECT(r->resdr), "button_release_event", G_CALLBACK(reshandle_button_release_callback), r);
+
+	g_signal_connect(event_box, "button-press-event", G_CALLBACK(label_button_press_callback), r);
+	g_signal_connect(event_box, "button-release-event", G_CALLBACK(label_button_release_callback), r);
+
+	gtk_container_add(GTK_CONTAINER(r->tag), r->resdr);
+	gtk_container_add(GTK_CONTAINER(r->tag), r->label);
+
+	gtk_box_set_child_packing(GTK_BOX(r->tag), r->resdr, FALSE, FALSE, 0, GTK_PACK_START);
+	gtk_box_set_child_packing(GTK_BOX(r->tag), r->label, FALSE, FALSE, 0, GTK_PACK_START);
+
+	place_frame_piece(t, TRUE, 0, 2);
+	place_frame_piece(t, FALSE, 1, 4);
+
+	gtk_table_attach(t, r->tag, 0, 1, 1, 2, GTK_EXPAND|GTK_FILL, 0, 0, 0);
+
+	place_frame_piece(t, TRUE, 2, 1);
+
+	gtk_table_attach(t, content, 0, 1, 3, 4, GTK_EXPAND|GTK_FILL, GTK_EXPAND|GTK_FILL, 0, 0);
+
+	return r;
+}
+
+void tframe_set_title(tframe_t *tframe, const char *title) {
+	gtk_label_set_text(GTK_LABEL(tframe->label), title);
+}
+
+void tframe_set_modified(tframe_t *tframe, bool modified) {
+	tframe->modified = modified;
+}
+
+double tframe_fraction(tframe_t *tframe) {
+	return tframe->fraction;
+}
+
+void tframe_fraction_set(tframe_t *tframe, double fraction) {
+	tframe->fraction = fraction;
+}
+
+void GtkWidget *tframe_content(tframe_t *frame) {
+	return frame->content;
+}

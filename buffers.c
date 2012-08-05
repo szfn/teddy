@@ -136,41 +136,45 @@ int buffers_close(buffer_t *buffer, GtkWidget *window) {
 		if (r == 0) return 0;
 	}
 
-	columns_replace_buffer(columnset, buffer);
-
 	{
-		int i;
-		for(i = 0; i < buffers_allocated; ++i) {
-			if (buffers[i] == buffer) break;
+		editor_t *editor;
+		find_editor_for_buffer(buffer, NULL, NULL, &editor);
+		if (editor != NULL) {
+			editor_switch_buffer(editor, null_buffer());
 		}
-
-		if (i < buffers_allocated) {
-			GtkTreeIter mah;
-
-			if (gtk_tree_model_get_iter_first(GTK_TREE_MODEL(buffers_list), &mah)) {
-				do {
-					GValue value = {0};
-
-					gtk_tree_model_get_value(GTK_TREE_MODEL(buffers_list), &mah, 0, &value);
-					if (g_value_get_int(&value) == i) {
-						g_value_unset(&value);
-						gtk_list_store_remove(buffers_list, &mah);
-						break;
-					} else {
-						g_value_unset(&value);
-					}
-				} while (gtk_tree_model_iter_next(GTK_TREE_MODEL(buffers_list), &mah));
-			}
-
-			buffers[i] = NULL;
-
-			gtk_widget_queue_draw(buffers_tree);
-		} else {
-			printf("Attempted to remove buffer not present in list\n");
-		}
-
-		buffer_free(buffer);
 	}
+
+	int i;
+	for(i = 0; i < buffers_allocated; ++i) {
+		if (buffers[i] == buffer) break;
+	}
+
+	if (i < buffers_allocated) {
+		GtkTreeIter mah;
+
+		if (gtk_tree_model_get_iter_first(GTK_TREE_MODEL(buffers_list), &mah)) {
+			do {
+				GValue value = {0};
+
+				gtk_tree_model_get_value(GTK_TREE_MODEL(buffers_list), &mah, 0, &value);
+				if (g_value_get_int(&value) == i) {
+					g_value_unset(&value);
+					gtk_list_store_remove(buffers_list, &mah);
+					break;
+				} else {
+					g_value_unset(&value);
+				}
+			} while (gtk_tree_model_iter_next(GTK_TREE_MODEL(buffers_list), &mah));
+		}
+
+		buffers[i] = NULL;
+
+		gtk_widget_queue_draw(buffers_tree);
+	} else {
+		printf("Attempted to remove buffer not present in list\n");
+	}
+
+	buffer_free(buffer);
 
 	return 1;
 }
