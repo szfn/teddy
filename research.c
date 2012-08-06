@@ -243,7 +243,7 @@ static void start_regexp_search(editor_t *editor, const char *regexp, const char
 		char *msg;
 		asprintf(&msg, "Sytanx error in regular expression [%s]: %s\n", regexp, buf);
 		alloc_assert(msg);
-		quick_message(editor,"Regex Syntax Error", msg);
+		quick_message("Regex Syntax Error", msg);
 		free(msg);
 		return;
 	}

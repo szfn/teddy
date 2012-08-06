@@ -37,10 +37,12 @@ static void job_destroy(job_t *job) {
 
 	job->buffer->cursor.line = job->buffer->real_line;
 	job->buffer->cursor.glyph = 0;
-	editor_t *editor = columns_get_buffer(columnset, job->buffer);
+
+	editor_t *editor;
+	find_editor_for_buffer(job->buffer, NULL, NULL, &editor);
 	if (editor != NULL) {
 		editor_center_on_cursor(editor);
-		gtk_widget_queue_draw(editor->drar);	
+		gtk_widget_queue_draw(editor->drar);
 	}
 
 	job->used = 0;
@@ -52,7 +54,8 @@ static void job_append(job_t *job, const char *msg, int len, int on_new_line, ui
 	buffer_append(job->buffer, msg, len, on_new_line);
 	if (color != 0xff) job->buffer->default_color = saved_color;
 
-	editor_t *editor = columns_get_buffer(columnset, job->buffer);
+	editor_t *editor;
+	find_editor_for_buffer(job->buffer, NULL, NULL, &editor);
 	if (editor != NULL) {
 		editor_center_on_cursor(editor);
 		gtk_widget_queue_draw(editor->drar);

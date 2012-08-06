@@ -160,7 +160,9 @@ go_file_return:
 }
 
 editor_t *go_to_buffer(editor_t *editor, buffer_t *buffer, int where) {
-	editor_t *target = columns_get_buffer(columnset, buffer);
+	editor_t *target;
+	find_editor_for_buffer(buffer, NULL, NULL, &target);
+
 	int response;
 	char *msg;
 	if (target != NULL) {
@@ -191,17 +193,20 @@ editor_t *go_to_buffer(editor_t *editor, buffer_t *buffer, int where) {
 
 	case GO_SELECT:
 		selection_target_buffer = buffer;
-		gtk_widget_queue_draw(editor->window);
+		gtk_widget_queue_draw(gtk_widget_get_toplevel(GTK_WIDGET(editor)));
 		return NULL;
 
 	case GO_NEW:
-	default:
-		target = heuristic_new_frame(columnset, editor, buffer);
-		if (target != NULL) {
-			editor_grab_focus(target, true);
+	default: {
+		tframe_t *spawning_frame;
+		find_editor_for_buffer(editor->buffer, NULL, &spawning_frame, NULL);
+		tframe_t *target_frame = heuristic_new_frame(columnset, spawning_frame, buffer);
+		if (target_frame != NULL) {
+			gtk_widget_grab_focus(GTK_WIDGET(target_frame));
 			deferred_action_to_return = FOCUS_ALREADY_SWITCHED;
 		}
 		return target;
+	}
 	}
 
 	return editor;
@@ -315,7 +320,7 @@ int teddy_go_command(ClientData client_data, Tcl_Interp *interp, int argc, const
 
 		char *urp = unrealpath(context_editor->buffer->path, goarg);
 		char *msg;
-		GtkWidget *dialog = gtk_dialog_new_with_buttons("Create file", GTK_WINDOW(context_editor->window), GTK_DIALOG_MODAL|GTK_DIALOG_DESTROY_WITH_PARENT, "Yes", 1, "No", 0, NULL);
+		GtkWidget *dialog = gtk_dialog_new_with_buttons("Create file", GTK_WINDOW(gtk_widget_get_toplevel(GTK_WIDGET(context_editor))), GTK_DIALOG_MODAL|GTK_DIALOG_DESTROY_WITH_PARENT, "Yes", 1, "No", 0, NULL);
 
 		asprintf(&msg, "File [%s] does not exist, do you want to create it?", urp);
 		gtk_container_add(GTK_CONTAINER(gtk_dialog_get_content_area(GTK_DIALOG(dialog))), gtk_label_new(msg));
@@ -330,14 +335,14 @@ int teddy_go_command(ClientData client_data, Tcl_Interp *interp, int argc, const
 
 			if (!f) {
 				asprintf(&msg, "Could not create [%s]", urp);
-				quick_message(context_editor, "Error", msg);
+				quick_message("Error", msg);
 				free(msg);
 			} else {
 				buffer_t *buffer = buffer_create();
 				fclose(f);
 				if (load_text_file(buffer, urp) != 0) {
 					buffer_free(buffer);
-					quick_message(context_editor, "Error", "Unexpected error during file creation");
+					quick_message("Error", "Unexpected error during file creation");
 				} else {
 					buffers_add(buffer);
 					go_to_buffer(context_editor, buffer, -1);
@@ -525,7 +530,8 @@ void mouse_open_action(editor_t *editor, lpoint_t *start, lpoint_t *end, int whe
 			strcat(ex, go_arg);
 			strcat(ex, "}");
 
-			editor_add_to_command_line(editor, ex);
+			// TODO:
+			//editor_add_to_command_line(editor, ex);
 
 			free(ex);
 		} else {
@@ -543,7 +549,8 @@ void mouse_open_action(editor_t *editor, lpoint_t *start, lpoint_t *end, int whe
 			if (start->glyph > start->line->cap) start->glyph = start->line->cap;*/
 
 			char *wordsel = buffer_lines_to_text(editor->buffer, start, end);
-			editor_start_search(context_editor, wordsel);
+			//TODO
+			//editor_start_search(context_editor, wordsel);
 			free(wordsel);
 		}
 	}

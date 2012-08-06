@@ -10,6 +10,7 @@
 - keyboard marking should behave like mouse marking and not constantly update the clipboard with serialized data
 - tabs (and no hidden buffers)
 - project indexing and searching (with tag files support)
+- new locate window should start with the text in the clipboard selected if it looks like something good (single word, filename or url)
 - remove complex directory visualization (and graphic builtin font)
 - rethink interpreter, working directory concept, "in" command
 - slash all special mouse actions, add menus and close buttons

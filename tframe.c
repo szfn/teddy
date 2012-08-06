@@ -1,6 +1,7 @@
 #include "tframe.h"
 
 #include "columns.h"
+#include "buffers.h"
 #include "global.h"
 
 typedef struct _tframe_t {
@@ -113,12 +114,6 @@ static gboolean reshandle_button_press_callback(GtkWidget *widget, GdkEventButto
 static gboolean reshandle_motion_callback(GtkWidget *widget, GdkEventMotion *event, tframe_t *tf) {
 	if (!tf->moving) return TRUE;
 
-	return TRUE;
-}
-
-static gboolean reshandle_button_release_callback(GtkWidget *widget, GdkEventButton *event, tframe_t *tf) {
-	tf->moving = false;
-
 	double changey = event->y - tf->origin_y;
 	double changex = event->x - tf->origin_x;
 
@@ -171,11 +166,21 @@ static gboolean reshandle_button_release_callback(GtkWidget *widget, GdkEventBut
 	return TRUE;
 }
 
+static void column_resize_frame_pair(tframe_t *above, double new_above_size, tframe_t *below, double new_below_size) {
+	//TODO: implement
+}
+
+static gboolean reshandle_button_release_callback(GtkWidget *widget, GdkEventButton *event, tframe_t *tf) {
+	tf->moving = false;
+
+	return TRUE;
+}
+
 bool dragging = false;
 
 static gboolean label_button_press_callback(GtkWidget *widget, GdkEventButton *event, tframe_t *frame) {
 	column_t *col;
-	if (!columns_find_frame(columnset, frame, NULL, &col, NULL, NULL, NULL, NULL)) return TRUE;
+	if (!columns_find_frame(columnset, frame, NULL, &col, NULL, NULL, NULL)) return TRUE;
 
 	if (event->button == 1) {
 		if (event->type == GDK_2BUTTON_PRESS) {
@@ -223,15 +228,15 @@ static void tag_drag_behaviour(tframe_t *source, tframe_t *target, double y) {
 		if (before_tf == NULL) return; // attempted resize but there is nothing above the source editor
 
 		GtkAllocation a_above;
-		gtk_widget_get_allocation(above_source->container, &a_above);
+		gtk_widget_get_allocation(GTK_WIDGET(before_tf), &a_above);
 
 		GtkAllocation a_source;
-		gtk_widget_get_allocation(source->container, &a_source);
+		gtk_widget_get_allocation(GTK_WIDGET(source), &a_source);
 
 		double new_above_size = y - a_above.y;
 		double new_source_size = a_above.height - new_above_size + a_source.height;
 
-		column_resize_frame_pair(above_source, new_above_size, source, new_source_size);
+		column_resize_frame_pair(before_tf, new_above_size, source, new_source_size);
 	} else if ((tbuf == null_buffer()) && (sbuf != null_buffer())) {
 		// we dragged into a null buffer, take it over
 		editor_switch_buffer(GTK_TEDITOR(target), sbuf);
@@ -246,7 +251,7 @@ static void tag_drag_behaviour(tframe_t *source, tframe_t *target, double y) {
 		column_add_after(target_col, target, source);
 
 		GtkAllocation tallocation;
-		gtk_widget_get_allocation(target->container, &tallocation);
+		gtk_widget_get_allocation(GTK_WIDGET(target), &tallocation);
 
 		double new_target_size = y - tallocation.y;
 		double new_source_size = tallocation.height - new_target_size;
@@ -270,7 +275,7 @@ static gboolean label_button_release_callback(GtkWidget *widget, GdkEventButton 
 	bool ontag = false;
 	tframe_t *target = columns_get_frame_from_position(columnset, x, y, &ontag);
 
-	tag_drag_behaviour(frame, target, y);
+	tag_drag_behaviour(tf, target, y);
 
 	return TRUE;
 }
@@ -303,8 +308,8 @@ tframe_t *tframe_new(const char *title, GtkWidget *content, columns_t *columns) 
 	g_signal_connect(G_OBJECT(r->resdr), "motion_notify_event", G_CALLBACK(reshandle_motion_callback), r);
 	g_signal_connect(G_OBJECT(r->resdr), "button_release_event", G_CALLBACK(reshandle_button_release_callback), r);
 
-	g_signal_connect(event_box, "button-press-event", G_CALLBACK(label_button_press_callback), r);
-	g_signal_connect(event_box, "button-release-event", G_CALLBACK(label_button_release_callback), r);
+	g_signal_connect(r->label, "button-press-event", G_CALLBACK(label_button_press_callback), r);
+	g_signal_connect(r->label, "button-release-event", G_CALLBACK(label_button_release_callback), r);
 
 	gtk_container_add(GTK_CONTAINER(r->tag), r->resdr);
 	gtk_container_add(GTK_CONTAINER(r->tag), r->label);
@@ -312,12 +317,12 @@ tframe_t *tframe_new(const char *title, GtkWidget *content, columns_t *columns) 
 	gtk_box_set_child_packing(GTK_BOX(r->tag), r->resdr, FALSE, FALSE, 0, GTK_PACK_START);
 	gtk_box_set_child_packing(GTK_BOX(r->tag), r->label, FALSE, FALSE, 0, GTK_PACK_START);
 
-	place_frame_piece(t, TRUE, 0, 2);
-	place_frame_piece(t, FALSE, 1, 4);
+	place_frame_piece(GTK_WIDGET(t), TRUE, 0, 2);
+	place_frame_piece(GTK_WIDGET(t), FALSE, 1, 4);
 
 	gtk_table_attach(t, r->tag, 0, 1, 1, 2, GTK_EXPAND|GTK_FILL, 0, 0, 0);
 
-	place_frame_piece(t, TRUE, 2, 1);
+	place_frame_piece(GTK_WIDGET(t), TRUE, 2, 1);
 
 	gtk_table_attach(t, content, 0, 1, 3, 4, GTK_EXPAND|GTK_FILL, GTK_EXPAND|GTK_FILL, 0, 0);
 
@@ -340,6 +345,6 @@ void tframe_fraction_set(tframe_t *tframe, double fraction) {
 	tframe->fraction = fraction;
 }
 
-void GtkWidget *tframe_content(tframe_t *frame) {
+GtkWidget *tframe_content(tframe_t *frame) {
 	return frame->content;
 }

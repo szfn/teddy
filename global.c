@@ -280,19 +280,11 @@ void alloc_assert(void *p) {
 }
 
 void find_editor_for_buffer(buffer_t *buffer, column_t **columnpp, tframe_t **framepp, editor_t **editorpp) {
-	if (columnpp != NULL) {
-		*columnp = NULL
-	}
+	if (columnpp != NULL) *columnpp = NULL;
+	if (framepp != NULL) *framepp = NULL;
+	if (editorpp != NULL) *editorpp = NULL;
 
-	if (tframepp != NULL) {
-		*tframepp = NULL;
-	}
-
-	if (editorpp != NULL) {
-		*editorpp = NULL;
-	}
-
-	GList *list_cols = gtk_container_get_children(GTK_CONTAINER(columns));
+	GList *list_cols = gtk_container_get_children(GTK_CONTAINER(columnset));
 	for (GList *cur_col = list_cols; cur_col != NULL; cur_col = cur_col->next) {
 		if (!GTK_IS_COLUMN(cur_col->data)) continue;
 
@@ -301,24 +293,16 @@ void find_editor_for_buffer(buffer_t *buffer, column_t **columnpp, tframe_t **fr
 		for (GList *cur_frame = list_frames; cur_frame != NULL; cur_frame = cur_frame->next) {
 			if (!GTK_IS_TFRAME(cur_frame->data)) continue;
 
-			GtkWidget *content = tframe_content(GTK_TFRAME(cur_frame->data))
+			GtkWidget *content = tframe_content(GTK_TFRAME(cur_frame->data));
 
 			if (!GTK_IS_TEDITOR(content)) continue;
 
 			editor_t *cur_editor = GTK_TEDITOR(content);
 
 			if (cur_editor->buffer == buffer) {
-				if (columnpp != NULL) {
-					*columnp = GTK_COLUMN(cur_col->data);
-				}
-
-				if (tframepp != NULL) {
-					*tframepp = GTK_TFRAME(cur_frame->data);
-				}
-
-				if (editorpp != NULL) {
-					*editorpp = cur_editor;
-				}
+				if (columnpp != NULL) *columnpp = GTK_COLUMN(cur_col->data);
+				if (framepp != NULL) *framepp = GTK_TFRAME(cur_frame->data);
+				if (editorpp != NULL) *editorpp = cur_editor;
 			}
 		}
 
@@ -328,7 +312,7 @@ void find_editor_for_buffer(buffer_t *buffer, column_t **columnpp, tframe_t **fr
 }
 
 void quick_message(const char *title, const char *msg) {
-	GtkWidget *dialog = gtk_dialog_new_with_buttons(title, GTK_WINDOW(gtk_widget_get_toplevel(columnset)), GTK_DIALOG_MODAL|GTK_DIALOG_DESTROY_WITH_PARENT, GTK_STOCK_OK, GTK_RESPONSE_ACCEPT, NULL);
+	GtkWidget *dialog = gtk_dialog_new_with_buttons(title, GTK_WINDOW(gtk_widget_get_toplevel(GTK_WIDGET(columnset))), GTK_DIALOG_MODAL|GTK_DIALOG_DESTROY_WITH_PARENT, GTK_STOCK_OK, GTK_RESPONSE_ACCEPT, NULL);
 	GtkWidget *content_area = gtk_dialog_get_content_area(GTK_DIALOG(dialog));
 	GtkWidget *label = gtk_label_new(msg);
 

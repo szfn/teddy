@@ -313,7 +313,8 @@ void rd_open(editor_t *editor) {
 			strcat(ex, "}");
 
 			editor->ignore_next_entry_keyrelease = true;
-			editor_add_to_command_line(editor, ex);
+			//TODO
+			//editor_add_to_command_line(editor, ex);
 
 			free(ex);
 		}

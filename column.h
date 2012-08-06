@@ -30,4 +30,6 @@ int column_frame_number(column_t *column);
 
 void gtk_column_size_allocate(GtkWidget *widget, GtkAllocation *allocation);
 
+tframe_t *column_get_frame_from_position(column_t *column, double x, double y, bool *ontag);
+
 #endif

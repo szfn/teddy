@@ -5,8 +5,6 @@
 
 #include <gtk/gtk.h>
 
-#include "reshandle.h"
-
 #define LOCKED_COMMAND_LINE_SIZE 256
 #define AUTOSCROLL_TIMO 250
 
@@ -20,7 +18,6 @@ typedef struct _editor_t {
 	GtkTable table;
 
 	buffer_t *buffer;
-	GtkWidget *window;
 
 	GtkObject *adjustment, *hadjustment;
 	GtkWidget *drar;
@@ -51,7 +48,7 @@ typedef struct _editor_class {
 
 GType gtk_teditor_get_type(void) G_GNUC_CONST;
 
-editor_t *new_editor(GtkWidget *window, struct _column_t *column, buffer_t *buffer);
+editor_t *new_editor(struct _column_t *column, buffer_t *buffer);
 void editor_free(editor_t *editor);
 void editor_switch_buffer(editor_t *editor, buffer_t *buffer);
 gint editor_get_height_request(editor_t *editor);

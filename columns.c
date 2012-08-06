@@ -1,5 +1,6 @@
 #include "columns.h"
 
+#include "buffers.h"
 #include "global.h"
 
 typedef struct _columns_t {
@@ -204,6 +205,32 @@ bool columns_find_frame(columns_t *columns, tframe_t *tf, column_t **before_col,
 	return r;
 }
 
+static column_t *columns_get_column_from_position(columns_t *columns, double x, double y) {
+	for (GList *cur = GTK_BOX(columns)->children; cur != NULL; cur = cur->next) {
+		GtkAllocation allocation;
+		gtk_widget_get_allocation(cur->data, &allocation);
+		//printf("Comparing (%g,%g) with (%d,%d) (%d,%d)\n", x, y, allocation.x, allocation.y, allocation.x+allocation.width, allocation.y+allocation.height);
+		if ((x >= allocation.x)
+			&& (x <= allocation.x + allocation.width)
+			&& (y >= allocation.y)
+			&& (y <= allocation.y + allocation.height))
+			return GTK_COLUMN(cur->data);
+	}
+	return NULL;
+}
+
+tframe_t *columns_get_frame_from_position(columns_t *columns, double x, double y, bool *ontag) {
+	column_t *column = columns_get_column_from_position(columns, x, y);
+	if (column == NULL) {
+		return NULL;
+	}
+	return column_get_frame_from_position(column, x, y, ontag);
+}
+
+column_t *columns_active(columns_t *columns) {
+	return columns->active_column;
+}
+
 void columns_set_active(columns_t *columns, column_t *column) {
 	columns->active_column = column;
 }
@@ -263,6 +290,51 @@ int columns_remove_others(columns_t *columns, column_t *column) {
 	return c;
 }
 
+tframe_t *new_in_column(columns_t *columns, column_t *column, buffer_t *buffer) {
+	GtkWidget *content;
+	char *title = "";
+
+	if (buffer != NULL) {
+		content = GTK_WIDGET(new_editor(column, buffer));
+		title = buffer->name;
+	} else {
+		content = gtk_label_new("");
+	}
+
+	tframe_t *frame = tframe_new(title, content, columns);
+
+	if (column_frame_number(column) == 0) {
+		column_add_after(column, NULL, frame);
+		return frame;
+	}
+
+	double epsilon = 16.0;
+	if (buffer != NULL) {
+		epsilon = buffer->line_height;
+	}
+
+	GList *list = gtk_container_get_children(GTK_CONTAINER(column));
+
+	GList *biggest_children = NULL;
+	double biggest_children_height = 0.0;
+
+	for (GList *cur = list; cur != NULL; cur = cur->next) {
+		GtkAllocation allocation;
+		gtk_widget_get_allocation(cur->data, &allocation);
+
+		if (allocation.height >= biggest_children_height - epsilon) {
+			biggest_children = cur;
+			biggest_children_height = allocation.height;
+		}
+	}
+
+	column_add_after(column, GTK_TFRAME(biggest_children->data), frame);
+
+	g_list_free(list);
+
+	return frame;
+}
+
 tframe_t *heuristic_new_frame(columns_t *columns, tframe_t *spawning_frame, buffer_t *buffer) {
 	tframe_t *r = NULL;
 
@@ -274,6 +346,13 @@ tframe_t *heuristic_new_frame(columns_t *columns, tframe_t *spawning_frame, buff
 	if (columns_active(columns) == NULL)
 		columns_set_active(columns, spawning_col);
 
+	if (columns_column_number(columns) == 0) {
+		column_t *col = column_new(0);
+		columns_add_after(columns, NULL, col);
+		r = new_in_column(columns, col, buffer);
+		goto heuristic_new_frame_return;
+	}
+
 	{ // search for a very large column and split it
 		GList *list = gtk_container_get_children(GTK_CONTAINER(columns));
 		for (GList *cur = list; cur != NULL; cur = cur->next) {
@@ -284,9 +363,9 @@ tframe_t *heuristic_new_frame(columns_t *columns, tframe_t *spawning_frame, buff
 			gtk_widget_get_allocation(GTK_WIDGET(col), &allocation);
 
 			if (allocation.width > 1000) {
-				column_t *new_col = column_new();
+				column_t *new_col = column_new(0);
 				columns_add_after(columns, col, new_col);
-				r = new_in_column(new_col, buffer);
+				r = new_in_column(columns, new_col, buffer);
 				goto heuristic_new_frame_return;
 			}
 		}
@@ -295,7 +374,8 @@ tframe_t *heuristic_new_frame(columns_t *columns, tframe_t *spawning_frame, buff
 
 	// if we are opening a buffer and it isn't the null buffer then search for an editor displaying the null buffer to take over
 	if ((buffer != null_buffer()) && buffer != NULL) {
-		find_editor_for_buffer(null_buffer(), NULL, &r, editor);
+		editor_t *editor;
+		find_editor_for_buffer(null_buffer(), NULL, &r, &editor);
 		if (editor != NULL) {
 			editor_switch_buffer(editor, buffer);
 			goto heuristic_new_frame_return;
@@ -317,8 +397,8 @@ tframe_t *heuristic_new_frame(columns_t *columns, tframe_t *spawning_frame, buff
 			g_list_free(list);
 		}
 
-		r = new_in_column(destcol, buffer);
-		goto heuristic_new_frame;
+		r = new_in_column(columns, destcol, buffer);
+		goto heuristic_new_frame_return;
 	}
 
 	// couldn't make a new frame, we fail

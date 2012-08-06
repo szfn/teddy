@@ -49,9 +49,6 @@ void autoconf_maybe(void) {
 
 int main(int argc, char *argv[]) {
 	GtkWidget *window;
-	editor_t *editor;
-	buffer_t *abuf = NULL;
-	int i;
 
 	autoconf_maybe();
 
@@ -81,16 +78,6 @@ int main(int argc, char *argv[]) {
 	jobs_init();
 	buffers_init();
 
-	enum go_file_failure_reason gffr;
-	for (i = 1; i < argc; ++i) {
-		buffer_t *buf;
-		//printf("Will show: %s\n", argv[i]);
-		buf = go_file(NULL, argv[i], true, &gffr);
-		if (buf != NULL) {
-			abuf = buf;
-		}
-	}
-
 	{
 		const char *loadhistory[] = { "loadhistory" };
 		interp_eval_command(1, loadhistory);
@@ -105,27 +92,22 @@ int main(int argc, char *argv[]) {
 	g_signal_connect_swapped(G_OBJECT(window), "destroy", G_CALLBACK(gtk_main_quit), NULL);
 
 	go_init(window);
-	columnset = the_columns_new(window);
+	columnset = columns_new();
 	research_init(window);
 
-	gtk_widget_show_all(window);
+	gtk_container_add(GTK_CONTAINER(window), GTK_WIDGET(columnset));
 
-	editor = columns_new(columnset, abuf ? abuf : null_buffer());
-
-	buffer_t *curdir_buf = go_file(NULL, getcwd(NULL, 0), true, &gffr);
-	if (curdir_buf != NULL) {
-		editor_t *curdir_ed = columns_new(columnset, curdir_buf);
-		if (editor == NULL) editor = curdir_ed;
+	for (int i = 1; i < argc; ++i) {
+		buffer_t *buffer = buffer_create();
+		load_text_file(buffer, argv[i]);
+		heuristic_new_frame(columnset, NULL, buffer);
 	}
 
-	if (editor == NULL) editor = columns_new(columnset, null_buffer());
-
-	editor_grab_focus(editor, false);
+	gtk_widget_show_all(window);
 
 	gtk_main();
 
 	buffers_free();
-	columns_free(columnset);
 	interp_free();
 	compl_free(&word_completer);
 	cmdcompl_free(&cmd_completer);

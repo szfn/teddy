@@ -38,51 +38,6 @@ static int teddy_exit_command(ClientData client_data, Tcl_Interp *interp, int ar
 	return TCL_OK;
 }
 
-static int teddy_new_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
-	if (argc > 2) {
-		Tcl_AddErrorInfo(interp, "Wrong number of arguments to 'new', usage: 'new <row|col>'");
-		return TCL_ERROR;
-	}
-
-	if (context_editor == NULL) {
-		Tcl_AddErrorInfo(interp, "No editor open, can not execute 'new' command");
-		return TCL_ERROR;
-	}
-
-	if (argc == 1) {
-		editor_t *n = heuristic_new_frame(columnset, context_editor, null_buffer());
-		if (n != NULL) {
-			editor_grab_focus(n, true);
-			deferred_action_to_return = FOCUS_ALREADY_SWITCHED;
-		}
-		return TCL_OK;
-	}
-
-	if (strcmp(argv[1], "row") == 0) {
-		editor_t *n = column_new_editor(context_editor->column, null_buffer());
-		if (n != NULL) {
-			editor_grab_focus(n, true);
-			deferred_action_to_return = FOCUS_ALREADY_SWITCHED;
-		}
-		return TCL_OK;
-	} else if (strcmp(argv[1], "col") == 0) {
-		editor_t *n = columns_new(columnset, null_buffer());
-		if (n != NULL) {
-			editor_grab_focus(n, true);
-			deferred_action_to_return = FOCUS_ALREADY_SWITCHED;
-		}
-		return TCL_OK;
-	}
-
-	{
-		char *msg;
-		asprintf(&msg, "Unknown option to 'new': '%s'", argv[1]);
-		Tcl_AddErrorInfo(interp, msg);
-		free(msg);
-		return TCL_ERROR;
-	}
-}
-
 static int teddy_pwf_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
 	if (context_editor == NULL) {
 		Tcl_AddErrorInfo(interp, "No editor open, can not execute 'pwf' command");
@@ -293,7 +248,13 @@ static int teddy_bufman_command(ClientData client_data, Tcl_Interp *interp, int 
 
 	if (argc == 2) {
 		if (strcmp(argv[1], "next-editor") == 0) {
-			columns_next_editor(columnset, context_editor);
+			tframe_t *context_frame;
+			find_editor_for_buffer(context_editor->buffer, NULL, &context_frame, NULL);
+			if (context_frame != NULL) {
+				tframe_t *next_frame;
+				columns_find_frame(columnset, context_frame, NULL, NULL, NULL, NULL, &next_frame);
+				if (next_frame != NULL) gtk_widget_grab_focus(GTK_WIDGET(next_frame));
+			}
 			return TCL_OK;
 		} else {
 			Tcl_AddErrorInfo(interp, "Wrong argument to 'bufman' command");
@@ -386,23 +347,8 @@ static int teddy_search_command(ClientData client_data, Tcl_Interp *interp, int 
 		return TCL_ERROR;
 	}
 
-	editor_start_search(context_editor, (argc == 1) ? NULL : argv[1]);
-
-	return TCL_OK;
-}
-
-static int teddy_focuscmd_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
-	if (context_editor == NULL) {
-		Tcl_AddErrorInfo(interp, "No editor open, can not execute 'focuscmd' command");
-		return TCL_ERROR;
-	}
-
-	if (argc != 1) {
-		Tcl_AddErrorInfo(interp, "Wrong number of arguments to 'focuscmd' command");
-		return TCL_ERROR;
-	}
-
-	gtk_widget_grab_focus(context_editor->entry);
+	//TODO: implement
+	//editor_start_search(context_editor, (argc == 1) ? NULL : argv[1]);
 
 	return TCL_OK;
 }
@@ -692,29 +638,6 @@ static int teddy_sendinput_command(ClientData client_data, Tcl_Interp *interp, i
 	return TCL_OK;
 }
 
-static int teddy_interactarg_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
-	if (context_editor == NULL) {
-		Tcl_AddErrorInfo(interp, "No editor open, can not execute 'interactarg' command");
-		return TCL_ERROR;
-	}
-
-	if (argc != 2) {
-		Tcl_AddErrorInfo(interp, "Wrong number of arguments to 'interactarg'");
-		return TCL_ERROR;
-	}
-
-	if (strlen(argv[1]) >= LOCKED_COMMAND_LINE_SIZE-1) {
-		Tcl_AddErrorInfo(interp, "Argument of 'interactarg' is too long");
-		return TCL_ERROR;
-	}
-
-	strcpy(context_editor->locked_command_line, argv[1]);
-	set_label_text(context_editor);
-	gtk_widget_grab_focus(context_editor->entry);
-	deferred_action_to_return = FOCUS_ALREADY_SWITCHED;
-	return TCL_OK;
-}
-
 static int teddy_change_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
 	if (context_editor == NULL) {
 		Tcl_AddErrorInfo(interp, "No editor open, can not execute 'change' command");
@@ -790,7 +713,7 @@ static int teddy_kill_command(ClientData client_data, Tcl_Interp *interp, int ar
 		if (context_editor->buffer->job != NULL) {
 			kill(context_editor->buffer->job->child_pid, SIGTERM);
 		} else {
-			buffers_close(context_editor->buffer, context_editor->window);
+			buffers_close(context_editor->buffer, gtk_widget_get_toplevel(GTK_WIDGET(context_editor)));
 			chdir(context_editor->buffer->wd);
 		}
 
@@ -813,7 +736,7 @@ static int teddy_kill_command(ClientData client_data, Tcl_Interp *interp, int ar
 				Tcl_AddErrorInfo(interp, "No active editor");
 				return TCL_ERROR;
 			}
-			buffers_close(context_editor->buffer, context_editor->window);
+			buffers_close(context_editor->buffer, gtk_widget_get_toplevel(GTK_WIDGET(context_editor)));
 			chdir(context_editor->buffer->wd);
 		} else if (argv[1][0] == '-') {
 			// kill current process with specific signal (check that context_editor is defined and associated buffer has a job)
@@ -849,7 +772,7 @@ static int teddy_kill_command(ClientData client_data, Tcl_Interp *interp, int ar
 		if (strcmp(argv[1], "buffer") == 0) {
 			buffer_t *buffer = buffer_id_to_buffer(argv[2]);
 			if (buffer != NULL) {
-				buffers_close(buffer, context_editor->window);
+				buffers_close(buffer, gtk_widget_get_toplevel(GTK_WIDGET(context_editor)));
 			} else {
 				Tcl_AddErrorInfo(interp, "Couldn't find specified buffer");
 				return TCL_ERROR;
@@ -901,7 +824,7 @@ static int teddy_refresh_command(ClientData client_data, Tcl_Interp *interp, int
 
 	if (null_buffer() == context_editor->buffer) return TCL_OK;
 
-	int r = buffers_close(context_editor->buffer, context_editor->window);
+	int r = buffers_close(context_editor->buffer, gtk_widget_get_toplevel(GTK_WIDGET(context_editor)));
 	if (r == 0) return TCL_OK;
 
 	enum go_file_failure_reason gffr;
@@ -945,7 +868,6 @@ void interp_init(void) {
 	Tcl_CreateCommand(interp, "setcfg", &teddy_setcfg_command, (ClientData)NULL, NULL);
 	Tcl_CreateCommand(interp, "bindkey", &teddy_bindkey_command, (ClientData)NULL, NULL);
 
-	Tcl_CreateCommand(interp, "new", &teddy_new_command, (ClientData)NULL, NULL);
 	Tcl_CreateCommand(interp, "pwf", &teddy_pwf_command, (ClientData)NULL, NULL);
 	Tcl_CreateCommand(interp, "pwd", &teddy_pwd_command, (ClientData)NULL, NULL);
 
@@ -959,7 +881,6 @@ void interp_init(void) {
 	Tcl_CreateCommand(interp, "bufman", &teddy_bufman_command, (ClientData)NULL, NULL);
 	Tcl_CreateCommand(interp, "undo", &teddy_undo_command, (ClientData)NULL, NULL);
 	Tcl_CreateCommand(interp, "search", &teddy_search_command, (ClientData)NULL, NULL);
-	Tcl_CreateCommand(interp, "focuscmd", &teddy_focuscmd_command, (ClientData)NULL, NULL);
 
 	Tcl_CreateCommand(interp, "move", &teddy_move_command, (ClientData)NULL, NULL);
 	Tcl_CreateCommand(interp, "gohome", &teddy_gohome_command, (ClientData)NULL, NULL);
@@ -970,8 +891,6 @@ void interp_init(void) {
 	Tcl_CreateCommand(interp, "rgbcolor", &teddy_rgbcolor_command, (ClientData)NULL, NULL);
 
 	Tcl_CreateCommand(interp, "teddyhistory", &teddy_history_command, (ClientData)NULL, NULL);
-
-	Tcl_CreateCommand(interp, "interactarg", &teddy_interactarg_command, (ClientData)NULL, NULL);
 
 	Tcl_CreateCommand(interp, "s", &teddy_research_command, (ClientData)NULL, NULL);
 	Tcl_CreateCommand(interp, "c", &teddy_change_command, (ClientData)NULL, NULL);
@@ -1034,7 +953,7 @@ enum deferred_action interp_eval(editor_t *editor, const char *command, bool sho
 		Tcl_DecrRefCount(key);
 
 		if (context_editor != NULL) {
-			quick_message(context_editor, "TCL Error", Tcl_GetString(stackTrace));
+			quick_message("TCL Error", Tcl_GetString(stackTrace));
 			//TODO: if the error string is very long use a buffer instead
 		} else {
 			fprintf(stderr, "TCL Error: %s\n", Tcl_GetString(stackTrace));
@@ -1045,7 +964,7 @@ enum deferred_action interp_eval(editor_t *editor, const char *command, bool sho
 			const char *result = Tcl_GetStringResult(interp);
 			if (strcmp(result, "") != 0) {
 				if (context_editor != NULL) {
-					quick_message(context_editor, "TCL Result", result);
+					quick_message("TCL Result", result);
 				} else {
 					fprintf(stderr, "%s", result);
 					exit(0);

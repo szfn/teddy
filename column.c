@@ -256,3 +256,19 @@ int column_remove_others(column_t *column, tframe_t *frame) {
 	return c;
 }
 
+tframe_t *column_get_frame_from_position(column_t *column, double x, double y, bool *ontag) {
+	for (GList *cur = GTK_BOX(column)->children; cur != NULL; cur = cur->next) {
+		GtkAllocation allocation;
+		gtk_widget_get_allocation(cur->data, &allocation);
+		if (inside_allocation(x, y, &allocation)) {
+			GtkWidget *content = tframe_content(GTK_TFRAME(cur->data));
+			GtkAllocation drar_allocation;
+			gtk_widget_get_allocation(content, &drar_allocation);
+			allocation.y = drar_allocation.y;
+			*ontag = !inside_allocation(x, y, &allocation);
+			return GTK_TFRAME(cur->data);
+		}
+
+	}
+	return NULL;
+}

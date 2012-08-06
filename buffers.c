@@ -96,9 +96,9 @@ static int ask_for_closing_and_maybe_save(buffer_t *buffer, GtkWidget *window) {
 	if (!(buffer->has_filename) && (buffer->name[0] == '+')) return 1; /* Trash buffer, can be discarded safely */
 
 	if (buffer->has_filename) {
-		dialog = gtk_dialog_new_with_buttons("Close Buffer", (window != NULL) ? GTK_WINDOW(window) : GTK_WINDOW(buffers_selector_focus_editor->window), GTK_DIALOG_MODAL|GTK_DIALOG_DESTROY_WITH_PARENT, "Save and close", SAVE_AND_CLOSE_RESPONSE, "Discard changes", DISCARD_CHANGES_RESPONSE, "Cancel", CANCEL_ACTION_RESPONSE, NULL);
+		dialog = gtk_dialog_new_with_buttons("Close Buffer", (window != NULL) ? GTK_WINDOW(window) : GTK_WINDOW(gtk_widget_get_toplevel(GTK_WIDGET(buffers_selector_focus_editor))), GTK_DIALOG_MODAL|GTK_DIALOG_DESTROY_WITH_PARENT, "Save and close", SAVE_AND_CLOSE_RESPONSE, "Discard changes", DISCARD_CHANGES_RESPONSE, "Cancel", CANCEL_ACTION_RESPONSE, NULL);
 	} else {
-		dialog = gtk_dialog_new_with_buttons("Close Buffer", (window != NULL) ? GTK_WINDOW(window) : GTK_WINDOW(buffers_selector_focus_editor->window), GTK_DIALOG_MODAL|GTK_DIALOG_DESTROY_WITH_PARENT, "Discard changes", DISCARD_CHANGES_RESPONSE, "Cancel", CANCEL_ACTION_RESPONSE, NULL);
+		dialog = gtk_dialog_new_with_buttons("Close Buffer", (window != NULL) ? GTK_WINDOW(window) : GTK_WINDOW(gtk_widget_get_toplevel(GTK_WIDGET(buffers_selector_focus_editor))), GTK_DIALOG_MODAL|GTK_DIALOG_DESTROY_WITH_PARENT, "Discard changes", DISCARD_CHANGES_RESPONSE, "Cancel", CANCEL_ACTION_RESPONSE, NULL);
 	}
 
 	asprintf(&msg, "Buffer [%s] is modified", buffer->name);
@@ -310,7 +310,7 @@ void buffers_free(void) {
 
 void buffers_show_window(editor_t *editor) {
 	buffers_selector_focus_editor = editor;
-	gtk_window_set_transient_for(GTK_WINDOW(buffers_window), GTK_WINDOW(editor->window));
+	gtk_window_set_transient_for(GTK_WINDOW(buffers_window), GTK_WINDOW(gtk_widget_get_toplevel(GTK_WIDGET(editor))));
 	gtk_window_set_modal(GTK_WINDOW(buffers_window), TRUE);
 	gtk_widget_show_all(buffers_window);
 	gtk_widget_grab_focus(buffers_tree);

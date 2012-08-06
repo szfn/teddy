@@ -12,7 +12,6 @@
 #include "interp.h"
 #include "columns.h"
 #include "column.h"
-#include "reshandle.h"
 #include "baux.h"
 #include "go.h"
 #include "editor_cmdline.h"
@@ -74,7 +73,7 @@ static void editor_absolute_cursor_position(editor_t *editor, double *x, double 
 	*x += allocation.x; *y += allocation.y;
 
 	gint wpos_x, wpos_y;
-	gdk_window_get_position(gtk_widget_get_window(editor->window), &wpos_x, &wpos_y);
+	gdk_window_get_position(gtk_widget_get_window(gtk_widget_get_toplevel(GTK_WIDGET(editor))), &wpos_x, &wpos_y);
 	*x += wpos_x; *y += wpos_y;
 
 	*alty = *y - editor->buffer->line_height;
@@ -100,12 +99,12 @@ static bool editor_maybe_show_completions(editor_t *editor, bool autoinsert) {
 		editor_absolute_cursor_position(editor, &x, &y, &alty);
 
 		if (empty_completion || !autoinsert) {
-			compl_wnd_show(&word_completer, utf8prefix, x, y, alty, editor->window, false, false);
+			compl_wnd_show(&word_completer, utf8prefix, x, y, alty, gtk_widget_get_toplevel(GTK_WIDGET(editor)), false, false);
 		} else {
 			char *new_prefix;
 			asprintf(&new_prefix, "%s%s", utf8prefix, completion);
 			alloc_assert(new_prefix);
-			compl_wnd_show(&word_completer, new_prefix, x, y, alty, editor->window, false, false);
+			compl_wnd_show(&word_completer, new_prefix, x, y, alty, gtk_widget_get_toplevel(GTK_WIDGET(editor)), false, false);
 			free(new_prefix);
 		}
 		free(completion);
@@ -1116,12 +1115,11 @@ static gboolean editor_focusout_callback(GtkWidget *widget, GdkEventFocus *event
 	return FALSE;
 }
 
-editor_t *new_editor(GtkWidget *window, column_t *column, buffer_t *buffer) {
+editor_t *new_editor(column_t *column, buffer_t *buffer) {
 	GtkWidget *editor_widget = g_object_new(GTK_TYPE_TEDITOR, NULL);
 	editor_t *r = GTK_TEDITOR(editor_widget);
 
 	r->column = column;
-	r->window = window;
 	r->buffer = buffer;
 	r->cursor_visible = TRUE;
 	r->initialization_ended = 0;
@@ -1185,7 +1183,7 @@ void editor_grab_focus(editor_t *editor, bool warp) {
 			editor->warp_mouse_after_next_expose = TRUE;
 		} else {
 			gint wpos_x, wpos_y;
-			gdk_window_get_position(gtk_widget_get_window(editor->window), &wpos_x, &wpos_y);
+			gdk_window_get_position(gtk_widget_get_window(gtk_widget_get_toplevel(GTK_WIDGET(editor))), &wpos_x, &wpos_y);
 
 			//printf("allocation: %d,%d\n", allocation.x, allocation.y);
 			gdk_display_warp_pointer(display, screen, allocation.x+wpos_x+5, allocation.y+wpos_y+5);
