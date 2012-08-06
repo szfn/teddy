@@ -279,7 +279,8 @@ void alloc_assert(void *p) {
 	}
 }
 
-void find_editor_for_buffer(buffer_t *buffer, column_t **columnpp, tframe_t **framepp, editor_t **editorpp) {
+bool find_editor_for_buffer(buffer_t *buffer, column_t **columnpp, tframe_t **framepp, editor_t **editorpp) {
+	bool r = false;
 	if (columnpp != NULL) *columnpp = NULL;
 	if (framepp != NULL) *framepp = NULL;
 	if (editorpp != NULL) *editorpp = NULL;
@@ -303,12 +304,17 @@ void find_editor_for_buffer(buffer_t *buffer, column_t **columnpp, tframe_t **fr
 				if (columnpp != NULL) *columnpp = GTK_COLUMN(cur_col->data);
 				if (framepp != NULL) *framepp = GTK_TFRAME(cur_frame->data);
 				if (editorpp != NULL) *editorpp = cur_editor;
+				r = true;
+				break;
 			}
 		}
 
 		g_list_free(list_frames);
+		if (r) break;
 	}
 	g_list_free(list_cols);
+
+	return r;
 }
 
 void quick_message(const char *title, const char *msg) {

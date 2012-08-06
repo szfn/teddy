@@ -57,7 +57,7 @@ void set_label_text(editor_t *editor) {
 	tframe_t *frame;
 	find_editor_for_buffer(editor->buffer, NULL, &frame, NULL);
 
-	tframe_set_title(frame, editor->buffer->name);
+	tframe_set_title(frame, (editor->buffer->path != NULL) ? editor->buffer->path : editor->buffer->name);
 	tframe_set_modified(frame, editor->buffer->modified);
 	gtk_widget_queue_draw(GTK_WIDGET(frame));
 }
@@ -120,7 +120,11 @@ static bool editor_maybe_show_completions(editor_t *editor, bool autoinsert) {
 
 void editor_replace_selection(editor_t *editor, const char *new_text) {
 	buffer_replace_selection(editor->buffer, new_text);
-	columns_set_active(columnset, editor->column);
+
+	column_t *column;
+	if (find_editor_for_buffer(editor->buffer, &column, NULL, NULL))
+		columns_set_active(columnset, column);
+
 	set_label_text(editor);
 	editor_center_on_cursor(editor);
 	gtk_widget_queue_draw(editor->drar);
@@ -280,14 +284,15 @@ void editor_insert_paste(editor_t *editor, GtkClipboard *clipboard) {
 
 void editor_close_editor(editor_t *editor) {
 	tframe_t *frame;
+	column_t *column;
 
-	find_editor_for_buffer(editor->buffer, NULL, &frame, NULL);
+	if (!find_editor_for_buffer(editor->buffer, &column, &frame, NULL)) return;
 
-	if (column_frame_number(editor->column) > 1) {
-		column_remove(editor->column, frame);
+	if (column_frame_number(column) > 1) {
+		column_remove(column, frame);
 	} else {
 		if (editor->buffer == null_buffer()) {
-			columns_remove(columnset, editor->column);
+			columns_remove(columnset, column);
 		} else {
 			editor_switch_buffer(editor, null_buffer());
 		}
@@ -399,7 +404,11 @@ void editor_save_action(editor_t *editor) {
 
 void editor_undo_action(editor_t *editor) {
 	buffer_undo(editor->buffer);
-	columns_set_active(columnset, editor->column);
+
+	column_t *column;
+	if (find_editor_for_buffer(editor->buffer, &column, NULL, NULL))
+		columns_set_active(columnset, column);
+		
 	gtk_widget_queue_draw(editor->drar);
 }
 
@@ -1072,8 +1081,6 @@ static gboolean expose_event_callback(GtkWidget *widget, GdkEventExpose *event, 
 
 	cairo_destroy(cr);
 
-	editor->initialization_ended = 1;
-
 	if (editor->center_on_cursor_after_next_expose) {
 		editor->center_on_cursor_after_next_expose = FALSE;
 		editor_center_on_cursor(editor);
@@ -1115,14 +1122,12 @@ static gboolean editor_focusout_callback(GtkWidget *widget, GdkEventFocus *event
 	return FALSE;
 }
 
-editor_t *new_editor(column_t *column, buffer_t *buffer) {
+editor_t *new_editor(buffer_t *buffer) {
 	GtkWidget *editor_widget = g_object_new(GTK_TYPE_TEDITOR, NULL);
 	editor_t *r = GTK_TEDITOR(editor_widget);
 
-	r->column = column;
 	r->buffer = buffer;
 	r->cursor_visible = TRUE;
-	r->initialization_ended = 0;
 	r->mouse_marking = 0;
 	r->ignore_next_entry_keyrelease = FALSE;
 	r->center_on_cursor_after_next_expose = FALSE;

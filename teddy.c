@@ -97,6 +97,15 @@ int main(int argc, char *argv[]) {
 
 	gtk_container_add(GTK_CONTAINER(window), GTK_WIDGET(columnset));
 
+	column_t *col1 = column_new(0);
+	column_t *col2 = column_new(0);
+
+	columns_add_after(columnset, NULL, col1);
+	columns_add_after(columnset, col1, col2);
+
+	heuristic_new_frame(columnset, NULL, null_buffer());
+	heuristic_new_frame(columnset, NULL, null_buffer());
+
 	for (int i = 1; i < argc; ++i) {
 		buffer_t *buffer = buffer_create();
 		load_text_file(buffer, argv[i]);

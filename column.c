@@ -225,11 +225,6 @@ int column_frame_number(column_t *column) {
 }
 
 void column_remove(column_t *column, tframe_t *frame) {
-	if (column_frame_number(column) == 1) {
-		quick_message("Error", "Can not remove last editor of the window");
-		return;
-	}
-
 	tframe_t *before_tf, *after_tf;
 
 	if (column_find_frame(column, frame, &before_tf, &after_tf)) {
@@ -257,7 +252,8 @@ int column_remove_others(column_t *column, tframe_t *frame) {
 }
 
 tframe_t *column_get_frame_from_position(column_t *column, double x, double y, bool *ontag) {
-	for (GList *cur = GTK_BOX(column)->children; cur != NULL; cur = cur->next) {
+	GList *list = gtk_container_get_children(GTK_CONTAINER(column));
+	for (GList *cur = list; cur != NULL; cur = cur->next) {
 		GtkAllocation allocation;
 		gtk_widget_get_allocation(cur->data, &allocation);
 		if (inside_allocation(x, y, &allocation)) {
@@ -266,9 +262,12 @@ tframe_t *column_get_frame_from_position(column_t *column, double x, double y, b
 			gtk_widget_get_allocation(content, &drar_allocation);
 			allocation.y = drar_allocation.y;
 			*ontag = !inside_allocation(x, y, &allocation);
-			return GTK_TFRAME(cur->data);
+			GtkWidget *r = cur->data;
+			g_list_free(list);
+			return GTK_TFRAME(r);
 		}
 
 	}
+	g_list_free(list);
 	return NULL;
 }

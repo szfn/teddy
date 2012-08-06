@@ -1,12 +1,12 @@
-- port columns, column, tframe and editor improvements
-- port foundry
+LONG TERM:
+- port foundry (fix tag font)
 - per buffer configuration (better)
+- lexy colors in standard configuration
+- generalize buffer setup hook
 
-- remove editor->column
-- remove editor->initialization_ended
 - remove buffer->name
-- tag_drag_behaviour should work on frames not editors
 
+- on command line enter should not autocomplete with the first entry (maybe it never should?)
 - keyboard marking should behave like mouse marking and not constantly update the clipboard with serialized data
 - tabs (and no hidden buffers)
 - project indexing and searching (with tag files support)

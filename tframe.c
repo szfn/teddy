@@ -3,6 +3,7 @@
 #include "columns.h"
 #include "buffers.h"
 #include "global.h"
+#include "cfg.h"
 
 typedef struct _tframe_t {
 	GtkTable table;
@@ -11,8 +12,10 @@ typedef struct _tframe_t {
 	struct _columns_t *columns;
 
 	GtkWidget *tag;
-	GtkWidget *label;
 	GtkWidget *resdr;
+	GtkWidget *drarla;
+
+	char *title;
 
 	double fraction;
 	bool modified;
@@ -166,14 +169,71 @@ static gboolean reshandle_motion_callback(GtkWidget *widget, GdkEventMotion *eve
 	return TRUE;
 }
 
-static void column_resize_frame_pair(tframe_t *above, double new_above_size, tframe_t *below, double new_below_size) {
-	//TODO: implement
+static void column_resize_frame_pair(column_t *column, tframe_t *above, double new_above_size, tframe_t *below, double new_below_size) {
+	double total_fraction = tframe_fraction(above) + tframe_fraction(below);
+	double total_height = new_above_size + new_below_size;
+
+	tframe_fraction_set(above, total_fraction * (new_above_size / total_height));
+	tframe_fraction_set(below, total_fraction * (new_below_size / total_height));
+
+	gtk_column_size_allocate(GTK_WIDGET(column), &(GTK_WIDGET(column)->allocation));
+	gtk_widget_queue_draw(GTK_WIDGET(column));
 }
 
 static gboolean reshandle_button_release_callback(GtkWidget *widget, GdkEventButton *event, tframe_t *tf) {
 	tf->moving = false;
 
 	return TRUE;
+}
+
+static gboolean label_expose_callback(GtkWidget *widget, GdkEventExpose *event, tframe_t *tf) {
+	cairo_t *cr = gdk_cairo_create(widget->window);
+	GtkAllocation allocation;
+	gtk_widget_get_allocation(widget, &allocation);
+
+	set_color_cfg(cr, config[CFG_TAG_BG_COLOR].intval);
+	cairo_rectangle(cr, 0, 0, allocation.width, allocation.height);
+	cairo_fill(cr);
+
+	cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
+	set_color_cfg(cr, config[CFG_TAG_FG_COLOR].intval);
+
+	//TODO: change to tag font
+	cairo_set_scaled_font(cr, posbox_font.cairofont);
+
+	int start = 0;
+	const char *ellipsis = "…";
+
+	cairo_font_extents_t ext;
+	cairo_scaled_font_extents(posbox_font.cairofont, &ext);
+
+	cairo_text_extents_t titlext, ellipsext;
+	cairo_text_extents(cr, ellipsis, &ellipsext);
+
+	do {
+		cairo_text_extents(cr, tf->title+start, &titlext);
+		double width = titlext.width + ellipsext.width + 4.0;
+
+		if (width < allocation.width) break;
+
+		double tocut = width - allocation.width;
+		int tocut_chars = tocut / titlext.width * strlen(tf->title+start);
+		start += tocut_chars + 1;
+		if (start > strlen(tf->title)) start = strlen(tf->title);
+	} while (start < strlen(tf->title));
+
+	cairo_move_to(cr, 4.0, ext.ascent);
+	if (start != 0) cairo_show_text(cr, ellipsis);
+	cairo_show_text(cr, tf->title+start);
+
+	cairo_destroy(cr);
+
+	return TRUE;
+}
+
+static gboolean label_map_callback(GtkWidget *widget, GdkEvent *event, tframe_t *tf) {
+	gdk_window_set_cursor(gtk_widget_get_window(widget), gdk_cursor_new(GDK_FLEUR));
+	return FALSE;
 }
 
 bool dragging = false;
@@ -196,7 +256,7 @@ static gboolean label_button_press_callback(GtkWidget *widget, GdkEventButton *e
 	}
 
 	if ((event->type == GDK_BUTTON_PRESS) && (event->button == 2)) {
-		column_remove(col, frame);
+		columns_column_remove(columnset, col, frame);
 		return TRUE;
 	}
 
@@ -236,19 +296,21 @@ static void tag_drag_behaviour(tframe_t *source, tframe_t *target, double y) {
 		double new_above_size = y - a_above.y;
 		double new_source_size = a_above.height - new_above_size + a_source.height;
 
-		column_resize_frame_pair(before_tf, new_above_size, source, new_source_size);
+		column_resize_frame_pair(source_col, before_tf, new_above_size, source, new_source_size);
 	} else if ((tbuf == null_buffer()) && (sbuf != null_buffer())) {
 		// we dragged into a null buffer, take it over
 		editor_switch_buffer(GTK_TEDITOR(target), sbuf);
-		column_remove(source_col, source);
+		columns_column_remove(columnset, source_col, source);
 	} else {
 		// actually moving source somewhere else
 
-		column_t *target_col;
+		column_t *target_col = NULL;
 		if (!columns_find_frame(columnset, target, NULL, &target_col, NULL, NULL, NULL)) return;
 
-		column_remove(source_col, source);
+		g_object_ref(source);
+		columns_column_remove(columnset, source_col, source);
 		column_add_after(target_col, target, source);
+		g_object_unref(source);
 
 		GtkAllocation tallocation;
 		gtk_widget_get_allocation(GTK_WIDGET(target), &tallocation);
@@ -256,7 +318,7 @@ static void tag_drag_behaviour(tframe_t *source, tframe_t *target, double y) {
 		double new_target_size = y - tallocation.y;
 		double new_source_size = tallocation.height - new_target_size;
 
-		column_resize_frame_pair(target, new_target_size, source, new_source_size);
+		column_resize_frame_pair(target_col, target, new_target_size, source, new_source_size);
 	}
 }
 
@@ -285,6 +347,7 @@ tframe_t *tframe_new(const char *title, GtkWidget *content, columns_t *columns) 
 	tframe_t *r = GTK_TFRAME(tframe_widget);
 	GtkTable *t = GTK_TABLE(r);
 
+	r->content = content;
 	r->columns = columns;
 
 	r->fraction = 1.0;
@@ -294,13 +357,18 @@ tframe_t *tframe_new(const char *title, GtkWidget *content, columns_t *columns) 
 
 	gtk_table_set_homogeneous(t, FALSE);
 
+	r->title = strdup((title != NULL) ? title : "");
+	alloc_assert(r->title);
+
 	r->tag = gtk_hbox_new(FALSE, 0);
 
-	r->label = gtk_label_new(title);
+	r->drarla = gtk_drawing_area_new();
 	r->resdr = gtk_drawing_area_new();
 	gtk_widget_set_size_request(r->resdr, 14, 14);
 
 	gtk_widget_add_events(r->resdr, GDK_BUTTON_PRESS_MASK|GDK_BUTTON_RELEASE_MASK|GDK_POINTER_MOTION_MASK|GDK_POINTER_MOTION_HINT_MASK|GDK_STRUCTURE_MASK);
+
+	gtk_widget_add_events(r->drarla, GDK_BUTTON_PRESS_MASK|GDK_BUTTON_RELEASE_MASK|GDK_STRUCTURE_MASK);
 
 	g_signal_connect(G_OBJECT(r->resdr), "expose_event", G_CALLBACK(reshandle_expose_callback), r);
 	g_signal_connect(G_OBJECT(r->resdr), "map_event", G_CALLBACK(reshandle_map_callback), r);
@@ -308,14 +376,16 @@ tframe_t *tframe_new(const char *title, GtkWidget *content, columns_t *columns) 
 	g_signal_connect(G_OBJECT(r->resdr), "motion_notify_event", G_CALLBACK(reshandle_motion_callback), r);
 	g_signal_connect(G_OBJECT(r->resdr), "button_release_event", G_CALLBACK(reshandle_button_release_callback), r);
 
-	g_signal_connect(r->label, "button-press-event", G_CALLBACK(label_button_press_callback), r);
-	g_signal_connect(r->label, "button-release-event", G_CALLBACK(label_button_release_callback), r);
+	g_signal_connect(G_OBJECT(r->drarla), "expose_event", G_CALLBACK(label_expose_callback), r);
+	g_signal_connect(G_OBJECT(r->drarla), "map_event", G_CALLBACK(label_map_callback), r);
+	g_signal_connect(G_OBJECT(r->drarla), "button-press-event", G_CALLBACK(label_button_press_callback), r);
+	g_signal_connect(G_OBJECT(r->drarla), "button-release-event", G_CALLBACK(label_button_release_callback), r);
 
 	gtk_container_add(GTK_CONTAINER(r->tag), r->resdr);
-	gtk_container_add(GTK_CONTAINER(r->tag), r->label);
+	gtk_container_add(GTK_CONTAINER(r->tag), r->drarla);
 
 	gtk_box_set_child_packing(GTK_BOX(r->tag), r->resdr, FALSE, FALSE, 0, GTK_PACK_START);
-	gtk_box_set_child_packing(GTK_BOX(r->tag), r->label, FALSE, FALSE, 0, GTK_PACK_START);
+	gtk_box_set_child_packing(GTK_BOX(r->tag), r->drarla, TRUE, TRUE, 0, GTK_PACK_START);
 
 	place_frame_piece(GTK_WIDGET(t), TRUE, 0, 2);
 	place_frame_piece(GTK_WIDGET(t), FALSE, 1, 4);
@@ -330,7 +400,9 @@ tframe_t *tframe_new(const char *title, GtkWidget *content, columns_t *columns) 
 }
 
 void tframe_set_title(tframe_t *tframe, const char *title) {
-	gtk_label_set_text(GTK_LABEL(tframe->label), title);
+	free(tframe->title);
+	tframe->title = strdup((title != NULL) ? title : "");
+	alloc_assert(tframe->title);
 }
 
 void tframe_set_modified(tframe_t *tframe, bool modified) {

@@ -44,7 +44,7 @@ extern struct clcompleter cmd_completer;
 
 void global_init();
 
-void find_editor_for_buffer(buffer_t *buffer, column_t **columnpp, tframe_t **framepp, editor_t **editorpp);
+bool find_editor_for_buffer(buffer_t *buffer, column_t **columnpp, tframe_t **framepp, editor_t **editorpp);
 
 char *unrealpath(char *absolute_path, const char *relative_path);
 gboolean streq(gconstpointer a, gconstpointer b);

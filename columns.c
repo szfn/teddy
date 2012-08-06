@@ -162,8 +162,9 @@ void columns_add_after(columns_t *columns, column_t *before_col, column_t *col) 
 		}
 		g_list_free(list);
 
-		column_fraction_set(before_col, column_fraction(before_col) / 2);
-		column_fraction_set(col, column_fraction(before_col));
+		double f = column_fraction(before_col);
+		column_fraction_set(before_col,  f * 0.6);
+		column_fraction_set(col, f * 0.4);
 	} else {
 		column_fraction_set(col, 10.0);
 	}
@@ -206,16 +207,21 @@ bool columns_find_frame(columns_t *columns, tframe_t *tf, column_t **before_col,
 }
 
 static column_t *columns_get_column_from_position(columns_t *columns, double x, double y) {
-	for (GList *cur = GTK_BOX(columns)->children; cur != NULL; cur = cur->next) {
+	GList *list = gtk_container_get_children(GTK_CONTAINER(columns));
+	for (GList *cur = list; cur != NULL; cur = cur->next) {
 		GtkAllocation allocation;
 		gtk_widget_get_allocation(cur->data, &allocation);
 		//printf("Comparing (%g,%g) with (%d,%d) (%d,%d)\n", x, y, allocation.x, allocation.y, allocation.x+allocation.width, allocation.y+allocation.height);
 		if ((x >= allocation.x)
 			&& (x <= allocation.x + allocation.width)
 			&& (y >= allocation.y)
-			&& (y <= allocation.y + allocation.height))
-			return GTK_COLUMN(cur->data);
+			&& (y <= allocation.y + allocation.height)) {
+			GtkWidget *r = cur->data;
+			g_list_free(list);
+			return GTK_COLUMN(r);
+		}
 	}
+	g_list_free(list);
 	return NULL;
 }
 
@@ -265,6 +271,7 @@ void columns_find_column(columns_t *columns, column_t *column, column_t **before
 void columns_remove(columns_t *columns, column_t *column) {
 	if (columns_column_number(columns) == 1) {
 		quick_message("Error", "Can not remove last column of the window");
+		return;
 	}
 
 	column_t *before_col, *after_col;
@@ -275,6 +282,8 @@ void columns_remove(columns_t *columns, column_t *column) {
 	} else if (after_col != NULL) {
 		column_fraction_set(after_col, column_fraction(column) + column_fraction(after_col));
 	}
+
+	gtk_container_remove(GTK_CONTAINER(columns), GTK_WIDGET(column));
 }
 
 int columns_remove_others(columns_t *columns, column_t *column) {
@@ -295,7 +304,7 @@ tframe_t *new_in_column(columns_t *columns, column_t *column, buffer_t *buffer) 
 	char *title = "";
 
 	if (buffer != NULL) {
-		content = GTK_WIDGET(new_editor(column, buffer));
+		content = GTK_WIDGET(new_editor(buffer));
 		title = buffer->name;
 	} else {
 		content = gtk_label_new("");
@@ -338,6 +347,10 @@ tframe_t *new_in_column(columns_t *columns, column_t *column, buffer_t *buffer) 
 tframe_t *heuristic_new_frame(columns_t *columns, tframe_t *spawning_frame, buffer_t *buffer) {
 	tframe_t *r = NULL;
 
+	//printf("heuristic_new_frame\n");
+	GList *list_cols = gtk_container_get_children(GTK_CONTAINER(columns));
+
+
 	column_t *spawning_col = NULL;
 	if (spawning_frame != NULL) {
 		columns_find_frame(columns, spawning_frame, NULL, &spawning_col, NULL, NULL, NULL);
@@ -353,9 +366,21 @@ tframe_t *heuristic_new_frame(columns_t *columns, tframe_t *spawning_frame, buff
 		goto heuristic_new_frame_return;
 	}
 
+	{ // search for a column without anything inside
+		//printf("\tsearch for empty columns\n");
+		for (GList *cur = list_cols; cur != NULL; cur = cur->next) {
+			if (!GTK_IS_COLUMN(cur->data)) continue;
+			column_t *col = GTK_COLUMN(cur->data);
+
+			if (column_frame_number(col) <= 0) {
+				r = new_in_column(columns, col, buffer);
+				goto heuristic_new_frame_return;
+			}
+		}
+	}
+
 	{ // search for a very large column and split it
-		GList *list = gtk_container_get_children(GTK_CONTAINER(columns));
-		for (GList *cur = list; cur != NULL; cur = cur->next) {
+		for (GList *cur = list_cols; cur != NULL; cur = cur->next) {
 			if (!GTK_IS_COLUMN(cur->data)) continue;
 			column_t *col = GTK_COLUMN(cur->data);
 
@@ -369,13 +394,13 @@ tframe_t *heuristic_new_frame(columns_t *columns, tframe_t *spawning_frame, buff
 				goto heuristic_new_frame_return;
 			}
 		}
-		g_list_free(list);
 	}
 
 	// if we are opening a buffer and it isn't the null buffer then search for an editor displaying the null buffer to take over
 	if ((buffer != null_buffer()) && buffer != NULL) {
 		editor_t *editor;
 		find_editor_for_buffer(null_buffer(), NULL, &r, &editor);
+		//printf("\teditor for null buffer: %p\n", editor);
 		if (editor != NULL) {
 			editor_switch_buffer(editor, buffer);
 			goto heuristic_new_frame_return;
@@ -387,14 +412,12 @@ tframe_t *heuristic_new_frame(columns_t *columns, tframe_t *spawning_frame, buff
 			&& ((buffer->name[0] == '+')
 				|| (buffer->path == NULL)
 				|| (buffer->path[strlen(buffer->path) - 1] == '/'));
-		column_t *destcol;
+		column_t *destcol = NULL;
 
-		if (!garbage) {
-			destcol = columns_active(columns);
-		} else {
-			GList *list = gtk_container_get_children(GTK_CONTAINER(columns));
-			destcol = GTK_COLUMN(g_list_last(list)->data);
-			g_list_free(list);
+		if (!garbage) destcol = columns_active(columns);
+
+		if (destcol == NULL) {
+			destcol = GTK_COLUMN(g_list_last(list_cols)->data);
 		}
 
 		r = new_in_column(columns, destcol, buffer);
@@ -404,5 +427,20 @@ tframe_t *heuristic_new_frame(columns_t *columns, tframe_t *spawning_frame, buff
 	// couldn't make a new frame, we fail
 
 heuristic_new_frame_return:
+	g_list_free(list_cols);
 	return r;
+}
+
+void columns_column_remove(columns_t *columns, column_t *col, tframe_t *frame) {
+	if (column_frame_number(col) == 1) {
+		if (columns_column_number(columns) == 1) {
+			quick_message("Error", "Can not close last frame of the window\n");
+			return;
+		}
+
+		column_remove(col, frame);
+		columns_remove(columns, col);
+	} else {
+		column_remove(col, frame);
+	}
 }
