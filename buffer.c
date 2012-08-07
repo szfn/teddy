@@ -13,22 +13,24 @@
 #include "lexy.h"
 #include "rd.h"
 #include "interp.h"
-#include "font.h"
+#include "foundry.h"
 
 static void buffer_init_font_extents(buffer_t *buffer) {
 	cairo_text_extents_t extents;
 	cairo_font_extents_t font_extents;
 
-	cairo_scaled_font_text_extents(buffer->font->fonts[0].cairofont, "M", &extents);
+	teddy_fontset_t *font = foundry_lookup(config[CFG_MAIN_FONT].strval, false);
+
+	cairo_scaled_font_text_extents(fontset_get_cairofont(font, 0), "M", &extents);
 	buffer->em_advance = extents.x_advance;
 
-	cairo_scaled_font_text_extents(buffer->font->fonts[0].cairofont, "x", &extents);
+	cairo_scaled_font_text_extents(fontset_get_cairofont(font, 0), "x", &extents);
 	buffer->ex_height = extents.height;
 
-	cairo_scaled_font_text_extents(buffer->font->fonts[0].cairofont, " ", &extents);
+	cairo_scaled_font_text_extents(fontset_get_cairofont(font, 0), " ", &extents);
 	buffer->space_advance = extents.x_advance;
 
-	cairo_scaled_font_extents(buffer->font->fonts[0].cairofont, &font_extents);
+	cairo_scaled_font_extents(fontset_get_cairofont(font, 0), &font_extents);
 	buffer->line_height = font_extents.height - config[CFG_MAIN_FONT_HEIGHT_REDUCTION].intval;
 	buffer->ascent = font_extents.ascent;
 	buffer->descent = font_extents.descent;
@@ -51,9 +53,6 @@ static void buffer_setup_hook(buffer_t *buffer) {
 
 		if (strcmp(cur_str, "hscroll") == 0) {
 			buffer->enable_horizontal_scrollbar = true;
-		} else if (strcmp(cur_str, "monospaced") == 0) {
-			buffer->font = &monospace_main_fonts;
-			buffer_init_font_extents(buffer);
 #define TABWIDTH_SETUP_HOOK_PREFIX "tabwidth:"
 		} else if (strncmp(cur_str, TABWIDTH_SETUP_HOOK_PREFIX, strlen(TABWIDTH_SETUP_HOOK_PREFIX)) == 0) {
 			buffer->tab_width = atoi(cur_str + strlen(TABWIDTH_SETUP_HOOK_PREFIX));
@@ -268,17 +267,12 @@ static int buffer_line_insert_utf8_text(buffer_t *buffer, real_line_t *line, con
 		previous_fontidx = line->glyph_info[insertion_point-1].fontidx;
 	}
 
-	for (int i = 0; i < buffer->font->count; ++i) {
-		buffer->font->fonts[i].scaled_face = cairo_ft_scaled_font_lock_face(buffer->font->fonts[i].cairofont);
-	}
+	teddy_fontset_t *font = foundry_lookup(config[CFG_MAIN_FONT].strval, true);
 
 	for (src = 0, dst = insertion_point; src < len; ) {
 		bool valid = true;
 		uint32_t code = utf8_to_utf32(text, &src, len, &valid);
-		FT_UInt glyph_index;
-		cairo_text_extents_t extents;
-		uint8_t fontidx = (code <= 0xffff) ? buffer->font->map[(uint16_t)code] : 0;
-		if (fontidx >= buffer->font->count) fontidx = 0;
+		uint8_t fontidx = fontset_fontidx(font, code);
 		/*printf("First char: %02x\n", (uint8_t)text[src]);*/
 
 		if ((code < 0x20) && (code != 0x09) && (code != 0x0a) && (code != 0x0d)) {
@@ -288,47 +282,25 @@ static int buffer_line_insert_utf8_text(buffer_t *buffer, real_line_t *line, con
 		if (valid) *valid_chars = *valid_chars + 1;
 		else *invalid_chars = *invalid_chars + 1;
 
-		if (code != 0x09) { // TODO: include all the many non-space blank characters of unicode
-			glyph_index = FT_Get_Char_Index(buffer->font->fonts[fontidx].scaled_face, code);
-		} else {
-			glyph_index = FT_Get_Char_Index(buffer->font->fonts[fontidx].scaled_face, 0x20);
-		}
+		FT_UInt glyph_index = fontset_glyph_index(font, fontidx, (code != 0x09) ? code : 0x20);
 
 		grow_line(line, dst, 1);
 
 		line->glyph_info[dst].code = code;
 		line->glyph_info[dst].color = buffer->default_color;
 
-		/* Kerning correction for x */
-		if ((previous_fontidx == fontidx) && FT_HAS_KERNING(buffer->font->fonts[fontidx].scaled_face) && previous && glyph_index) {
-			FT_Vector delta;
-
-			FT_Get_Kerning(buffer->font->fonts[fontidx].scaled_face, previous, glyph_index, FT_KERNING_DEFAULT, &delta);
-
-			line->glyph_info[dst].kerning_correction = delta.x >> 6;
-		} else {
-			line->glyph_info[dst].kerning_correction = 0;
-		}
+		line->glyph_info[dst].kerning_correction = (previous_fontidx == fontidx) ? fontset_get_kerning(font, fontidx, previous, glyph_index) : 0.0;
 
 		previous = line->glyph_info[dst].glyph_index = glyph_index;
 		previous_fontidx = line->glyph_info[dst].fontidx = fontidx;
 		line->glyph_info[dst].x = 0.0;
 		line->glyph_info[dst].y = 0.0;
 
-		{
-			cairo_glyph_t g;
-			g.index = glyph_index;
-			g.x = 0.0;
-			g.y = 0.0;
-
-			cairo_scaled_font_glyph_extents(buffer->font->fonts[fontidx].cairofont, &g, 1, &extents);
-		}
-
 		/*if (code == 0x09) {
 			extents.x_advance *= buffer->tab_width;
 		}*/
 
-		line->glyph_info[dst].x_advance = extents.x_advance;
+		line->glyph_info[dst].x_advance = fontset_x_advance(font, fontidx, glyph_index);
 		if (dst == line->cap) {
 			++(line->cap);
 		}
@@ -338,21 +310,11 @@ static int buffer_line_insert_utf8_text(buffer_t *buffer, real_line_t *line, con
 
 	if (dst < line->cap) {
 		uint8_t fontidx = line->glyph_info[dst].fontidx;
-		if ((previous_fontidx == fontidx) && FT_HAS_KERNING(buffer->font->fonts[fontidx].scaled_face)) {
-			FT_Vector delta;
-
-			FT_Get_Kerning(buffer->font->fonts[fontidx].scaled_face, previous, line->glyph_info[dst].glyph_index, FT_KERNING_DEFAULT, &delta);
-
-			line->glyph_info[dst].kerning_correction = delta.x >> 6;
-		} else {
-			line->glyph_info[dst].kerning_correction = 0;
-		}
+		line->glyph_info[dst].kerning_correction = (previous_fontidx == fontidx) ? fontset_get_kerning(font, fontidx, previous, line->glyph_info[dst].glyph_index) : 0.0;
 
 	}
 
-	for (int i = 0; i < buffer->font->count; ++i) {
-		cairo_ft_scaled_font_unlock_face(buffer->font->fonts[i].cairofont);
-	}
+	foundry_release(font);
 
 	return inserted_glyphs;
 }
@@ -1062,7 +1024,6 @@ buffer_t *buffer_create(void) {
 	buffer->lexy_last_update_line = NULL;
 
 	undo_init(&(buffer->undo));
-	buffer->font = &variable_main_fonts;
 
 	buffer_init_font_extents(buffer);
 

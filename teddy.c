@@ -17,6 +17,7 @@
 #include "rd.h"
 #include "baux.h"
 #include "autoconf.h"
+#include "foundry.h"
 
 static gboolean delete_callback(GtkWidget *widget, GdkEvent *event, gpointer data) {
 	//TODO: terminate all processes
@@ -54,8 +55,7 @@ int main(int argc, char *argv[]) {
 
 	gtk_init(&argc, &argv);
 
-	FcInit();
-
+	foundry_init();
 	rd_init();
 	global_init();
 	cfg_init();
@@ -72,8 +72,6 @@ int main(int argc, char *argv[]) {
 	interp_init();
 
 	read_conf();
-
-	teddy_font_real_init();
 
 	jobs_init();
 	buffers_init();
@@ -120,7 +118,7 @@ int main(int argc, char *argv[]) {
 	interp_free();
 	compl_free(&word_completer);
 	cmdcompl_free(&cmd_completer);
-	teddy_font_real_free();
+	foundry_free();
 
 	history_free(&search_history);
 	history_free(&command_history);

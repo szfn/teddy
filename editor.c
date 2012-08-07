@@ -18,6 +18,7 @@
 #include "cfg.h"
 #include "lexy.h"
 #include "rd.h"
+#include "foundry.h"
 
 static GtkTargetEntry selection_clipboard_target_entry = { "UTF8_STRING", 0, 0 };
 
@@ -1009,7 +1010,7 @@ static gboolean expose_event_callback(GtkWidget *widget, GdkEventExpose *event, 
 			uint8_t color = (uint8_t)type;
 			uint8_t fontidx = (uint8_t)(type >> 8);
 			//printf("Printing text with font %d, color %d\n", fontidx, color);
-			cairo_set_scaled_font(cr, editor->buffer->font->fonts[fontidx].cairofont);
+			cairo_set_scaled_font(cr, fontset_get_cairofont_by_name(config[CFG_MAIN_FONT].strval, fontidx));
 			set_color_cfg(cr, lexy_colors[color]);
 			cairo_show_glyphs(cr, gga->glyphs, gga->n);
 			growable_glyph_array_free(gga);
@@ -1043,7 +1044,7 @@ static gboolean expose_event_callback(GtkWidget *widget, GdkEventExpose *event, 
 
 		asprintf(&posbox_text, " %d,%d %0.0f%%", editor->buffer->cursor.line->lineno+1, editor->buffer->cursor.glyph, (100.0 * editor->buffer->cursor.line->lineno / count));
 
-		cairo_set_scaled_font(cr, posbox_font.cairofont);
+		cairo_set_scaled_font(cr, fontset_get_cairofont_by_name(config[CFG_POSBOX_FONT].strval, 0));
 
 		cairo_text_extents(cr, posbox_text, &posbox_ext);
 

@@ -1,5 +1,4 @@
 LONG TERM:
-- port foundry (fix tag font)
 - per buffer configuration (better)
 - lexy colors in standard configuration
 - generalize buffer setup hook

@@ -3,7 +3,7 @@
 #include <string.h>
 #include <stdlib.h>
 
-config_item_t config[19];
+config_item_t config[20];
 const char *config_names[] = {
 	"border_color",
 	"default_autoindent",
@@ -23,6 +23,7 @@ const char *config_names[] = {
 	"posbox_font",
 	"tag_bg_color",
 	"tag_fg_color",
+	"tag_font",
 	"warp_mouse",
 };
 
@@ -50,5 +51,6 @@ void cfg_init(void) {
 	setcfg(config + CFG_POSBOX_FONT, "Arial-8");
 	setcfg(config + CFG_TAG_BG_COLOR, "16777215");
 	setcfg(config + CFG_TAG_FG_COLOR, "0");
+	setcfg(config + CFG_TAG_FONT, "Arial-11");
 	setcfg(config + CFG_WARP_MOUSE, "1");
 }
