@@ -78,9 +78,9 @@ static void ansi_append_escape(job_t *job) {
 	} else if (command_char == 'm') {
 		if (job->ansiseq_cap != 3) return;
 		if (job->ansiseq[1] == '0') {
-			job->buffer->default_color = L_NOTHING;
+			job->buffer->default_color = 0;
 		} else if (job->ansiseq[1] == '1') {
-			job->buffer->default_color = L_STRING;
+			job->buffer->default_color = CFG_LEXY_STRING - CFG_LEXY_NOTHING;
 		}
 	} else {
 		job_append(job, "<esc>", strlen("<esc>"), 0, 0xff);
@@ -145,7 +145,7 @@ static void ansi_append(job_t *job, const char *msg, int len) {
 static void jobs_child_watch_function(GPid pid, gint status, job_t *job) {
 	char *msg;
 	asprintf(&msg, "~ %d\n", status);
-	job_append(job, msg, strlen(msg), 1, L_KEYWORD);
+	job_append(job, msg, strlen(msg), 1, CFG_LEXY_KEYWORD - CFG_LEXY_NOTHING);
 	free(msg);
 	job_destroy(job);
 }
@@ -164,7 +164,7 @@ static gboolean jobs_input_watch_function(GIOChannel *source, GIOCondition condi
 		if (job->current_ratelimit_bucket_start - time(NULL) > RATELIMIT_BUCKET_DURATION_SECS) {
 			if (job->current_ratelimit_bucket_size > RATELIMIT_MAX_BYTES) {
 				const char *msg = "SILENCED\n";
-				job_append(job, msg, strlen(msg), 1, L_KEYWORD);
+				job_append(job, msg, strlen(msg), 1, CFG_LEXY_KEYWORD - CFG_LEXY_NOTHING);
 				job->ratelimit_silenced = true;
 			}
 			job->current_ratelimit_bucket_start = time(NULL);
@@ -185,14 +185,14 @@ static gboolean jobs_input_watch_function(GIOChannel *source, GIOCondition condi
 			free(msg);*/
 		} else {
 			asprintf(&msg, "~ (i/o error)\n");
-			job_append(job, msg, strlen(msg), 1, L_KEYWORD);
+			job_append(job, msg, strlen(msg), 1, CFG_LEXY_KEYWORD - CFG_LEXY_NOTHING);
 			free(msg);
 		}
 		job->child_source_id = g_child_watch_add(job->child_pid, (GChildWatchFunc)jobs_child_watch_function, job);
 		return FALSE;
 	case G_IO_STATUS_EOF:
 		asprintf(&msg, "~ (eof)\n");
-		job_append(job, msg, strlen(msg), 1, L_KEYWORD);
+		job_append(job, msg, strlen(msg), 1, CFG_LEXY_KEYWORD - CFG_LEXY_NOTHING);
 		free(msg);
 		job->child_source_id = g_child_watch_add(job->child_pid, (GChildWatchFunc)jobs_child_watch_function, job);
 		return FALSE;
@@ -200,7 +200,7 @@ static gboolean jobs_input_watch_function(GIOChannel *source, GIOCondition condi
 		return TRUE;
 	default:
 		asprintf(&msg, "~ (unknown error: %d)\n", r);
-		job_append(job, msg, strlen(msg), 1, L_KEYWORD);
+		job_append(job, msg, strlen(msg), 1, CFG_LEXY_KEYWORD - CFG_LEXY_NOTHING);
 		free(msg);
 		return FALSE;
 	}
@@ -243,7 +243,7 @@ int jobs_register(pid_t child_pid, int masterfd, struct _buffer_t *buffer, const
 	char *pp = buffer_ppp(buffer, false, 20, true);
 	char *msg;
 	asprintf(&msg, "%s%% %s\t\t(pid: %d)\n", pp, command, child_pid);
-	job_append(jobs+i, msg, strlen(msg), 0, L_KEYWORD);
+	job_append(jobs+i, msg, strlen(msg), 0, CFG_LEXY_KEYWORD - CFG_LEXY_NOTHING);
 	free(msg);
 	free(pp);
 

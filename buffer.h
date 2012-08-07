@@ -12,6 +12,7 @@
 #include "point.h"
 #include "parmatch.h"
 #include "critbit.h"
+#include "cfg.h"
 
 typedef struct _my_glyph_info_t {
 	double kerning_correction;
@@ -55,6 +56,8 @@ typedef struct _buffer_t {
 	uint8_t default_color;
 
 	job_t *job;
+
+	config_t config;
 
 	/* Font secondary metrics of main font */
 	double em_advance;

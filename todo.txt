@@ -1,10 +1,12 @@
 LONG TERM:
-- per buffer configuration (better)
-- lexy colors in standard configuration
+- move configuration to xdg directories
+
 - generalize buffer setup hook
 
 - remove buffer->name
+- remove buffer->wd (have global working directory)
 
+- setcfg with -global option
 - on command line enter should not autocomplete with the first entry (maybe it never should?)
 - keyboard marking should behave like mouse marking and not constantly update the clipboard with serialized data
 - tabs (and no hidden buffers)

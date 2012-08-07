@@ -192,20 +192,20 @@ static gboolean label_expose_callback(GtkWidget *widget, GdkEventExpose *event, 
 	GtkAllocation allocation;
 	gtk_widget_get_allocation(widget, &allocation);
 
-	set_color_cfg(cr, config[CFG_TAG_BG_COLOR].intval);
+	set_color_cfg(cr, config_intval(&global_config, CFG_TAG_BG_COLOR));
 	cairo_rectangle(cr, 0, 0, allocation.width, allocation.height);
 	cairo_fill(cr);
 
 	cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
-	set_color_cfg(cr, config[CFG_TAG_FG_COLOR].intval);
+	set_color_cfg(cr, config_intval(&global_config, CFG_TAG_FG_COLOR));
 
-	cairo_set_scaled_font(cr, fontset_get_cairofont_by_name(config[CFG_TAG_FONT].strval, 0));
+	cairo_set_scaled_font(cr, fontset_get_cairofont_by_name(config_strval(&global_config, CFG_TAG_FONT), 0));
 
 	int start = 0;
 	const char *ellipsis = "…";
 
 	cairo_font_extents_t ext;
-	cairo_scaled_font_extents(fontset_get_cairofont_by_name(config[CFG_TAG_FONT].strval, 0), &ext);
+	cairo_scaled_font_extents(fontset_get_cairofont_by_name(config_strval(&global_config, CFG_TAG_FONT), 0), &ext);
 
 	cairo_text_extents_t titlext, ellipsext;
 	cairo_text_extents(cr, ellipsis, &ellipsext);
@@ -367,7 +367,7 @@ tframe_t *tframe_new(const char *title, GtkWidget *content, columns_t *columns) 
 	gtk_widget_set_size_request(r->resdr, 14, 14);
 
 	cairo_font_extents_t tag_font_extents;
-	cairo_scaled_font_extents(fontset_get_cairofont_by_name(config[CFG_TAG_FONT].strval, 0), &tag_font_extents);
+	cairo_scaled_font_extents(fontset_get_cairofont_by_name(config_strval(&global_config, CFG_TAG_FONT), 0), &tag_font_extents);
 	gtk_widget_set_size_request(r->drarla, 1, tag_font_extents.ascent + tag_font_extents.descent);
 
 	gtk_widget_add_events(r->resdr, GDK_BUTTON_PRESS_MASK|GDK_BUTTON_RELEASE_MASK|GDK_POINTER_MOTION_MASK|GDK_POINTER_MOTION_HINT_MASK|GDK_STRUCTURE_MASK);

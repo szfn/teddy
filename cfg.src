@@ -23,3 +23,10 @@ cfg_editor_bg_cursorline 13882323
 cfg_tag_bg_color 16777215
 cfg_tag_fg_color 0
 cfg_tag_font Arial-11
+
+cfg_lexy_nothing 0
+cfg_lexy_keyword 0
+cfg_lexy_id 0
+cfg_lexy_comment 0
+cfg_lexy_string 0
+cfg_lexy_literal 0

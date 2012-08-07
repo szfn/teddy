@@ -76,13 +76,13 @@ char type_identifier[0xff+1];
 static void rdrs(buffer_t *buffer, const char *c, uint8_t color) {
 	buffer->default_color = color;
 	buffer_replace_selection(buffer, c);
-	buffer->default_color = L_NOTHING;
+	buffer->default_color = 0;
 }
 
 static void rdrr(buffer_t *buffer, const char *c, uint8_t color, lpoint_t *start, lpoint_t *end) {
 	buffer->default_color = color;
 	buffer_replace_region(buffer, c, start, end);
-	buffer->default_color = L_NOTHING;
+	buffer->default_color = 0;
 }
 
 static void rd_insert(buffer_t *buffer, DIR *dir, int depth) {
@@ -95,7 +95,7 @@ static void rd_insert(buffer_t *buffer, DIR *dir, int depth) {
 	for (;;) {
 		int r = readdir_r(dir, &entry, &result);
 		if (r != 0) {
-			rdrs(buffer, "Error reading directory\n", L_COMMENT);
+			rdrs(buffer, "Error reading directory\n", CFG_LEXY_COMMENT - CFG_LEXY_NOTHING);
 			break;
 		}
 		if (result == NULL) {
@@ -112,28 +112,28 @@ static void rd_insert(buffer_t *buffer, DIR *dir, int depth) {
 	for (int i = 0; i < es.cur; ++i) {
 		for (int d = 0; d < depth-1; ++d) {
 			//rdrs(buffer, "\u2502\ue652", L_NOTHING);
-			rdrs(buffer, "\u2502", L_NOTHING);
+			rdrs(buffer, "\u2502", 0);
 		}
 
 		if (depth > 0) {
 			if (i == es.cur-1) {
-				rdrs(buffer, "\u2515", L_NOTHING);
+				rdrs(buffer, "\u2515", 0);
 			} else {
-				rdrs(buffer, "\u251d", L_NOTHING);
+				rdrs(buffer, "\u251d", 0);
 			}
 		}
 
-		rdrs(buffer, (es.v[i].type == DT_DIR) ? "\ue650" : "\ue652", L_STRING);
-		rdrs(buffer, es.v[i].name, (es.v[i].type == DT_DIR) ? L_STRING : L_NOTHING);
+		rdrs(buffer, (es.v[i].type == DT_DIR) ? "\ue650" : "\ue652", CFG_LEXY_STRING - CFG_LEXY_NOTHING);
+		rdrs(buffer, es.v[i].name, (es.v[i].type == DT_DIR) ? (CFG_LEXY_STRING-CFG_LEXY_NOTHING) : 0);
 
 		char id = type_identifier[es.v[i].type];
 		if (id != ' ') {
 			char z[] = { 0, 0 };
 			z[0] = id;
-			rdrs(buffer, z, L_COMMENT);
+			rdrs(buffer, z, CFG_LEXY_COMMENT - CFG_LEXY_NOTHING);
 		}
 
-		if (i != es.cur-1) rdrs(buffer, "\n", L_NOTHING);
+		if (i != es.cur-1) rdrs(buffer, "\n", 0);
 	}
 
 	entry_free(&es);
@@ -156,11 +156,11 @@ void rd_init(void) {
 }
 
 void rd(DIR *dir, buffer_t *buffer) {
-	rdrs(buffer, buffer->path, L_KEYWORD);
-	rdrs(buffer, ":\n", L_KEYWORD);
+	rdrs(buffer, buffer->path, CFG_LEXY_KEYWORD - CFG_LEXY_NOTHING);
+	rdrs(buffer, ":\n", CFG_LEXY_KEYWORD - CFG_LEXY_NOTHING);
 
 	rd_insert(buffer, dir, 0);
-	rdrs(buffer, "\n", L_NOTHING);
+	rdrs(buffer, "\n", 0);
 	buffer->cursor.line = buffer->real_line;
 	buffer->cursor.glyph = 0;
 
@@ -242,7 +242,7 @@ void rd_open(editor_t *editor) {
 
 		editor->buffer->editable = 1;
 
-		rdrr(editor->buffer, "\ue651", L_STRING, &start, &end);
+		rdrr(editor->buffer, "\ue651", CFG_LEXY_STRING - CFG_LEXY_NOTHING, &start, &end);
 
 		char *path = rd_get_path(editor->buffer, cursor_line, i);
 
@@ -255,7 +255,7 @@ void rd_open(editor_t *editor) {
 
 		if (dir != NULL) {
 			editor->buffer->cursor.glyph = editor->buffer->cursor.line->cap;
-			rdrs(editor->buffer, "\n", L_NOTHING);
+			rdrs(editor->buffer, "\n", 0);
 			rd_insert(editor->buffer, dir, i+1);
 			closedir(dir);
 		}
@@ -273,7 +273,7 @@ void rd_open(editor_t *editor) {
 
 		editor->buffer->editable = 1;
 
-		rdrr(editor->buffer, "\ue650", L_STRING, &start, &end);
+		rdrr(editor->buffer, "\ue650", CFG_LEXY_STRING-CFG_LEXY_NOTHING, &start, &end);
 
 		start.glyph = end.glyph = 0;
 		start.line = cursor_line->next;

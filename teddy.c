@@ -58,7 +58,7 @@ int main(int argc, char *argv[]) {
 	foundry_init();
 	rd_init();
 	global_init();
-	cfg_init();
+	config_init_auto_defaults();
 	init_colors();
 
 	history_init(&command_history);

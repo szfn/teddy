@@ -1,40 +1,26 @@
-#ifndef __CFG__
-#define __CFG__
+#ifndef __CFG_H__
+#define __CFG_H__
 
-#define CONFIG_ITEM_STRING_SIZE 512
+#include "cfg_auto.h"
 
 typedef struct _config_item_t {
-	char strval[CONFIG_ITEM_STRING_SIZE];
+	char *strval;
 	int intval;
 } config_item_t;
 
-extern config_item_t config[];
+typedef struct _config_t {
+	struct _config_t *parent;
+	config_item_t *cfg[CONFIG_NUM];
+} config_t;
+
+extern config_t global_config;
 extern const char *config_names[];
 
-extern void cfg_init(void);
-void setcfg(config_item_t *ci, const char *val);
+void config_init(config_t *config, config_t *parent);
+void config_init_auto_defaults(void);
 
-#define CONFIG_NUM 20
-
-#define CFG_BORDER_COLOR 0
-#define CFG_DEFAULT_AUTOINDENT 1
-#define CFG_DEFAULT_SPACEMAN 2
-#define CFG_EDITOR_BG_COLOR 3
-#define CFG_EDITOR_BG_CURSORLINE 4
-#define CFG_EDITOR_FG_COLOR 5
-#define CFG_EDITOR_SEL_COLOR 6
-#define CFG_FOCUS_FOLLOWS_MOUSE 7
-#define CFG_INTERACTIVE_SEARCH_CASE_SENSITIVE 8
-#define CFG_MAIN_FONT 9
-#define CFG_MAIN_FONT_HEIGHT_REDUCTION 10
-#define CFG_MAIN_MONOSPACE_FONT 11
-#define CFG_POSBOX_BG_COLOR 12
-#define CFG_POSBOX_BORDER_COLOR 13
-#define CFG_POSBOX_FG_COLOR 14
-#define CFG_POSBOX_FONT 15
-#define CFG_TAG_BG_COLOR 16
-#define CFG_TAG_FG_COLOR 17
-#define CFG_TAG_FONT 18
-#define CFG_WARP_MOUSE 19
+char *config_strval(config_t *config, int idx);
+int config_intval(config_t *config, int idx);
+void config_set(config_t *config, int idx, char *val);
 
 #endif

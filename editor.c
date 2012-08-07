@@ -569,7 +569,7 @@ static gboolean key_press_callback(GtkWidget *widget, GdkEventKey *event, editor
 				gtk_widget_queue_draw(editor->drar);
 			} else {
 				char *r = alloca(sizeof(char) * (editor->buffer->cursor.line->cap + 2));
-				if (config[CFG_DEFAULT_AUTOINDENT].intval) {
+				if (config_intval(&(editor->buffer->config), CFG_DEFAULT_AUTOINDENT)) {
 					buffer_indent_newline(editor->buffer, r);
 				} else {
 					r[0] = '\n';
@@ -794,7 +794,7 @@ static gboolean motion_callback(GtkWidget *widget, GdkEventMotion *event, editor
 	}
 
 	// focus follows mouse
-	if ((config[CFG_FOCUS_FOLLOWS_MOUSE].intval) && focus_can_follow_mouse) {
+	if ((config_intval(&(editor->buffer->config), CFG_FOCUS_FOLLOWS_MOUSE)) && focus_can_follow_mouse) {
 		if (!gtk_widget_is_focus(editor->drar)) {
 			gtk_widget_grab_focus(editor->drar);
 			gtk_widget_queue_draw(editor->drar);
@@ -818,7 +818,7 @@ static void draw_selection(editor_t *editor, double width, cairo_t *cr) {
 	line_get_glyph_coordinates(editor->buffer, &start, &selstart_x, &selstart_y);
 	line_get_glyph_coordinates(editor->buffer, &end, &selend_x, &selend_y);
 
-	set_color_cfg(cr, config[CFG_EDITOR_SEL_COLOR].intval);
+	set_color_cfg(cr, config_intval(&(editor->buffer->config), CFG_EDITOR_SEL_COLOR));
 
 	if (fabs(selstart_y - selend_y) < 0.001) {
 		cairo_set_operator(cr, CAIRO_OPERATOR_DIFFERENCE);
@@ -843,7 +843,7 @@ static void draw_selection(editor_t *editor, double width, cairo_t *cr) {
 		cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
 	}
 
-	set_color_cfg(cr, config[CFG_EDITOR_FG_COLOR].intval);
+	set_color_cfg(cr, config_intval(&(editor->buffer->config), CFG_EDITOR_FG_COLOR));
 }
 
 static void draw_parmatch(editor_t *editor, GtkAllocation *allocation, cairo_t *cr) {
@@ -949,7 +949,7 @@ static void draw_cursorline(cairo_t *cr, editor_t *editor) {
 	double cursor_x, cursor_y;
 	buffer_cursor_position(editor->buffer, &cursor_x, &cursor_y);
 
-	set_color_cfg(cr, config[CFG_EDITOR_BG_CURSORLINE].intval);
+	set_color_cfg(cr, config_intval(&(editor->buffer->config), CFG_EDITOR_BG_CURSORLINE));
 	cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
 
 	cairo_rectangle(cr, cursor_x - allocation.width, cursor_y-editor->buffer->ascent, 2*allocation.width, editor->buffer->ascent+editor->buffer->descent);
@@ -970,7 +970,7 @@ static gboolean expose_event_callback(GtkWidget *widget, GdkEventExpose *event, 
 		gdk_window_set_cursor(gtk_widget_get_window(editor->drar), gdk_cursor_new(GDK_XTERM));
 	}
 
-	set_color_cfg(cr, config[CFG_EDITOR_BG_COLOR].intval);
+	set_color_cfg(cr, config_intval(&(editor->buffer->config), CFG_EDITOR_BG_COLOR));
 	cairo_rectangle(cr, 0, 0, allocation.width, allocation.height);
 	cairo_fill(cr);
 
@@ -987,7 +987,7 @@ static gboolean expose_event_callback(GtkWidget *widget, GdkEventExpose *event, 
 	GHashTable *ht = g_hash_table_new(g_direct_hash, g_direct_equal);
 
 	cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
-	set_color_cfg(cr, config[CFG_EDITOR_FG_COLOR].intval);
+	set_color_cfg(cr, config_intval(&(editor->buffer->config), CFG_EDITOR_FG_COLOR));
 
 	int count = 0;
 	for (real_line_t *line = editor->buffer->real_line; line != NULL; line = line->next) {
@@ -1010,8 +1010,8 @@ static gboolean expose_event_callback(GtkWidget *widget, GdkEventExpose *event, 
 			uint8_t color = (uint8_t)type;
 			uint8_t fontidx = (uint8_t)(type >> 8);
 			//printf("Printing text with font %d, color %d\n", fontidx, color);
-			cairo_set_scaled_font(cr, fontset_get_cairofont_by_name(config[CFG_MAIN_FONT].strval, fontidx));
-			set_color_cfg(cr, lexy_colors[color]);
+			cairo_set_scaled_font(cr, fontset_get_cairofont_by_name(config_strval(&(editor->buffer->config), CFG_MAIN_FONT), fontidx));
+			set_color_cfg(cr, config_intval(&(editor->buffer->config), CFG_LEXY_NOTHING+color));
 			cairo_show_glyphs(cr, gga->glyphs, gga->n);
 			growable_glyph_array_free(gga);
 		}
@@ -1044,22 +1044,22 @@ static gboolean expose_event_callback(GtkWidget *widget, GdkEventExpose *event, 
 
 		asprintf(&posbox_text, " %d,%d %0.0f%%", editor->buffer->cursor.line->lineno+1, editor->buffer->cursor.glyph, (100.0 * editor->buffer->cursor.line->lineno / count));
 
-		cairo_set_scaled_font(cr, fontset_get_cairofont_by_name(config[CFG_POSBOX_FONT].strval, 0));
+		cairo_set_scaled_font(cr, fontset_get_cairofont_by_name(config_strval(&(editor->buffer->config), CFG_POSBOX_FONT), 0));
 
 		cairo_text_extents(cr, posbox_text, &posbox_ext);
 
 		y = allocation.height - posbox_ext.height - 4.0;
 		x = allocation.width - posbox_ext.x_advance - 4.0;
 
-		set_color_cfg(cr, config[CFG_POSBOX_BORDER_COLOR].intval);
+		set_color_cfg(cr, config_intval(&(editor->buffer->config), CFG_POSBOX_BORDER_COLOR));
 		cairo_rectangle(cr, x-1.0, y-1.0, posbox_ext.x_advance+4.0, posbox_ext.height+4.0);
 		cairo_fill(cr);
-		set_color_cfg(cr, config[CFG_POSBOX_BG_COLOR].intval);
+		set_color_cfg(cr, config_intval(&(editor->buffer->config), CFG_POSBOX_BG_COLOR));
 		cairo_rectangle(cr, x, y, posbox_ext.x_advance + 2.0, posbox_ext.height + 2.0);
 		cairo_fill(cr);
 
 		cairo_move_to(cr, x+1.0, y+posbox_ext.height);
-		set_color_cfg(cr, config[CFG_POSBOX_FG_COLOR].intval);
+		set_color_cfg(cr, config_intval(&(editor->buffer->config), CFG_POSBOX_FG_COLOR));
 		cairo_show_text(cr, posbox_text);
 
 		free(posbox_text);
@@ -1180,7 +1180,7 @@ editor_t *new_editor(buffer_t *buffer) {
 void editor_grab_focus(editor_t *editor, bool warp) {
 	gtk_widget_grab_focus(editor->drar);
 
-	if (config[CFG_WARP_MOUSE].intval && warp) {
+	if (config_intval(&(editor->buffer->config), CFG_WARP_MOUSE) && warp) {
 		GdkDisplay *display = gdk_display_get_default();
 		GdkScreen *screen = gdk_display_get_default_screen(display);
 		GtkAllocation allocation;

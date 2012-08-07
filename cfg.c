@@ -1,56 +1,46 @@
 #include "cfg.h"
 
-#include <string.h>
 #include <stdlib.h>
+#include <string.h>
 
-config_item_t config[20];
-const char *config_names[] = {
-	"border_color",
-	"default_autoindent",
-	"default_spaceman",
-	"editor_bg_color",
-	"editor_bg_cursorline",
-	"editor_fg_color",
-	"editor_sel_color",
-	"focus_follows_mouse",
-	"interactive_search_case_sensitive",
-	"main_font",
-	"main_font_height_reduction",
-	"main_monospace_font",
-	"posbox_bg_color",
-	"posbox_border_color",
-	"posbox_fg_color",
-	"posbox_font",
-	"tag_bg_color",
-	"tag_fg_color",
-	"tag_font",
-	"warp_mouse",
-};
+#include "global.h"
 
-void setcfg(config_item_t *ci, const char *val) {
-    strcpy(ci->strval, val);
-    ci->intval = atoi(val);
+config_t global_config;
+
+void config_init(config_t *config, config_t *parent) {
+	config->parent = parent;
+	for (int i = 0; i < CONFIG_NUM; ++i) config->cfg[i] = NULL;
 }
 
-void cfg_init(void) {
-	setcfg(config + CFG_BORDER_COLOR, "0");
-	setcfg(config + CFG_DEFAULT_AUTOINDENT, "1");
-	setcfg(config + CFG_DEFAULT_SPACEMAN, "1");
-	setcfg(config + CFG_EDITOR_BG_COLOR, "16777215");
-	setcfg(config + CFG_EDITOR_BG_CURSORLINE, "13882323");
-	setcfg(config + CFG_EDITOR_FG_COLOR, "0");
-	setcfg(config + CFG_EDITOR_SEL_COLOR, "16777215");
-	setcfg(config + CFG_FOCUS_FOLLOWS_MOUSE, "1");
-	setcfg(config + CFG_INTERACTIVE_SEARCH_CASE_SENSITIVE, "2");
-	setcfg(config + CFG_MAIN_FONT, "Arial-11");
-	setcfg(config + CFG_MAIN_FONT_HEIGHT_REDUCTION, "0");
-	setcfg(config + CFG_MAIN_MONOSPACE_FONT, "Monospace-11");
-	setcfg(config + CFG_POSBOX_BG_COLOR, "15654274");
-	setcfg(config + CFG_POSBOX_BORDER_COLOR, "0");
-	setcfg(config + CFG_POSBOX_FG_COLOR, "0");
-	setcfg(config + CFG_POSBOX_FONT, "Arial-8");
-	setcfg(config + CFG_TAG_BG_COLOR, "16777215");
-	setcfg(config + CFG_TAG_FG_COLOR, "0");
-	setcfg(config + CFG_TAG_FONT, "Arial-11");
-	setcfg(config + CFG_WARP_MOUSE, "1");
+static config_item_t *config_get(config_t *config, int idx) {
+	if (config->cfg[idx] != NULL) {
+		return config->cfg[idx];
+	} else {
+		if (config->parent != NULL) {
+			return config_get(config->parent, idx);
+		} else {
+			return NULL;
+		}
+	}
+}
+
+char *config_strval(config_t *config, int idx) {
+	config_item_t *cit = config_get(config, idx);
+	return (cit != NULL) ? cit->strval : NULL;
+}
+
+int config_intval(config_t *config, int idx) {
+	config_item_t *cit = config_get(config, idx);
+	return (cit != NULL) ? cit->intval : 0;
+}
+
+void config_set(config_t *config, int idx, char *val) {
+	if (config->cfg[idx] == NULL) {
+		config->cfg[idx] = malloc(sizeof(config_item_t));
+		alloc_assert(config->cfg[idx]);
+	}
+
+	config->cfg[idx]->strval = strdup(val);
+	alloc_assert(config->cfg[idx]->strval);
+	config->cfg[idx]->intval = atoi(val);
 }

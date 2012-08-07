@@ -64,27 +64,22 @@ static int teddy_setcfg_command(ClientData client_data, Tcl_Interp *interp, int 
 		return TCL_ERROR;
 	}
 
-	int a = 0, b = CONFIG_NUM-1, i = -1;
-	while (a <= b) {
-		i = (a + b) / 2;
-		int r = strcmp(config_names[i], argv[1]);
-		//printf("Comparing <%s> with <%s> (%d)\n", config_names[i], argv[1], r);
-		if (r == 0) break;
-		if (r > 0) {
-			b = i-1;
-		} else if (r < 0) {
-			a = i+1;
-		}
+	int i;
+	for (i = 0; i < CONFIG_NUM; ++i) {
+		if (strcmp(config_names[i], argv[1]) == 0) break;
 	}
 
-	if ((a > b) || (i < 0)) {
+	if (i >= CONFIG_NUM) {
 		Tcl_AddErrorInfo(interp, "Unknown configuration option specified in setcfg");
 		return TCL_ERROR;
 	}
 
-	config_item_t *ci = config + i;
+	if (context_editor != NULL) {
+		config_set(&(context_editor->buffer->config), i, (char *)argv[2]);
+	} else {
+		config_set(&global_config, i, (char *)argv[2]);
+	}
 
-	setcfg(ci, argv[2]);
 	return TCL_OK;
 }
 
@@ -899,7 +894,6 @@ void interp_init(void) {
 	Tcl_CreateCommand(interp, "lexydef-append", &lexy_append_command, (ClientData)NULL, NULL);
 	Tcl_CreateCommand(interp, "lexyassoc", &lexy_assoc_command, (ClientData)NULL, NULL);
 	Tcl_CreateCommand(interp, "lexy_dump", &lexy_dump_command, (ClientData)NULL, NULL);
-	Tcl_CreateCommand(interp, "lexycfg", &lexy_cfg_command, (ClientData)NULL, NULL);
 
 	Tcl_CreateCommand(interp, "buffer", &teddy_buffer_command, (ClientData)NULL, NULL);
 

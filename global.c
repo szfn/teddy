@@ -103,7 +103,7 @@ static gboolean expose_frame(GtkWidget *widget, GdkEventExpose *event, editor_t 
 
 	gtk_widget_get_allocation(widget, &allocation);
 
-	set_color_cfg(cr, config[CFG_BORDER_COLOR].intval);
+	set_color_cfg(cr, config_intval(&global_config, CFG_BORDER_COLOR));
 	cairo_rectangle(cr, 0, 0, allocation.width, allocation.height);
 	cairo_fill(cr);
 	cairo_destroy(cr);

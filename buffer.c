@@ -19,7 +19,7 @@ static void buffer_init_font_extents(buffer_t *buffer) {
 	cairo_text_extents_t extents;
 	cairo_font_extents_t font_extents;
 
-	teddy_fontset_t *font = foundry_lookup(config[CFG_MAIN_FONT].strval, false);
+	teddy_fontset_t *font = foundry_lookup(config_strval(&(buffer->config), CFG_MAIN_FONT), false);
 
 	cairo_scaled_font_text_extents(fontset_get_cairofont(font, 0), "M", &extents);
 	buffer->em_advance = extents.x_advance;
@@ -31,7 +31,7 @@ static void buffer_init_font_extents(buffer_t *buffer) {
 	buffer->space_advance = extents.x_advance;
 
 	cairo_scaled_font_extents(fontset_get_cairofont(font, 0), &font_extents);
-	buffer->line_height = font_extents.height - config[CFG_MAIN_FONT_HEIGHT_REDUCTION].intval;
+	buffer->line_height = font_extents.height - config_intval(&(buffer->config), CFG_MAIN_FONT_HEIGHT_REDUCTION);
 	buffer->ascent = font_extents.ascent;
 	buffer->descent = font_extents.descent;
 }
@@ -267,7 +267,7 @@ static int buffer_line_insert_utf8_text(buffer_t *buffer, real_line_t *line, con
 		previous_fontidx = line->glyph_info[insertion_point-1].fontidx;
 	}
 
-	teddy_fontset_t *font = foundry_lookup(config[CFG_MAIN_FONT].strval, true);
+	teddy_fontset_t *font = foundry_lookup(config_strval(&(buffer->config), CFG_MAIN_FONT), true);
 
 	for (src = 0, dst = insertion_point; src < len; ) {
 		bool valid = true;
@@ -856,7 +856,7 @@ char *buffer_lines_to_text(buffer_t *buffer, lpoint_t *startp, lpoint_t *endp) {
 }
 
 static void buffer_spaceman_on_save(buffer_t *buffer) {
-	if (!config[CFG_DEFAULT_SPACEMAN].intval) return;
+	if (!config_intval(&(buffer->config), CFG_DEFAULT_SPACEMAN)) return;
 
 	if (buffer->cursor.line == NULL) return;
 
@@ -1009,10 +1009,12 @@ void buffer_update_parmatch(buffer_t *buffer) {
 buffer_t *buffer_create(void) {
 	buffer_t *buffer = malloc(sizeof(buffer_t));
 
+	config_init(&(buffer->config), &global_config);
+
 	buffer->modified = 0;
 	buffer->editable = 1;
 	buffer->job = NULL;
-	buffer->default_color = L_NOTHING;
+	buffer->default_color = 0;
 	buffer->enable_horizontal_scrollbar = false;
 
 	asprintf(&(buffer->name), "+unnamed");
@@ -1050,6 +1052,7 @@ buffer_t *buffer_create(void) {
 	buffer->keyprocessor = NULL;
 
 	buffer->cbt.root = NULL;
+
 
 	return buffer;
 }

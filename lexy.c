@@ -147,13 +147,13 @@ static int find_state(struct lexy_tokenizer *tokenizer, const char *status_name)
 }
 
 static int parse_token_type_name(const char *token_type_name) {
-	if (strcmp(token_type_name, "nothing") == 0) return L_NOTHING;
-	if (strcmp(token_type_name, "keyword") == 0) return L_KEYWORD;
-	if (strcmp(token_type_name,"id") == 0) return L_ID;
-	if (strcmp(token_type_name, "identifier") == 0) return L_ID;
-	if (strcmp(token_type_name, "comment") == 0) return L_COMMENT;
-	if (strcmp(token_type_name, "string") == 0) return L_STRING;
-	if (strcmp(token_type_name, "literal") == 0) return L_LITERAL;
+	if (strcmp(token_type_name, "nothing") == 0) return 0;
+	if (strcmp(token_type_name, "keyword") == 0) return CFG_LEXY_KEYWORD - CFG_LEXY_NOTHING;
+	if (strcmp(token_type_name,"id") == 0) return CFG_LEXY_ID - CFG_LEXY_NOTHING;
+	if (strcmp(token_type_name, "identifier") == 0) return CFG_LEXY_ID - CFG_LEXY_NOTHING;
+	if (strcmp(token_type_name, "comment") == 0) return CFG_LEXY_COMMENT - CFG_LEXY_NOTHING;
+	if (strcmp(token_type_name, "string") == 0) return CFG_LEXY_STRING - CFG_LEXY_NOTHING;
+	if (strcmp(token_type_name, "literal") == 0) return CFG_LEXY_LITERAL - CFG_LEXY_NOTHING;
 	return -1;
 }
 
@@ -426,7 +426,7 @@ static void lexy_update_one_token(real_line_t *line, int *glyph, struct lexy_tok
 		struct lexy_row *row = tokenizer->rows + base + offset;
 		//printf("\t\toffset = %d base = %d enabled = %d\n", offset, base, row->enabled);
 		if (!(row->enabled)) {
-			line->glyph_info[*glyph].color = L_NOTHING;
+			line->glyph_info[*glyph].color = 0;
 			++(*glyph);
 			return;
 		}
@@ -517,23 +517,6 @@ void lexy_update_for_move(buffer_t *buffer, real_line_t *start_line) {
 		if (start_line == NULL) break;
 		if (start_line->lineno >= buffer->cursor.line->lineno) break;
 	}
-}
-
-int lexy_cfg_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
-	if (argc != 3) {
-		Tcl_AddErrorInfo(interp, "Wrong number of arguments to 'lexycfg', usage: lexycfg <name> <color>");
-		return TCL_ERROR;
-	}
-
-	const char *name_str = argv[1];
-	const char *color_str = argv[2];
-
-	uint8_t type = parse_token_type_name(name_str);
-	int color = atoi(color_str);
-
-	lexy_colors[type] = color;
-
-	return TCL_OK;
 }
 
 
