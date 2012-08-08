@@ -93,7 +93,7 @@ static int ask_for_closing_and_maybe_save(buffer_t *buffer, GtkWidget *window) {
 	char *msg;
 	gint result;
 
-	if (!(buffer->has_filename) && (buffer->name[0] == '+')) return 1; /* Trash buffer, can be discarded safely */
+	if (!(buffer->has_filename) && (buffer->path[0] == '+')) return 1; /* Trash buffer, can be discarded safely */
 
 	if (buffer->has_filename) {
 		dialog = gtk_dialog_new_with_buttons("Close Buffer", (window != NULL) ? GTK_WINDOW(window) : GTK_WINDOW(gtk_widget_get_toplevel(GTK_WIDGET(buffers_selector_focus_editor))), GTK_DIALOG_MODAL|GTK_DIALOG_DESTROY_WITH_PARENT, "Save and close", SAVE_AND_CLOSE_RESPONSE, "Discard changes", DISCARD_CHANGES_RESPONSE, "Cancel", CANCEL_ACTION_RESPONSE, NULL);
@@ -101,7 +101,7 @@ static int ask_for_closing_and_maybe_save(buffer_t *buffer, GtkWidget *window) {
 		dialog = gtk_dialog_new_with_buttons("Close Buffer", (window != NULL) ? GTK_WINDOW(window) : GTK_WINDOW(gtk_widget_get_toplevel(GTK_WIDGET(buffers_selector_focus_editor))), GTK_DIALOG_MODAL|GTK_DIALOG_DESTROY_WITH_PARENT, "Discard changes", DISCARD_CHANGES_RESPONSE, "Cancel", CANCEL_ACTION_RESPONSE, NULL);
 	}
 
-	asprintf(&msg, "Buffer [%s] is modified", buffer->name);
+	asprintf(&msg, "Buffer [%s] is modified", buffer->path);
 	label = gtk_label_new(msg);
 	free(msg);
 
@@ -192,8 +192,8 @@ void buffers_init(void) {
 
 	buffers[0] = buffer_create();
 	{
-		free(buffers[0]->name);
-		asprintf(&(buffers[0]->name), "+null+");
+		free(buffers[0]->path);
+		asprintf(&(buffers[0]->path), "+null+");
 		load_empty(buffers[0]);
 		buffers[0]->editable = 0;
 	}
@@ -270,25 +270,25 @@ void buffers_add(buffer_t *b) {
 		GtkTreeIter mah;
 
 		gtk_list_store_append(buffers_list, &mah);
-		if (b->name[0] == '+') {
-			gtk_list_store_set(buffers_list, &mah, 0, i, 1, b->name, 2, b->name, -1);
+		if (b->path[0] == '+') {
+			gtk_list_store_set(buffers_list, &mah, 0, i, 1, b->path, 2, b->path, -1);
 		} else {
-			char *namename = strrchr(b->name, '/');
+			char *namename = strrchr(b->path, '/');
 
-			if ((namename == NULL) || (*namename == '\0')) namename = b->name;
+			if ((namename == NULL) || (*namename == '\0')) namename = b->path;
 
 			if (strcmp(namename, "/") == 0) {
-				char *nsn = strdup(b->name);
+				char *nsn = strdup(b->path);
 				alloc_assert(nsn);
 				nsn[strlen(nsn)-1] = '\0';
 				namename = strrchr(nsn, '/');
 				if ((namename == NULL) || (*namename == '\0')) namename = nsn;
 				else ++namename;
-				gtk_list_store_set(buffers_list, &mah, 0, i, 1, namename, 2, b->name, -1);
+				gtk_list_store_set(buffers_list, &mah, 0, i, 1, namename, 2, b->path, -1);
 				free(nsn);
 			} else {
 				++namename;
-				gtk_list_store_set(buffers_list, &mah, 0, i, 1, namename, 2, b->name, -1);
+				gtk_list_store_set(buffers_list, &mah, 0, i, 1, namename, 2, b->path, -1);
 			}
 		}
 	}
@@ -353,10 +353,10 @@ buffer_t *buffers_find_buffer_from_path(const char *urp) {
 
 buffer_t *buffers_create_with_name(char *name) {
 	buffer_t *buffer = buffer_create();
-	if (buffer->name != NULL) {
-		free(buffer->name);
+	if (buffer->path != NULL) {
+		free(buffer->path);
 	}
-	buffer->name = name;
+	buffer->path = name;
 	load_empty(buffer);
 
 	buffers_add(buffer);
@@ -370,7 +370,7 @@ buffer_t *buffers_get_buffer_for_process(void) {
 	// look for a buffer with a name starting by +bg/ that doesn't have a process
 	for (i = 0; i < buffers_allocated; ++i) {
 		if (buffers[i] == NULL) continue;
-		if (strncmp(buffers[i]->name, "+bg/", 4) != 0) continue;
+		if (strncmp(buffers[i]->path, "+bg/", 4) != 0) continue;
 		if (buffers[i]->job != NULL) continue;
 		break;
 	}
@@ -461,7 +461,7 @@ int teddy_buffer_command(ClientData client_data, Tcl_Interp *interp, int argc, c
 
 		for (i = 0; i < buffers_allocated; ++i) {
 			if (buffers[i] == NULL) continue;
-			if (strcmp(buffers[i]->name, "+scrach+") == 0) break;
+			if (strcmp(buffers[i]->path, "+scrach+") == 0) break;
 		}
 
 		buffer_t *buffer;
@@ -558,7 +558,7 @@ int teddy_buffer_command(ClientData client_data, Tcl_Interp *interp, int argc, c
 		Tcl_SetObjResult(interp, ret);
 
 		tcl_dict_add_string(ret, "id", bufferid);
-		tcl_dict_add_string(ret, "name", buffer->name);
+		tcl_dict_add_string(ret, "name", buffer->path);
 		tcl_dict_add_string(ret, "path", buffer->path);
 
 		return TCL_OK;

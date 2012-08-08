@@ -240,12 +240,10 @@ int jobs_register(pid_t child_pid, int masterfd, struct _buffer_t *buffer, const
 
 	buffer_aux_clear(buffer);
 
-	char *pp = buffer_ppp(buffer, false, 20, true);
 	char *msg;
-	asprintf(&msg, "%s%% %s\t\t(pid: %d)\n", pp, command, child_pid);
+	asprintf(&msg, "%s%% %s\t\t(pid: %d)\n", buffer->path, command, child_pid);
 	job_append(jobs+i, msg, strlen(msg), 0, CFG_LEXY_KEYWORD - CFG_LEXY_NOTHING);
 	free(msg);
-	free(pp);
 
 	return 1;
 }

@@ -50,16 +50,6 @@ static int teddy_pwf_command(ClientData client_data, Tcl_Interp *interp, int arg
 	return TCL_OK;
 }
 
-static int teddy_pwd_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
-	if (interp_context_buffer() == NULL) {
-		Tcl_AddErrorInfo(interp, "No editor open, can not execute 'pwf' command");
-		return TCL_ERROR;
-	}
-
-	Tcl_SetResult(interp, interp_context_buffer()->wd, TCL_VOLATILE);
-	return TCL_OK;
-}
-
 static int teddy_setcfg_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
 	if (argc != 3) {
 		Tcl_AddErrorInfo(interp, "Wrong number of arguments to setcfg");
@@ -517,9 +507,6 @@ static int teddy_bg_command(ClientData client_data, Tcl_Interp *interp, int argc
 		return TCL_ERROR;
 	}
 
-	if (interp_context_buffer() != buffer)
-		buffer_cd(interp_context_buffer(), interp_context_buffer()->wd);
-
 	go_to_buffer(interp_context_editor(), buffer, -1);
 
 	bzero(&term, sizeof(struct termios));
@@ -706,7 +693,6 @@ static int teddy_kill_command(ClientData client_data, Tcl_Interp *interp, int ar
 			kill(interp_context_buffer()->job->child_pid, SIGTERM);
 		} else {
 			buffers_close(interp_context_buffer(), gtk_widget_get_toplevel(GTK_WIDGET(interp_context_editor())));
-			chdir(interp_context_buffer()->wd);
 		}
 
 		return TCL_OK;
@@ -729,7 +715,6 @@ static int teddy_kill_command(ClientData client_data, Tcl_Interp *interp, int ar
 				return TCL_ERROR;
 			}
 			buffers_close(interp_context_buffer(), gtk_widget_get_toplevel(GTK_WIDGET(interp_context_editor())));
-			chdir(interp_context_buffer()->wd);
 		} else if (argv[1][0] == '-') {
 			// kill current process with specific signal (check that context_editor is defined and associated buffer has a job)
 			if (interp_context_editor() == NULL) {
@@ -806,10 +791,8 @@ static int teddy_refresh_command(ClientData client_data, Tcl_Interp *interp, int
 		return TCL_ERROR;
 	}
 
-	if (interp_context_buffer()->name != NULL) {
-		// do not refresh special buffers
-		if (interp_context_buffer()->name[0] == '+') return TCL_OK;
-	}
+	// do not refresh special buffers
+	if (interp_context_buffer()->path[0] == '+') return TCL_OK;
 
 	char *path = strdup(interp_context_buffer()->path);
 	alloc_assert(path);
@@ -861,7 +844,6 @@ void interp_init(void) {
 	Tcl_CreateCommand(interp, "bindkey", &teddy_bindkey_command, (ClientData)NULL, NULL);
 
 	Tcl_CreateCommand(interp, "pwf", &teddy_pwf_command, (ClientData)NULL, NULL);
-	Tcl_CreateCommand(interp, "pwd", &teddy_pwd_command, (ClientData)NULL, NULL);
 
 	Tcl_CreateCommand(interp, "go", &teddy_go_command, (ClientData)NULL, NULL);
 	Tcl_CreateCommand(interp, "refresh", &teddy_refresh_command, (ClientData)NULL, NULL);
@@ -930,8 +912,6 @@ enum deferred_action interp_eval(editor_t *editor, const char *command, bool sho
 
 	interp_context_editor_set(editor);
 	deferred_action_to_return = NOTHING;
-
-	chdir(interp_context_buffer()->wd);
 
 	code = Tcl_Eval(interp, command);
 

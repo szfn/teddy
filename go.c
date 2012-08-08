@@ -171,7 +171,7 @@ editor_t *go_to_buffer(editor_t *editor, buffer_t *buffer, int where) {
 		return target;
 	}
 
-	asprintf(&msg, "Show buffer [%s]:", buffer->name);
+	asprintf(&msg, "Show buffer [%s]:", buffer->path);
 	gtk_label_set_text(GTK_LABEL(go_switch_label), msg);
 	free(msg);
 
@@ -188,7 +188,6 @@ editor_t *go_to_buffer(editor_t *editor, buffer_t *buffer, int where) {
 	switch(response) {
 	case GO_CURRENT:
 		editor_switch_buffer(editor, buffer);
-		chdir(editor->buffer->wd);
 		return editor;
 
 	case GO_SELECT:

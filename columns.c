@@ -305,7 +305,7 @@ tframe_t *new_in_column(columns_t *columns, column_t *column, buffer_t *buffer) 
 
 	if (buffer != NULL) {
 		content = GTK_WIDGET(new_editor(buffer));
-		title = buffer->name;
+		title = buffer->path;
 	} else {
 		content = gtk_label_new("");
 	}
@@ -409,8 +409,7 @@ tframe_t *heuristic_new_frame(columns_t *columns, tframe_t *spawning_frame, buff
 
 	{ // create a new row inside the active column (or the rightmost column if we are opening garbage)
 		bool garbage = (buffer != NULL)
-			&& ((buffer->name[0] == '+')
-				|| (buffer->path == NULL)
+			&& ((buffer->path[0] == '+')
 				|| (buffer->path[strlen(buffer->path) - 1] == '/'));
 		column_t *destcol = NULL;
 

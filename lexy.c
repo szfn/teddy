@@ -410,7 +410,7 @@ static struct lexy_tokenizer *tokenizer_from_buffer(buffer_t *buffer) {
 #define REGEXEC_NMATCH 5
 		regmatch_t pmatch[REGEXEC_NMATCH];
 
-		if (tre_regexec(&extre, buffer->name, REGEXEC_NMATCH, pmatch, 0) != REG_OK) {
+		if (tre_regexec(&extre, buffer->path, REGEXEC_NMATCH, pmatch, 0) != REG_OK) {
 			tre_regfree(&extre);
 		} else {
 			tre_regfree(&extre);

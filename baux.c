@@ -241,7 +241,7 @@ void buffer_aux_clear(buffer_t *buffer) {
 
 bool buffer_aux_is_directory(buffer_t *buffer) {
 	if (buffer == NULL) return false;
-	if (buffer->name == NULL) return false;
+	if (buffer->path == NULL) return false;
 
-	return (buffer->name[strlen(buffer->name) - 1] == '/');
+	return (buffer->path[strlen(buffer->path) - 1] == '/');
 }

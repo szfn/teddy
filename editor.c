@@ -58,7 +58,7 @@ void set_label_text(editor_t *editor) {
 	tframe_t *frame;
 	find_editor_for_buffer(editor->buffer, NULL, &frame, NULL);
 
-	tframe_set_title(frame, (editor->buffer->path != NULL) ? editor->buffer->path : editor->buffer->name);
+	tframe_set_title(frame, editor->buffer->path);
 	tframe_set_modified(frame, editor->buffer->modified);
 	gtk_widget_queue_draw(GTK_WIDGET(frame));
 }

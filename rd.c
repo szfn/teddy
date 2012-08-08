@@ -191,9 +191,9 @@ char *rd_get_path(buffer_t *buffer, real_line_t *cursor_line, int i) {
 
 	if (i == 0) {
 
-		char *path = malloc(sizeof(char) * (1+strlen(buffer->wd) + strlen(text)));
+		char *path = malloc(sizeof(char) * (1+strlen(buffer->path) + strlen(text)));
 
-		strcpy(path, buffer->wd);
+		strcpy(path, buffer->path);
 		strcat(path, text);
 
 		free(text);
