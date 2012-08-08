@@ -5,16 +5,16 @@ OBJS := obj/teddy.o obj/buffer.o obj/editor.o obj/buffers.o obj/columns.o obj/co
 all: bin/teddy
 
 clean:
-	rm -Rf obj/ *~ bin cfg_auto.c cfg_auto.h colors.c builtin.h critbit.c
+	rm -Rf obj/ *~ bin cfg_auto.c cfg_auto.h colors.c builtin.h autoconf.h critbit.c
 
 critbit-test: critbit.o critbit-test.cc
 	g++ -o critbit-test critbit-test.cc critbit.o
 
-bin/teddy: builtin.h cfg_auto.h cfg_auto.c colors.c $(OBJS)
+bin/teddy: builtin.h autoconf.h cfg_auto.h cfg_auto.c colors.c $(OBJS)
 	mkdir -p bin
 	$(CC) -o $@ $(OBJS) $(LIBS)
 
-bin/teddy32: builtin.h cfg_auto.h cfg_auto.c colors.c $(OBJS32)
+bin/teddy32: builtin.h autoconf.h cfg_auto.h cfg_auto.c colors.c $(OBJS32)
 	mkdir -p bin
 	$(CC) -o $@ -m32 $(OBJS32) $(LIBS)
 
@@ -36,7 +36,10 @@ bin/critbit.pdf: critbit.w
 
 obj/critbit.o: critbit.c critbit.addenda.c
 
-builtin.h: builtin.tcl builtin-create.pl example.teddy
+builtin.h: builtin.tcl builtin-create.pl
+	perl builtin-create.pl
+
+autoconf.h: example.teddy builtin-create.pl
 	perl builtin-create.pl
 
 git.date.h: $(OBJS)

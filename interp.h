@@ -2,6 +2,7 @@
 #define __INTERP__
 
 #include "editor.h"
+#include "buffer.h"
 
 #include <tcl.h>
 
@@ -21,6 +22,10 @@ void read_conf(void);
 
 const char *interp_eval_command(int count, const char *argv[]);
 
-extern editor_t *context_editor;
+void interp_context_editor_set(editor_t *editor);
+void interp_context_buffer_set(buffer_t *buffer);
+
+editor_t *interp_context_editor(void);
+buffer_t *interp_context_buffer(void);
 
 #endif

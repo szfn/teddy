@@ -1,8 +1,4 @@
 LONG TERM:
-- move configuration to xdg directories
-
-- generalize buffer setup hook
-
 - remove buffer->name
 - remove buffer->wd (have global working directory)
 

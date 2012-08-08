@@ -283,7 +283,7 @@ int teddy_research_command(ClientData client_data, Tcl_Interp *interp, int argc,
 	enum research_mode_t research_mode = RM_INTERACTIVE;
 	bool line_limit = false;
 
-	if (context_editor == NULL) {
+	if (interp_context_editor() == NULL) {
 		Tcl_AddErrorInfo(interp, "No editor open, can not execute 's' command");
 		return TCL_ERROR;
 	}
@@ -315,7 +315,7 @@ int teddy_research_command(ClientData client_data, Tcl_Interp *interp, int argc,
 		subst = argv[i+1];
 	}
 
-	start_regexp_search(context_editor, regexp, subst, line_limit, research_mode);
+	start_regexp_search(interp_context_editor(), regexp, subst, line_limit, research_mode);
 
 	return TCL_OK;
 }

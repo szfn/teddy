@@ -317,12 +317,11 @@ void buffers_show_window(editor_t *editor) {
 }
 
 int buffers_close_all(GtkWidget *window) {
-	int i;
-	for (i = 0; i < buffers_allocated; ++i) {
+	for (int i = 0; i < buffers_allocated; ++i) {
 		if (buffers[i] == NULL) continue;
 		if (!buffers_close(buffers[i], window)) return 0;
 	}
-	for (i = 0; i < buffers_allocated; ++i) {
+	for (int i = 0; i < buffers_allocated; ++i) {
 		if (buffers[i] == NULL) continue;
 		if (buffers[i]->modified) return 0;
 	}
@@ -431,7 +430,7 @@ int teddy_buffer_command(ClientData client_data, Tcl_Interp *interp, int argc, c
 		return TCL_ERROR;
 	}
 
-	if (context_editor == NULL) {
+	if (interp_context_editor() == NULL) {
 		Tcl_AddErrorInfo(interp, "buffer command invoked when no editor is active");
 		return TCL_ERROR;
 	}
@@ -453,7 +452,7 @@ int teddy_buffer_command(ClientData client_data, Tcl_Interp *interp, int argc, c
 			return TCL_ERROR;
 		}
 
-		if (context_editor == NULL) {
+		if (interp_context_editor() == NULL) {
 			Tcl_AddErrorInfo(interp, "Can not call 'buffer scratch' when no editor is active");
 			return TCL_ERROR;
 		}
@@ -473,10 +472,10 @@ int teddy_buffer_command(ClientData client_data, Tcl_Interp *interp, int argc, c
 			buffer = buffers[i];
 		}
 
-		go_to_buffer(context_editor, buffer, -1);
+		go_to_buffer(interp_context_editor(), buffer, -1);
 	} else if (strcmp(argv[1], "current") == 0) {
 		char bufferid[20];
-		buffer_to_buffer_id(context_editor->buffer, bufferid);
+		buffer_to_buffer_id(interp_context_buffer(), bufferid);
 		Tcl_SetResult(interp, bufferid, TCL_VOLATILE);
 	} else if (strcmp(argv[1], "propget") == 0) {
 		if (argc != 4) {

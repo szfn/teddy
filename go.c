@@ -221,7 +221,7 @@ static int exec_go(const char *specifier, int where, enum go_file_failure_reason
 
 	*gffr = GFFR_OTHER;
 
-	if (exec_go_position(specifier, context_editor, context_editor->buffer)) {
+	if (exec_go_position(specifier, interp_context_editor(), interp_context_buffer())) {
 	    retval = 1;
 	    goto exec_go_cleanup;
 	}
@@ -234,12 +234,12 @@ static int exec_go(const char *specifier, int where, enum go_file_failure_reason
 
 	buffer = buffer_id_to_buffer(tok);
 	if (buffer == NULL) {
-		buffer = go_file(context_editor->buffer, tok, false, gffr);
+		buffer = go_file(interp_context_buffer(), tok, false, gffr);
 		//printf("buffer = %p gffr = %d\n", buffer, (int)(*gffr));
 		if (buffer == NULL) { retval = 0; goto exec_go_cleanup; }
 	}
 
-	editor = go_to_buffer(context_editor, buffer, where);
+	editor = go_to_buffer(interp_context_editor(), buffer, where);
 	// editor will be NULL here if the user decided to select an editor
 
 	tok = strtok_r(NULL, ":", &saveptr);
@@ -295,20 +295,20 @@ int teddy_go_command(ClientData client_data, Tcl_Interp *interp, int argc, const
 		return TCL_ERROR;
 	}
 
-	if (context_editor == NULL) {
+	if (interp_context_editor() == NULL) {
 		Tcl_AddErrorInfo(interp, "No editor open, can not execute 'go' command");
 		return TCL_ERROR;
 	}
 
 	if (strcmp(goarg, "&") == 0) {
 		lpoint_t start, end;
-		buffer_get_selection(context_editor->buffer, &start, &end);
+		buffer_get_selection(interp_context_buffer(), &start, &end);
 
 		if (start.line == NULL) {
-			copy_lpoint(&start, &(context_editor->buffer->cursor));
-			mouse_open_action(context_editor, &start, NULL, where);
+			copy_lpoint(&start, &(interp_context_buffer()->cursor));
+			mouse_open_action(interp_context_editor(), &start, NULL, where);
 		} else {
-			mouse_open_action(context_editor, &start, &end, where);
+			mouse_open_action(interp_context_editor(), &start, &end, where);
 		}
 
 		return TCL_OK;
@@ -318,9 +318,9 @@ int teddy_go_command(ClientData client_data, Tcl_Interp *interp, int argc, const
 	if (!exec_go(goarg, where, &gffr)) {
 		if (gffr == GFFR_BINARYFILE) return TCL_OK;
 
-		char *urp = unrealpath(context_editor->buffer->path, goarg);
+		char *urp = unrealpath(interp_context_buffer()->path, goarg);
 		char *msg;
-		GtkWidget *dialog = gtk_dialog_new_with_buttons("Create file", GTK_WINDOW(gtk_widget_get_toplevel(GTK_WIDGET(context_editor))), GTK_DIALOG_MODAL|GTK_DIALOG_DESTROY_WITH_PARENT, "Yes", 1, "No", 0, NULL);
+		GtkWidget *dialog = gtk_dialog_new_with_buttons("Create file", GTK_WINDOW(gtk_widget_get_toplevel(GTK_WIDGET(interp_context_editor()))), GTK_DIALOG_MODAL|GTK_DIALOG_DESTROY_WITH_PARENT, "Yes", 1, "No", 0, NULL);
 
 		asprintf(&msg, "File [%s] does not exist, do you want to create it?", urp);
 		gtk_container_add(GTK_CONTAINER(gtk_dialog_get_content_area(GTK_DIALOG(dialog))), gtk_label_new(msg));
@@ -345,7 +345,7 @@ int teddy_go_command(ClientData client_data, Tcl_Interp *interp, int argc, const
 					quick_message("Error", "Unexpected error during file creation");
 				} else {
 					buffers_add(buffer);
-					go_to_buffer(context_editor, buffer, -1);
+					go_to_buffer(interp_context_editor(), buffer, -1);
 				}
 			}
 		}
@@ -354,9 +354,9 @@ int teddy_go_command(ClientData client_data, Tcl_Interp *interp, int argc, const
 		free(urp);
 		return TCL_OK;
 	} else {
-		context_editor->center_on_cursor_after_next_expose = TRUE;
-		lexy_update_for_move(context_editor->buffer, context_editor->buffer->cursor.line);
-		gtk_widget_queue_draw(context_editor->drar);
+		interp_context_editor()->center_on_cursor_after_next_expose = TRUE;
+		lexy_update_for_move(interp_context_buffer(), interp_context_buffer()->cursor.line);
+		gtk_widget_queue_draw(interp_context_editor()->drar);
 		return TCL_OK;
 	}
 }
@@ -467,7 +467,7 @@ void mouse_open_action(editor_t *editor, lpoint_t *start, lpoint_t *end, int whe
 	lpoint_t changed_end;
 	lpoint_t cursor;
 
-	context_editor = editor;
+	interp_context_editor_set(editor);
 
 	copy_lpoint(&cursor, start);
 
@@ -557,5 +557,5 @@ void mouse_open_action(editor_t *editor, lpoint_t *start, lpoint_t *end, int whe
 
 	free(go_arg);
 
-	context_editor = NULL;
+	interp_context_editor_set(NULL);
 }

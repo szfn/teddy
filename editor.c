@@ -569,7 +569,7 @@ static gboolean key_press_callback(GtkWidget *widget, GdkEventKey *event, editor
 				gtk_widget_queue_draw(editor->drar);
 			} else {
 				char *r = alloca(sizeof(char) * (editor->buffer->cursor.line->cap + 2));
-				if (config_intval(&(editor->buffer->config), CFG_DEFAULT_AUTOINDENT)) {
+				if (config_intval(&(editor->buffer->config), CFG_AUTOINDENT)) {
 					buffer_indent_newline(editor->buffer, r);
 				} else {
 					r[0] = '\n';

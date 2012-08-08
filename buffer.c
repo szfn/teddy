@@ -39,29 +39,6 @@ static void buffer_init_font_extents(buffer_t *buffer) {
 static void buffer_setup_hook(buffer_t *buffer) {
 	const char *argv[] = { "buffer_setup_hook", buffer->name };
 	interp_eval_command(2, argv);
-
-	Tcl_Obj *r = Tcl_GetObjResult(interp);
-	int len = -1;
-	Tcl_ListObjLength(interp, r, &len);
-
-	for (int i = 0; i < len; ++i) {
-		Tcl_Obj *cur;
-		Tcl_ListObjIndex(interp, r, i, &cur);
-		char *cur_str = Tcl_GetString(cur);
-
-		if (cur_str == NULL) continue;
-
-		if (strcmp(cur_str, "hscroll") == 0) {
-			buffer->enable_horizontal_scrollbar = true;
-#define TABWIDTH_SETUP_HOOK_PREFIX "tabwidth:"
-		} else if (strncmp(cur_str, TABWIDTH_SETUP_HOOK_PREFIX, strlen(TABWIDTH_SETUP_HOOK_PREFIX)) == 0) {
-			buffer->tab_width = atoi(cur_str + strlen(TABWIDTH_SETUP_HOOK_PREFIX));
-		} else if (strcmp(cur_str, "fixedtabs") == 0) {
-			buffer->tab_mode = TAB_FIXED;
-		}
-	}
-
-	Tcl_ResetResult(interp);
 }
 
 void buffer_set_mark_at_cursor(buffer_t *buffer) {
@@ -407,27 +384,19 @@ static void buffer_line_adjust_glyphs(buffer_t *buffer, real_line_t *line, doubl
 		if (line->glyph_info[i].code == 0x20) {
 			line->glyph_info[i].x_advance = initial_spaces ? buffer->em_advance : buffer->space_advance;
 		} else if (line->glyph_info[i].code == 0x09) {
-			switch(buffer->tab_mode) {
-			case TAB_MODN: {
-				double size = buffer->tab_width * buffer->em_advance;
-				double to_next_cell = size - fmod(x - buffer->left_margin, size);
-				if (to_next_cell <= buffer->space_advance/2) {
-					// if it is too small jump to next cell instead
-					to_next_cell += size;
-				}
-				line->glyph_info[i].x_advance = to_next_cell;
-				break;
+			double size = config_intval(&(buffer->config), CFG_TAB_WIDTH) * buffer->em_advance;
+			double to_next_cell = size - fmod(x - buffer->left_margin, size);
+			if (to_next_cell <= buffer->space_advance/2) {
+				// if it is too small jump to next cell instead
+				to_next_cell += size;
 			}
-			case TAB_FIXED:
-			default:
-				line->glyph_info[i].x_advance = buffer->tab_width * (initial_spaces ? buffer->em_advance : buffer->space_advance);
-			}
+			line->glyph_info[i].x_advance = to_next_cell;
 		} else {
 			initial_spaces = false;
 		}
 
 		x += line->glyph_info[i].kerning_correction;
-		if (buffer->enable_horizontal_scrollbar) {
+		if (!config_intval(&(buffer->config), CFG_AUTOWRAP)) {
 			if (x + buffer->right_margin > buffer->rendered_width) buffer->rendered_width = x + buffer->right_margin;
 		} else {
 			if (x+line->glyph_info[i].x_advance > buffer->rendered_width - buffer->right_margin) {
@@ -856,7 +825,7 @@ char *buffer_lines_to_text(buffer_t *buffer, lpoint_t *startp, lpoint_t *endp) {
 }
 
 static void buffer_spaceman_on_save(buffer_t *buffer) {
-	if (!config_intval(&(buffer->config), CFG_DEFAULT_SPACEMAN)) return;
+	if (!config_intval(&(buffer->config), CFG_SPACEMAN)) return;
 
 	if (buffer->cursor.line == NULL) return;
 
@@ -1015,7 +984,6 @@ buffer_t *buffer_create(void) {
 	buffer->editable = 1;
 	buffer->job = NULL;
 	buffer->default_color = 0;
-	buffer->enable_horizontal_scrollbar = false;
 
 	asprintf(&(buffer->name), "+unnamed");
 	buffer->path = NULL;
@@ -1043,8 +1011,6 @@ buffer_t *buffer_create(void) {
 
 	parmatch_init(&(buffer->parmatch));
 
-	buffer->tab_width = 4;
-	buffer->tab_mode = TAB_MODN;
 	buffer->left_margin = 4.0;
 	buffer->right_margin = 4.0;
 

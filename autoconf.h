@@ -2,6 +2,7 @@
 #define __AUTOCONF_TEDDY__
 
 #define AUTOCONF_TEDDY "setcfg main_font \"Arial-11\"\n\
+set monospaced_font \"Monospace-11\"\n\
 setcfg posbox_font Arial-8\n\
 \n\
 setcfg focus_follows_mouse 1\n\
@@ -15,12 +16,12 @@ setcfg posbox_border_color 0\n\
 setcfg posbox_bg_color 15654274\n\
 setcfg posbox_fg_color 0\n\
 \n\
-lexycfg nothing [rgbcolor black]\n\
-lexycfg keyword [rgbcolor \"midnight blue\"]\n\
-lexycfg comment [rgbcolor \"dark green\"]\n\
-lexycfg string [rgbcolor \"dark brown\"]\n\
-lexycfg id [rgbcolor black]\n\
-lexycfg literal [rgbcolor \"dark brown\"]\n\
+setcfg lexy_nothing [rgbcolor black]\n\
+setcfg lexy_keyword [rgbcolor \"midnight blue\"]\n\
+setcfg lexy_comment [rgbcolor \"dark green\"]\n\
+setcfg lexy_string [rgbcolor \"dark brown\"]\n\
+setcfg lexy_id [rgbcolor black]\n\
+setcfg lexy_literal [rgbcolor \"dark brown\"]\n\
 \n\
 bindkey Ctrl-Space mark\n\
 bindkey Ctrl-Shift-Space {mark lines}\n\
@@ -59,11 +60,16 @@ proc grep {args} {\n\
 \n\
 proc buffer_setup_hook {name} {\n\
 	if { [string range $name 0 2] == \"+bg\" } {\n\
-		return { hscroll monospaced tabwidth:8 }\n\
+		setcfg autowrap 0\n\
+		setcfg tab_width 8\n\
+		setcfg main_font $monospaced_font\n\
 	} elseif { [string range $name 0 3] == \"+man\" } {\n\
-		return { hscroll monospaced }\n\
+		setcfg autowrap 0\n\
+		setcfg main_font $monospaced_font\n\
 	} elseif { [string range $name 0 6] == \"+dirrec\"} {\n\
-		return { hscroll monospaced tabwidth:8 }\n\
+		setcfg autowrap 0\n\
+		setcfg main_font $monospaced_font\n\
+		setcfg tab_width 8\n\
 	} else {\n\
 		return { }\n\
 	}\n\

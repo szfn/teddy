@@ -85,11 +85,8 @@ typedef struct _buffer_t {
 	undo_t undo;
 
 	/* User options */
-	enum tab_mode tab_mode;
-	int tab_width;
 	double left_margin;
 	double right_margin;
-	bool enable_horizontal_scrollbar;
 
 	/* Lexy stuff */
 	real_line_t *lexy_last_update_line;

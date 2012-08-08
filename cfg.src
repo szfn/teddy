@@ -1,24 +1,24 @@
 cfg_main_font Arial-11
-cfg_main_monospace_font Monospace-11
 cfg_main_font_height_reduction 0
 cfg_posbox_font Arial-8
+
 cfg_focus_follows_mouse 1
-
-cfg_default_autoindent 1
-cfg_default_spaceman 1
-
+cfg_autoindent 1
+cfg_spaceman 1
 cfg_warp_mouse 1
-
 cfg_interactive_search_case_sensitive 2
+cfg_autowrap 1
+cfg_tab_width 4
 
 cfg_editor_bg_color 16777215
 cfg_editor_fg_color 0
 cfg_editor_sel_color 16777215
+cfg_editor_bg_cursorline 13882323
+
 cfg_posbox_border_color 0
 cfg_posbox_bg_color 15654274
 cfg_posbox_fg_color 0
 cfg_border_color 0
-cfg_editor_bg_cursorline 13882323
 
 cfg_tag_bg_color 16777215
 cfg_tag_fg_color 0
@@ -30,3 +30,4 @@ cfg_lexy_id 0
 cfg_lexy_comment 0
 cfg_lexy_string 0
 cfg_lexy_literal 0
+

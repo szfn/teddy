@@ -166,7 +166,6 @@ void rd(DIR *dir, buffer_t *buffer) {
 
 	//rdrs(buffer, "\n", L_NOTHING);
 
-	buffer->enable_horizontal_scrollbar = true;
 	buffer->editable = 0;
 }
 

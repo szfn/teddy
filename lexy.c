@@ -357,12 +357,12 @@ int lexy_dump_command(ClientData client_data, Tcl_Interp *interp, int argc, cons
 		lexy_dump_table();
 		return TCL_OK;
 	} else if (strcmp(argv[1], "buffer") == 0) {
-		if (context_editor == NULL) {
+		if (interp_context_buffer() == NULL) {
 			Tcl_AddErrorInfo(interp, "lexy_dump buffer called when no editor was active");
 			return TCL_ERROR;
 		}
 
-		lexy_dump_buffer(context_editor->buffer);
+		lexy_dump_buffer(interp_context_buffer());
 		return TCL_OK;
 	} else {
 		Tcl_AddErrorInfo(interp, "Wrong argument to lexy_dump, specify \"table\" or \"buffer\"");
