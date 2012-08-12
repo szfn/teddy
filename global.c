@@ -15,8 +15,10 @@ GHashTable *keybindings;
 struct history search_history;
 struct history command_history;
 
-struct completer word_completer;
-struct clcompleter cmd_completer;
+struct completer the_word_completer;
+generic_completer_t the_generic_word_completer;
+struct clcompleter the_cmd_completer;
+generic_completer_t the_generic_cmd_completer;
 
 int focus_can_follow_mouse = 1;
 
@@ -36,6 +38,11 @@ void global_init() {
 	}
 
 	keybindings = g_hash_table_new(g_str_hash, streq);
+
+	cmdcompl_init(&the_cmd_completer, &command_history);
+	compl_as_generic_completer(&the_word_completer, &the_generic_word_completer);
+	compl_init(&the_word_completer);
+	cmdcompl_as_generic_completer(&the_cmd_completer, &the_generic_cmd_completer);
 }
 
 void global_free() {

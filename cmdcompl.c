@@ -1,6 +1,8 @@
 #include "cmdcompl.h"
 
+#include "baux.h"
 #include "global.h"
+#include "top.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -50,13 +52,14 @@ const char *list_internal_commands[] = {
 	"wordcompl_dump", "lexy_dump"
 };
 
-
-void cmdcompl_init(struct clcompleter *c) {
+void cmdcompl_init(struct clcompleter *c, struct history *h) {
 	int i;
 	char *path, *saveptr, *dir;
 
 	compl_init(&(c->c));
 	c->cbt.root = NULL;
+
+	c->h = h;
 
 	for (i = 0; i < sizeof(list_internal_commands) / sizeof(const char *); ++i) {
 		compl_add(&(c->c), list_internal_commands[i]);
@@ -170,8 +173,8 @@ static void load_directory_completions(struct clcompleter *c, const char *text, 
 	free(reldir);
 }
 
-char *cmdcompl_complete(struct clcompleter *c, const char *text, const char *working_directory) {
-	load_directory_completions(c, text, working_directory);
+char *cmdcompl_complete(struct clcompleter *c, const char *text) {
+	load_directory_completions(c, text, top_working_directory());
 
 	char *rcmd = compl_complete(&(c->c), text);
 	char *rdir = critbit0_common_suffix_for_prefix(&(c->cbt), text);
@@ -199,7 +202,8 @@ static int cmdcompl_wnd_fill_extra(const char *entry, void *p) {
 	return 1;
 }
 
-void cmdcompl_wnd_show(struct clcompleter *c, const char *text, const char *working_directory, double x, double y, double alty, GtkWidget *parent) {
+void cmdcompl_wnd_show(struct clcompleter *c, const char *text, double x, double y, double alty, GtkWidget *parent) {
+	char *working_directory = top_working_directory();
 	compl_wnd_show(&(c->c), text, x, y, alty, parent, true, false);
 
 	load_directory_completions(c, text, working_directory);
@@ -209,4 +213,96 @@ void cmdcompl_wnd_show(struct clcompleter *c, const char *text, const char *work
 	if (c->c.size <= 0) {
 		compl_wnd_hide(&(c->c));
 	}
+}
+
+static void generic_cmdcompl_wnd_up(void *this) {
+	struct clcompleter *c = (struct clcompleter *)this;
+	if (compl_wnd_visible(&(c->c))) {
+		compl_wnd_up(&(c->c));
+	} else if (compl_wnd_visible(&(c->h->c))) {
+		compl_wnd_up(&(c->h->c));
+	}
+}
+
+static void generic_cmdcompl_wnd_down(void *this) {
+	struct clcompleter *c = (struct clcompleter *)this;
+	if (compl_wnd_visible(&(c->c))) {
+		compl_wnd_down(&(c->c));
+	} else if (compl_wnd_visible(&(c->h->c))) {
+		compl_wnd_down(&(c->h->c));
+	}
+}
+
+static char *generic_cmdcompl_wnd_get(void *this, bool all) {
+	struct clcompleter *c = (struct clcompleter *)this;
+	if (compl_wnd_visible(&(c->c))) {
+		return compl_wnd_get(&(c->c), all);
+	} else if (compl_wnd_visible(&(c->h->c))) {
+		return compl_wnd_get(&(c->h->c), all);
+	}
+	return NULL;
+}
+
+static bool generic_cmdcompl_wnd_visible(void *this) {
+	struct clcompleter *c = (struct clcompleter *)this;
+	return compl_wnd_visible(&(c->c)) || compl_wnd_visible(&(c->h->c));
+}
+
+static void generic_cmdcompl_wnd_hide(void *this) {
+	struct clcompleter *c = (struct clcompleter *)this;
+	if (compl_wnd_visible(&(c->c))) {
+		return compl_wnd_hide(&(c->c));
+	} else if (compl_wnd_visible(&(c->h->c))) {
+		return compl_wnd_hide(&(c->h->c));
+	}
+}
+
+static char *generic_cmdcompl_common_suffix(void *this) {
+	struct clcompleter *c = (struct clcompleter *)this;
+	if (compl_wnd_visible(&(c->c))) {
+		return c->c.common_suffix;
+	} else if (compl_wnd_visible(&(c->h->c))) {
+		return c->h->c.common_suffix;
+	}
+	return "";
+}
+
+static char *generic_cmdcompl_complete(void *this, const char *text) {
+	struct clcompleter *c = (struct clcompleter *)this;
+	if (compl_wnd_visible(&(c->h->c))) {
+		return compl_complete(&(c->h->c), text);
+	} else {
+		return cmdcompl_complete(c, text);
+	}
+}
+
+static void generic_cmdcompl_wnd_show(void *this, const char *text, double x, double y, double alty, GtkWidget *parent) {
+	struct clcompleter *c = (struct clcompleter *)this;
+	if (compl_wnd_visible(&(c->h->c))) {
+		compl_wnd_show(&(c->h->c), text, x, y, alty, parent, false, true);
+	} else {
+		cmdcompl_wnd_show(c, text, x, y, alty, parent);
+	}
+}
+
+static uint16_t *generic_cmdcompl_prefix_from_buffer(void *this, buffer_t *buffer, size_t *prefix_len) {
+	struct clcompleter *c = (struct clcompleter *)this;
+	if (compl_wnd_visible(&(c->h->c))) {
+		return buffer_historycompl_word_at_cursor(buffer, prefix_len);
+	} else {
+		return buffer_cmdcompl_word_at_cursor(buffer, prefix_len);
+	}
+}
+
+void cmdcompl_as_generic_completer(struct clcompleter *c, generic_completer_t *gc) {
+	gc->this = c;
+	gc->complete = generic_cmdcompl_complete;
+	gc->wnd_show = generic_cmdcompl_wnd_show;
+	gc->wnd_up = generic_cmdcompl_wnd_up;
+	gc->wnd_down = generic_cmdcompl_wnd_down;
+	gc->wnd_get = generic_cmdcompl_wnd_get;
+	gc->wnd_hide = generic_cmdcompl_wnd_hide;
+	gc->wnd_visible = generic_cmdcompl_wnd_visible;
+	gc->common_suffix = generic_cmdcompl_common_suffix;
+	gc->prefix_from_buffer = generic_cmdcompl_prefix_from_buffer;
 }

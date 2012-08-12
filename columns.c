@@ -304,7 +304,7 @@ tframe_t *new_in_column(columns_t *columns, column_t *column, buffer_t *buffer) 
 	char *title = "";
 
 	if (buffer != NULL) {
-		content = GTK_WIDGET(new_editor(buffer));
+		content = GTK_WIDGET(new_editor(buffer, false));
 		title = buffer->path;
 	} else {
 		content = gtk_label_new("");

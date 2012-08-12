@@ -923,13 +923,7 @@ enum deferred_action interp_eval(editor_t *editor, const char *command, bool sho
 		Tcl_DictObjGet(NULL, options, key, &stackTrace);
 		Tcl_DecrRefCount(key);
 
-		if (interp_context_editor() != NULL) {
-			quick_message("TCL Error", Tcl_GetString(stackTrace));
-			//TODO: if the error string is very long use a buffer instead
-		} else {
-			fprintf(stderr, "TCL Error: %s\n", Tcl_GetString(stackTrace));
-			exit(1);
-		}
+		quick_message("TCL Error", Tcl_GetString(stackTrace));
 	} else {
 		if (show_ret) {
 			const char *result = Tcl_GetStringResult(interp);

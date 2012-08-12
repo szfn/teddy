@@ -1,9 +1,9 @@
 LONG TERM:
 - single, spacious, command line
+- label relative to working directory (and display working directory at top)
 - rethink interpreter, working directory concept, "in" command
 - setcfg with -global option
 - on command line enter should not autocomplete with the first entry (maybe it never should?)
-- autocompletion (command line) should work on filenames without specifying "./"
 
 - keyboard marking should behave like mouse marking and not constantly update the clipboard with serialized data
 - tabs (and no hidden buffers)

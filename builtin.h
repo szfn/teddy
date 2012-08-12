@@ -599,11 +599,17 @@ proc dirrec {} {\n\
 }\n\
 \n\
 proc loadhistory {} {\n\
-	set histf $::env(HOME)/.teddy_history\n\
+	if [info exists ::env(XDG_CONFIG_HOME)] {\n\
+		set histf $::env(XDG_CONFIG_HOME)/teddy/teddy_history\n\
+	} else {\n\
+		set histf $::env(HOME)/.config/teddy/teddy_history\n\
+	}\n\
+\n\
 	if {[catch {set f [open $histf RDONLY]} err]} {\n\
 		puts \"No history\"\n\
 		return\n\
 	}\n\
+\n\
 	while {[gets $f line] >= 0} {\n\
 		set line [split $line \"\\t\"]\n\
 		teddyhistory cmd add [lindex $line 0] [lindex $line 1] [lindex $line 2]\n\

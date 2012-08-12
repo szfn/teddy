@@ -17,6 +17,7 @@
 #include "rd.h"
 #include "baux.h"
 #include "foundry.h"
+#include "top.h"
 
 static gboolean delete_callback(GtkWidget *widget, GdkEvent *event, gpointer data) {
 	//TODO: terminate all processes
@@ -31,16 +32,15 @@ int main(int argc, char *argv[]) {
 
 	foundry_init();
 	rd_init();
-	global_init();
-	config_init_auto_defaults();
-	init_colors();
 
 	history_init(&command_history);
 	history_init(&search_history);
 
-	cmdcompl_init(&cmd_completer);
+	global_init();
+	config_init_auto_defaults();
+	init_colors();
+
 	buffer_wordcompl_init_charset();
-	compl_init(&word_completer);
 
 	lexy_init();
 	interp_init();
@@ -64,10 +64,18 @@ int main(int argc, char *argv[]) {
 	g_signal_connect_swapped(G_OBJECT(window), "destroy", G_CALLBACK(gtk_main_quit), NULL);
 
 	go_init(window);
+
 	columnset = columns_new();
 	research_init(window);
 
-	gtk_container_add(GTK_CONTAINER(window), GTK_WIDGET(columnset));
+	GtkWidget *top = top_init();
+
+	GtkWidget *vbox = gtk_vbox_new(FALSE, 0);
+
+	gtk_box_pack_start(GTK_BOX(vbox), top, FALSE, FALSE, 0);
+	gtk_box_pack_start(GTK_BOX(vbox), GTK_WIDGET(columnset), TRUE, TRUE, 0);
+
+	gtk_container_add(GTK_CONTAINER(window), vbox);
 
 	column_t *col1 = column_new(0);
 	column_t *col2 = column_new(0);
@@ -78,11 +86,23 @@ int main(int argc, char *argv[]) {
 	heuristic_new_frame(columnset, NULL, null_buffer());
 	heuristic_new_frame(columnset, NULL, null_buffer());
 
+	tframe_t *frame = NULL;
+
 	for (int i = 1; i < argc; ++i) {
 		buffer_t *buffer = buffer_create();
 		load_text_file(buffer, argv[i]);
 		buffers_add(buffer);
-		heuristic_new_frame(columnset, NULL, buffer);
+		tframe_t *f = heuristic_new_frame(columnset, NULL, buffer);
+		if (frame == NULL) frame = f;
+	}
+
+	if (frame != NULL) {
+		GtkWidget *w = tframe_content(frame);
+		if (w != NULL) {
+			if (GTK_IS_TEDITOR(w)) {
+				editor_grab_focus(GTK_TEDITOR(w), false);
+			}
+		}
 	}
 
 	gtk_widget_show_all(window);
@@ -91,8 +111,8 @@ int main(int argc, char *argv[]) {
 
 	buffers_free();
 	interp_free();
-	compl_free(&word_completer);
-	cmdcompl_free(&cmd_completer);
+	compl_free(&the_word_completer);
+	cmdcompl_free(&the_cmd_completer);
 	foundry_free();
 
 	history_free(&search_history);

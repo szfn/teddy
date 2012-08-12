@@ -897,6 +897,7 @@ buffer_t *buffer_create(void) {
 	buffer->default_color = 0;
 
 	asprintf(&(buffer->path), "+unnamed");
+	alloc_assert(buffer->path);
 	buffer->has_filename = 0;
 	buffer->select_type = BST_NORMAL;
 
@@ -927,7 +928,6 @@ buffer_t *buffer_create(void) {
 	buffer->keyprocessor = NULL;
 
 	buffer->cbt.root = NULL;
-
 
 	return buffer;
 }
@@ -1045,9 +1045,9 @@ void buffer_move_cursor(buffer_t *buffer, int direction) {
 	buffer_extend_selection_by_select_type(buffer);
 }
 
-void buffer_typeset_maybe(buffer_t *buffer, double width) {
+void buffer_typeset_maybe(buffer_t *buffer, double width, bool single_line) {
 	real_line_t *line;
-	double y = buffer->line_height + (buffer->ex_height / 2);
+	double y = single_line ? buffer->ascent : buffer->line_height + (buffer->ex_height / 2);
 
 	if (fabs(width - buffer->rendered_width) < 0.001) {
 		return;

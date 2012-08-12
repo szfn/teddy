@@ -153,6 +153,15 @@ void buffer_wordcompl_init_charset(void) {
 	}
 }
 
+uint16_t *buffer_to_utf16(buffer_t *buffer, int start, size_t len) {
+	uint16_t *prefix = malloc(sizeof(uint16_t) * len);
+	alloc_assert(prefix);
+
+	for (int i = 0; i < len; ++i) prefix[i] = buffer->cursor.line->glyph_info[start+i].code;
+
+	return prefix;
+}
+
 uint16_t *buffer_wordcompl_word_at_cursor(buffer_t *buffer, size_t *prefix_len) {
 	*prefix_len = 0;
 
@@ -169,12 +178,34 @@ uint16_t *buffer_wordcompl_word_at_cursor(buffer_t *buffer, size_t *prefix_len) 
 	if (start ==  buffer->cursor.glyph) return NULL;
 
 	*prefix_len = buffer->cursor.glyph - start;
-	uint16_t *prefix = malloc(sizeof(uint16_t) * *prefix_len);
-	alloc_assert(prefix);
 
-	for (int i = 0; i < *prefix_len; ++i) prefix[i] = buffer->cursor.line->glyph_info[start+i].code;
+	return buffer_to_utf16(buffer, start, *prefix_len);
+}
 
-	return prefix;
+uint16_t *buffer_cmdcompl_word_at_cursor(buffer_t *buffer, size_t *prefix_len) {
+	*prefix_len = 0;
+
+	if (buffer->cursor.line == NULL) return NULL;
+
+	int start;
+	for (start = buffer->cursor.glyph-1; start >= 0; --start) {
+		uint32_t code = buffer->cursor.line->glyph_info[start].code;
+		if ((code >= 0x10000) || code == 0x20 || code == 0x09) break;
+	}
+
+	++start;
+
+	*prefix_len = buffer->cursor.glyph - start;
+	return buffer_to_utf16(buffer, start, *prefix_len);
+}
+
+uint16_t *buffer_historycompl_word_at_cursor(buffer_t *buffer, size_t *prefix_len) {
+	*prefix_len = 0;
+
+	if (buffer->cursor.line == NULL) return NULL;
+
+	*prefix_len = buffer->cursor.line->cap;
+	return buffer_to_utf16(buffer, 0, *prefix_len);
 }
 
 static void buffer_wordcompl_update_line(real_line_t *line, critbit0_tree *c) {
@@ -244,4 +275,26 @@ bool buffer_aux_is_directory(buffer_t *buffer) {
 	if (buffer->path == NULL) return false;
 
 	return (buffer->path[strlen(buffer->path) - 1] == '/');
+}
+
+void buffer_get_extremes(buffer_t *buffer, lpoint_t *start, lpoint_t *end) {
+	start->line = buffer->real_line;
+	start->glyph = 0;
+
+	for (end->line = start->line; end->line->next != NULL; end->line = end->line->next);
+	end->glyph = end->line->cap;
+}
+
+char *buffer_all_lines_to_text(buffer_t *buffer) {
+	lpoint_t start, end, savedcursor;
+	buffer_get_extremes(buffer, &start, &end);
+
+	copy_lpoint(&savedcursor, &(buffer->cursor));
+	copy_lpoint(&(buffer->mark), &start);
+	copy_lpoint(&(buffer->cursor), &end);
+	char *buffer_text = buffer_lines_to_text(buffer, &start, &end);
+	buffer->mark.line = NULL;
+	copy_lpoint(&(buffer->cursor), &savedcursor);
+
+	return buffer_text;
 }

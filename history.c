@@ -78,9 +78,16 @@ void history_add(struct history *h, time_t timestamp, const char *wd, const char
 	}
 
 	if (h->unsaved >= 10) {
+		char *xdg_config_home = getenv("XDG_CONFIG_HOME");
 		char *dst;
-		asprintf(&dst, "%s/.teddy_history", getenv("HOME"));
+
+		if (xdg_config_home != NULL) {
+			asprintf(&dst, "%s/teddy/teddy_history", xdg_config_home);
+		} else {
+			asprintf(&dst, "%s/.config/teddy/teddy_history", getenv("HOME"));
+		}
 		alloc_assert(dst);
+
 		FILE *out = fopen(dst, "a+");
 		if (!out) {
 			perror("Can't output history");

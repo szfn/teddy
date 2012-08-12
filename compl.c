@@ -1,5 +1,6 @@
 #include "compl.h"
 
+#include "baux.h"
 #include "global.h"
 
 static gboolean compl_wnd_expose_callback(GtkWidget *widget, GdkEventExpose *event, struct completer *c) {
@@ -148,6 +149,8 @@ void compl_wnd_show(struct completer *c, const char *prefix, double x, double y,
 	gtk_widget_show_all(c->window);
 	c->visible = true;
 	c->prefix_len = strlen(prefix);
+
+	//printf("autocompletion %p shown\n", c);
 }
 
 void compl_wnd_up(struct completer *c) {
@@ -232,6 +235,8 @@ void compl_wnd_hide(struct completer *c) {
 		free(c->common_suffix);
 		c->common_suffix = NULL;
 	}
+
+	//printf("autocompletion %p hidden\n", c);
 }
 
 bool compl_wnd_visible(struct completer *c) {
@@ -248,4 +253,30 @@ void compl_free(struct completer *c) {
 
 int compl_wnd_size(struct completer *c) {
 	return c->size;
+}
+
+static void generic_compl_wnd_show(void *this, const char *prefix, double x, double y, double alty, GtkWidget *parent) {
+	compl_wnd_show((struct completer *)this, prefix, x, y, alty, parent, false, false);
+}
+
+static char *generic_compl_common_suffix(void *this) {
+	return ((struct completer *)this)->common_suffix;
+}
+
+static uint16_t *generic_compl_prefix_from_buffer(void *this, buffer_t *buffer, size_t *prefix_len) {
+	return buffer_wordcompl_word_at_cursor(buffer, prefix_len);
+}
+
+void compl_as_generic_completer(struct completer *c, generic_completer_t *gc) {
+	gc->this = c;
+	gc->complete = (complete_fn *)compl_complete;
+	gc->wnd_show = generic_compl_wnd_show;
+	gc->wnd_up = (other_completer_fn *)compl_wnd_up;
+	gc->wnd_down = (other_completer_fn *)compl_wnd_down;
+	gc->wnd_get = (wnd_get_fn *)compl_wnd_get;
+	gc->wnd_hide = (other_completer_fn *)compl_wnd_hide;
+	gc->wnd_visible = (wnd_visible_fn *)compl_wnd_visible;
+	gc->common_suffix = generic_compl_common_suffix;
+	gc->prefix_from_buffer = generic_compl_prefix_from_buffer;
+	//gc->prefix_from_buffer = buffer_wordcompl_word_at_cursor;
 }

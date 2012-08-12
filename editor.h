@@ -2,6 +2,7 @@
 #define __EDITOR_H__
 
 #include "buffer.h"
+#include "compl.h"
 
 #include <gtk/gtk.h>
 
@@ -21,6 +22,7 @@ typedef struct _editor_t {
 
 	GtkObject *adjustment, *hadjustment;
 	GtkWidget *drar;
+	GtkWidget *drarscroll;
 	GtkWidget *drarhscroll;
 	GtkIMContext *drarim;
 	gboolean cursor_visible;
@@ -36,7 +38,14 @@ typedef struct _editor_t {
 
 	glong selection_scroll_timer;
 
+	bool single_line;
+	void (*single_line_escape)(struct _editor_t *editor);
+	void (*single_line_return)(struct _editor_t *editor);
+	bool (*single_line_other_keys)(struct _editor_t *editor, bool shift, bool ctrl, bool alt, bool super, guint keyval);
+
 	char locked_command_line[LOCKED_COMMAND_LINE_SIZE];
+
+	generic_completer_t *completer;
 } editor_t;
 
 typedef struct _editor_class {
@@ -45,7 +54,7 @@ typedef struct _editor_class {
 
 GType gtk_teditor_get_type(void) G_GNUC_CONST;
 
-editor_t *new_editor(buffer_t *buffer);
+editor_t *new_editor(buffer_t *buffer, bool single_line);
 void editor_free(editor_t *editor);
 void editor_switch_buffer(editor_t *editor, buffer_t *buffer);
 gint editor_get_height_request(editor_t *editor);
@@ -77,5 +86,7 @@ void editor_complete_move(editor_t *editor, gboolean should_move_origin);
 void editor_close_editor(editor_t *editor);
 
 void editor_grab_focus(editor_t *editor, bool warp);
+
+void editor_absolute_cursor_position(editor_t *editor, double *x, double *y, double *alty);
 
 #endif

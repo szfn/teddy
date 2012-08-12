@@ -152,7 +152,7 @@ char *buffer_line_to_text(buffer_t *buffer, real_line_t *line);
 void buffer_move_cursor(buffer_t *buffer, int direction);
 
 // sets character positions if width has changed
-void buffer_typeset_maybe(buffer_t *buffer, double width);
+void buffer_typeset_maybe(buffer_t *buffer, double width, bool single_line);
 
 // functions to get screen coordinates of things (yes, I have no idea anymore what the hell they do or are used for)
 void buffer_cursor_position(buffer_t *buffer, double *x, double *y);

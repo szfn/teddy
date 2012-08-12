@@ -14,11 +14,11 @@
 #include "column.h"
 #include "baux.h"
 #include "go.h"
-#include "editor_cmdline.h"
 #include "cfg.h"
 #include "lexy.h"
 #include "rd.h"
 #include "foundry.h"
+#include "top.h"
 
 static GtkTargetEntry selection_clipboard_target_entry = { "UTF8_STRING", 0, 0 };
 
@@ -47,8 +47,21 @@ GType gtk_teditor_get_type(void) {
 	return teditor_type;
 }
 
+static void gtk_teditor_size_request(GtkWidget *widget, GtkRequisition *requisition) {
+	editor_t *editor = GTK_TEDITOR(widget);
+
+	if (editor->single_line) {
+		requisition->width = 1;
+		requisition->height = editor->buffer->line_height;
+	} else {
+		requisition->width = 1;
+		requisition->height = 1;
+	}
+}
+
 static void gtk_teditor_class_init(editor_class *class) {
-//	GtkWidgetClass *widget_class = (GtkWidgetClass *)class;
+	GtkWidgetClass *widget_class = (GtkWidgetClass *)class;
+	widget_class->size_request = gtk_teditor_size_request;
 }
 
 static void gtk_teditor_init(editor_t *editor) {
@@ -58,12 +71,14 @@ void set_label_text(editor_t *editor) {
 	tframe_t *frame;
 	find_editor_for_buffer(editor->buffer, NULL, &frame, NULL);
 
-	tframe_set_title(frame, editor->buffer->path);
-	tframe_set_modified(frame, editor->buffer->modified);
-	gtk_widget_queue_draw(GTK_WIDGET(frame));
+	if (frame != NULL) {
+		tframe_set_title(frame, editor->buffer->path);
+		tframe_set_modified(frame, editor->buffer->modified);
+		gtk_widget_queue_draw(GTK_WIDGET(frame));
+	}
 }
 
-static void editor_absolute_cursor_position(editor_t *editor, double *x, double *y, double *alty) {
+void editor_absolute_cursor_position(editor_t *editor, double *x, double *y, double *alty) {
 	buffer_cursor_position(editor->buffer, x, y);
 	*y -= gtk_adjustment_get_value(GTK_ADJUSTMENT(editor->adjustment));
 
@@ -82,15 +97,15 @@ static void editor_absolute_cursor_position(editor_t *editor, double *x, double 
 
 static bool editor_maybe_show_completions(editor_t *editor, bool autoinsert) {
 	size_t wordcompl_prefix_len;
-	uint16_t *prefix = buffer_wordcompl_word_at_cursor(editor->buffer, &wordcompl_prefix_len);
+	uint16_t *prefix = editor->completer->prefix_from_buffer(editor->completer->this, editor->buffer, &wordcompl_prefix_len);
 
 	if (wordcompl_prefix_len == 0) {
-		compl_wnd_hide(&word_completer);
+		COMPL_WND_HIDE(editor->completer);
 		return false;
 	}
 
 	char *utf8prefix = string_utf16_to_utf8(prefix, wordcompl_prefix_len);
-	char *completion = compl_complete(&word_completer, utf8prefix);
+	char *completion = COMPL_COMPLETE(editor->completer, utf8prefix);
 
 	if (completion != NULL) {
 		bool empty_completion = strcmp(completion, "") == 0;
@@ -100,17 +115,17 @@ static bool editor_maybe_show_completions(editor_t *editor, bool autoinsert) {
 		editor_absolute_cursor_position(editor, &x, &y, &alty);
 
 		if (empty_completion || !autoinsert) {
-			compl_wnd_show(&word_completer, utf8prefix, x, y, alty, gtk_widget_get_toplevel(GTK_WIDGET(editor)), false, false);
+			COMPL_WND_SHOW(editor->completer, utf8prefix, x, y, alty, gtk_widget_get_toplevel(GTK_WIDGET(editor)));
 		} else {
 			char *new_prefix;
 			asprintf(&new_prefix, "%s%s", utf8prefix, completion);
 			alloc_assert(new_prefix);
-			compl_wnd_show(&word_completer, new_prefix, x, y, alty, gtk_widget_get_toplevel(GTK_WIDGET(editor)), false, false);
+			COMPL_WND_SHOW(editor->completer, new_prefix, x, y, alty, gtk_widget_get_toplevel(GTK_WIDGET(editor)));
 			free(new_prefix);
 		}
 		free(completion);
 	} else {
-		compl_wnd_hide(&word_completer);
+		COMPL_WND_HIDE(editor->completer);
 	}
 
 	free(prefix);
@@ -130,7 +145,7 @@ void editor_replace_selection(editor_t *editor, const char *new_text) {
 	editor_center_on_cursor(editor);
 	gtk_widget_queue_draw(editor->drar);
 
-	if (compl_wnd_visible(&word_completer)) {
+	if (COMPL_WND_VISIBLE(editor->completer)) {
 		editor_maybe_show_completions(editor, false);
 	}
 }
@@ -207,7 +222,7 @@ static void editor_get_primary_selection(GtkClipboard *clipboard, GtkSelectionDa
 }
 
 void editor_complete_move(editor_t *editor, gboolean should_move_origin) {
-	compl_wnd_hide(&word_completer);
+	COMPL_WND_HIDE(editor->completer);
 	gtk_widget_queue_draw(editor->drar);
 
 	editor->cursor_visible = TRUE;
@@ -307,7 +322,7 @@ void editor_switch_buffer(editor_t *editor, buffer_t *buffer) {
 	{
 		GtkAllocation allocation;
 		gtk_widget_get_allocation(editor->drar, &allocation);
-		buffer_typeset_maybe(editor->buffer, allocation.width);
+		buffer_typeset_maybe(editor->buffer, allocation.width, editor->single_line);
 	}
 
 	editor->center_on_cursor_after_next_expose = TRUE;
@@ -409,7 +424,7 @@ void editor_undo_action(editor_t *editor) {
 	column_t *column;
 	if (find_editor_for_buffer(editor->buffer, &column, NULL, NULL))
 		columns_set_active(columnset, column);
-		
+
 	gtk_widget_queue_draw(editor->drar);
 }
 
@@ -445,8 +460,8 @@ static void full_keyevent_to_string(guint keyval, int super, int ctrl, int alt, 
 }
 
 static void editor_complete(editor_t *editor) {
-	char *completion = compl_wnd_get(&word_completer, false);
-	compl_wnd_hide(&word_completer);
+	char *completion = COMPL_WND_GET(editor->completer, false);
+	COMPL_WND_HIDE(editor->completer);
 	if (completion != NULL) {
 		editor_replace_selection(editor, completion);
 		free(completion);
@@ -468,7 +483,7 @@ static gboolean key_press_callback(GtkWidget *widget, GdkEventKey *event, editor
 		printf("Keyprocessor invocation\n");
 		full_keyevent_to_string(event->keyval, super, ctrl, alt, shift, pressed);
 		if (pressed[0] != '\0') {
-			compl_wnd_hide(&word_completer);
+			COMPL_WND_HIDE(editor->completer);
 			const char *eval_argv[] = { editor->buffer->keyprocessor, pressed };
 			const char *r = interp_eval_command(2, eval_argv);
 
@@ -501,17 +516,17 @@ static gboolean key_press_callback(GtkWidget *widget, GdkEventKey *event, editor
 
 	/* Default key bindings */
 	if (!shift && !ctrl && !alt && !super) {
-		if (compl_wnd_visible(&word_completer)) {
+		if (COMPL_WND_VISIBLE(editor->completer)) {
 			switch(event->keyval) {
 				case GDK_KEY_Up:
-					compl_wnd_up(&word_completer);
+					COMPL_WND_UP(editor->completer);
 					return TRUE;
 				case GDK_KEY_Down:
 				case GDK_KEY_Tab:
-					if (word_completer.common_suffix != NULL) {
-						editor_replace_selection(editor, word_completer.common_suffix);
+					if (COMPL_COMMON_SUFFIX(editor->completer) != NULL) {
+						editor_replace_selection(editor, COMPL_COMMON_SUFFIX(editor->completer));
 					} else {
-						compl_wnd_down(&word_completer);
+						COMPL_WND_DOWN(editor->completer);
 					}
 					return TRUE;
 				case GDK_KEY_Escape:
@@ -522,6 +537,10 @@ static gboolean key_press_callback(GtkWidget *widget, GdkEventKey *event, editor
 					editor_complete(editor);
 					return TRUE;
 				}
+			}
+		} else if (editor->single_line) {
+			if (editor->single_line_other_keys(editor, shift, ctrl, alt, super, event->keyval)) {
+				return TRUE;
 			}
 		}
 
@@ -566,16 +585,20 @@ static gboolean key_press_callback(GtkWidget *widget, GdkEventKey *event, editor
 		case GDK_KEY_Return: {
 			if (buffer_aux_is_directory(editor->buffer)) {
 				rd_open(editor);
-				gtk_widget_queue_draw(editor->drar);
+				gtk_widget_queue_draw(GTK_WIDGET(editor));
 			} else {
-				char *r = alloca(sizeof(char) * (editor->buffer->cursor.line->cap + 2));
-				if (config_intval(&(editor->buffer->config), CFG_AUTOINDENT)) {
-					buffer_indent_newline(editor->buffer, r);
+				if (editor->single_line) {
+					editor->single_line_return(editor);
 				} else {
-					r[0] = '\n';
-					r[1] = '\0';
+					char *r = alloca(sizeof(char) * (editor->buffer->cursor.line->cap + 2));
+					if (config_intval(&(editor->buffer->config), CFG_AUTOINDENT)) {
+						buffer_indent_newline(editor->buffer, r);
+					} else {
+						r[0] = '\n';
+						r[1] = '\0';
+					}
+					editor_replace_selection(editor, r);
 				}
-				editor_replace_selection(editor, r);
 				return TRUE;
 			}
 		}
@@ -583,6 +606,12 @@ static gboolean key_press_callback(GtkWidget *widget, GdkEventKey *event, editor
 			return TRUE;
 		default: // At least one modifier must be pressed to activate special actions
 			goto im_context;
+		}
+	}
+
+	if (editor->single_line) {
+		if (editor->single_line_other_keys(editor, shift, ctrl, alt, super, event->keyval)) {
+			return TRUE;
 		}
 	}
 
@@ -597,7 +626,7 @@ static gboolean key_press_callback(GtkWidget *widget, GdkEventKey *event, editor
 		}
 	}
 
-	compl_wnd_hide(&word_completer);
+	COMPL_WND_HIDE(editor->completer);
 
 	if (strcmp(pressed, "") == 0) {
 		full_keyevent_to_string(event->keyval, super, ctrl, alt, shift, pressed);
@@ -634,10 +663,14 @@ static gboolean key_release_callback(GtkWidget *widget, GdkEventKey *event, edit
 	if (!shift && !ctrl && !alt && !super) {
 		switch(event->keyval) {
 		case GDK_KEY_Escape:
-			if (compl_wnd_visible(&word_completer)) {
-				compl_wnd_hide(&word_completer);
+			if (COMPL_WND_VISIBLE(editor->completer)) {
+				COMPL_WND_HIDE(editor->completer);
 			} else {
-				// TODO: move focus to command line
+				if (editor->single_line) {
+					editor->single_line_escape(editor);
+				} else {
+					top_start_command_line(editor);
+				}
 			}
 			return TRUE;
 		}
@@ -942,8 +975,9 @@ static void draw_line(editor_t *editor, GtkAllocation *allocation, cairo_t *cr, 
 static void draw_cursorline(cairo_t *cr, editor_t *editor) {
 	if (!(editor->cursor_visible)) return;
 	if (editor->buffer->cursor.line == NULL) return;
-	GtkAllocation allocation;
+	if (editor->single_line) return;
 
+	GtkAllocation allocation;
 	gtk_widget_get_allocation(editor->drar, &allocation);
 
 	double cursor_x, cursor_y;
@@ -978,7 +1012,7 @@ static gboolean expose_event_callback(GtkWidget *widget, GdkEventExpose *event, 
 
 	draw_cursorline(cr, editor);
 
-	buffer_typeset_maybe(editor->buffer, allocation.width);
+	buffer_typeset_maybe(editor->buffer, allocation.width, editor->single_line);
 
 	editor->buffer->rendered_height = 0.0;
 
@@ -1036,8 +1070,7 @@ static gboolean expose_event_callback(GtkWidget *widget, GdkEventExpose *event, 
 	/********** NOTHING IS TRANSLATED BEYOND THIS ***************************/
 	cairo_translate(cr, gtk_adjustment_get_value(GTK_ADJUSTMENT(editor->hadjustment)), gtk_adjustment_get_value(GTK_ADJUSTMENT(editor->adjustment)));
 
-
-	{
+	if (!editor->single_line) {
 		char *posbox_text;
 		cairo_text_extents_t posbox_ext;
 		double x, y;
@@ -1065,19 +1098,24 @@ static gboolean expose_event_callback(GtkWidget *widget, GdkEventExpose *event, 
 		free(posbox_text);
 	}
 
-	gtk_adjustment_set_upper(GTK_ADJUSTMENT(editor->adjustment), editor->buffer->rendered_height + (allocation.height / 2));
-	gtk_adjustment_set_page_size(GTK_ADJUSTMENT(editor->adjustment), allocation.height);
-	gtk_adjustment_set_page_increment(GTK_ADJUSTMENT(editor->adjustment), allocation.height/2);
-	gtk_adjustment_set_step_increment(GTK_ADJUSTMENT(editor->adjustment), editor->buffer->line_height);
-
-	if (editor->buffer->rendered_width <= allocation.width) {
+	if (editor->single_line) {
 		gtk_widget_hide(GTK_WIDGET(editor->drarhscroll));
+		gtk_widget_hide(GTK_WIDGET(editor->drarscroll));
 	} else {
-		gtk_widget_show(GTK_WIDGET(editor->drarhscroll));
-		gtk_adjustment_set_upper(GTK_ADJUSTMENT(editor->hadjustment), editor->buffer->left_margin + editor->buffer->rendered_width + editor->buffer->right_margin);
-		gtk_adjustment_set_page_size(GTK_ADJUSTMENT(editor->hadjustment), allocation.width);
-		gtk_adjustment_set_page_increment(GTK_ADJUSTMENT(editor->hadjustment), allocation.width/2);
-		gtk_adjustment_set_step_increment(GTK_ADJUSTMENT(editor->hadjustment), editor->buffer->em_advance);
+		gtk_adjustment_set_upper(GTK_ADJUSTMENT(editor->adjustment), editor->buffer->rendered_height + (allocation.height / 2));
+		gtk_adjustment_set_page_size(GTK_ADJUSTMENT(editor->adjustment), allocation.height);
+		gtk_adjustment_set_page_increment(GTK_ADJUSTMENT(editor->adjustment), allocation.height/2);
+		gtk_adjustment_set_step_increment(GTK_ADJUSTMENT(editor->adjustment), editor->buffer->line_height);
+
+		if (editor->buffer->rendered_width <= allocation.width) {
+			gtk_widget_hide(GTK_WIDGET(editor->drarhscroll));
+		} else {
+			gtk_widget_show(GTK_WIDGET(editor->drarhscroll));
+			gtk_adjustment_set_upper(GTK_ADJUSTMENT(editor->hadjustment), editor->buffer->left_margin + editor->buffer->rendered_width + editor->buffer->right_margin);
+			gtk_adjustment_set_page_size(GTK_ADJUSTMENT(editor->hadjustment), allocation.width);
+			gtk_adjustment_set_page_increment(GTK_ADJUSTMENT(editor->hadjustment), allocation.width/2);
+			gtk_adjustment_set_step_increment(GTK_ADJUSTMENT(editor->hadjustment), editor->buffer->em_advance);
+		}
 	}
 
 	cairo_destroy(cr);
@@ -1116,23 +1154,27 @@ static gboolean editor_focusin_callback(GtkWidget *widget, GdkEventFocus *event,
 }
 
 static gboolean editor_focusout_callback(GtkWidget *widget, GdkEventFocus *event, editor_t *editor) {
-	compl_wnd_hide(&word_completer);
+	COMPL_WND_HIDE(editor->completer);
 	editor->cursor_visible = 0;
 	gtk_widget_queue_draw(editor->drar);
 	end_selection_scroll(editor);
 	return FALSE;
 }
 
-editor_t *new_editor(buffer_t *buffer) {
+editor_t *new_editor(buffer_t *buffer, bool single_line) {
 	GtkWidget *editor_widget = g_object_new(GTK_TYPE_TEDITOR, NULL);
 	editor_t *r = GTK_TEDITOR(editor_widget);
 
 	r->buffer = buffer;
-	r->cursor_visible = TRUE;
+	r->cursor_visible = FALSE;
 	r->mouse_marking = 0;
 	r->ignore_next_entry_keyrelease = FALSE;
 	r->center_on_cursor_after_next_expose = FALSE;
 	r->warp_mouse_after_next_expose = FALSE;
+	r->completer = &the_generic_word_completer;
+
+	r->single_line_escape = NULL;
+	r->single_line_return = NULL;
 
 	r->search_mode = FALSE;
 	r->search_failed = FALSE;
@@ -1141,6 +1183,8 @@ editor_t *new_editor(buffer_t *buffer) {
 	r->drarim = gtk_im_multicontext_new();
 
 	r->selection_scroll_timer = -1;
+
+	r->single_line = single_line;
 
 	gtk_widget_add_events(r->drar, GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK | GDK_POINTER_MOTION_MASK);
 
@@ -1164,14 +1208,14 @@ editor_t *new_editor(buffer_t *buffer) {
 	g_signal_connect(G_OBJECT(r->drarim), "commit", G_CALLBACK(text_entry_callback), r);
 
 
-	GtkWidget *drarscroll = gtk_vscrollbar_new((GtkAdjustment *)(r->adjustment = gtk_adjustment_new(0.0, 0.0, 1.0, 1.0, 1.0, 1.0)));
+	r->drarscroll = gtk_vscrollbar_new((GtkAdjustment *)(r->adjustment = gtk_adjustment_new(0.0, 0.0, 1.0, 1.0, 1.0, 1.0)));
 	r->drarhscroll = gtk_hscrollbar_new((GtkAdjustment *)(r->hadjustment = gtk_adjustment_new(0.0, 0.0, 1.0, 1.0, 1.0, 1.0)));
 
 	gtk_table_attach(GTK_TABLE(r), r->drar, 0, 1, 0, 1, GTK_EXPAND | GTK_FILL, GTK_EXPAND | GTK_FILL, 0, 0);
-	gtk_table_attach(GTK_TABLE(r), drarscroll, 1, 2, 0, 1, 0, GTK_EXPAND|GTK_FILL, 0, 0);
+	gtk_table_attach(GTK_TABLE(r), r->drarscroll, 1, 2, 0, 1, 0, GTK_EXPAND|GTK_FILL, 0, 0);
 	gtk_table_attach(GTK_TABLE(r), r->drarhscroll, 0, 1, 1, 2, GTK_EXPAND|GTK_FILL, 0, 0, 0);
 
-	g_signal_connect(G_OBJECT(drarscroll), "value_changed", G_CALLBACK(scrolled_callback), (gpointer)r);
+	g_signal_connect(G_OBJECT(r->drarscroll), "value_changed", G_CALLBACK(scrolled_callback), (gpointer)r);
 	g_signal_connect(G_OBJECT(r->drarhscroll), "value_changed", G_CALLBACK(hscrolled_callback), (gpointer)r);
 
 	return r;

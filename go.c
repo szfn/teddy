@@ -11,7 +11,6 @@
 #include "baux.h"
 #include "ctype.h"
 #include "editor.h"
-#include "editor_cmdline.h"
 #include "buffers.h"
 #include "global.h"
 #include "columns.h"

@@ -39,10 +39,15 @@ void buffer_decr_indent(buffer_t *buffer, int count);
 void buffer_wordcompl_init_charset(void);
 uint16_t *buffer_wordcompl_word_at_cursor(buffer_t *buffer, size_t *prefix_len);
 void buffer_wordcompl_update(buffer_t *buffer, critbit0_tree *cbt);
+uint16_t *buffer_cmdcompl_word_at_cursor(buffer_t *buffer, size_t *prefix_len);
+uint16_t *buffer_historycompl_word_at_cursor(buffer_t *buffer, size_t *prefix_len);
 
 // removes all text from a buffer
 void buffer_aux_clear(buffer_t *buffer);
 
 bool buffer_aux_is_directory(buffer_t *buffer);
+
+void buffer_get_extremes(buffer_t *buffer, lpoint_t *start, lpoint_t *end);
+char *buffer_all_lines_to_text(buffer_t *buffer);
 
 #endif

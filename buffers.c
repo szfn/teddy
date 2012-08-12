@@ -370,6 +370,7 @@ buffer_t *buffers_get_buffer_for_process(void) {
 	// look for a buffer with a name starting by +bg/ that doesn't have a process
 	for (i = 0; i < buffers_allocated; ++i) {
 		if (buffers[i] == NULL) continue;
+		if (buffers[i]->path== NULL) continue;
 		if (strncmp(buffers[i]->path, "+bg/", 4) != 0) continue;
 		if (buffers[i]->job != NULL) continue;
 		break;
@@ -583,12 +584,12 @@ int teddy_buffer_command(ClientData client_data, Tcl_Interp *interp, int argc, c
 }
 
 static int refill_word_completer(const char *entry, void *p) {
-	compl_add(&word_completer, entry);
+	compl_add(&the_word_completer, entry);
 	return 1;
 }
 
 void word_completer_full_update(void) {
-	critbit0_clear(&(word_completer.cbt));
+	critbit0_clear(&(the_word_completer.cbt));
 
 	for (int i = 0; i < buffers_allocated; ++i) {
 		if (buffers[i] == NULL) continue;

@@ -13,7 +13,6 @@
 #include "baux.h"
 #include "lexy.h"
 #include "go.h"
-#include "editor_cmdline.h"
 
 struct entry {
 	char *name;
