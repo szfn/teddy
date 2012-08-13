@@ -827,7 +827,7 @@ static gboolean motion_callback(GtkWidget *widget, GdkEventMotion *event, editor
 	}
 
 	// focus follows mouse
-	if ((config_intval(&(editor->buffer->config), CFG_FOCUS_FOLLOWS_MOUSE)) && focus_can_follow_mouse) {
+	if ((config_intval(&(editor->buffer->config), CFG_FOCUS_FOLLOWS_MOUSE)) && focus_can_follow_mouse && !top_command_line_focused()) {
 		if (!gtk_widget_is_focus(editor->drar)) {
 			gtk_widget_grab_focus(editor->drar);
 			gtk_widget_queue_draw(editor->drar);

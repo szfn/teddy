@@ -156,9 +156,13 @@ void top_show_status(void) {
 	gtk_notebook_set_current_page(GTK_NOTEBOOK(top_notebook), status_notebook_page);
 }
 
-void top_cd(char *newdir) {
+void top_cd(const char *newdir) {
 	free(working_directory);
 	chdir(newdir);
 	working_directory = get_current_dir_name();
 	gtk_label_set_text(GTK_LABEL(dir_label), working_directory);
+}
+
+bool top_command_line_focused(void) {
+	return gtk_widget_is_focus(cmdline_editor->drar);
 }

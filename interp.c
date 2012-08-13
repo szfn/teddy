@@ -24,6 +24,7 @@
 #include "research.h"
 #include "lexy.h"
 #include "autoconf.h"
+#include "top.h"
 
 Tcl_Interp *interp;
 editor_t *the_context_editor = NULL;
@@ -38,6 +39,34 @@ static int teddy_exit_command(ClientData client_data, Tcl_Interp *interp, int ar
 
 	deferred_action_to_return = CLOSE_EDITOR;
 	return TCL_OK;
+}
+
+static int teddy_cd_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
+	if (argc != 2) {
+		Tcl_AddErrorInfo(interp, "Wrong number of arguments to 'cd' command");
+		return TCL_ERROR;
+	}
+
+	top_cd(argv[1]);
+
+	return TCL_OK;
+}
+
+static int teddy_in_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
+	if (argc < 3) {
+		Tcl_AddErrorInfo(interp, "Wrong number of arguments to 'in' command");
+		return TCL_ERROR;
+	}
+
+	char *wd = get_current_dir_name();
+	chdir(argv[1]);
+
+	int code = Tcl_Eval(interp, Tcl_Merge(argc-2, argv+2));
+
+	chdir(wd);
+	free(wd);
+
+	return code;
 }
 
 static int teddy_pwf_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
@@ -840,6 +869,9 @@ void interp_init(void) {
 	Tcl_HideCommand(interp, "exit", "hidden_exit");
 	Tcl_CreateCommand(interp, "exit", &teddy_exit_command, (ClientData)NULL, NULL);
 	Tcl_CreateCommand(interp, "kill", &teddy_kill_command, (ClientData)NULL, NULL);
+
+	Tcl_CreateCommand(interp, "cd", &teddy_cd_command, (ClientData)NULL, NULL);
+	Tcl_CreateCommand(interp, "in", &teddy_in_command, (ClientData)NULL, NULL);
 
 	Tcl_CreateCommand(interp, "setcfg", &teddy_setcfg_command, (ClientData)NULL, NULL);
 	Tcl_CreateCommand(interp, "bindkey", &teddy_bindkey_command, (ClientData)NULL, NULL);

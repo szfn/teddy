@@ -1,6 +1,7 @@
-- "cd" command, "in" command
 - setcfg with -global option
 - buffer search/creation should not ask where to create it (always new window)
+
+BUG: job prompt doesn't show working directory correctly anymore
 
 - set column number for background processes whenever possible
 - less ugly indicators for autowrapping
