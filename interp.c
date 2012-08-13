@@ -68,6 +68,7 @@ static int teddy_setcfg_command(ClientData client_data, Tcl_Interp *interp, int 
 
 	if (interp_context_buffer() != NULL) {
 		config_set(&(interp_context_buffer()->config), i, (char *)argv[2]);
+		buffer_config_changed(interp_context_buffer());
 	} else {
 		config_set(&global_config, i, (char *)argv[2]);
 	}

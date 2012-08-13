@@ -38,7 +38,13 @@ static void buffer_init_font_extents(buffer_t *buffer) {
 
 static void buffer_setup_hook(buffer_t *buffer) {
 	const char *argv[] = { "buffer_setup_hook", buffer->path };
+
+	editor_t *prev_context_editor = interp_context_editor();
+
+	interp_context_buffer_set(buffer);
 	interp_eval_command(2, argv);
+
+	interp_context_editor_set(prev_context_editor);
 }
 
 void buffer_set_mark_at_cursor(buffer_t *buffer) {
@@ -553,7 +559,8 @@ void load_empty(buffer_t *buffer) {
 	}
 
 	buffer->has_filename = 0;
-	buffer->path = NULL;
+	if (buffer->path == NULL)
+		buffer->path = strdup("+empty+");
 
 	buffer->cursor.line = buffer->real_line = new_real_line(0);
 	buffer->cursor.glyph = 0;
@@ -1045,15 +1052,16 @@ void buffer_move_cursor(buffer_t *buffer, int direction) {
 	buffer_extend_selection_by_select_type(buffer);
 }
 
-void buffer_typeset_maybe(buffer_t *buffer, double width, bool single_line) {
+void buffer_typeset_maybe(buffer_t *buffer, double width, bool single_line, bool force) {
 	real_line_t *line;
 	double y = single_line ? buffer->ascent : buffer->line_height + (buffer->ex_height / 2);
 
-	if (fabs(width - buffer->rendered_width) < 0.001) {
-		return;
+	if (!force) {
+		if (fabs(width - buffer->rendered_width) < 0.001) {
+			return;
+		}
+		buffer->rendered_width = width;
 	}
-
-	buffer->rendered_width = width;
 
 	for (line = buffer->real_line; line != NULL; line = line->next) {
 		buffer_line_adjust_glyphs(buffer, line, y);
@@ -1125,4 +1133,9 @@ void buffer_extend_selection_by_select_type(buffer_t *buffer) {
 		//nothing to do (is unknown)
 		break;
 	}
+}
+
+void buffer_config_changed(buffer_t *buffer) {
+	buffer_init_font_extents(buffer);
+	buffer_typeset_maybe(buffer, 0.0, false, true);
 }

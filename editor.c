@@ -322,7 +322,7 @@ void editor_switch_buffer(editor_t *editor, buffer_t *buffer) {
 	{
 		GtkAllocation allocation;
 		gtk_widget_get_allocation(editor->drar, &allocation);
-		buffer_typeset_maybe(editor->buffer, allocation.width, editor->single_line);
+		buffer_typeset_maybe(editor->buffer, allocation.width, editor->single_line, false);
 	}
 
 	editor->center_on_cursor_after_next_expose = TRUE;
@@ -1012,7 +1012,7 @@ static gboolean expose_event_callback(GtkWidget *widget, GdkEventExpose *event, 
 
 	draw_cursorline(cr, editor);
 
-	buffer_typeset_maybe(editor->buffer, allocation.width, editor->single_line);
+	buffer_typeset_maybe(editor->buffer, allocation.width, editor->single_line, false);
 
 	editor->buffer->rendered_height = 0.0;
 
@@ -1150,6 +1150,9 @@ static gboolean hscrolled_callback(GtkAdjustment *adj, gpointer data) {
 static gboolean editor_focusin_callback(GtkWidget *widget, GdkEventFocus *event, editor_t *editor) {
 	editor->cursor_visible = 1;
 	gtk_widget_queue_draw(editor->drar);
+	if (!editor->single_line) {
+		top_show_status();
+	}
 	return FALSE;
 }
 

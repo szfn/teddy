@@ -250,7 +250,7 @@ void columns_find_column(columns_t *columns, column_t *column, column_t **before
 	if (after_col != NULL) *after_col = NULL;
 
 	GList *list = gtk_container_get_children(GTK_CONTAINER(columns));
-	GList *prev, *cur;
+	GList *prev = NULL, *cur;
 	for (cur = list; cur != NULL; prev = cur, cur = cur->next) {
 		if (cur->data == column) break;
 	}

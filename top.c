@@ -13,7 +13,12 @@ GtkWidget *top_notebook;
 buffer_t *cmdline_buffer;
 editor_t *cmdline_editor;
 editor_t *the_top_context_editor;
+
+GtkWidget *dir_label;
+
 char *working_directory;
+
+guint cmdline_notebook_page, status_notebook_page;
 
 static void execute_command(editor_t *editor) {
 	lpoint_t start, end;
@@ -44,6 +49,7 @@ static void execute_command(editor_t *editor) {
 }
 
 static void release_command_line(editor_t *editor) {
+	gtk_notebook_set_current_page(GTK_NOTEBOOK(top_notebook), status_notebook_page);
 	if (top_context_editor() != NULL) {
 		editor_grab_focus(top_context_editor(), false);
 	} else {
@@ -96,13 +102,15 @@ GtkWidget *top_init(void) {
 	top_notebook = gtk_notebook_new();
 	gtk_notebook_set_show_tabs(GTK_NOTEBOOK(top_notebook), FALSE);
 
+	/**** COMMAND LINE ****/
+
 	cmdline_buffer = buffer_create();
 	load_empty(cmdline_buffer);
 	cmdline_editor = new_editor(cmdline_buffer, true);
 
 	config_set(&(cmdline_buffer->config), CFG_AUTOWRAP, "0");
 
-	gtk_notebook_append_page(GTK_NOTEBOOK(top_notebook), GTK_WIDGET(cmdline_editor), NULL);
+	cmdline_notebook_page = gtk_notebook_append_page(GTK_NOTEBOOK(top_notebook), GTK_WIDGET(cmdline_editor), NULL);
 
 	the_top_context_editor = NULL;
 
@@ -113,10 +121,25 @@ GtkWidget *top_init(void) {
 
 	working_directory = get_current_dir_name();
 
+	/**** STATUS ****/
+
+	GtkWidget *box = gtk_hbox_new(false, 0);
+
+	dir_label = gtk_label_new(working_directory);
+
+	gtk_container_add(GTK_CONTAINER(box), dir_label);
+	gtk_box_set_child_packing(GTK_BOX(box), dir_label, FALSE, FALSE, 0, GTK_PACK_START);
+
+	status_notebook_page = gtk_notebook_append_page(GTK_NOTEBOOK(top_notebook), GTK_WIDGET(box), NULL);
+
+	/**** END ****/
+	gtk_notebook_set_current_page(GTK_NOTEBOOK(top_notebook), status_notebook_page);
+
 	return top_notebook;
 }
 
 void top_start_command_line(editor_t *editor) {
+	gtk_notebook_set_current_page(GTK_NOTEBOOK(top_notebook), cmdline_notebook_page);
 	the_top_context_editor = editor;
 	editor_grab_focus(cmdline_editor, false);
 }
@@ -127,4 +150,15 @@ editor_t *top_context_editor(void) {
 
 char *top_working_directory(void) {
 	return working_directory;
+}
+
+void top_show_status(void) {
+	gtk_notebook_set_current_page(GTK_NOTEBOOK(top_notebook), status_notebook_page);
+}
+
+void top_cd(char *newdir) {
+	free(working_directory);
+	chdir(newdir);
+	working_directory = get_current_dir_name();
+	gtk_label_set_text(GTK_LABEL(dir_label), working_directory);
 }

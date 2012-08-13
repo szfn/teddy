@@ -4,6 +4,7 @@
 #include "buffers.h"
 #include "global.h"
 #include "foundry.h"
+#include "top.h"
 #include "cfg.h"
 
 typedef struct _tframe_t {
@@ -210,21 +211,29 @@ static gboolean label_expose_callback(GtkWidget *widget, GdkEventExpose *event, 
 	cairo_text_extents_t titlext, ellipsext;
 	cairo_text_extents(cr, ellipsis, &ellipsext);
 
+	char *title;
+	if (strstr(tf->title, top_working_directory()) == tf->title) {
+		title = tf->title + strlen(top_working_directory());
+		if (title[0] == '/') title++;
+	} else {
+		title = tf->title;
+	}
+
 	do {
-		cairo_text_extents(cr, tf->title+start, &titlext);
+		cairo_text_extents(cr, title+start, &titlext);
 		double width = titlext.width + ellipsext.width + 4.0;
 
 		if (width < allocation.width) break;
 
 		double tocut = width - allocation.width;
-		int tocut_chars = tocut / titlext.width * strlen(tf->title+start);
+		int tocut_chars = tocut / titlext.width * strlen(title+start);
 		start += tocut_chars + 1;
-		if (start > strlen(tf->title)) start = strlen(tf->title);
-	} while (start < strlen(tf->title));
+		if (start > strlen(title)) start = strlen(title);
+	} while (start < strlen(title));
 
 	cairo_move_to(cr, 4.0, ext.ascent);
 	if (start != 0) cairo_show_text(cr, ellipsis);
-	cairo_show_text(cr, tf->title+start);
+	cairo_show_text(cr, title+start);
 
 	cairo_destroy(cr);
 
@@ -299,7 +308,7 @@ static void tag_drag_behaviour(tframe_t *source, tframe_t *target, double y) {
 		column_resize_frame_pair(source_col, before_tf, new_above_size, source, new_source_size);
 	} else if ((tbuf == null_buffer()) && (sbuf != null_buffer())) {
 		// we dragged into a null buffer, take it over
-		editor_switch_buffer(GTK_TEDITOR(target), sbuf);
+		editor_switch_buffer(GTK_TEDITOR(target->content), sbuf);
 		columns_column_remove(columnset, source_col, source);
 	} else {
 		// actually moving source somewhere else

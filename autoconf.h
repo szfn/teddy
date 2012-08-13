@@ -59,6 +59,7 @@ proc grep {args} {\n\
 }\n\
 \n\
 proc buffer_setup_hook {name} {\n\
+	global monospaced_font\n\
 	if { [string range $name 0 2] == \"+bg\" } {\n\
 		setcfg autowrap 0\n\
 		setcfg tab_width 8\n\
