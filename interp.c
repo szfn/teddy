@@ -25,6 +25,7 @@
 #include "lexy.h"
 #include "autoconf.h"
 #include "top.h"
+#include "iopen.h"
 
 Tcl_Interp *interp;
 editor_t *the_context_editor = NULL;
@@ -79,15 +80,42 @@ static int teddy_pwf_command(ClientData client_data, Tcl_Interp *interp, int arg
 	return TCL_OK;
 }
 
+static int teddy_iopen_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
+	iopen();
+	return TCL_OK;
+}
+
 static int teddy_setcfg_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
-	if (argc != 3) {
+	if (argc < 3) {
 		Tcl_AddErrorInfo(interp, "Wrong number of arguments to setcfg");
+		return TCL_ERROR;
+	}
+
+	const char *name = NULL, *value = NULL;
+	config_t *config = (interp_context_buffer() != NULL) ? &(interp_context_buffer()->config) : &global_config;
+
+	for (int i = 1; i < argc; ++i) {
+		if (argv[i][0] == '-') {
+			if (strcmp(argv[i], "-global") == 0) {
+				config = &global_config;
+			} else {
+				Tcl_AddErrorInfo(interp, "Unknown argument to setcfg");
+				return TCL_ERROR;
+			}
+		} else {
+			if (name == NULL) name = argv[i];
+			else if (value == NULL) value = argv[i];
+		}
+	}
+
+	if ((name == NULL) || (value == NULL)) {
+		Tcl_AddErrorInfo(interp, "Couldn't find the two arguments for setcfg");
 		return TCL_ERROR;
 	}
 
 	int i;
 	for (i = 0; i < CONFIG_NUM; ++i) {
-		if (strcmp(config_names[i], argv[1]) == 0) break;
+		if (strcmp(config_names[i], name) == 0) break;
 	}
 
 	if (i >= CONFIG_NUM) {
@@ -95,12 +123,9 @@ static int teddy_setcfg_command(ClientData client_data, Tcl_Interp *interp, int 
 		return TCL_ERROR;
 	}
 
-	if (interp_context_buffer() != NULL) {
-		config_set(&(interp_context_buffer()->config), i, (char *)argv[2]);
-		buffer_config_changed(interp_context_buffer());
-	} else {
-		config_set(&global_config, i, (char *)argv[2]);
-	}
+	config_set(config, i, (char *)value);
+
+	if (interp_context_buffer() != NULL) buffer_config_changed(interp_context_buffer());
 
 	return TCL_OK;
 }
@@ -865,8 +890,8 @@ void interp_init(void) {
 	Tcl_HideCommand(interp, "tcl_startOfPreviousWord", "hidden_tcl_startOfPreviousWord");
 	Tcl_HideCommand(interp, "tcl_wordBreakAfter", "hidden_tcl_wordBreakAfter");
 	Tcl_HideCommand(interp, "tcl_wordBreakBefore", "hidden_tcl_wordBreakBefore");
-
 	Tcl_HideCommand(interp, "exit", "hidden_exit");
+
 	Tcl_CreateCommand(interp, "exit", &teddy_exit_command, (ClientData)NULL, NULL);
 	Tcl_CreateCommand(interp, "kill", &teddy_kill_command, (ClientData)NULL, NULL);
 
@@ -878,6 +903,7 @@ void interp_init(void) {
 
 	Tcl_CreateCommand(interp, "pwf", &teddy_pwf_command, (ClientData)NULL, NULL);
 
+	Tcl_CreateCommand(interp, "iopen", &teddy_iopen_command, (ClientData)NULL, NULL);
 	Tcl_CreateCommand(interp, "go", &teddy_go_command, (ClientData)NULL, NULL);
 	Tcl_CreateCommand(interp, "refresh", &teddy_refresh_command, (ClientData)NULL, NULL);
 

@@ -691,12 +691,6 @@ static void move_cursor_to_mouse(editor_t *editor, double x, double y) {
 }
 
 static gboolean button_press_callback(GtkWidget *widget, GdkEventButton *event, editor_t *editor) {
-	if (selection_target_buffer != NULL) {
-		editor_switch_buffer(editor, selection_target_buffer);
-		selection_target_buffer = NULL;
-		return TRUE;
-	}
-
 	gtk_widget_grab_focus(editor->drar);
 
 	if (event->button == 1) {
@@ -731,9 +725,9 @@ static gboolean button_press_callback(GtkWidget *widget, GdkEventButton *event, 
 		// here we check if the new cursor position (the one we created by clicking with the mouse) is inside the old selection area, in that case we do execute the mouse_open_action function on the selection. If no selection was active then we create one around the cursor and execute the mouse_open_action function on that
 		if (start.line == NULL) {
 			copy_lpoint(&start, &(editor->buffer->cursor));
-			mouse_open_action(editor, &start, NULL, -1);
+			mouse_open_action(editor, &start, NULL);
 		} else if (inbetween_lpoint(&start, &(editor->buffer->cursor), &end)) {
-			mouse_open_action(editor, &start, &end, -1);
+			mouse_open_action(editor, &start, &end);
 		}
 	}
 
@@ -996,9 +990,7 @@ static gboolean expose_event_callback(GtkWidget *widget, GdkEventExpose *event, 
 	GtkAllocation allocation;
 	gtk_widget_get_allocation(widget, &allocation);
 
-	if (selection_target_buffer != NULL) {
-		gdk_window_set_cursor(gtk_widget_get_window(editor->drar), gdk_cursor_new(GDK_ICON));
-	} else if (buffer_aux_is_directory(editor->buffer)) {
+	if (buffer_aux_is_directory(editor->buffer)) {
 		gdk_window_set_cursor(gtk_widget_get_window(editor->drar), gdk_cursor_new(GDK_ARROW));
 	} else {
 		gdk_window_set_cursor(gtk_widget_get_window(editor->drar), gdk_cursor_new(GDK_XTERM));

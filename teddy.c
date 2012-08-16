@@ -4,7 +4,6 @@
 
 #include "git.date.h"
 #include "global.h"
-#include "go.h"
 #include "undo.h"
 #include "buffers.h"
 #include "columns.h"
@@ -17,6 +16,7 @@
 #include "rd.h"
 #include "baux.h"
 #include "foundry.h"
+#include "iopen.h"
 #include "top.h"
 
 static gboolean delete_callback(GtkWidget *widget, GdkEvent *event, gpointer data) {
@@ -63,10 +63,9 @@ int main(int argc, char *argv[]) {
 	g_signal_connect(G_OBJECT(window), "delete-event", G_CALLBACK(delete_callback), NULL);
 	g_signal_connect_swapped(G_OBJECT(window), "destroy", G_CALLBACK(gtk_main_quit), NULL);
 
-	go_init(window);
-
 	columnset = columns_new();
 	research_init(window);
+	iopen_init(window);
 
 	GtkWidget *top = top_init();
 

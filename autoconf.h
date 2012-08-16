@@ -46,7 +46,7 @@ bindkey Ctrl-Right {move next wnwa}\n\
 bindkey Ctrl-Home {go 1}\n\
 bindkey Ctrl-End {go -1}\n\
 \n\
-bindkey Ctrl-l {interactarg go}\n\
+bindkey Ctrl-l iopen\n\
 \n\
 bindkey Ctrl-Backspace {mark start; move prev wnwa; cb pput [c]; c \"\"}\n\
 bindkey Ctrl-k kill_line\n\

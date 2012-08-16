@@ -20,8 +20,6 @@ extern void quick_message(const char *title, const char *msg);
 
 extern PangoFontDescription *elements_font_description;
 
-extern buffer_t *selection_target_buffer;
-
 extern columns_t *columnset;
 
 extern GHashTable *keybindings;

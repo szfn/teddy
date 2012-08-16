@@ -17,17 +17,6 @@
 #include "lexy.h"
 #include "rd.h"
 
-GtkWidget *go_switch_label;
-GtkWidget *go_switch_window;
-
-typedef enum _swich_window_result_t {
-	GO_CURRENT = 0,
-	GO_NEW,
-	GO_SELECT,
-} switch_window_result_t;
-
-switch_window_result_t switch_window_results[] = { GO_CURRENT, GO_NEW, GO_SELECT };
-
 static int exec_char_specifier(const char *specifier, int really_exec, buffer_t *buffer) {
 	long int n1;
 
@@ -158,44 +147,20 @@ go_file_return:
 	return buffer;
 }
 
-editor_t *go_to_buffer(editor_t *editor, buffer_t *buffer, int where) {
+editor_t *go_to_buffer(editor_t *editor, buffer_t *buffer, bool take_over) {
 	editor_t *target;
 	find_editor_for_buffer(buffer, NULL, NULL, &target);
 
-	int response;
-	char *msg;
 	if (target != NULL) {
 		editor_grab_focus(target, true);
 		deferred_action_to_return = FOCUS_ALREADY_SWITCHED;
 		return target;
 	}
 
-	asprintf(&msg, "Show buffer [%s]:", buffer->path);
-	gtk_label_set_text(GTK_LABEL(go_switch_label), msg);
-	free(msg);
-
-	if (where < 0) {
-		gtk_widget_show_all(go_switch_window);
-		response = gtk_dialog_run(GTK_DIALOG(go_switch_window));
-		gtk_widget_hide(go_switch_window);
-	} else {
-		response = where;
-	}
-
-	//printf("Response was: %d\n", response);
-
-	switch(response) {
-	case GO_CURRENT:
+	if (take_over && (editor != NULL)) {
 		editor_switch_buffer(editor, buffer);
 		return editor;
-
-	case GO_SELECT:
-		selection_target_buffer = buffer;
-		gtk_widget_queue_draw(gtk_widget_get_toplevel(GTK_WIDGET(editor)));
-		return NULL;
-
-	case GO_NEW:
-	default: {
+	} else {
 		tframe_t *spawning_frame;
 		find_editor_for_buffer(editor->buffer, NULL, &spawning_frame, NULL);
 		tframe_t *target_frame = heuristic_new_frame(columnset, spawning_frame, buffer);
@@ -205,12 +170,11 @@ editor_t *go_to_buffer(editor_t *editor, buffer_t *buffer, int where) {
 		}
 		return target;
 	}
-	}
 
 	return editor;
 }
 
-static int exec_go(const char *specifier, int where, enum go_file_failure_reason *gffr) {
+static int exec_go(const char *specifier, enum go_file_failure_reason *gffr) {
 	char *sc = NULL;
 	char *saveptr, *tok;
 	buffer_t *buffer = NULL;
@@ -237,7 +201,7 @@ static int exec_go(const char *specifier, int where, enum go_file_failure_reason
 		if (buffer == NULL) { retval = 0; goto exec_go_cleanup; }
 	}
 
-	editor = go_to_buffer(interp_context_editor(), buffer, where);
+	editor = go_to_buffer(interp_context_editor(), buffer, false);
 	// editor will be NULL here if the user decided to select an editor
 
 	tok = strtok_r(NULL, ":", &saveptr);
@@ -270,24 +234,9 @@ static int exec_go(const char *specifier, int where, enum go_file_failure_reason
 
 int teddy_go_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
 	const char *goarg;
-	int where = -1;
 
 	if (argc == 2) {
 		goarg = argv[1];
-	} else if (argc == 3) {
-		goarg = argv[2];
-		if (strcmp(argv[1], "-new") == 0) {
-			where = GO_NEW;
-		} else if (strcmp(argv[1], "-select") == 0) {
-			where = GO_SELECT;
-		} else if (strcmp(argv[1], "-here") == 0) {
-			where = GO_CURRENT;
-		} else if (strcmp(argv[1], "-ask") == 0) {
-			where = -1;
-		} else {
-			Tcl_AddErrorInfo(interp, "Wrong arguments to 'go', usage: 'go [-here|-select|-new|-ask] [<filename>]:[<position-specifier>]");
-			return TCL_ERROR;
-		}
 	} else {
 		Tcl_AddErrorInfo(interp, "Wrong number of arguments to 'go', usage: 'go [-here|-select|-new] [<filename>]:[<position-specifier>]");
 		return TCL_ERROR;
@@ -304,16 +253,16 @@ int teddy_go_command(ClientData client_data, Tcl_Interp *interp, int argc, const
 
 		if (start.line == NULL) {
 			copy_lpoint(&start, &(interp_context_buffer()->cursor));
-			mouse_open_action(interp_context_editor(), &start, NULL, where);
+			mouse_open_action(interp_context_editor(), &start, NULL);
 		} else {
-			mouse_open_action(interp_context_editor(), &start, &end, where);
+			mouse_open_action(interp_context_editor(), &start, &end);
 		}
 
 		return TCL_OK;
 	}
 
 	enum go_file_failure_reason gffr;
-	if (!exec_go(goarg, where, &gffr)) {
+	if (!exec_go(goarg, &gffr)) {
 		if (gffr == GFFR_BINARYFILE) return TCL_OK;
 
 		char *urp = unrealpath(interp_context_buffer()->path, goarg);
@@ -359,72 +308,6 @@ int teddy_go_command(ClientData client_data, Tcl_Interp *interp, int argc, const
 	}
 }
 
-static void go_button_clicked(GtkButton *button, switch_window_result_t *response) {
-	gtk_dialog_response(GTK_DIALOG(go_switch_window), *response);
-}
-
-static gboolean go_key_press_callback(GtkWidget *widget, GdkEventKey *event, gpointer data) {
-	int shift = event->state & GDK_SHIFT_MASK;
-	int ctrl = event->state & GDK_CONTROL_MASK;
-	int alt = event->state & GDK_MOD1_MASK;
-	int super = event->state & GDK_SUPER_MASK;
-
-	if (!shift && !ctrl && !alt && !super) {
-		switch(event->keyval) {
-		case GDK_KEY_c:
-			gtk_dialog_response(GTK_DIALOG(go_switch_window), GO_CURRENT);
-			return TRUE;
-		case GDK_KEY_n:
-			gtk_dialog_response(GTK_DIALOG(go_switch_window), GO_NEW);
-			return TRUE;
-		case GDK_KEY_s:
-			gtk_dialog_response(GTK_DIALOG(go_switch_window), GO_SELECT);
-			return TRUE;
-		}
-	}
-
-	return FALSE;
-}
-
-static gboolean go_switch_window_expose_callback(GtkWidget *widget, GdkEventExpose *event, void *data) {
-	gtk_widget_grab_focus(widget);
-	return FALSE;
-}
-
-void go_init(GtkWidget *window) {
-	GtkWidget *vbox = gtk_vbox_new(FALSE, 4);
-	GtkWidget *button_current = gtk_button_new_with_mnemonic("_Current frame");
-	GtkWidget *button_new = gtk_button_new_with_mnemonic("_New frame");
-	GtkWidget *button_select = gtk_button_new_with_mnemonic("_Select frame");
-
-	go_switch_label = gtk_label_new("Show buffer:");
-
-	go_switch_window = gtk_dialog_new_with_buttons("Show Buffer", GTK_WINDOW(window), GTK_DIALOG_MODAL|GTK_DIALOG_DESTROY_WITH_PARENT, NULL);
-
-	gtk_label_set_justify(GTK_LABEL(go_switch_label), GTK_JUSTIFY_LEFT);
-
-	gtk_button_set_use_underline(GTK_BUTTON(button_current), TRUE);
-	gtk_button_set_use_underline(GTK_BUTTON(button_new), TRUE);
-	gtk_button_set_use_underline(GTK_BUTTON(button_select), TRUE);
-
-	gtk_container_add(GTK_CONTAINER(vbox), go_switch_label);
-	gtk_container_add(GTK_CONTAINER(vbox), button_current);
-	gtk_container_add(GTK_CONTAINER(vbox), button_new);
-	gtk_container_add(GTK_CONTAINER(vbox), button_select);
-
-	g_signal_connect(G_OBJECT(button_current), "clicked", G_CALLBACK(go_button_clicked), switch_window_results + GO_CURRENT);
-	g_signal_connect(G_OBJECT(button_new), "clicked", G_CALLBACK(go_button_clicked), switch_window_results + GO_NEW);
-	g_signal_connect(G_OBJECT(button_select), "clicked", G_CALLBACK(go_button_clicked), switch_window_results + GO_SELECT);
-
-	g_signal_connect(G_OBJECT(go_switch_window), "key-press-event", G_CALLBACK(go_key_press_callback), NULL);
-
-	g_signal_connect(G_OBJECT(go_switch_window), "expose_event", G_CALLBACK(go_switch_window_expose_callback), NULL);
-
-	gtk_container_add(GTK_CONTAINER(gtk_dialog_get_content_area(GTK_DIALOG(go_switch_window))), vbox);
-
-	gtk_window_set_default_size(GTK_WINDOW(go_switch_window), 200, 100);
-}
-
 static bool mouse_open_select_like_file(editor_t *editor, lpoint_t *cursor, lpoint_t *start, lpoint_t *end) {
 	start->glyph = 0;
 	end->glyph = cursor->line->cap;
@@ -456,7 +339,7 @@ static bool mouse_open_select_like_file(editor_t *editor, lpoint_t *cursor, lpoi
 	return true;
 }
 
-void mouse_open_action(editor_t *editor, lpoint_t *start, lpoint_t *end, int where) {
+void mouse_open_action(editor_t *editor, lpoint_t *start, lpoint_t *end) {
 	if (buffer_aux_is_directory(editor->buffer)) {
 		rd_open(editor);
 		return;
@@ -513,7 +396,7 @@ void mouse_open_action(editor_t *editor, lpoint_t *start, lpoint_t *end, int whe
 	alloc_assert(go_arg);
 
 	enum go_file_failure_reason gffr;
-	if (!exec_go(go_arg, where, &gffr)) {
+	if (!exec_go(go_arg, &gffr)) {
 		// if this succeeded we could open the file at the specified line and we are done
 		// otherwise we check gffr
 

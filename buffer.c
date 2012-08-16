@@ -495,6 +495,8 @@ void buffer_replace_selection(buffer_t *buffer, const char *new_text) {
 	} else {
 		lexy_update_starting_at(buffer, pre_start_line, true);
 	}
+
+	if (buffer->onchange != NULL) buffer->onchange(buffer);
 }
 
 static real_line_t *buffer_search_line(buffer_t *buffer, int lineno) {
@@ -551,6 +553,8 @@ void buffer_undo(buffer_t *buffer) {
 	} else {
 		lexy_update_starting_at(buffer, pre_start_line, true);
 	}
+
+	if (buffer->onchange != NULL) buffer->onchange(buffer);
 }
 
 void load_empty(buffer_t *buffer) {
@@ -936,6 +940,8 @@ buffer_t *buffer_create(void) {
 
 	buffer->cbt.root = NULL;
 
+	buffer->onchange = NULL;
+
 	return buffer;
 }
 
@@ -1138,4 +1144,8 @@ void buffer_extend_selection_by_select_type(buffer_t *buffer) {
 void buffer_config_changed(buffer_t *buffer) {
 	buffer_init_font_extents(buffer);
 	buffer_typeset_maybe(buffer, 0.0, false, true);
+}
+
+void buffer_set_onchange(buffer_t *buffer, void (*fn)(buffer_t *buffer)) {
+	buffer->onchange = fn;
 }

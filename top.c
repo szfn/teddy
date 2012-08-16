@@ -166,3 +166,7 @@ void top_cd(const char *newdir) {
 bool top_command_line_focused(void) {
 	return gtk_widget_is_focus(cmdline_editor->drar);
 }
+
+bool top_has_tags(void) {
+	return false;
+}

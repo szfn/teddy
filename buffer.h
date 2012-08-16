@@ -92,6 +92,8 @@ typedef struct _buffer_t {
 	/* Scripting support */
 	GHashTable *props;
 	char *keyprocessor;
+	void (*onchange)(struct _buffer_t *buffer);
+
 
 	/* autocompletion */
 	critbit0_tree cbt;
@@ -167,9 +169,8 @@ void buffer_line_clean_trailing_spaces(buffer_t *buffer, real_line_t *line);
 void freeze_selection(buffer_t *buffer, selection_t *selection, lpoint_t *start, lpoint_t *end);
 void buffer_thaw_selection(buffer_t *buffer, selection_t *selection, lpoint_t *start, lpoint_t *end);
 
-/* Prettyprinting of buffer directory or buffer filename */
-char *buffer_ppp(buffer_t *buffer, bool include_filename, int reqlen, bool always_home);
-
 void buffer_config_changed(buffer_t *buffer);
+
+void buffer_set_onchange(buffer_t *buffer, void (*fn)(buffer_t *buffer));
 
 #endif
