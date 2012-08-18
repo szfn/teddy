@@ -8,6 +8,7 @@
 #include "history.h"
 #include "global.h"
 #include "baux.h"
+#include "tags.h"
 
 GtkWidget *top_notebook;
 buffer_t *cmdline_buffer;
@@ -120,6 +121,7 @@ GtkWidget *top_init(void) {
 	cmdline_editor->completer = &the_generic_cmd_completer;
 
 	working_directory = get_current_dir_name();
+	tags_load(working_directory);
 
 	/**** STATUS ****/
 
@@ -161,6 +163,7 @@ void top_cd(const char *newdir) {
 	chdir(newdir);
 	working_directory = get_current_dir_name();
 	gtk_label_set_text(GTK_LABEL(dir_label), working_directory);
+	tags_load(working_directory);
 }
 
 bool top_command_line_focused(void) {
@@ -168,5 +171,5 @@ bool top_command_line_focused(void) {
 }
 
 bool top_has_tags(void) {
-	return false;
+	return tags_loaded();
 }

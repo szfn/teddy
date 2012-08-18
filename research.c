@@ -25,13 +25,6 @@ typedef enum _research_window_action_t {
 	RESEARCH_STOP = 2,
 } research_window_action_t;
 
-enum research_mode_t {
-	RM_INTERACTIVE = 0,
-	RM_SELECT,
-	RM_TOSTART,
-	RM_TOEND
-};
-
 research_window_action_t research_window_results[] = { RESEARCH_REPLACE, RESEARCH_NEXT, RESEARCH_STOP };
 
 static void move_regexp_search_forward(bool start_at_top, enum research_mode_t research_mode) {
@@ -233,8 +226,8 @@ static char *automatic_search_and_replace(char *text, regex_t *re, const char *s
 	return r;
 }
 
-static void start_regexp_search(editor_t *editor, const char *regexp, const char *subst, bool line_limit, enum research_mode_t research_mode) {
-	int r = tre_regcomp(&research_regexp, regexp, REG_EXTENDED);
+void start_regexp_search(editor_t *editor, const char *regexp, const char *subst, bool line_limit, enum research_mode_t research_mode, bool literal) {
+	int r = tre_regcomp(&research_regexp, regexp, literal ? REG_LITERAL : REG_EXTENDED);
 
 	if (r != REG_OK) {
 #define REGERROR_BUF_SIZE 512
@@ -315,7 +308,7 @@ int teddy_research_command(ClientData client_data, Tcl_Interp *interp, int argc,
 		subst = argv[i+1];
 	}
 
-	start_regexp_search(interp_context_editor(), regexp, subst, line_limit, research_mode);
+	start_regexp_search(interp_context_editor(), regexp, subst, line_limit, research_mode, false);
 
 	return TCL_OK;
 }

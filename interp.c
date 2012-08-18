@@ -858,7 +858,7 @@ static int teddy_refresh_command(ClientData client_data, Tcl_Interp *interp, int
 	if (r == 0) return TCL_OK;
 
 	enum go_file_failure_reason gffr;
-	buffer_t *buffer = go_file(NULL, path, false, &gffr);
+	buffer_t *buffer = go_file(path, false, &gffr);
 	if (buffer != NULL) editor_switch_buffer(interp_context_editor(), buffer);
 
 	free(path);

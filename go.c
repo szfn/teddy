@@ -16,6 +16,7 @@
 #include "columns.h"
 #include "lexy.h"
 #include "rd.h"
+#include "top.h"
 
 static int exec_char_specifier(const char *specifier, int really_exec, buffer_t *buffer) {
 	long int n1;
@@ -94,16 +95,25 @@ static int exec_go_position(const char *specifier, editor_t *context_editor, buf
 	return 0;
 }
 
-buffer_t *go_file(buffer_t *base_buffer, const char *filename, bool create, enum go_file_failure_reason *gffr) {
-	char *urp = unrealpath((base_buffer != NULL) ? base_buffer->path : NULL, filename);
+buffer_t *go_file(const char *filename, bool create, enum go_file_failure_reason *gffr) {
+	char *p;
+	asprintf(&p, "%s/%s", top_working_directory(), filename);
+	alloc_assert(p);
+	char *urp = realpath(p, NULL);
+	free(p);
+
 	*gffr = GFFR_OTHER;
 
 	if (urp == NULL) {
 		return NULL;
 	}
 
+	//printf("going file\n");
+
 	buffer_t *buffer = buffers_find_buffer_from_path(urp);
 	if (buffer != NULL) goto go_file_return;
+
+	//printf("path: <%s>\n", urp);
 
 	struct stat s;
 	if (stat(urp, &s) != 0) {
@@ -148,7 +158,7 @@ go_file_return:
 }
 
 editor_t *go_to_buffer(editor_t *editor, buffer_t *buffer, bool take_over) {
-	editor_t *target;
+	editor_t *target = NULL;
 	find_editor_for_buffer(buffer, NULL, NULL, &target);
 
 	if (target != NULL) {
@@ -162,12 +172,18 @@ editor_t *go_to_buffer(editor_t *editor, buffer_t *buffer, bool take_over) {
 		return editor;
 	} else {
 		tframe_t *spawning_frame;
-		find_editor_for_buffer(editor->buffer, NULL, &spawning_frame, NULL);
+
+		if (editor != NULL) find_editor_for_buffer(editor->buffer, NULL, &spawning_frame, NULL);
+		else spawning_frame = NULL;
+
 		tframe_t *target_frame = heuristic_new_frame(columnset, spawning_frame, buffer);
+
 		if (target_frame != NULL) {
-			gtk_widget_grab_focus(GTK_WIDGET(target_frame));
+			target = GTK_TEDITOR(tframe_content(target_frame));
+			editor_grab_focus(target, true);
 			deferred_action_to_return = FOCUS_ALREADY_SWITCHED;
 		}
+
 		return target;
 	}
 
@@ -196,7 +212,7 @@ static int exec_go(const char *specifier, enum go_file_failure_reason *gffr) {
 
 	buffer = buffer_id_to_buffer(tok);
 	if (buffer == NULL) {
-		buffer = go_file(interp_context_buffer(), tok, false, gffr);
+		buffer = go_file(tok, false, gffr);
 		//printf("buffer = %p gffr = %d\n", buffer, (int)(*gffr));
 		if (buffer == NULL) { retval = 0; goto exec_go_cleanup; }
 	}

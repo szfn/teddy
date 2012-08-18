@@ -1,20 +1,20 @@
-- project indexing and searching (with tag files support)
-- new locate window should start with the text in the clipboard selected if it looks like something good (single word, filename or url)
-
-
 LONG TERM:
+- interactive searching and replacing
+- absorb default themes (all three) in builtin configuration
+
+- autoreload stuff when changed on disk (buffers, tags info)
+- remove complex directory visualization (and graphic builtin font)
+
+- remove generic go command, substitute with one to move within a buffer and mark stuff and another one to open a buffer (subcommand of buffer) (kill move, mark, cursor, gohome, bufman)
+
 - set column number for background processes whenever possible
 - less ugly indicators for autowrapping
 - keyboard marking should behave like mouse marking and not constantly update the clipboard with serialized data
 - tabs (and no hidden buffers)
 - slash all special mouse actions, add menus and close buttons
 - go-able things become links
-- remove complex directory visualization (and graphic builtin font)
-- remove generic go command, substitute with one to move within a buffer and mark stuff and another one to open a buffer (subcommand of buffer) (kill move, mark, cursor, gohome, bufman)
 - save, refresh becomes a subcommand of buffer
 - automatically pop-up autocompletion and update autocompletions when leaving dirty rows (enter should not autocomplete, at least on the command line)
-- autoreload stuff when changed on disk
-- transparent overlay for searching and replacing
 - guessing indentation (dtrt-indent mode1)
 - auto-equalize indentation on paste
 - multiprocess highlighting
@@ -32,5 +32,6 @@ LONG TERM:
 - make easy way to reindent though external filter
 - 's' command: support normal pcre flags
 - use an editor for the command line
+- delete '+' buffers on hide
 
 - cleanup of unused functions (how?)

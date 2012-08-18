@@ -299,7 +299,7 @@ void rd_open(editor_t *editor) {
 		//printf("File selected should go <%s>\n", path);
 
 		enum go_file_failure_reason gffr;
-		buffer_t *target_buffer = go_file(editor->buffer, path, false, &gffr);
+		buffer_t *target_buffer = go_file(path, false, &gffr);
 
 		if (target_buffer != NULL) go_to_buffer(editor, target_buffer, -1);
 		else if (gffr == GFFR_BINARYFILE) {

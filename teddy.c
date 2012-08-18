@@ -18,6 +18,7 @@
 #include "foundry.h"
 #include "iopen.h"
 #include "top.h"
+#include "tags.h"
 
 static gboolean delete_callback(GtkWidget *widget, GdkEvent *event, gpointer data) {
 	//TODO: terminate all processes
@@ -67,6 +68,7 @@ int main(int argc, char *argv[]) {
 	research_init(window);
 	iopen_init(window);
 
+	tags_init();
 	GtkWidget *top = top_init();
 
 	GtkWidget *vbox = gtk_vbox_new(FALSE, 0);
