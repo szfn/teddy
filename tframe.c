@@ -394,11 +394,8 @@ tframe_t *tframe_new(const char *title, GtkWidget *content, columns_t *columns) 
 	g_signal_connect(G_OBJECT(r->drarla), "button-press-event", G_CALLBACK(label_button_press_callback), r);
 	g_signal_connect(G_OBJECT(r->drarla), "button-release-event", G_CALLBACK(label_button_release_callback), r);
 
-	gtk_container_add(GTK_CONTAINER(r->tag), r->resdr);
-	gtk_container_add(GTK_CONTAINER(r->tag), r->drarla);
-
-	gtk_box_set_child_packing(GTK_BOX(r->tag), r->resdr, FALSE, FALSE, 0, GTK_PACK_START);
-	gtk_box_set_child_packing(GTK_BOX(r->tag), r->drarla, TRUE, TRUE, 0, GTK_PACK_START);
+	gtk_box_pack_start(GTK_BOX(r->tag), r->resdr, FALSE, FALSE, 0);
+	gtk_box_pack_start(GTK_CONTAINER(r->tag), r->drarla, TRUE, TRUE, 0);
 
 	place_frame_piece(GTK_WIDGET(t), TRUE, 0, 2);
 	place_frame_piece(GTK_WIDGET(t), FALSE, 1, 4);

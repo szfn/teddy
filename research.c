@@ -87,7 +87,7 @@ static void move_regexp_search_forward(bool start_at_top, enum research_mode_t r
 
 				lexy_update_for_move(research_editor->buffer, research_editor->buffer->cursor.line);
 				editor_center_on_cursor(research_editor);
-				gtk_widget_queue_draw(research_editor->drar);
+				gtk_widget_queue_draw(GTK_WIDGET(research_editor));
 
 				if (research_mode != RM_INTERACTIVE) Tcl_SetResult(interp, "true", TCL_VOLATILE);
 			} else { // if we end up here it's probably a bug

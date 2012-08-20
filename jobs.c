@@ -42,7 +42,7 @@ static void job_destroy(job_t *job) {
 	find_editor_for_buffer(job->buffer, NULL, NULL, &editor);
 	if (editor != NULL) {
 		editor_center_on_cursor(editor);
-		gtk_widget_queue_draw(editor->drar);
+		gtk_widget_queue_draw(GTK_WIDGET(editor));
 	}
 
 	job->used = 0;
@@ -58,7 +58,7 @@ static void job_append(job_t *job, const char *msg, int len, int on_new_line, ui
 	find_editor_for_buffer(job->buffer, NULL, NULL, &editor);
 	if (editor != NULL) {
 		editor_center_on_cursor(editor);
-		gtk_widget_queue_draw(editor->drar);
+		gtk_widget_queue_draw(GTK_WIDGET(editor));
 	}
 }
 

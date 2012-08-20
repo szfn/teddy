@@ -28,6 +28,8 @@ typedef struct _editor_t {
 	gboolean cursor_visible;
 	int mouse_marking;
 
+	GtkWidget *search_entry, *search_box;
+
 	gboolean search_mode;
 	gulong current_entry_handler_id;
 	gboolean search_failed;

@@ -154,8 +154,7 @@ void gtk_column_size_allocate(GtkWidget *widget, GtkAllocation *allocation) {
 }
 
 void column_add_after(column_t *column, tframe_t *before_tf, tframe_t *tf) {
-	gtk_container_add(GTK_CONTAINER(column), GTK_WIDGET(tf));
-	gtk_box_set_child_packing(GTK_BOX(column), GTK_WIDGET(tf), TRUE, TRUE, 1, GTK_PACK_START);
+	gtk_box_pack_start(GTK_CONTAINER(column), GTK_WIDGET(tf), TRUE, TRUE, 1);
 
 	int before_index = -1;
 

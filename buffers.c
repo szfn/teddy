@@ -216,13 +216,9 @@ void buffers_init(void) {
 
 		gtk_container_add(GTK_CONTAINER(scroll), buffers_tree);
 
-		gtk_container_add(GTK_CONTAINER(vbox), label);
-		gtk_container_add(GTK_CONTAINER(vbox), scroll);
-		gtk_container_add(GTK_CONTAINER(vbox), label2);
-
-		gtk_box_set_child_packing(GTK_BOX(vbox), label, FALSE, FALSE, 2, GTK_PACK_START);
-		gtk_box_set_child_packing(GTK_BOX(vbox), buffers_tree, TRUE, TRUE, 2, GTK_PACK_START);
-		gtk_box_set_child_packing(GTK_BOX(vbox), label2, FALSE, FALSE, 2, GTK_PACK_END);
+		gtk_box_pack_start(GTK_BOX(vbox), label, FALSE, FALSE, 2);
+		gtk_box_pack_start(GTK_BOX(vbox), scroll, TRUE, TRUE, 2);
+		gtk_box_pack_end(GTK_BOX(vbox), label2, FALSE, FALSE, 2);
 
 		gtk_label_set_justify(GTK_LABEL(label2), GTK_JUSTIFY_LEFT);
 
@@ -239,7 +235,6 @@ void buffers_init(void) {
 	}
 
 }
-
 
 static void buffers_grow() {
 	int i;

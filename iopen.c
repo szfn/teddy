@@ -377,16 +377,14 @@ void iopen_init(GtkWidget *window) {
 	iopen_editor->single_line_return = &iopen_enter;
 	iopen_editor->single_line_other_keys = &iopen_other_keys;
 
-	gtk_container_add(GTK_CONTAINER(main_vbox), GTK_WIDGET(iopen_editor));
-	gtk_box_set_child_packing(GTK_BOX(main_vbox), GTK_WIDGET(iopen_editor), FALSE, FALSE, 0, GTK_PACK_START);
+	gtk_box_pack_start(GTK_BOX(main_vbox), GTK_WIDGET(iopen_editor), FALSE, FALSE, 0);
 
 	GtkWidget *results_hbox = gtk_hbox_new(true, 10);
 
 	files_vbox = gtk_vbox_new(false, 10);
 
 	GtkWidget *files_label = gtk_label_new("Files:");
-	gtk_container_add(GTK_CONTAINER(files_vbox), files_label);
-	gtk_box_set_child_packing(GTK_BOX(files_vbox), files_label, FALSE, FALSE, 0, GTK_PACK_START);
+	gtk_box_pack_start(GTK_BOX(files_vbox), files_label, FALSE, FALSE, 0);
 
 	files_list = gtk_list_store_new(4, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_DOUBLE);
 	gtk_tree_sortable_set_sort_column_id(GTK_TREE_SORTABLE(files_list), 3, GTK_SORT_ASCENDING);
@@ -402,14 +400,12 @@ void iopen_init(GtkWidget *window) {
 	GtkWidget *files_scroll = gtk_scrolled_window_new(NULL, NULL);
 	gtk_container_add(GTK_CONTAINER(files_scroll), files_tree);
 
-	gtk_container_add(GTK_CONTAINER(files_vbox), files_scroll);
-	gtk_box_set_child_packing(GTK_BOX(files_vbox), files_scroll, TRUE, TRUE, 0, GTK_PACK_START);
+	gtk_box_pack_start(GTK_CONTAINER(files_vbox), files_scroll, TRUE, TRUE, 0);
 
 	tags_vbox = gtk_vbox_new(false, 10);
 
 	GtkWidget *tags_label = gtk_label_new("Tags:");
-	gtk_container_add(GTK_CONTAINER(tags_vbox), tags_label);
-	gtk_box_set_child_packing(GTK_BOX(tags_vbox), tags_label, FALSE, FALSE, 0, GTK_PACK_START);
+	gtk_box_pack_start(GTK_BOX(tags_vbox), tags_label, FALSE, FALSE, 0);
 
 	tags_list = gtk_list_store_new(4, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_DOUBLE);
 	gtk_tree_sortable_set_sort_column_id(GTK_TREE_SORTABLE(tags_list), 3, GTK_SORT_ASCENDING);
@@ -420,19 +416,17 @@ void iopen_init(GtkWidget *window) {
 	gtk_tree_view_set_headers_visible(GTK_TREE_VIEW(tags_tree), FALSE);
 	gtk_tree_view_set_search_column(GTK_TREE_VIEW(tags_tree), 1);
 
-	g_signal_connect(G_OBJECT(tags_tree), "row-activated", G_CALLBACK(result_activated_callback), NULL);	
+	g_signal_connect(G_OBJECT(tags_tree), "row-activated", G_CALLBACK(result_activated_callback), NULL);
 
 	GtkWidget *tags_scroll = gtk_scrolled_window_new(NULL, NULL);
 	gtk_container_add(GTK_CONTAINER(tags_scroll), tags_tree);
 
-	gtk_container_add(GTK_CONTAINER(tags_vbox),  tags_scroll);
-	gtk_box_set_child_packing(GTK_BOX(tags_vbox), tags_scroll, TRUE, TRUE, 0, GTK_PACK_START);
+	gtk_box_pack_start(GTK_BOX(tags_vbox),  tags_scroll, TRUE, TRUE, 0);
 
 	gtk_container_add(GTK_CONTAINER(results_hbox), files_vbox);
 	gtk_container_add(GTK_CONTAINER(results_hbox), tags_vbox);
 
-	gtk_container_add(GTK_CONTAINER(main_vbox), results_hbox);
-	gtk_box_set_child_packing(GTK_BOX(main_vbox), results_hbox, TRUE, TRUE, 0, GTK_PACK_START);
+	gtk_box_pack_start(GTK_CONTAINER(main_vbox), results_hbox, TRUE, TRUE, 0);
 
 	iopen_window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
 	gtk_window_set_decorated(GTK_WINDOW(iopen_window), TRUE);

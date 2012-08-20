@@ -333,3 +333,17 @@ void quick_message(const char *title, const char *msg) {
 	gtk_widget_show_all(dialog);
 	gtk_dialog_run(GTK_DIALOG(dialog));
 }
+
+uint32_t *utf8_to_utf32_string(const char *text, int *dstlen) {
+	int len = strlen(text);
+	uint32_t *r = malloc(len*sizeof(uint32_t));
+	alloc_assert(r);
+
+	*dstlen = 0;
+	for (int i = 0; i < len; ) {
+		bool valid = true;
+		r[(*dstlen)++] = utf8_to_utf32(text, &i, len, &valid);
+	}
+
+	return r;
+}

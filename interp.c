@@ -384,8 +384,7 @@ static int teddy_search_command(ClientData client_data, Tcl_Interp *interp, int 
 		return TCL_ERROR;
 	}
 
-	//TODO: implement
-	//editor_start_search(context_editor, (argc == 1) ? NULL : argv[1]);
+	editor_start_search(interp_context_editor(), (argc == 1) ? NULL : argv[1]);
 
 	return TCL_OK;
 }

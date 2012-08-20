@@ -319,7 +319,7 @@ int teddy_go_command(ClientData client_data, Tcl_Interp *interp, int argc, const
 	} else {
 		interp_context_editor()->center_on_cursor_after_next_expose = TRUE;
 		lexy_update_for_move(interp_context_buffer(), interp_context_buffer()->cursor.line);
-		gtk_widget_queue_draw(interp_context_editor()->drar);
+		gtk_widget_queue_draw(GTK_WIDGET(interp_context_editor()));
 		return TCL_OK;
 	}
 }

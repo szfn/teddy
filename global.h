@@ -55,6 +55,7 @@ bool inside_allocation(double x, double y, GtkAllocation *allocation);
 void utf32_to_utf8(uint32_t code, char **r, int *cap, int *allocated);
 char *string_utf16_to_utf8(uint16_t *origin, size_t origin_len);
 uint32_t utf8_to_utf32(const char *text, int *src, int len, bool *valid);
+uint32_t *utf8_to_utf32_string(const char *text, int *dstlen);
 void utf8_remove_truncated_characters_at_end(char *text);
 
 void alloc_assert(void *p);

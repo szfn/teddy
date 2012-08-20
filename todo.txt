@@ -1,5 +1,5 @@
 LONG TERM:
-- interactive searching and replacing
+- interactive regexp search (and replace)
 - absorb default themes (all three) in builtin configuration
 
 - autoreload stuff when changed on disk (buffers, tags info)

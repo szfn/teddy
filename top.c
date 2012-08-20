@@ -129,8 +129,7 @@ GtkWidget *top_init(void) {
 
 	dir_label = gtk_label_new(working_directory);
 
-	gtk_container_add(GTK_CONTAINER(box), dir_label);
-	gtk_box_set_child_packing(GTK_BOX(box), dir_label, FALSE, FALSE, 0, GTK_PACK_START);
+	gtk_box_pack_start(GTK_BOX(box), dir_label, FALSE, FALSE, 0);
 
 	status_notebook_page = gtk_notebook_append_page(GTK_NOTEBOOK(top_notebook), GTK_WIDGET(box), NULL);
 
