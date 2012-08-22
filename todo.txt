@@ -1,6 +1,9 @@
 LONG TERM:
-- interactive regexp search (and replace)
 - absorb default themes (all three) in builtin configuration
+
+- implement common awk idioms (like line numbering) with s and m
+
+- replace tcl regex engine with TRE
 
 - autoreload stuff when changed on disk (buffers, tags info)
 - remove complex directory visualization (and graphic builtin font)
@@ -24,7 +27,6 @@ LONG TERM:
 - comment region command
 - ability to persist the status of a window
 - auto-reloading buffers when there is no change and the file on disk was changed
-- replace tcl regex engine with TRE
 - debugger integration (just displaying currently executed line)
 - selection should copy selected text on past not on selection, for better efficiency (selection slowdown is noticeable on mouse selection)
 - extend regular expressions in 's' to be lexically aware

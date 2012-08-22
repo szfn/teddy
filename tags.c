@@ -94,9 +94,8 @@ void tags_load(char *wd) {
 			// replace \/ with /
 			int src = 0, dst = 0;
 			while (src < strlen(search)) {
-				if ((src+1 < strlen(search)) && (search[src] == '\\') && (search[src+1] == '/')) {
-					search[dst] = '/';
-					src += 2; ++dst;
+				if ((src+1 < strlen(search)) && (search[src] == '\\')) {
+					++src;
 				} else {
 					search[dst] = search[src];
 					++src; ++dst;

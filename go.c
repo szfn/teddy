@@ -163,7 +163,6 @@ editor_t *go_to_buffer(editor_t *editor, buffer_t *buffer, bool take_over) {
 
 	if (target != NULL) {
 		editor_grab_focus(target, true);
-		deferred_action_to_return = FOCUS_ALREADY_SWITCHED;
 		return target;
 	}
 
@@ -181,7 +180,6 @@ editor_t *go_to_buffer(editor_t *editor, buffer_t *buffer, bool take_over) {
 		if (target_frame != NULL) {
 			target = GTK_TEDITOR(tframe_content(target_frame));
 			editor_grab_focus(target, true);
-			deferred_action_to_return = FOCUS_ALREADY_SWITCHED;
 		}
 
 		return target;
@@ -308,7 +306,7 @@ int teddy_go_command(ClientData client_data, Tcl_Interp *interp, int argc, const
 					quick_message("Error", "Unexpected error during file creation");
 				} else {
 					buffers_add(buffer);
-					go_to_buffer(interp_context_editor(), buffer, -1);
+					go_to_buffer(interp_context_editor(), buffer, false);
 				}
 			}
 		}
@@ -390,7 +388,9 @@ void mouse_open_action(editor_t *editor, lpoint_t *start, lpoint_t *end) {
 
 	const char *eval_argv[] = { "mouse_go_preprocessing_hook", text };
 
-	int code = Tcl_Eval(interp, Tcl_Merge(2, eval_argv));
+	char *cmd = Tcl_Merge(2, eval_argv);
+	int code = Tcl_Eval(interp, cmd);
+	Tcl_Free(cmd);
 
 	free(text);
 

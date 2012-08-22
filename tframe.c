@@ -395,7 +395,7 @@ tframe_t *tframe_new(const char *title, GtkWidget *content, columns_t *columns) 
 	g_signal_connect(G_OBJECT(r->drarla), "button-release-event", G_CALLBACK(label_button_release_callback), r);
 
 	gtk_box_pack_start(GTK_BOX(r->tag), r->resdr, FALSE, FALSE, 0);
-	gtk_box_pack_start(GTK_CONTAINER(r->tag), r->drarla, TRUE, TRUE, 0);
+	gtk_box_pack_start(GTK_BOX(r->tag), r->drarla, TRUE, TRUE, 0);
 
 	place_frame_piece(GTK_WIDGET(t), TRUE, 0, 2);
 	place_frame_piece(GTK_WIDGET(t), FALSE, 1, 4);

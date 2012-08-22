@@ -78,7 +78,8 @@ static void iopen_open(GtkTreeView *tree, GtkTreePath *treepath) {
 			buffer_unset_mark(editor->buffer);
 			editor->buffer->cursor.line = editor->buffer->real_line;
 			editor->buffer->cursor.glyph = 0;
-			start_regexp_search(editor, search, NULL, false, RM_TOSTART, true);
+			//TODO: reimplement
+			//start_regexp_search(editor, search, NULL, false, RM_TOSTART, true);
 		}
 	} else {
 		char *msg;
@@ -400,7 +401,7 @@ void iopen_init(GtkWidget *window) {
 	GtkWidget *files_scroll = gtk_scrolled_window_new(NULL, NULL);
 	gtk_container_add(GTK_CONTAINER(files_scroll), files_tree);
 
-	gtk_box_pack_start(GTK_CONTAINER(files_vbox), files_scroll, TRUE, TRUE, 0);
+	gtk_box_pack_start(GTK_BOX(files_vbox), files_scroll, TRUE, TRUE, 0);
 
 	tags_vbox = gtk_vbox_new(false, 10);
 
@@ -426,7 +427,7 @@ void iopen_init(GtkWidget *window) {
 	gtk_container_add(GTK_CONTAINER(results_hbox), files_vbox);
 	gtk_container_add(GTK_CONTAINER(results_hbox), tags_vbox);
 
-	gtk_box_pack_start(GTK_CONTAINER(main_vbox), results_hbox, TRUE, TRUE, 0);
+	gtk_box_pack_start(GTK_BOX(main_vbox), results_hbox, TRUE, TRUE, 0);
 
 	iopen_window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
 	gtk_window_set_decorated(GTK_WINDOW(iopen_window), TRUE);

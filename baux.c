@@ -285,6 +285,13 @@ void buffer_get_extremes(buffer_t *buffer, lpoint_t *start, lpoint_t *end) {
 	end->glyph = end->line->cap;
 }
 
+void buffer_select_all(buffer_t *buffer) {
+	lpoint_t start, end;
+	buffer_get_extremes(buffer, &start, &end);
+	copy_lpoint(&(buffer->mark), &start);
+	copy_lpoint(&(buffer->cursor), &end);
+}
+
 char *buffer_all_lines_to_text(buffer_t *buffer) {
 	lpoint_t start, end, savedcursor;
 	buffer_get_extremes(buffer, &start, &end);

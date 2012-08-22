@@ -767,6 +767,8 @@ static void buffer_spaceman_on_save(buffer_t *buffer) {
 }
 
 void save_to_text_file(buffer_t *buffer) {
+	if (buffer->path[0] == '+') return;
+
 	char *cmd;
 	asprintf(&cmd, "cp -f %s %s~", buffer->path, buffer->path);
 	system(cmd);

@@ -65,7 +65,6 @@ int main(int argc, char *argv[]) {
 	g_signal_connect_swapped(G_OBJECT(window), "destroy", G_CALLBACK(gtk_main_quit), NULL);
 
 	columnset = columns_new();
-	research_init(window);
 	iopen_init(window);
 
 	tags_init();

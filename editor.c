@@ -6,7 +6,6 @@
 
 #include <tcl.h>
 #include <gdk/gdkkeysyms.h>
-#include <unicode/uchar.h>
 
 #include "global.h"
 #include "buffers.h"
@@ -816,7 +815,7 @@ static gboolean motion_callback(GtkWidget *widget, GdkEventMotion *event, editor
 
 	// focus follows mouse
 	if ((config_intval(&(editor->buffer->config), CFG_FOCUS_FOLLOWS_MOUSE)) && focus_can_follow_mouse && !top_command_line_focused()) {
-		GtkWidget *requested_focus = editor->search_mode ? editor->search_entry : editor->drar;
+		GtkWidget *requested_focus = (editor->research.mode!=SM_NONE) ? editor->search_entry : editor->drar;
 		if (!gtk_widget_is_focus(requested_focus)) {
 			gtk_widget_grab_focus(requested_focus);
 			gtk_widget_queue_draw(requested_focus);
@@ -991,9 +990,7 @@ static gboolean expose_event_callback(GtkWidget *widget, GdkEventExpose *event, 
 		gdk_window_set_cursor(gtk_widget_get_window(editor->drar), gdk_cursor_new(GDK_XTERM));
 	}
 
-	if (editor->search_mode) {
-		gtk_widget_show_all(editor->search_box);
-	} else {
+	if (editor->research.mode == SM_NONE) {
 		gtk_widget_hide(editor->search_box);
 	}
 
@@ -1051,7 +1048,7 @@ static gboolean expose_event_callback(GtkWidget *widget, GdkEventExpose *event, 
 	draw_selection(editor, allocation.width, cr);
 	draw_parmatch(editor, &allocation, cr);
 
-	if (editor->cursor_visible && !(editor->search_mode)) {
+	if (editor->cursor_visible && (editor->research.mode == SM_NONE)) {
 		double cursor_x, cursor_y;
 
 		buffer_cursor_position(editor->buffer, &cursor_x, &cursor_y);
@@ -1146,7 +1143,7 @@ static gboolean editor_focusin_callback(GtkWidget *widget, GdkEventFocus *event,
 	if (!editor->single_line) {
 		top_show_status();
 	}
-	if (editor->search_mode) {
+	if (editor->research.mode != SM_NONE) {
 		gtk_widget_grab_focus(editor->search_entry);
 	}
 	return FALSE;
@@ -1158,111 +1155,6 @@ static gboolean editor_focusout_callback(GtkWidget *widget, GdkEventFocus *event
 	gtk_widget_queue_draw(editor->drar);
 	end_selection_scroll(editor);
 	return FALSE;
-}
-
-static void quit_search_mode(editor_t *editor) {
-	history_add(&search_history, time(NULL), NULL, gtk_entry_get_text(GTK_ENTRY(editor->search_entry)), true);
-	editor->search_mode = FALSE;
-	editor->ignore_next_entry_keyrelease = TRUE;
-	gtk_widget_grab_focus(editor->drar);
-	gtk_widget_queue_draw(GTK_WIDGET(editor));
-}
-
-typedef bool uchar_match_fn(uint32_t a, uint32_t b);
-
-bool uchar_match_case_sensitive(uint32_t a, uint32_t b) {
-	return a == b;
-}
-
-bool uchar_match_case_insensitive(uint32_t a, uint32_t b) {
-	return u_tolower(a) == u_tolower(b);
-}
-
-static uchar_match_fn *should_be_case_sensitive(buffer_t *buffer, uint32_t *needle, int len) {
-	if (config_intval(&(buffer->config), CFG_INTERACTIVE_SEARCH_CASE_SENSITIVE) == 0) return uchar_match_case_insensitive;
-	if (config_intval(&(buffer->config), CFG_INTERACTIVE_SEARCH_CASE_SENSITIVE) == 1) return uchar_match_case_sensitive;
-
-	// smart case sensitiveness set up here
-
-	for (int i = 0; i < len; ++i) {
-		if (u_isupper(needle[i])) return uchar_match_case_sensitive;
-	}
-
-	return uchar_match_case_insensitive;
-}
-
-static void search_start_point(editor_t *editor, bool ctrl_g_invoked, bool start_at_top, real_line_t **search_line, int *search_glyph) {
-	if ((editor->buffer->mark.line == NULL) || editor->search_failed) {
-		if (start_at_top) {
-			*search_line = editor->buffer->real_line;
-			*search_glyph = 0;
-		} else {
-			for (*search_line = editor->buffer->real_line; (*search_line != NULL) && ((*search_line)->next != NULL); *search_line = (*search_line)->next);
-			*search_glyph = (*search_line)->cap-1;
-		}
-	} else if (ctrl_g_invoked) {
-		*search_line = editor->buffer->cursor.line;
-		*search_glyph = editor->buffer->cursor.glyph;
-	} else {
-		*search_line = editor->buffer->mark.line;
-		*search_glyph = editor->buffer->mark.glyph;
-	}
-}
-
-static void move_search(editor_t *editor, bool ctrl_g_invoked, bool direction_forward) {
-	int dst;
-	uint32_t *needle = utf8_to_utf32_string(gtk_entry_get_text(GTK_ENTRY(editor->search_entry)), &dst);
-
-	uchar_match_fn *match_fn = should_be_case_sensitive(editor->buffer, needle, dst);
-
-	real_line_t *search_line;
-	int search_glyph;
-	search_start_point(editor, ctrl_g_invoked, direction_forward, &search_line, &search_glyph);
-
-	int direction = direction_forward ? +1 : -1;
-
-#define OS(start, offset) (start + direction * offset)
-
-	while (search_line != NULL) {
-		int i = 0, j = 0;
-		int needle_start = direction_forward ? 0 : dst-1;
-
-		for ( ; i < search_line->cap; ++i) {
-			if (j >= dst) break;
-			if (match_fn(search_line->glyph_info[OS(search_glyph, i)].code, needle[OS(needle_start, j)])) {
-				++j;
-			} else {
-				i -= j;
-				j = 0;
-			}
-		}
-
-		if (j >= dst) {
-			if (!direction_forward) --i; // correction, because of selection semantics
-
-			// search was successful
-			editor->buffer->mark.line = search_line;
-			editor->buffer->mark.glyph = OS(OS(search_glyph, i), -j);
-			editor->buffer->cursor.line = search_line;
-			editor->buffer->cursor.glyph = OS(search_glyph, i);
-			lexy_update_for_move(editor->buffer, editor->buffer->cursor.line);
-			break;
-		}
-
-		// every line searched after the first line will start from the beginning
-		search_line = direction_forward ? search_line->next : search_line->prev;
-		search_glyph = direction_forward ? 0 : ((search_line != NULL) ? search_line->cap-1 : 0);
-	}
-
-	if (search_line == NULL) {
-		editor->search_failed = 0;
-		buffer_unset_mark(editor->buffer);
-	}
-
-	free(needle);
-
-	editor_center_on_cursor(editor);
-	gtk_widget_queue_draw(editor->drar);
 }
 
 static gboolean search_key_press_callback(GtkWidget *widget, GdkEventKey *event, editor_t *editor) {
@@ -1280,11 +1172,28 @@ static gboolean search_key_press_callback(GtkWidget *widget, GdkEventKey *event,
 
 	if (ctrl && !alt && !super) {
 		if (event->keyval == GDK_KEY_g) {
-			move_search(editor, true, true);
+			move_search(editor, true, true, false);
 			return TRUE;
 		} else if (event->keyval == GDK_KEY_G) {
-			move_search(editor, true, false);
+			move_search(editor, true, false, false);
 			return TRUE;
+		}
+	}
+
+	if (editor->research.mode == SM_REGEXP) {
+		if (!shift && !ctrl && !alt && !super) {
+			switch (event->keyval) {
+			case GDK_KEY_r:
+			case GDK_KEY_a:
+				move_search(editor, true, true, true);
+				break;
+			case GDK_KEY_n:
+				move_search(editor, true, true, false);
+				break;
+			case GDK_KEY_q:
+				quit_search_mode(editor);
+				break;
+			}
 		}
 	}
 
@@ -1292,19 +1201,23 @@ static gboolean search_key_press_callback(GtkWidget *widget, GdkEventKey *event,
 }
 
 static void search_changed_callback(GtkEditable *editable, editor_t *editor) {
-	move_search(editor, false, true);
+	move_search(editor, false, true, false);
 }
 
 static void search_button_forward(GtkButton *btn, editor_t *editor) {
-	move_search(editor, true, true);
+	move_search(editor, true, true, false);
 }
 
 static void search_button_backwards(GtkButton *btn, editor_t *editor) {
-	move_search(editor, true, false);
+	move_search(editor, true, false, false);
 }
 
 static void search_button_close(GtkButton *btn, editor_t *editor) {
 	quit_search_mode(editor);
+}
+
+static void search_button_execute(GtkButton *btn, editor_t *editor) {
+	move_search(editor, true, true, true);
 }
 
 editor_t *new_editor(buffer_t *buffer, bool single_line) {
@@ -1322,15 +1235,14 @@ editor_t *new_editor(buffer_t *buffer, bool single_line) {
 	r->single_line_escape = NULL;
 	r->single_line_return = NULL;
 
-	r->search_mode = FALSE;
-	r->search_failed = FALSE;
-
 	r->drar = gtk_drawing_area_new();
 	r->drarim = gtk_im_multicontext_new();
 
 	r->selection_scroll_timer = -1;
 
 	r->single_line = single_line;
+
+	research_init(&(r->research));
 
 	gtk_widget_add_events(r->drar, GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK | GDK_POINTER_MOTION_MASK);
 
@@ -1362,22 +1274,25 @@ editor_t *new_editor(buffer_t *buffer, bool single_line) {
 	GtkWidget *search_label = gtk_label_new("Search: ");
 
 	GtkWidget *next_search_button = gtk_button_new();
-	GtkWidget *prev_search_button = gtk_button_new();
+	r->prev_search_button = gtk_button_new();
 	GtkWidget *close_search_button = gtk_button_new();
+	r->execute_search_button = gtk_button_new_with_label("Apply");
 
 	gtk_container_add(GTK_CONTAINER(next_search_button), gtk_arrow_new(GTK_ARROW_DOWN, GTK_SHADOW_NONE));
-	gtk_container_add(GTK_CONTAINER(prev_search_button), gtk_arrow_new(GTK_ARROW_UP, GTK_SHADOW_NONE));
+	gtk_container_add(GTK_CONTAINER(r->prev_search_button), gtk_arrow_new(GTK_ARROW_UP, GTK_SHADOW_NONE));
 	gtk_container_add(GTK_CONTAINER(close_search_button), gtk_image_new_from_stock(GTK_STOCK_CLOSE, GTK_ICON_SIZE_SMALL_TOOLBAR));
 
 	g_signal_connect(G_OBJECT(next_search_button), "clicked", G_CALLBACK(search_button_forward), r);
-	g_signal_connect(G_OBJECT(prev_search_button), "clicked", G_CALLBACK(search_button_backwards), r);
+	g_signal_connect(G_OBJECT(r->prev_search_button), "clicked", G_CALLBACK(search_button_backwards), r);
 	g_signal_connect(G_OBJECT(close_search_button), "clicked", G_CALLBACK(search_button_close), r);
+	g_signal_connect(G_OBJECT(r->execute_search_button), "clicked", G_CALLBACK(search_button_execute), r);
 
 	gtk_box_pack_start(GTK_BOX(r->search_box), GTK_WIDGET(search_label), FALSE, FALSE, 0);
 	gtk_box_pack_start(GTK_BOX(r->search_box), GTK_WIDGET(r->search_entry), TRUE, TRUE, 0);
 	gtk_box_pack_end(GTK_BOX(r->search_box), close_search_button, FALSE, FALSE, 2);
-	gtk_box_pack_end(GTK_BOX(r->search_box), prev_search_button, FALSE, FALSE, 2);
+	gtk_box_pack_end(GTK_BOX(r->search_box), r->prev_search_button, FALSE, FALSE, 2);
 	gtk_box_pack_end(GTK_BOX(r->search_box), next_search_button, FALSE, FALSE, 2);
+	gtk_box_pack_end(GTK_BOX(r->search_box), r->execute_search_button, FALSE, FALSE, 2);
 
 	gtk_table_attach(GTK_TABLE(r), r->search_box, 0, 2, 0, 1, GTK_EXPAND|GTK_FILL, 0, 0, 0);
 	gtk_table_attach(GTK_TABLE(r), r->drar, 0, 1, 1, 2, GTK_EXPAND | GTK_FILL, GTK_EXPAND|GTK_FILL, 0, 0);
@@ -1416,19 +1331,39 @@ void editor_grab_focus(editor_t *editor, bool warp) {
 		}
 	}
 
-	if (editor->search_mode) {
+	if (editor->research.mode) {
 		gtk_widget_grab_focus(editor->search_entry);
 	}
 }
 
-void editor_start_search(editor_t *editor, const char *initial_search_term) {
+void editor_start_search(editor_t *editor, enum search_mode_t search_mode, const char *initial_search_term) {
 	if (editor->single_line) return;
 
 	editor->buffer->mark.line = editor->buffer->cursor.line;
 	editor->buffer->mark.glyph = editor->buffer->cursor.glyph;
 
-	editor->search_mode = TRUE;
+	editor->research.search_failed = false;
+	editor->research.mode = search_mode;
+
 	gtk_widget_grab_focus(editor->search_entry);
+
 	gtk_entry_set_text(GTK_ENTRY(editor->search_entry), (initial_search_term != NULL) ? initial_search_term : "");
+
+	gtk_widget_show_all(editor->search_box);
+
+	if (editor->research.mode == SM_LITERAL) {
+		gtk_widget_hide(editor->execute_search_button);
+		gtk_widget_show_all(editor->prev_search_button);
+		gtk_entry_set_editable(GTK_ENTRY(editor->search_entry), true);
+	} else {
+		gtk_widget_hide(editor->prev_search_button);
+		if (editor->research.cmd != NULL) {
+			gtk_widget_show_all(editor->execute_search_button);
+		} else {
+			gtk_widget_hide(editor->execute_search_button);
+		}
+		gtk_entry_set_editable(GTK_ENTRY(editor->search_entry), false);
+	}
+
 	gtk_widget_queue_draw(GTK_WIDGET(editor));
 }

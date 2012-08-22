@@ -30,17 +30,6 @@
 Tcl_Interp *interp;
 editor_t *the_context_editor = NULL;
 buffer_t *the_context_buffer = NULL;
-enum deferred_action deferred_action_to_return;
-
-static int teddy_exit_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
-	if (interp_context_editor() == NULL) {
-		Tcl_AddErrorInfo(interp, "No editor open, can not execute 'exit' command");
-		return TCL_ERROR;
-	}
-
-	deferred_action_to_return = CLOSE_EDITOR;
-	return TCL_OK;
-}
 
 static int teddy_cd_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
 	if (argc != 2) {
@@ -62,7 +51,9 @@ static int teddy_in_command(ClientData client_data, Tcl_Interp *interp, int argc
 	char *wd = get_current_dir_name();
 	chdir(argv[1]);
 
-	int code = Tcl_Eval(interp, Tcl_Merge(argc-2, argv+2));
+	char *cmd = Tcl_Merge(argc-2, argv+2);
+	int code = Tcl_Eval(interp, cmd);
+	Tcl_Free(cmd);
 
 	chdir(wd);
 	free(wd);
@@ -384,7 +375,7 @@ static int teddy_search_command(ClientData client_data, Tcl_Interp *interp, int 
 		return TCL_ERROR;
 	}
 
-	editor_start_search(interp_context_editor(), (argc == 1) ? NULL : argv[1]);
+	editor_start_search(interp_context_editor(), SM_LITERAL, (argc == 1) ? NULL : argv[1]);
 
 	return TCL_OK;
 }
@@ -561,7 +552,7 @@ static int teddy_bg_command(ClientData client_data, Tcl_Interp *interp, int argc
 		return TCL_ERROR;
 	}
 
-	go_to_buffer(interp_context_editor(), buffer, -1);
+	go_to_buffer(interp_context_editor(), buffer, false);
 
 	bzero(&term, sizeof(struct termios));
 
@@ -891,7 +882,6 @@ void interp_init(void) {
 	Tcl_HideCommand(interp, "tcl_wordBreakBefore", "hidden_tcl_wordBreakBefore");
 	Tcl_HideCommand(interp, "exit", "hidden_exit");
 
-	Tcl_CreateCommand(interp, "exit", &teddy_exit_command, (ClientData)NULL, NULL);
 	Tcl_CreateCommand(interp, "kill", &teddy_kill_command, (ClientData)NULL, NULL);
 
 	Tcl_CreateCommand(interp, "cd", &teddy_cd_command, (ClientData)NULL, NULL);
@@ -965,24 +955,15 @@ void interp_free(void) {
 	Tcl_DeleteInterp(interp);
 }
 
-enum deferred_action interp_eval(editor_t *editor, const char *command, bool show_ret) {
+int interp_eval(editor_t *editor, const char *command, bool show_ret) {
 	int code;
 
 	interp_context_editor_set(editor);
-	deferred_action_to_return = NOTHING;
 
 	code = Tcl_Eval(interp, command);
 
-	if (code != TCL_OK) {
-		Tcl_Obj *options = Tcl_GetReturnOptions(interp, code);
-		Tcl_Obj *key = Tcl_NewStringObj("-errorinfo", -1);
-		Tcl_Obj *stackTrace;
-		Tcl_IncrRefCount(key);
-		Tcl_DictObjGet(NULL, options, key, &stackTrace);
-		Tcl_DecrRefCount(key);
-
-		quick_message("TCL Error", Tcl_GetString(stackTrace));
-	} else {
+	switch (code) {
+	case TCL_OK:
 		if (show_ret) {
 			const char *result = Tcl_GetStringResult(interp);
 			if (strcmp(result, "") != 0) {
@@ -994,11 +975,28 @@ enum deferred_action interp_eval(editor_t *editor, const char *command, bool sho
 				}
 			}
 		}
+		Tcl_ResetResult(interp);
+		break;
+
+	case TCL_ERROR: {
+		Tcl_Obj *options = Tcl_GetReturnOptions(interp, code);
+		Tcl_Obj *key = Tcl_NewStringObj("-errorinfo", -1);
+		Tcl_Obj *stackTrace;
+		Tcl_IncrRefCount(key);
+		Tcl_DictObjGet(NULL, options, key, &stackTrace);
+		Tcl_DecrRefCount(key);
+		quick_message("TCL Error", Tcl_GetString(stackTrace));
+		Tcl_ResetResult(interp);
+		break;
 	}
 
-	Tcl_ResetResult(interp);
+	case TCL_BREAK:
+	case TCL_CONTINUE:
+	case TCL_RETURN:
+		break;
+	}
 
-	return deferred_action_to_return;
+	return code;
 }
 
 void read_conf(void) {
@@ -1052,7 +1050,9 @@ void read_conf(void) {
 }
 
 const char *interp_eval_command(int count, const char *argv[]) {
-	int code = Tcl_Eval(interp, Tcl_Merge(count, argv));
+	char *cmd = Tcl_Merge(count, argv);
+	int code = Tcl_Eval(interp, cmd);
+	Tcl_Free(cmd);
 
 	if (code == TCL_OK) {
 		return Tcl_GetStringResult(interp);
@@ -1086,4 +1086,19 @@ editor_t *interp_context_editor(void) {
 
 buffer_t *interp_context_buffer(void) {
 	return the_context_buffer;
+}
+
+void interp_return_point_pair(lpoint_t *mark, lpoint_t *cursor) {
+	char *r;
+	if (mark->line == NULL) {
+		asprintf(&r, "nil %d:%d",
+			cursor->line->lineno, cursor->glyph);
+	} else {
+		asprintf(&r, "%d:%d %d:%d",
+			mark->line->lineno, mark->glyph,
+			cursor->line->lineno, cursor->glyph);
+	}
+	alloc_assert(r);
+	Tcl_SetResult(interp, r, TCL_VOLATILE);
+	free(r);
 }

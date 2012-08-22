@@ -27,20 +27,8 @@ static void execute_command(editor_t *editor) {
 
 	char *command = buffer_lines_to_text(editor->buffer, &start, &end);
 
-	enum deferred_action da = interp_eval(top_context_editor(), command, false);
+	interp_eval(top_context_editor(), command, false);
 	history_add(&command_history, time(NULL), working_directory, command, true);
-
-	switch(da) {
-	case FOCUS_ALREADY_SWITCHED:
-		break;
-	case CLOSE_EDITOR:
-		editor_close_editor(editor);
-		break;
-	case NOTHING:
-	default:
-		// does not switch focus back to the editor by default
-		break;
-	}
 
 	free(command);
 
@@ -142,6 +130,7 @@ GtkWidget *top_init(void) {
 void top_start_command_line(editor_t *editor) {
 	gtk_notebook_set_current_page(GTK_NOTEBOOK(top_notebook), cmdline_notebook_page);
 	the_top_context_editor = editor;
+	buffer_select_all(cmdline_editor->buffer);
 	editor_grab_focus(cmdline_editor, false);
 }
 

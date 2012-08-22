@@ -4,18 +4,35 @@
 #include <stdbool.h>
 #include <gtk/gtk.h>
 #include <tcl.h>
+#include <tre/tre.h>
 
-#include "editor.h"
+#include "buffer.h"
 
-enum research_mode_t {
-	RM_INTERACTIVE = 0,
-	RM_SELECT,
-	RM_TOSTART,
-	RM_TOEND
+enum search_mode_t {
+	SM_NONE = 0,
+	SM_LITERAL = 1,
+	SM_REGEXP = 2
 };
 
-extern void research_init(GtkWidget *window);
+struct research_t {
+	enum search_mode_t mode;
+	bool search_failed;
+
+	regex_t regexp;
+	char *cmd;
+	bool line_limit;
+	bool next_will_wrap_around;
+
+	lpoint_t regex_endpoint;
+};
+
+struct _editor_t editor;
+
+extern void research_init(struct research_t *rs);
+
+extern void quit_search_mode(struct _editor_t *editor);
+void move_search(struct _editor_t *editor, bool ctrl_g_invoked, bool direction_forward, bool replace);
+
 extern int teddy_research_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]);
-extern void start_regexp_search(editor_t *editor, const char *regexp, const char *subst, bool line_limit, enum research_mode_t research_mode, bool literal);
 
 #endif

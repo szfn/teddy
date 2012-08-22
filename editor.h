@@ -3,6 +3,7 @@
 
 #include "buffer.h"
 #include "compl.h"
+#include "research.h"
 
 #include <gtk/gtk.h>
 
@@ -30,9 +31,7 @@ typedef struct _editor_t {
 
 	GtkWidget *search_entry, *search_box;
 
-	gboolean search_mode;
 	gulong current_entry_handler_id;
-	gboolean search_failed;
 
 	gboolean ignore_next_entry_keyrelease;
 	gboolean center_on_cursor_after_next_expose;
@@ -48,6 +47,9 @@ typedef struct _editor_t {
 	char locked_command_line[LOCKED_COMMAND_LINE_SIZE];
 
 	generic_completer_t *completer;
+
+	struct research_t research;
+	GtkWidget *prev_search_button, *execute_search_button;
 } editor_t;
 
 typedef struct _editor_class {
@@ -70,7 +72,7 @@ void editor_copy_action(editor_t *editor);
 void editor_insert_paste(editor_t *editor, GtkClipboard *clipboard); /* default_clipboard, selection_clipboard */
 void editor_cut_action(editor_t *editor);
 void editor_save_action(editor_t *editor);
-void editor_start_search(editor_t *editor, const char *initial_search_term);
+void editor_start_search(editor_t *editor, enum search_mode_t search_mode, const char *initial_search_term);
 void editor_undo_action(editor_t *editor);
 
 enum MoveCursorSpecial {

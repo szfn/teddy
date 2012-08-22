@@ -64,7 +64,7 @@ static gboolean buffers_key_press_callback(GtkWidget *widget, GdkEventKey *event
 			int idx = get_selected_idx();
 			if (idx < 0) return TRUE;
 			gtk_widget_hide(buffers_window);
-			go_to_buffer(buffers_selector_focus_editor, buffers[idx], -1);
+			go_to_buffer(buffers_selector_focus_editor, buffers[idx], false);
 			return TRUE;
 		}
 		case GDK_KEY_Escape:
@@ -468,7 +468,7 @@ int teddy_buffer_command(ClientData client_data, Tcl_Interp *interp, int argc, c
 			buffer = buffers[i];
 		}
 
-		go_to_buffer(interp_context_editor(), buffer, -1);
+		go_to_buffer(interp_context_editor(), buffer, false);
 	} else if (strcmp(argv[1], "current") == 0) {
 		char bufferid[20];
 		buffer_to_buffer_id(interp_context_buffer(), bufferid);
