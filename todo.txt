@@ -1,5 +1,3 @@
-BUG: autocomplete for command line has the wrong directory (uses the parent of current directory)
-
 LONG TERM:
 - remove generic go command, substitute with one to move within a buffer and mark stuff and another one to open a buffer (subcommand of buffer) (kill move, mark, cursor, gohome, bufman)
 

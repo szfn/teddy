@@ -279,7 +279,7 @@ int teddy_go_command(ClientData client_data, Tcl_Interp *interp, int argc, const
 	if (!exec_go(goarg, &gffr)) {
 		if (gffr == GFFR_BINARYFILE) return TCL_OK;
 
-		char *urp = unrealpath(interp_context_buffer()->path, goarg);
+		char *urp = unrealpath(top_working_directory(), goarg);
 		char *msg;
 		GtkWidget *dialog = gtk_dialog_new_with_buttons("Create file", GTK_WINDOW(gtk_widget_get_toplevel(GTK_WIDGET(interp_context_editor()))), GTK_DIALOG_MODAL|GTK_DIALOG_DESTROY_WITH_PARENT, "Yes", 1, "No", 0, NULL);
 
