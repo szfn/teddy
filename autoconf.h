@@ -5,23 +5,9 @@
 set monospaced_font \"Monospace-11\"\n\
 setcfg posbox_font Arial-8\n\
 \n\
+antique_theme\n\
+\n\
 setcfg focus_follows_mouse 1\n\
-\n\
-setcfg editor_bg_color [rgbcolor \"antique white\"]\n\
-setcfg border_color [rgbcolor black]\n\
-\n\
-setcfg editor_fg_color [rgbcolor black]\n\
-\n\
-setcfg posbox_border_color 0\n\
-setcfg posbox_bg_color 15654274\n\
-setcfg posbox_fg_color 0\n\
-\n\
-setcfg lexy_nothing [rgbcolor black]\n\
-setcfg lexy_keyword [rgbcolor \"midnight blue\"]\n\
-setcfg lexy_comment [rgbcolor \"dark green\"]\n\
-setcfg lexy_string [rgbcolor \"dark brown\"]\n\
-setcfg lexy_id [rgbcolor black]\n\
-setcfg lexy_literal [rgbcolor \"dark brown\"]\n\
 \n\
 bindkey Ctrl-Space mark\n\
 bindkey Ctrl-Shift-Space {mark lines}\n\

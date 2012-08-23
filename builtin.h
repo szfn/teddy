@@ -616,5 +616,78 @@ proc loadhistory {} {\n\
 	}\n\
 	close $f\n\
 }\n\
+\n\
+proc antique_theme {} {\n\
+	setcfg -global editor_bg_color [rgbcolor \"antique white\"]\n\
+	setcfg -global border_color [rgbcolor black]\n\
+\n\
+	setcfg -global editor_fg_color [rgbcolor black]\n\
+	setcfg -global posbox_border_color 0\n\
+	setcfg -global posbox_bg_color 15654274\n\
+	setcfg -global posbox_fg_color 0\n\
+\n\
+	setcfg -global lexy_nothing [rgbcolor black]\n\
+	setcfg -global lexy_keyword [rgbcolor \"midnight blue\"]\n\
+	setcfg -global lexy_comment [rgbcolor \"dark green\"]\n\
+	setcfg -global lexy_string [rgbcolor \"saddle brown\"]\n\
+	setcfg -global lexy_id [rgbcolor black]\n\
+	setcfg -global lexy_literal [rgbcolor \"saddle brown\"]\n\
+}\n\
+\n\
+proc zenburn_theme {} {\n\
+	setcfg -global editor_bg_color [rgbcolor 12 12 12]\n\
+	setcfg -global border_color [rgbcolor white]\n\
+	setcfg -global editor_bg_cursorline [rgbcolor 31 31 31]\n\
+\n\
+	setcfg -global editor_fg_color [rgbcolor white]\n\
+\n\
+	setcfg -global posbox_border_color 0\n\
+	setcfg -global posbox_bg_color 15654274\n\
+	setcfg -global posbox_fg_color 0\n\
+\n\
+	setcfg -global lexy_nothing [rgbcolor white]\n\
+	setcfg -global lexy_keyword [rgbcolor 240 223 175]\n\
+	setcfg -global lexy_comment [rgbcolor 127 159 127]\n\
+	setcfg -global lexy_string [rgbcolor 204 147 147]\n\
+	setcfg -global lexy_id [rgbcolor 197 197 183 ]\n\
+	setcfg -global lexy_literal [rgbcolor 220 163 163]\n\
+}\n\
+\n\
+proc solarized_theme {} {\n\
+	set base03    [rgbcolor 0  43  54]\n\
+	set base02    [rgbcolor 7  54  66]\n\
+	set base01    [rgbcolor 88 110 117]\n\
+	set base00    [rgbcolor 101 123 131]\n\
+	set base0     [rgbcolor 131 148 150]\n\
+	set base1     [rgbcolor 147 161 161]\n\
+	set base2     [rgbcolor 238 232 213]\n\
+	set base3 [rgbcolor 253 246 227]\n\
+	set yellow    [rgbcolor 181 137   0]\n\
+	set orange    [rgbcolor 203  75  22]\n\
+	set red       [rgbcolor 220  50  47]\n\
+	set magenta   [rgbcolor 211  54 130]\n\
+	set violet    [rgbcolor 108 113 196]\n\
+	set blue      [rgbcolor 38 139 210]\n\
+	set cyan      [rgbcolor 42 161 152]\n\
+	set green [rgbcolor 133 153   0]\n\
+\n\
+\n\
+	setcfg -global editor_bg_color $base03\n\
+	setcfg -global border_color $base0\n\
+	setcfg -global editor_bg_cursorline $base02\n\
+\n\
+	setcfg -global editor_fg_color $base2\n\
+\n\
+	setcfg -global posbox_border_color 0\n\
+	setcfg -global posbox_bg_color 15654274\n\
+	setcfg -global posbox_fg_color 0\n\
+\n\
+	setcfg -global lexy_nothing $base2\n\
+	setcfg -global lexy_keyword $green\n\
+	setcfg -global lexy_comment $base01\n\
+	setcfg -global lexy_string $cyan\n\
+	setcfg -global lexy_id $base2\n\
+	setcfg -global lexy_literal $cyan\n\
+}\n\
 "
 #endif

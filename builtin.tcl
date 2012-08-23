@@ -613,3 +613,76 @@ proc loadhistory {} {
 	}
 	close $f
 }
+
+proc antique_theme {} {
+	setcfg -global editor_bg_color [rgbcolor "antique white"]
+	setcfg -global border_color [rgbcolor black]
+
+	setcfg -global editor_fg_color [rgbcolor black]
+	setcfg -global posbox_border_color 0
+	setcfg -global posbox_bg_color 15654274
+	setcfg -global posbox_fg_color 0
+
+	setcfg -global lexy_nothing [rgbcolor black]
+	setcfg -global lexy_keyword [rgbcolor "midnight blue"]
+	setcfg -global lexy_comment [rgbcolor "dark green"]
+	setcfg -global lexy_string [rgbcolor "saddle brown"]
+	setcfg -global lexy_id [rgbcolor black]
+	setcfg -global lexy_literal [rgbcolor "saddle brown"]
+}
+
+proc zenburn_theme {} {
+	setcfg -global editor_bg_color [rgbcolor 12 12 12]
+	setcfg -global border_color [rgbcolor white]
+	setcfg -global editor_bg_cursorline [rgbcolor 31 31 31]
+
+	setcfg -global editor_fg_color [rgbcolor white]
+
+	setcfg -global posbox_border_color 0
+	setcfg -global posbox_bg_color 15654274
+	setcfg -global posbox_fg_color 0
+
+	setcfg -global lexy_nothing [rgbcolor white]
+	setcfg -global lexy_keyword [rgbcolor 240 223 175]
+	setcfg -global lexy_comment [rgbcolor 127 159 127]
+	setcfg -global lexy_string [rgbcolor 204 147 147]
+	setcfg -global lexy_id [rgbcolor 197 197 183 ]
+	setcfg -global lexy_literal [rgbcolor 220 163 163]
+}
+
+proc solarized_theme {} {
+	set base03    [rgbcolor 0  43  54]
+	set base02    [rgbcolor 7  54  66]
+	set base01    [rgbcolor 88 110 117]
+	set base00    [rgbcolor 101 123 131]
+	set base0     [rgbcolor 131 148 150]
+	set base1     [rgbcolor 147 161 161]
+	set base2     [rgbcolor 238 232 213]
+	set base3 [rgbcolor 253 246 227]
+	set yellow    [rgbcolor 181 137   0]
+	set orange    [rgbcolor 203  75  22]
+	set red       [rgbcolor 220  50  47]
+	set magenta   [rgbcolor 211  54 130]
+	set violet    [rgbcolor 108 113 196]
+	set blue      [rgbcolor 38 139 210]
+	set cyan      [rgbcolor 42 161 152]
+	set green [rgbcolor 133 153   0]
+
+
+	setcfg -global editor_bg_color $base03
+	setcfg -global border_color $base0
+	setcfg -global editor_bg_cursorline $base02
+
+	setcfg -global editor_fg_color $base2
+
+	setcfg -global posbox_border_color 0
+	setcfg -global posbox_bg_color 15654274
+	setcfg -global posbox_fg_color 0
+
+	setcfg -global lexy_nothing $base2
+	setcfg -global lexy_keyword $green
+	setcfg -global lexy_comment $base01
+	setcfg -global lexy_string $cyan
+	setcfg -global lexy_id $base2
+	setcfg -global lexy_literal $cyan
+}

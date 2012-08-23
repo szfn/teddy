@@ -118,6 +118,9 @@ static int teddy_setcfg_command(ClientData client_data, Tcl_Interp *interp, int 
 
 	if (interp_context_buffer() != NULL) buffer_config_changed(interp_context_buffer());
 
+	if (columnset != NULL)
+		gtk_widget_queue_draw(GTK_WIDGET(columnset));
+
 	return TCL_OK;
 }
 

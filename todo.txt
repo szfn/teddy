@@ -1,5 +1,7 @@
+BUG: autocomplete for command line has the wrong directory (uses the parent of current directory)
+
 LONG TERM:
-- absorb default themes (all three) in builtin configuration
+- remove generic go command, substitute with one to move within a buffer and mark stuff and another one to open a buffer (subcommand of buffer) (kill move, mark, cursor, gohome, bufman)
 
 - implement common awk idioms (like line numbering) with s and m
 
@@ -8,7 +10,6 @@ LONG TERM:
 - autoreload stuff when changed on disk (buffers, tags info)
 - remove complex directory visualization (and graphic builtin font)
 
-- remove generic go command, substitute with one to move within a buffer and mark stuff and another one to open a buffer (subcommand of buffer) (kill move, mark, cursor, gohome, bufman)
 
 - set column number for background processes whenever possible
 - less ugly indicators for autowrapping
@@ -23,6 +24,7 @@ LONG TERM:
 - multiprocess highlighting
 - sloppy focus (change focus only when the mouse moves to a different frame) and disable warping
 - macro recording
+- resize should work across multiple frames
 
 - comment region command
 - ability to persist the status of a window
