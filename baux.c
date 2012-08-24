@@ -9,46 +9,20 @@
 #define WORDCOMPL_UPDATE_RADIUS 1000
 #define MINIMUM_WORDCOMPL_WORD_LEN 3
 
-void buffer_aux_go_first_nonws_or_0(buffer_t *buffer) {
-	int old_cursor_glyph = buffer->cursor.glyph;
-	buffer_aux_go_first_nonws(buffer);
-	if (old_cursor_glyph == buffer->cursor.glyph) {
-		buffer->cursor.glyph = 0;
-	}
-}
-
-void buffer_aux_go_first_nonws(buffer_t *buffer) {
+static void buffer_aux_go_first_nonws(lpoint_t *p) {
 	int i;
-	for (i = 0; i < buffer->cursor.line->cap; ++i) {
-		uint32_t code = buffer->cursor.line->glyph_info[i].code;
+	for (i = 0; i < p->line->cap; ++i) {
+		uint32_t code = p->line->glyph_info[i].code;
 		if ((code != 0x20) && (code != 0x09)) break;
 	}
-	buffer->cursor.glyph = i;
+	p->glyph = i;
 }
 
-void buffer_aux_go_end(buffer_t *buffer) {
-	buffer->cursor.glyph = buffer->cursor.line->cap;
-}
-
-void buffer_aux_go_char(buffer_t *buffer, int n) {
-	buffer->cursor.glyph = n;
-	if (buffer->cursor.glyph > buffer->cursor.line->cap) buffer->cursor.glyph = buffer->cursor.line->cap;
-	if (buffer->cursor.glyph < 0) buffer->cursor.glyph = 0;
-}
-
-void buffer_aux_go_line(buffer_t *buffer, int n) {
-	real_line_t *cur, *prev;
-	for (cur = buffer->real_line; cur != NULL; cur = cur->next) {
-		if (cur->lineno+1 == n) {
-			buffer->cursor.line = cur;
-			buffer->cursor.glyph = 0;
-			return;
-		}
-		prev = cur;
-	}
-	if (cur == NULL) {
-		buffer->cursor.line = prev;
-		buffer->cursor.glyph = 0;
+static void buffer_aux_go_first_nonws_or_0(lpoint_t *p) {
+	int old_cursor_glyph = p->glyph;
+	buffer_aux_go_first_nonws(p);
+	if (old_cursor_glyph == p->glyph) {
+		p->glyph = 0;
 	}
 }
 
@@ -56,7 +30,8 @@ static UBool u_isalnum_or_underscore(uint32_t code) {
 	return u_isalnum(code) || (code == 0x5f);
 }
 
-void buffer_aux_wnwa_next_ex(lpoint_t *point) {
+/*if it is at the beginning of a word (or inside a word) goes to the end of this word, if it is at the end of a word (or inside a non-word sequence) goes to the beginning of the next one*/
+static void buffer_aux_wnwa_next_ex(lpoint_t *point) {
 	UBool searching_alnum;
 	if (point->glyph >= point->line->cap) return;
 
@@ -67,11 +42,8 @@ void buffer_aux_wnwa_next_ex(lpoint_t *point) {
 	}
 }
 
-void buffer_aux_wnwa_next(buffer_t *buffer) {
-	buffer_aux_wnwa_next_ex(&(buffer->cursor));
-}
-
-void buffer_aux_wnwa_prev_ex(lpoint_t *point) {
+/* If it is at the beginning of a word (or inside a non-word sequence) goes to the end of the previous word, if it is at the end of a word (or inside a word) goes to the beginning of the word) */
+static void buffer_aux_wnwa_prev_ex(lpoint_t *point) {
 	UBool searching_alnum;
 	if (point->glyph <= 0) return;
 
@@ -86,8 +58,110 @@ void buffer_aux_wnwa_prev_ex(lpoint_t *point) {
 	++(point->glyph);
 }
 
-void buffer_aux_wnwa_prev(buffer_t *buffer) {
-	buffer_aux_wnwa_prev_ex(&(buffer->cursor));
+void buffer_move_point_line(buffer_t *buffer, lpoint_t *p, enum movement_type_t type, int arg) {
+	//printf("Move point line: %d (%d)\n", arg, type);
+
+	switch (type) {
+	case MT_REL:
+		if (p->line == NULL) return;
+
+		while (arg < 0) {
+			real_line_t *to = p->line->prev;
+			if (to == NULL) break;
+			p->line = to;
+			++arg;
+		}
+
+		while (arg > 0) {
+			real_line_t *to = p->line->next;
+			if (to == NULL) break;
+			p->line = to;
+			--arg;
+		}
+
+		break;
+
+	case MT_END:
+		if (p->line == NULL) p->line = buffer->real_line;
+		for (; p->line->next != NULL; p->line = p->line->next);
+		break;
+
+	case MT_ABS: {
+		real_line_t *prev = buffer->real_line;
+		for (p->line = buffer->real_line; p->line != NULL; p->line = p->line->next) {
+			if (p->line->lineno+1 == arg) return;
+			prev = p->line;
+		}
+		if (p->line == NULL) p->line = prev;
+		break;
+	}
+
+	default:
+		quick_message("Internal error", "Internal error buffer_move_point_line");
+		return;
+	}
+
+	if (p->glyph > p->line->cap) p->glyph = p->line->cap;
+	if (p->glyph < 0) p->glyph = 0;
+}
+
+void buffer_move_point_glyph(buffer_t *buffer, lpoint_t *p, enum movement_type_t type, int arg) {
+	if (p->line == NULL) return;
+
+	//printf("Move point glyph: %d (%d)\n", arg, type);
+
+	switch (type) {
+	case MT_REL:
+		p->glyph += arg;
+
+		while (p->glyph > p->line->cap) {
+			if (p->line->next == NULL) break;
+			p->glyph = p->glyph - p->line->cap - 1;
+			p->line = p->line->next;
+		}
+
+		while (p->glyph < 0) {
+			if (p->line->prev == NULL) break;
+			p->line = p->line->prev;
+			p->glyph = p->line->cap + (p->glyph + 1);
+		}
+		break;
+
+	case MT_RELW:
+		while (arg < 0) {
+			buffer_aux_wnwa_prev_ex(p);
+			++arg;
+		}
+
+		while (arg > 0) {
+			buffer_aux_wnwa_next_ex(p);
+			--arg;
+		}
+		break;
+
+	case MT_END:
+		p->glyph = p->line->cap;
+		break;
+
+	case MT_START:
+		buffer_aux_go_first_nonws(p);
+		break;
+
+	case MT_HOME:
+		buffer_aux_go_first_nonws_or_0(p);
+		break;
+
+	case MT_ABS:
+		if (arg < 0) return;
+		p->glyph = arg;
+		break;
+
+	default:
+		quick_message("Internal error", "Internal error buffer_move_point_glyph");
+	}
+
+	if (p->glyph > p->line->cap) p->glyph = p->line->cap;
+	if (p->glyph < 0) p->glyph = 0;
 }
 
 void buffer_indent_newline(buffer_t *buffer, char *r) {

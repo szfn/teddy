@@ -18,83 +18,6 @@
 #include "rd.h"
 #include "top.h"
 
-static int exec_char_specifier(const char *specifier, int really_exec, buffer_t *buffer) {
-	long int n1;
-
-	if ((strcmp(specifier, "^") == 0) || (strcmp(specifier, ":^") == 0)) {
-		if (really_exec) buffer_aux_go_first_nonws(buffer);
-		return 1;
-	}
-
-	if ((strcmp(specifier, "$") == 0) || (strcmp(specifier, ":$") == 0)) {
-		if (really_exec) buffer_aux_go_end(buffer);
-		return 1;
-	}
-
-	if (specifier[0] == ':') {
-		n1 = strtol(specifier+1, NULL, 10);
-		if (n1 != LONG_MIN) {
-			if (really_exec) buffer_aux_go_char(buffer, (int)(n1-1));
-			return 1;
-		}
-	}
-
-	return 0;
-}
-
-static int isnumber(const char *str) {
-	const char *c = str;
-
-	if ((*c == '+') || (*c == '-')) ++c;
-
-	for (; *c != '\0'; ++c) {
-		if (!isdigit(*c)) return 0;
-	}
-	return 1;
-}
-
-static int exec_go_position(const char *specifier, editor_t *context_editor, buffer_t *buffer) {
-	long int n1;
-	char *pos;
-
-	if (exec_char_specifier(specifier, 1, buffer)) {
-		if (context_editor != NULL)
-			editor_complete_move(context_editor, TRUE);
-		return 1;
-	}
-
-	if (isnumber(specifier)) {
-		n1 = strtol(specifier, NULL, 10);
-		//printf("Line\n");
-		buffer_aux_go_line(buffer, (int)n1);
-		if (context_editor != NULL)
-			editor_complete_move(context_editor, TRUE);
-		return 1;
-	}
-
-	pos = strchr(specifier, ':');
-	if ((pos != NULL) && (pos != specifier)) {
-		char *c = alloca(sizeof(char) * (pos - specifier + 1));
-		strncpy(c, specifier, pos - specifier);
-		c[pos - specifier] = '\0';
-		if (isnumber(c)) {
-			n1 = strtol(c, NULL, 10);
-			if (exec_char_specifier(pos, 0, buffer)) {
-				//printf("Line + char\n");
-				buffer_aux_go_line(buffer, (int)n1);
-				exec_char_specifier(pos, 1, buffer);
-				if (context_editor != NULL)
-					editor_complete_move(context_editor, TRUE);
-				return 1;
-			} else {
-				return 0;
-			}
-		}
-	}
-
-	return 0;
-}
-
 buffer_t *go_file(const char *filename, bool create, enum go_file_failure_reason *gffr) {
 	char *p;
 	asprintf(&p, "%s/%s", top_working_directory(), filename);
@@ -192,15 +115,9 @@ static int exec_go(const char *specifier, enum go_file_failure_reason *gffr) {
 	char *sc = NULL;
 	char *saveptr, *tok;
 	buffer_t *buffer = NULL;
-	editor_t *editor = NULL;
 	int retval;
 
 	*gffr = GFFR_OTHER;
-
-	if (exec_go_position(specifier, interp_context_editor(), interp_context_buffer())) {
-	    retval = 1;
-	    goto exec_go_cleanup;
-	}
 
 	sc = malloc(sizeof(char) * (strlen(specifier) + 1));
 	strcpy(sc, specifier);
@@ -215,7 +132,7 @@ static int exec_go(const char *specifier, enum go_file_failure_reason *gffr) {
 		if (buffer == NULL) { retval = 0; goto exec_go_cleanup; }
 	}
 
-	editor = go_to_buffer(interp_context_editor(), buffer, false);
+	go_to_buffer(interp_context_editor(), buffer, false);
 	// editor will be NULL here if the user decided to select an editor
 
 	tok = strtok_r(NULL, ":", &saveptr);
@@ -234,8 +151,6 @@ static int exec_go(const char *specifier, enum go_file_failure_reason *gffr) {
 
 	if (subspecifier[0] == '[') ++tok;
 	if (subspecifier[strlen(subspecifier)-1] == ']') subspecifier[strlen(subspecifier)-1] = '\0';
-
-	exec_go_position(subspecifier, editor, buffer);
 
 	free(subspecifier);
 
@@ -322,137 +237,5 @@ int teddy_go_command(ClientData client_data, Tcl_Interp *interp, int argc, const
 	}
 }
 
-static bool mouse_open_select_like_file(editor_t *editor, lpoint_t *cursor, lpoint_t *start, lpoint_t *end) {
-	start->glyph = 0;
-	end->glyph = cursor->line->cap;
-
-	start->line = cursor->line;
-	end->line = cursor->line;
-
-	for (int i = cursor->glyph-1; i >= 0; --i) {
-		uint32_t code = start->line->glyph_info[i].code;
-		if ((code == 0x20) || (code == 0x09) || (code == 0xe650) || (code == 0xe651) || (code == 0xe652)) {
-			start->glyph = i+1;
-			break;
-		}
-	}
-
-	for (int i = cursor->glyph; i < start->line->cap; ++i) {
-		uint32_t code = start->line->glyph_info[i].code;
-		if ((code == 0x20) || (code == 0x09)) {
-			end->glyph = i;
-			break;
-		}
-	}
-
-	//printf("start_glyph: %d end_glyph: %d\n", start->glyph, end->glyph);
-	if (start->glyph > end->glyph) {
-		return false;
-	}
-
-	return true;
-}
-
 void mouse_open_action(editor_t *editor, lpoint_t *start, lpoint_t *end) {
-	if (buffer_aux_is_directory(editor->buffer)) {
-		rd_open(editor);
-		return;
-	}
-
-	lpoint_t changed_end;
-	lpoint_t cursor;
-
-	interp_context_editor_set(editor);
-
-	copy_lpoint(&cursor, start);
-
-	//printf("start_glyph: %d\n", start->glyph);
-
-	if (end == NULL) {
-		end = &changed_end;
-		if (!mouse_open_select_like_file(editor, &cursor, start, end)) return;
-	}
-
-	if (end->line != start->line) {
-		char *r = buffer_lines_to_text(editor->buffer, start, end);
-		interp_eval(editor, r, true);
-		free(r);
-		return;
-	}
-
-	char *text = buffer_lines_to_text(editor->buffer, start, end);
-
-	//printf("Open or search on selection [%s]\n", text);
-
-	if (text == NULL) return;
-
-	const char *eval_argv[] = { "mouse_go_preprocessing_hook", text };
-
-	char *cmd = Tcl_Merge(2, eval_argv);
-	int code = Tcl_Eval(interp, cmd);
-	Tcl_Free(cmd);
-
-	free(text);
-
-	if (code == TCL_OK) {
-		//printf("After processing hook: [%s]\n", Tcl_GetStringResult(interp));
-	} else {
-		Tcl_Obj *options = Tcl_GetReturnOptions(interp, code);
-		Tcl_Obj *key = Tcl_NewStringObj("-errorinfo", -1);
-		Tcl_Obj *stackTrace;
-		Tcl_IncrRefCount(key);
-		Tcl_DictObjGet(NULL, options, key, &stackTrace);
-		Tcl_DecrRefCount(key);
-
-		fprintf(stderr, "TCL Exception: %s\n", Tcl_GetString(stackTrace));
-		return;
-	}
-
-	char *go_arg = strdup(Tcl_GetStringResult(interp));
-	alloc_assert(go_arg);
-
-	enum go_file_failure_reason gffr;
-	if (!exec_go(go_arg, &gffr)) {
-		// if this succeeded we could open the file at the specified line and we are done
-		// otherwise we check gffr
-
-		if (gffr == GFFR_BINARYFILE) {
-			// it's was a readable file but it was binary
-			// we should just copy it in the command line
-
-			char *ex = malloc(sizeof(char) * (strlen(go_arg) + 4));
-			alloc_assert(ex);
-
-			strcpy(ex, " {");
-			strcat(ex, go_arg);
-			strcat(ex, "}");
-
-			// TODO:
-			//editor_add_to_command_line(editor, ex);
-
-			free(ex);
-		} else {
-			// we either couldn't read the file or it wasn't a file at all, just restrict to the word
-			// around the cursor and call search
-
-			copy_lpoint(start, &cursor);
-			copy_lpoint(end, &cursor);
-
-			buffer_aux_wnwa_prev_ex(start);
-			buffer_aux_wnwa_next_ex(end);
-
-			// artifact of how wnwa_prev works
-			/*++(start->glyph);
-			if (start->glyph > start->line->cap) start->glyph = start->line->cap;*/
-
-			char *wordsel = buffer_lines_to_text(editor->buffer, start, end);
-			//TODO
-			//editor_start_search(context_editor, wordsel);
-			free(wordsel);
-		}
-	}
-
-	free(go_arg);
-
-	interp_context_editor_set(NULL);
 }

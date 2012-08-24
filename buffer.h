@@ -150,9 +150,6 @@ char *buffer_lines_to_text(buffer_t *buffer, lpoint_t *start, lpoint_t *end);
 // converts a line from this buffer into text
 char *buffer_line_to_text(buffer_t *buffer, real_line_t *line);
 
-// moves cursor by one glyph
-void buffer_move_cursor(buffer_t *buffer, int direction);
-
 // sets character positions if width has changed
 void buffer_typeset_maybe(buffer_t *buffer, double width, bool single_line, bool force);
 

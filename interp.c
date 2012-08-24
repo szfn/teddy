@@ -142,18 +142,6 @@ static int teddy_bindkey_command(ClientData client_data, Tcl_Interp *interp, int
 	return TCL_OK;
 }
 
-static void set_tcl_result_to_lpoint(Tcl_Interp *interp, lpoint_t *point) {
-	if (point->line != NULL) {
-		char *r;
-		asprintf(&r, "%d:%d", point->line->lineno+1, point->glyph+1);
-		alloc_assert(r);
-		Tcl_SetResult(interp, r, TCL_VOLATILE);
-		free(r);
-	} else {
-		Tcl_SetResult(interp, "", TCL_VOLATILE);
-	}
-}
-
 static int teddy_mark_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
 	if (interp_context_editor() == NULL) {
 		Tcl_AddErrorInfo(interp, "No editor open, can not execute 'mark' command");
@@ -170,10 +158,7 @@ static int teddy_mark_command(ClientData client_data, Tcl_Interp *interp, int ar
 		return TCL_ERROR;
 	}
 
-	if (strcmp(argv[1], "get") == 0) {
-		set_tcl_result_to_lpoint(interp, &(interp_context_buffer()->mark));
-		return TCL_OK;
-	} else if (strcmp(argv[1], "start") == 0) {
+	if (strcmp(argv[1], "start") == 0) {
 		if (interp_context_buffer()->mark.line == NULL) {
 			buffer_set_mark_at_cursor(interp_context_buffer());
 			gtk_widget_queue_draw(GTK_WIDGET(interp_context_editor()));
@@ -206,21 +191,6 @@ static int teddy_mark_command(ClientData client_data, Tcl_Interp *interp, int ar
 		return TCL_ERROR;
 	}
 
-	return TCL_OK;
-}
-
-static int teddy_cursor_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
-	if (interp_context_buffer() == NULL) {
-		Tcl_AddErrorInfo(interp, "No editor open, can not execute 'cursor' command");
-		return TCL_ERROR;
-	}
-
-	if (argc != 1) {
-		Tcl_AddErrorInfo(interp, "Too many arguments to 'cursor' command");
-		return TCL_ERROR;
-	}
-
-	set_tcl_result_to_lpoint(interp, &(interp_context_buffer()->cursor));
 	return TCL_OK;
 }
 
@@ -379,61 +349,6 @@ static int teddy_search_command(ClientData client_data, Tcl_Interp *interp, int 
 	}
 
 	editor_start_search(interp_context_editor(), SM_LITERAL, (argc == 1) ? NULL : argv[1]);
-
-	return TCL_OK;
-}
-
-static int teddy_move_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
-	int next;
-	if (interp_context_editor() == NULL) {
-		Tcl_AddErrorInfo(interp, "No editor open, can not execute 'move' command");
-		return TCL_ERROR;
-	}
-
-	if (argc != 3) {
-		Tcl_AddErrorInfo(interp, "Wrong number of arguments to 'move' command, usage: move <prev|next> <char|wnwa|softline>");
-		return TCL_ERROR;
-	}
-
-	next = (strcmp(argv[1], "next") == 0);
-
-	bool ret = false;
-	if (strcmp(argv[2], "char") == 0) {
-		ret = editor_move_cursor(interp_context_editor(), 0, next ? 1 : -1, MOVE_NORMAL, TRUE);
-	} else if (strcmp(argv[2], "softline") == 0) {
-		ret = editor_move_cursor(interp_context_editor(), next ? 1 : -1, 0, MOVE_NORMAL, TRUE);
-	} else if (strcmp(argv[2], "line") == 0) {
-		ret = editor_move_cursor(interp_context_editor(), 1, 0, MOVE_NORMAL, TRUE);
-	} else if (strcmp(argv[2], "wnwa") == 0) {
-		ret = true;
-		if (next)
-			buffer_aux_wnwa_next(interp_context_buffer());
-		else
-			buffer_aux_wnwa_prev(interp_context_buffer());
-		editor_complete_move(interp_context_editor(), TRUE);
-	} else {
-		Tcl_AddErrorInfo(interp, "Unknown argument to 'move' command");
-		return TCL_ERROR;
-	}
-
-	Tcl_SetResult(interp, ret ? "true" : "false", TCL_VOLATILE);
-
-	return TCL_OK;
-}
-
-static int teddy_gohome_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
-	if (interp_context_editor() == NULL) {
-		Tcl_AddErrorInfo(interp, "No editor open, can not execute 'gohome' command");
-		return TCL_ERROR;
-	}
-
-	if (argc != 1) {
-		Tcl_AddErrorInfo(interp, "Wrong number of arguments to 'gohome' command");
-		return TCL_ERROR;
-	}
-
-	buffer_aux_go_first_nonws_or_0(interp_context_buffer());
-	editor_complete_move(interp_context_editor(), TRUE);
 
 	return TCL_OK;
 }
@@ -690,6 +605,161 @@ static int teddy_change_command(ClientData client_data, Tcl_Interp *interp, int 
 	}
 }
 
+static bool move_command_ex(const char *sin, lpoint_t *p, lpoint_t *ref) {
+	if (strcmp(sin, "nil") == 0) {
+		if (ref == NULL) {
+			Tcl_AddErrorInfo(interp, "Attempted to null cursor in 'm' command");
+			return false;
+		} else {
+			p->line = NULL;
+			p->glyph = 0;
+			return true;
+		}
+	}
+
+	char *s = strdup(sin);
+	alloc_assert(s);
+
+	char *saveptr;
+	char *first = strtok_r(s, ":", &saveptr);
+	char *second = strtok_r(NULL, ":", &saveptr);
+	char *expectfailure = strtok_r(NULL, ":", &saveptr);
+
+	if ((first == NULL) || (second == NULL) || (expectfailure != NULL))
+		goto move_command_ex_bad_argument;
+
+	enum movement_type_t lineflag = MT_ABS, colflag = MT_ABS;
+	int lineno = 0, colno = 0;
+
+	if (strcmp(first, "$") == 0) {
+		lineflag = MT_END;
+	} else {
+		bool forward = true;
+		switch (first[0]) {
+		case '+':
+			lineflag = MT_REL;
+			++first;
+			break;
+		case '-':
+			lineflag = MT_REL;
+			forward = false;
+			++first;
+			break;
+		default:
+			lineflag = MT_ABS;
+			break;
+		}
+
+		lineno = atoi(first);
+		if (lineno < 0) goto move_command_ex_bad_argument;
+		if (!forward) lineno = -lineno;
+	}
+
+	if (strcmp(second, "$") == 0) {
+		colflag = MT_END;
+	} else if (strcmp(second, "^") == 0) {
+		colflag = MT_START;
+	} else if ((strcmp(second, "^1") == 0) || (strcmp(second, "1^") == 0)) {
+		colflag = MT_HOME;
+	} else if (strlen(second) == 0) {
+		goto move_command_ex_bad_argument;
+	} else {
+		bool words = false, forward = true;
+		if (second[strlen(second)-1] == 'w') {
+			words = true;
+			second[strlen(second)-1] = '\0';
+		}
+		switch (second[0]) {
+		case '+':
+			colflag = MT_RELW;
+			++second;
+			break;
+		case '-':
+			colflag = MT_RELW;
+			forward = false;
+			++second;
+			break;
+		default:
+			if (words) goto move_command_ex_bad_argument;
+			colflag = MT_ABS;
+			break;
+		}
+
+		colno = atoi(second);
+		if (colno < 0) goto move_command_ex_bad_argument;
+		if (!forward) colno = -colno;
+	}
+
+	if (ref != NULL) {
+		p->line = ref->line;
+		p->glyph = ref->glyph;
+	}
+
+	if (p->line == NULL) {
+		if (lineflag == MT_REL) goto move_command_relative_with_nil;
+		if (colflag == MT_REL) goto move_command_relative_with_nil;
+	}
+
+	buffer_move_point_line(interp_context_buffer(), p, lineflag, lineno);
+	buffer_move_point_glyph(interp_context_buffer(), p, colflag, colno);
+
+	if (interp_context_editor() != NULL)
+		editor_complete_move(interp_context_editor(), TRUE);
+
+	free(s);
+
+	return true;
+
+move_command_ex_bad_argument: {
+	char *msg;
+	asprintf(&msg, "Malformed argument passed to 'm' command: '%s'", sin);
+	alloc_assert(msg);
+	Tcl_AddErrorInfo(interp, msg);
+	free(msg);
+	free(s);
+	return false; }
+
+move_command_relative_with_nil: {
+	char *msg;
+	asprintf(&msg, "Argument passed to 'm' specifies relative movement but cursor isn't set: '%s'", sin);
+	alloc_assert(msg);
+	Tcl_AddErrorInfo(interp, msg);
+	free(msg);
+	free(s);
+	return false; }
+}
+
+static int teddy_move_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
+	if (interp_context_editor() == NULL) {
+		Tcl_AddErrorInfo(interp, "No editor open, can not execute 'move' command");
+		return TCL_ERROR;
+	}
+
+	switch (argc) {
+	case 1:
+		break;
+	case 2:
+		if (!move_command_ex(argv[1], &(interp_context_buffer()->cursor), NULL)) {
+			return TCL_ERROR;
+		}
+		break;
+	case 3:
+		if (!move_command_ex(argv[1], &(interp_context_buffer()->mark), &(interp_context_buffer()->cursor))) {
+			return TCL_ERROR;
+		}
+		if (!move_command_ex(argv[2], &(interp_context_buffer()->cursor), NULL)) {
+			return TCL_ERROR;
+		}
+		break;
+	default:
+		Tcl_AddErrorInfo(interp, "Wrong number of arguments to 'move' command");
+		return TCL_ERROR;
+	}
+
+	interp_return_point_pair(&(interp_context_buffer()->mark), &(interp_context_buffer()->cursor));
+	return TCL_OK;
+}
+
 static int parse_signum(const char *sigspec) {
 	char *endptr = NULL;
 	int signum = (int)strtol(sigspec, &endptr, 10);
@@ -900,15 +970,11 @@ void interp_init(void) {
 	Tcl_CreateCommand(interp, "refresh", &teddy_refresh_command, (ClientData)NULL, NULL);
 
 	Tcl_CreateCommand(interp, "mark", &teddy_mark_command, (ClientData)NULL, NULL);
-	Tcl_CreateCommand(interp, "cursor", &teddy_cursor_command, (ClientData)NULL, NULL);
 	Tcl_CreateCommand(interp, "cb", &teddy_cb_command, (ClientData)NULL, NULL);
 	Tcl_CreateCommand(interp, "save", &teddy_save_command, (ClientData)NULL, NULL);
 	Tcl_CreateCommand(interp, "bufman", &teddy_bufman_command, (ClientData)NULL, NULL);
 	Tcl_CreateCommand(interp, "undo", &teddy_undo_command, (ClientData)NULL, NULL);
 	Tcl_CreateCommand(interp, "search", &teddy_search_command, (ClientData)NULL, NULL);
-
-	Tcl_CreateCommand(interp, "move", &teddy_move_command, (ClientData)NULL, NULL);
-	Tcl_CreateCommand(interp, "gohome", &teddy_gohome_command, (ClientData)NULL, NULL);
 
 	Tcl_CreateCommand(interp, "bg", &teddy_bg_command, (ClientData)NULL, NULL);
 	Tcl_CreateCommand(interp, "<", &teddy_sendinput_command, (ClientData)NULL, NULL);
@@ -919,6 +985,7 @@ void interp_init(void) {
 
 	Tcl_CreateCommand(interp, "s", &teddy_research_command, (ClientData)NULL, NULL);
 	Tcl_CreateCommand(interp, "c", &teddy_change_command, (ClientData)NULL, NULL);
+	Tcl_CreateCommand(interp, "m", &teddy_move_command, (ClientData)NULL, NULL);
 
 	Tcl_CreateCommand(interp, "lexydef-create", &lexy_create_command, (ClientData)NULL, NULL);
 	Tcl_CreateCommand(interp, "lexydef-append", &lexy_append_command, (ClientData)NULL, NULL);

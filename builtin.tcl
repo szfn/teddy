@@ -1,11 +1,11 @@
 # builtin commands for teddy
 
 proc kill_line {} {
-   go :1
+   m +0:1
    mark transient
    mark lines
    move next line
-   go :1
+   m +0:1
    if {[undo tag] eq "kill_line"} {
    	undo fusenext
    }
@@ -319,8 +319,7 @@ proc mouse_go_preprocessing_hook {text} {
 proc bindent {direction indentchar} {
 	mark lines
 
-	set stored_mark [mark get]
-	set stored_cursor [cursor]
+	set saved [m]
 	set text [c]
 
 	switch -exact $direction {
@@ -340,63 +339,11 @@ proc bindent {direction indentchar} {
 	#puts "Stored mark: $stored_mark"
 	#puts "Stored cursor: $stored_cursor"
 
-	go $stored_mark
-	mark
-	go $stored_cursor
+	m {*}$saved
 }
 
 proc man {args} {
 	bg "+man/$args+" "shell man $args"
-}
-
-proc bufman_exp {} {
-	set bufman [buffer make "+bufman+"]
-
-	buffer propset $bufman bufman-previous-buffer [buffer current]
-
-	go -here $bufman
-
-	foreach buf [buffer ls] {
-		set bufinfo [buffer info $buf]
-
-		c [dict get $bufinfo id]
-		c "\t"
-		c [dict get $bufinfo name]
-		c "\t"
-		c [dict get $bufinfo path]
-		c "\n"
-	}
-
-	c "\nRETURN Focus buffer\nDELETE Remove buffer\nESC Returns to previous buffer\n"
-
-	buffer setkeyprocessor $bufman bufman_keyprocessor
-}
-
-proc bufman_keyprocessor {key} {
-	set previous [buffer propget [buffer current] bufman-previous-buffer]
-	set bufman [buffer current]
-
-	if {$key eq "Escape"} {
-		kill buffer $bufman
-		go -here $previous
-		return "done"
-	}
-
-	if {$key eq "Return"} {
-		mark transient
-		mark lines
-		set tobuffer [lindex [split [mark get] " "] 0]
-		mark stop
-
-		go -here $previous
-		kill buffer $bufman
-
-		go $tobuffer
-
-		return "done"
-	}
-
-	return "continue"
 }
 
 proc lexydef {name args} {
@@ -566,33 +513,12 @@ lexyassoc go {\.go$}
 
 
 proc clear {} {
-	go 1
-	mark transient
-	go 10000
+	m 1:1 $:$
 	c ""
 }
 
 proc buffer_setup_hook {buffer-name} {
 	return {}
-}
-
-proc dirrec {} {
-	if {[string index [pwf] end] ne "/"} {
-		return
-	}
-
-	set saved_cursor [cursor]
-
-	go 1
-
-	while {[move next line]} {
-		if {[s -0 -line "\ue650"]} {
-			go &
-			go :0
-		}
-	}
-
-	go $saved_cursor
 }
 
 proc loadhistory {} {

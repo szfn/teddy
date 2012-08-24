@@ -22,12 +22,12 @@ bindkey Ctrl-b bufman
 bindkey Ctrl-f search
 bindkey Ctrl-g {search [teddyhistory search 1]}
 
-bindkey Ctrl-a gohome
-bindkey Ctrl-e {go $}
-bindkey Ctrl-Left {move prev wnwa}
-bindkey Ctrl-Right {move next wnwa}
-bindkey Ctrl-Home {go 1}
-bindkey Ctrl-End {go -1}
+bindkey Ctrl-a {m +0:^1}
+bindkey Ctrl-e {m +0:$ }
+bindkey Ctrl-Left {m +0:-1w}
+bindkey Ctrl-Right {m +0:+1w}
+bindkey Ctrl-Home {m 1:0}
+bindkey Ctrl-End {m $:0}
 
 bindkey Ctrl-l iopen
 

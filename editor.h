@@ -75,15 +75,7 @@ void editor_save_action(editor_t *editor);
 void editor_start_search(editor_t *editor, enum search_mode_t search_mode, const char *initial_search_term);
 void editor_undo_action(editor_t *editor);
 
-enum MoveCursorSpecial {
-	MOVE_NORMAL = 1,
-	MOVE_LINE_START,
-	MOVE_LINE_END,
-};
-
 void set_label_text(editor_t *editor);
-
-bool editor_move_cursor(editor_t *editor, int delta_line, int delta_char, enum MoveCursorSpecial special, gboolean should_move_origin);
 
 void editor_complete_move(editor_t *editor, gboolean should_move_origin);
 

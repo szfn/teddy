@@ -4,11 +4,11 @@
 #define BUILTIN_TCL_CODE "# builtin commands for teddy\n\
 \n\
 proc kill_line {} {\n\
-   go :1\n\
+   m +0:1\n\
    mark transient\n\
    mark lines\n\
    move next line\n\
-   go :1\n\
+   m +0:1\n\
    if {[undo tag] eq \"kill_line\"} {\n\
    	undo fusenext\n\
    }\n\
@@ -322,8 +322,7 @@ proc mouse_go_preprocessing_hook {text} {\n\
 proc bindent {direction indentchar} {\n\
 	mark lines\n\
 \n\
-	set stored_mark [mark get]\n\
-	set stored_cursor [cursor]\n\
+	set saved [m]\n\
 	set text [c]\n\
 \n\
 	switch -exact $direction {\n\
@@ -343,63 +342,11 @@ proc bindent {direction indentchar} {\n\
 	#puts \"Stored mark: $stored_mark\"\n\
 	#puts \"Stored cursor: $stored_cursor\"\n\
 \n\
-	go $stored_mark\n\
-	mark\n\
-	go $stored_cursor\n\
+	m {*}$saved\n\
 }\n\
 \n\
 proc man {args} {\n\
 	bg \"+man/$args+\" \"shell man $args\"\n\
-}\n\
-\n\
-proc bufman_exp {} {\n\
-	set bufman [buffer make \"+bufman+\"]\n\
-\n\
-	buffer propset $bufman bufman-previous-buffer [buffer current]\n\
-\n\
-	go -here $bufman\n\
-\n\
-	foreach buf [buffer ls] {\n\
-		set bufinfo [buffer info $buf]\n\
-\n\
-		c [dict get $bufinfo id]\n\
-		c \"\\t\"\n\
-		c [dict get $bufinfo name]\n\
-		c \"\\t\"\n\
-		c [dict get $bufinfo path]\n\
-		c \"\\n\"\n\
-	}\n\
-\n\
-	c \"\\nRETURN Focus buffer\\nDELETE Remove buffer\\nESC Returns to previous buffer\\n\"\n\
-\n\
-	buffer setkeyprocessor $bufman bufman_keyprocessor\n\
-}\n\
-\n\
-proc bufman_keyprocessor {key} {\n\
-	set previous [buffer propget [buffer current] bufman-previous-buffer]\n\
-	set bufman [buffer current]\n\
-\n\
-	if {$key eq \"Escape\"} {\n\
-		kill buffer $bufman\n\
-		go -here $previous\n\
-		return \"done\"\n\
-	}\n\
-\n\
-	if {$key eq \"Return\"} {\n\
-		mark transient\n\
-		mark lines\n\
-		set tobuffer [lindex [split [mark get] \" \"] 0]\n\
-		mark stop\n\
-\n\
-		go -here $previous\n\
-		kill buffer $bufman\n\
-\n\
-		go $tobuffer\n\
-\n\
-		return \"done\"\n\
-	}\n\
-\n\
-	return \"continue\"\n\
 }\n\
 \n\
 proc lexydef {name args} {\n\
@@ -569,33 +516,12 @@ lexyassoc go {\\.go$}\n\
 \n\
 \n\
 proc clear {} {\n\
-	go 1\n\
-	mark transient\n\
-	go 10000\n\
+	m 1:1 $:$\n\
 	c \"\"\n\
 }\n\
 \n\
 proc buffer_setup_hook {buffer-name} {\n\
 	return {}\n\
-}\n\
-\n\
-proc dirrec {} {\n\
-	if {[string index [pwf] end] ne \"/\"} {\n\
-		return\n\
-	}\n\
-\n\
-	set saved_cursor [cursor]\n\
-\n\
-	go 1\n\
-\n\
-	while {[move next line]} {\n\
-		if {[s -0 -line \"\\ue650\"]} {\n\
-			go &\n\
-			go :0\n\
-		}\n\
-	}\n\
-\n\
-	go $saved_cursor\n\
 }\n\
 \n\
 proc loadhistory {} {\n\

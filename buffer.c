@@ -1039,27 +1039,6 @@ int buffer_real_line_count(buffer_t *buffer) {
 	return count;
 }
 
-void buffer_move_cursor(buffer_t *buffer, int direction) {
-	buffer->cursor.glyph += direction;
-	if (buffer->cursor.glyph < 0) {
-		if (buffer->cursor.line->prev != NULL) {
-			buffer->cursor.line = buffer->cursor.line->prev;
-			buffer->cursor.glyph = buffer->cursor.line->cap;
-		} else {
-			buffer->cursor.glyph = 0;
-		}
-	}
-	if (buffer->cursor.glyph > buffer->cursor.line->cap) {
-		if (buffer->cursor.line->next != NULL) {
-			buffer->cursor.glyph = 0;
-			buffer->cursor.line = buffer->cursor.line->next;
-		} else {
-			buffer->cursor.glyph = buffer->cursor.line->cap;
-		}
-	}
-	buffer_extend_selection_by_select_type(buffer);
-}
-
 void buffer_typeset_maybe(buffer_t *buffer, double width, bool single_line, bool force) {
 	real_line_t *line;
 	double y = single_line ? buffer->ascent : buffer->line_height + (buffer->ex_height / 2);
@@ -1134,8 +1113,8 @@ void buffer_extend_selection_by_select_type(buffer_t *buffer) {
 		end->glyph = end->line->cap;
 		break;
 	case BST_WORDS:
-		buffer_aux_wnwa_prev_ex(start);
-		buffer_aux_wnwa_next_ex(end);
+		buffer_move_point_glyph(buffer, start, MT_RELW, -1);
+		buffer_move_point_glyph(buffer, end, MT_RELW, +1);
 		break;
 	default:
 		//nothing to do (is unknown)

@@ -217,57 +217,9 @@ void editor_complete_move(editor_t *editor, gboolean should_move_origin) {
 
 	if (should_move_origin) {
 		editor_center_on_cursor(editor);
-	} else {
-		gtk_widget_queue_draw(editor->drar);
 	}
 
 	lexy_update_for_move(editor->buffer, editor->buffer->cursor.line);
-}
-
-bool editor_move_cursor(editor_t *editor, int delta_line, int delta_char, enum MoveCursorSpecial special, gboolean should_move_origin) {
-	bool ret = true; // will stay true if all requested movements can be completed correctly
-
-	while (delta_line < 0) {
-		real_line_t *to = editor->buffer->cursor.line->prev;
-		if (to == NULL) { ret = false; break; }
-		editor->buffer->cursor.line = to;
-		++delta_line;
-	}
-
-	while (delta_line > 0) {
-		real_line_t *to = editor->buffer->cursor.line->next;
-		if (to == NULL) { ret = false; break; }
-		editor->buffer->cursor.line = to;
-		--delta_line;
-	}
-
-	if (editor->buffer->cursor.glyph > editor->buffer->cursor.line->cap)
-		editor->buffer->cursor.glyph = editor->buffer->cursor.line->cap;
-
-	if ((delta_char != 0) || (special != MOVE_NORMAL)) {
-		editor->buffer->cursor.glyph += delta_char;
-
-		if (editor->buffer->cursor.glyph < 0) {
-			ret = false;
-			editor->buffer->cursor.glyph = 0;
-		}
-		if (editor->buffer->cursor.glyph > editor->buffer->cursor.line->cap) {
-			ret = false;
-			editor->buffer->cursor.glyph = editor->buffer->cursor.line->cap;
-		}
-
-		if (special == MOVE_LINE_START) {
-			editor->buffer->cursor.glyph = 0;
-		} else if (special == MOVE_LINE_END) {
-			editor->buffer->cursor.glyph = editor->buffer->cursor.line->cap;
-		}
-	}
-
-	buffer_extend_selection_by_select_type(editor->buffer);
-
-	editor_complete_move(editor, should_move_origin);
-
-	return ret;
 }
 
 static void text_entry_callback(GtkIMContext *context, gchar *str, gpointer data) {
@@ -426,17 +378,9 @@ static void full_keyevent_to_string(guint keyval, int super, int ctrl, int alt, 
 
 	strcpy(pressed, "");
 
-	if (super) {
-		strcat(pressed, "Super-");
-	}
-
-	if (ctrl) {
-		strcat(pressed, "Ctrl-");
-	}
-
-	if (alt) {
-		strcat(pressed, "Alt-");
-	}
+	if (super) strcat(pressed, "Super-");
+	if (ctrl) strcat(pressed, "Ctrl-");
+	if (alt) strcat(pressed, "Alt-");
 
 	if (shift) {
 		if ((keyval < 0x21) || (keyval > 0x7e)) {
@@ -484,21 +428,17 @@ static gboolean key_press_callback(GtkWidget *widget, GdkEventKey *event, editor
 		case GDK_KEY_Delete:
 			if (editor->buffer->mark.line == NULL) {
 				buffer_set_mark_at_cursor(editor->buffer);
-				buffer_move_cursor(editor->buffer, +1);
-				editor_replace_selection(editor, "");
-			} else {
-				editor_replace_selection(editor, "");
+				buffer_move_point_glyph(editor->buffer, &(editor->buffer->cursor), MT_REL, +1);
 			}
-			return TRUE;
+			editor_replace_selection(editor, "");
+			goto key_press_return_true;
 		case GDK_KEY_BackSpace:
 			if (editor->buffer->mark.line == NULL) {
 				buffer_set_mark_at_cursor(editor->buffer);
-				buffer_move_cursor(editor->buffer, -1);
-				editor_replace_selection(editor, "");
-			} else {
-				editor_replace_selection(editor, "");
+				buffer_move_point_glyph(editor->buffer, &(editor->buffer->cursor), MT_REL, -1);
 			}
-			return TRUE;
+			editor_replace_selection(editor, "");
+			goto key_press_return_true;
 		}
 	}
 
@@ -508,7 +448,7 @@ static gboolean key_press_callback(GtkWidget *widget, GdkEventKey *event, editor
 			switch(event->keyval) {
 				case GDK_KEY_Up:
 					COMPL_WND_UP(editor->completer);
-					return TRUE;
+					goto key_press_return_true;
 				case GDK_KEY_Down:
 				case GDK_KEY_Tab:
 					if (COMPL_COMMON_SUFFIX(editor->completer) != NULL) {
@@ -516,58 +456,56 @@ static gboolean key_press_callback(GtkWidget *widget, GdkEventKey *event, editor
 					} else {
 						COMPL_WND_DOWN(editor->completer);
 					}
-					return TRUE;
+					goto key_press_return_true;
 				case GDK_KEY_Escape:
 				case GDK_KEY_Left:
 					return FALSE;
 				case GDK_KEY_Return:
 				case GDK_KEY_Right: {
 					editor_complete(editor);
-					return TRUE;
+					goto key_press_return_true;
 				}
 			}
 		} else if (editor->single_line) {
 			if (editor->single_line_other_keys(editor, shift, ctrl, alt, super, event->keyval)) {
-				return TRUE;
+				goto key_press_return_true;
 			}
 		}
 
 		switch(event->keyval) {
 		case GDK_KEY_Up:
-			editor_move_cursor(editor, -1, 0, MOVE_NORMAL, TRUE);
-			return TRUE;
+			buffer_move_point_line(editor->buffer, &(editor->buffer->cursor), MT_REL, -1);
+			goto key_press_return_true;
 		case GDK_KEY_Down:
-			editor_move_cursor(editor, 1, 0, MOVE_NORMAL, TRUE);
-			return TRUE;
+			buffer_move_point_line(editor->buffer, &(editor->buffer->cursor), MT_REL, +1);
+			goto key_press_return_true;
 		case GDK_KEY_Right:
-			editor_move_cursor(editor, 0, 1, MOVE_NORMAL, TRUE);
-			return TRUE;
+			buffer_move_point_glyph(editor->buffer, &(editor->buffer->cursor), MT_REL, +1);
+			goto key_press_return_true;
 		case GDK_KEY_Left:
-			editor_move_cursor(editor, 0, -1, MOVE_NORMAL, TRUE);
-			return TRUE;
+			buffer_move_point_glyph(editor->buffer, &(editor->buffer->cursor), MT_REL, -1);
+			goto key_press_return_true;
 
 		case GDK_KEY_Page_Up:
-			editor_move_cursor(editor, -(allocation.height / editor->buffer->line_height) + 2, 0, MOVE_NORMAL, TRUE);
-			//gtk_adjustment_set_value(GTK_ADJUSTMENT(editor->adjustment), gtk_adjustment_get_value(GTK_ADJUSTMENT(editor->adjustment)) - gtk_adjustment_get_page_increment(GTK_ADJUSTMENT(editor->adjustment)));
-			return TRUE;
+			buffer_move_point_line(editor->buffer, &(editor->buffer->cursor), MT_REL, -(allocation.height / editor->buffer->line_height) + 2);
+			goto key_press_return_true;
 		case GDK_KEY_Page_Down:
-			editor_move_cursor(editor, +(allocation.height / editor->buffer->line_height) - 2, 0, MOVE_NORMAL, TRUE);
-			return TRUE;
+			buffer_move_point_line(editor->buffer, &(editor->buffer->cursor), MT_REL, +(allocation.height / editor->buffer->line_height) - 2);
+			goto key_press_return_true;
 
 		case GDK_KEY_Home:
-			buffer_aux_go_first_nonws_or_0(editor->buffer);
-			editor_complete_move(editor, TRUE);
-			return TRUE;
+			buffer_move_point_glyph(editor->buffer, &(editor->buffer->cursor), MT_HOME, 0);
+			goto key_press_return_true;
 		case GDK_KEY_End:
-			editor_move_cursor(editor, 0, 0, MOVE_LINE_END, TRUE);
-			return TRUE;
+			buffer_move_point_glyph(editor->buffer, &(editor->buffer->cursor), MT_END, 0);
+			goto key_press_return_true;
 
 		case GDK_KEY_Tab: {
 			if (!editor_maybe_show_completions(editor, true)) {
 				editor_replace_selection(editor, "\t");
 			}
 
-			return TRUE;
+			goto key_press_return_true;
 		}
 
 		case GDK_KEY_Return: {
@@ -587,7 +525,7 @@ static gboolean key_press_callback(GtkWidget *widget, GdkEventKey *event, editor
 					}
 					editor_replace_selection(editor, r);
 				}
-				return TRUE;
+				goto key_press_return_true;
 			}
 		}
 		case GDK_KEY_Escape:
@@ -599,13 +537,13 @@ static gboolean key_press_callback(GtkWidget *widget, GdkEventKey *event, editor
 
 	if (editor->single_line) {
 		if (editor->single_line_other_keys(editor, shift, ctrl, alt, super, event->keyval)) {
-			return TRUE;
+			goto key_press_return_true;
 		}
 	}
 
 	if (!shift && ctrl && !alt && !super && (event->keyval == GDK_KEY_Tab)) {
 		editor_replace_selection(editor, "\t");
-		return TRUE;
+		goto key_press_return_true;
 	}
 
 	if (shift && !ctrl && !alt && !super) {
@@ -628,6 +566,10 @@ static gboolean key_press_callback(GtkWidget *widget, GdkEventKey *event, editor
 	if (command != NULL) {
 		interp_eval(editor, command, false);
 	}
+
+ key_press_return_true:
+	buffer_extend_selection_by_select_type(editor->buffer);
+	editor_complete_move(editor, true);
 
 	return TRUE;
 

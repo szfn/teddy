@@ -5,25 +5,17 @@
 
 #include "compl.h"
 
-/* Moves cursor to first non-whitespace character */
-void buffer_aux_go_first_nonws(buffer_t *buffer);
+enum movement_type_t {
+	MT_ABS = 0, // move to absolute line/column
+	MT_REL, // relative move
+	MT_END, // move to end
+	MT_START, // move to first non-whitespace character (buffer_move_point_glyph only)
+	MT_HOME, // toggle between first column and first non-whitespace character (buffer_move_point_glyph only)
+	MT_RELW, // word based relative move (buffer_move_point_glyph only)
+};
 
-/* Moves cursor to first non-whitespace character, if cursor is already there goes to character 0 */
-void buffer_aux_go_first_nonws_or_0(buffer_t *buffer);
-
-void buffer_aux_go_end(buffer_t *buffer);
-void buffer_aux_go_char(buffer_t *buffer, int n);
-void buffer_aux_go_line(buffer_t *buffer, int n);
-
-/* If it is at the beginning of a word (or inside a word) goes to the end of this word, if it is at the end of a word (or inside a non-word sequence) goes to the beginning of the next one */
-void buffer_aux_wnwa_next(buffer_t *buffer);
-
-void buffer_aux_wnwa_next_ex(lpoint_t *point);
-
-/* If it is at the beginning of a word (or inside a non-word sequence) goes to the end of the previous word, if it is at the end of a word (or inside a word) goes to the beginning of the word) */
-void buffer_aux_wnwa_prev(buffer_t *buffer);
-
-void buffer_aux_wnwa_prev_ex(lpoint_t *point);
+void buffer_move_point_line(buffer_t *buffer, lpoint_t *p, enum movement_type_t type, int arg);
+void buffer_move_point_glyph(buffer_t *buffer, lpoint_t *p, enum movement_type_t type, int arg);
 
 /* writes in r the indent of cursor_line + a newline and the 0 byte */
 void buffer_indent_newline(buffer_t *buffer, char *r);
@@ -49,5 +41,6 @@ bool buffer_aux_is_directory(buffer_t *buffer);
 
 void buffer_get_extremes(buffer_t *buffer, lpoint_t *start, lpoint_t *end);
 char *buffer_all_lines_to_text(buffer_t *buffer);
+void buffer_select_all(buffer_t *buffer);
 
 #endif

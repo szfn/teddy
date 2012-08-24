@@ -1,5 +1,13 @@
 LONG TERM:
-- remove generic go command, substitute with one to move within a buffer and mark stuff and another one to open a buffer (subcommand of buffer) (kill move, mark, cursor, gohome, bufman)
+- go refactoring part 1
+ - remove bufman command
+ - buffer open command
+ - buffer select-mode command
+ - remove mark command
+ - remove go command
+ - check builtin and example.teddy for uses of go
+ - editor_complete_move becomes private (most editor_ functions should be private)
+
 
 - implement common awk idioms (like line numbering) with s and m
 
@@ -7,7 +15,6 @@ LONG TERM:
 
 - autoreload stuff when changed on disk (buffers, tags info)
 - remove complex directory visualization (and graphic builtin font)
-
 
 - set column number for background processes whenever possible
 - less ugly indicators for autowrapping
@@ -23,6 +30,7 @@ LONG TERM:
 - sloppy focus (change focus only when the mouse moves to a different frame) and disable warping
 - macro recording
 - resize should work across multiple frames
+- some commands should be displayed on the working directory line (last command, two most used commands)
 
 - comment region command
 - ability to persist the status of a window

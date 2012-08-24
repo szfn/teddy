@@ -28,6 +28,10 @@ static void execute_command(editor_t *editor) {
 	char *command = buffer_lines_to_text(editor->buffer, &start, &end);
 
 	interp_eval(top_context_editor(), command, false);
+
+	buffer_extend_selection_by_select_type(interp_context_buffer());
+	editor_complete_move(interp_context_editor(), true);
+
 	history_add(&command_history, time(NULL), working_directory, command, true);
 
 	free(command);
