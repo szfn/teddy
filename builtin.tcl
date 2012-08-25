@@ -1,11 +1,7 @@
 # builtin commands for teddy
 
 proc kill_line {} {
-   m +0:1
-   mark transient
-   mark lines
-   move next line
-   m +0:1
+   m +0:1 +1:1
    if {[undo tag] eq "kill_line"} {
    	undo fusenext
    }

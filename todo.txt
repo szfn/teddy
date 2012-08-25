@@ -1,24 +1,31 @@
+BUG: autocompletion window not showing anymore (probably editor_complete_move always called)
+
 LONG TERM:
 - go refactoring part 1
- - remove bufman command
- - buffer open command
  - buffer select-mode command
  - remove mark command
  - remove go command
  - check builtin and example.teddy for uses of go
  - editor_complete_move becomes private (most editor_ functions should be private)
+ - ask to save changes on buffer close
 
+- autoreload stuff when changed on disk (buffers, tags info) (buffer open should create a new copy)
 
 - implement common awk idioms (like line numbering) with s and m
+- reimplement tag search
 
 - replace tcl regex engine with TRE
 
-- autoreload stuff when changed on disk (buffers, tags info)
 - remove complex directory visualization (and graphic builtin font)
 
 - set column number for background processes whenever possible
 - less ugly indicators for autowrapping
 - keyboard marking should behave like mouse marking and not constantly update the clipboard with serialized data
+ - after command execution, keypress and mouse movement execute the following:
+ - if no selection is active release the primary clipboard
+ - if a selection is active capture the primary clipboard
+ - center click paste needs to collect the selection text before changing mark and cursor. That's all
+ - no primary clipboard implicit management happens inside scripts or on macro recording
 - tabs (and no hidden buffers)
 - slash all special mouse actions, add menus and close buttons
 - go-able things become links
@@ -31,6 +38,7 @@ LONG TERM:
 - macro recording
 - resize should work across multiple frames
 - some commands should be displayed on the working directory line (last command, two most used commands)
+- move stuff to a namespace
 
 - comment region command
 - ability to persist the status of a window

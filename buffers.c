@@ -15,72 +15,11 @@
 
 buffer_t **buffers;
 int buffers_allocated;
-GtkWidget *buffers_window;
-GtkListStore *buffers_list;
-GtkWidget *buffers_tree;
-editor_t *buffers_selector_focus_editor;
 
 int process_buffers_counter = 0;
 
 buffer_t *null_buffer(void) {
 	return buffers[0];
-}
-
-static int get_selected_idx(void) {
-	GtkTreePath *focus_path;
-	GtkTreeViewColumn *focus_column;
-	GtkTreeIter iter;
-	GValue value = {0};
-	int idx;
-
-	gtk_tree_view_get_cursor(GTK_TREE_VIEW(buffers_tree), &focus_path, &focus_column);
-
-	if (focus_path == NULL) return -1;
-
-	gtk_tree_model_get_iter(GTK_TREE_MODEL(buffers_list), &iter, focus_path);
-	gtk_tree_model_get_value(GTK_TREE_MODEL(buffers_list), &iter, 0, &value);
-	idx = g_value_get_int(&value);
-
-	g_value_unset(&value);
-	gtk_tree_path_free(focus_path);
-
-	if ((idx >= buffers_allocated) || (buffers[idx] == NULL)) {
-		printf("Error selecting buffer (why?) %d\n", idx);
-		return -1;
-	}
-
-	return idx;
-}
-
-static gboolean buffers_key_press_callback(GtkWidget *widget, GdkEventKey *event, gpointer data) {
-	int shift = event->state & GDK_SHIFT_MASK;
-	int ctrl = event->state & GDK_CONTROL_MASK;
-	int alt = event->state & GDK_MOD1_MASK;
-	int super = event->state & GDK_SUPER_MASK;
-
-	if (!shift && !ctrl && !alt && !super) {
-		switch(event->keyval) {
-		case GDK_KEY_Return: {
-			int idx = get_selected_idx();
-			if (idx < 0) return TRUE;
-			gtk_widget_hide(buffers_window);
-			go_to_buffer(buffers_selector_focus_editor, buffers[idx], false);
-			return TRUE;
-		}
-		case GDK_KEY_Escape:
-			gtk_widget_hide(buffers_window);
-			return TRUE;
-		case GDK_KEY_Delete: {
-			int idx = get_selected_idx();
-			if (idx < 0) return TRUE;
-			buffers_close(buffers[idx], NULL);
-			gtk_widget_queue_draw(buffers_tree);
-			return TRUE;
-		}
-		}
-	}
-
-	return FALSE;
 }
 
 #define SAVE_AND_CLOSE_RESPONSE 1
@@ -96,9 +35,9 @@ static int ask_for_closing_and_maybe_save(buffer_t *buffer, GtkWidget *window) {
 	if (!(buffer->has_filename) && (buffer->path[0] == '+')) return 1; /* Trash buffer, can be discarded safely */
 
 	if (buffer->has_filename) {
-		dialog = gtk_dialog_new_with_buttons("Close Buffer", (window != NULL) ? GTK_WINDOW(window) : GTK_WINDOW(gtk_widget_get_toplevel(GTK_WIDGET(buffers_selector_focus_editor))), GTK_DIALOG_MODAL|GTK_DIALOG_DESTROY_WITH_PARENT, "Save and close", SAVE_AND_CLOSE_RESPONSE, "Discard changes", DISCARD_CHANGES_RESPONSE, "Cancel", CANCEL_ACTION_RESPONSE, NULL);
+		dialog = gtk_dialog_new_with_buttons("Close Buffer", (window != NULL) ? GTK_WINDOW(window) : GTK_WINDOW(window), GTK_DIALOG_MODAL|GTK_DIALOG_DESTROY_WITH_PARENT, "Save and close", SAVE_AND_CLOSE_RESPONSE, "Discard changes", DISCARD_CHANGES_RESPONSE, "Cancel", CANCEL_ACTION_RESPONSE, NULL);
 	} else {
-		dialog = gtk_dialog_new_with_buttons("Close Buffer", (window != NULL) ? GTK_WINDOW(window) : GTK_WINDOW(gtk_widget_get_toplevel(GTK_WIDGET(buffers_selector_focus_editor))), GTK_DIALOG_MODAL|GTK_DIALOG_DESTROY_WITH_PARENT, "Discard changes", DISCARD_CHANGES_RESPONSE, "Cancel", CANCEL_ACTION_RESPONSE, NULL);
+		dialog = gtk_dialog_new_with_buttons("Close Buffer", (window != NULL) ? GTK_WINDOW(window) : GTK_WINDOW(window), GTK_DIALOG_MODAL|GTK_DIALOG_DESTROY_WITH_PARENT, "Discard changes", DISCARD_CHANGES_RESPONSE, "Cancel", CANCEL_ACTION_RESPONSE, NULL);
 	}
 
 	asprintf(&msg, "Buffer [%s] is modified", buffer->path);
@@ -150,28 +89,7 @@ int buffers_close(buffer_t *buffer, GtkWidget *window) {
 	}
 
 	if (i < buffers_allocated) {
-		GtkTreeIter mah;
-
-		if (gtk_tree_model_get_iter_first(GTK_TREE_MODEL(buffers_list), &mah)) {
-			do {
-				GValue value = {0};
-
-				gtk_tree_model_get_value(GTK_TREE_MODEL(buffers_list), &mah, 0, &value);
-				if (g_value_get_int(&value) == i) {
-					g_value_unset(&value);
-					gtk_list_store_remove(buffers_list, &mah);
-					break;
-				} else {
-					g_value_unset(&value);
-				}
-			} while (gtk_tree_model_iter_next(GTK_TREE_MODEL(buffers_list), &mah));
-		}
-
 		buffers[i] = NULL;
-
-		gtk_widget_queue_draw(buffers_tree);
-	} else {
-		printf("Attempted to remove buffer not present in list\n");
 	}
 
 	buffer_free(buffer);
@@ -197,43 +115,6 @@ void buffers_init(void) {
 		load_empty(buffers[0]);
 		buffers[0]->editable = 0;
 	}
-
-	{
-		GtkWidget *vbox = gtk_vbox_new(FALSE, 2);
-		GtkWidget *label = gtk_label_new("Buffers:");
-		GtkWidget *label2 = gtk_label_new("Press <Enter> to focus buffer, <Del> to delete buffer,\n<Esc> to close");
-		GtkWidget *scroll = gtk_scrolled_window_new(NULL, NULL);
-
-		buffers_list = gtk_list_store_new(3, G_TYPE_INT, G_TYPE_STRING, G_TYPE_STRING);
-		buffers_tree = gtk_tree_view_new();
-
-		gtk_tree_view_insert_column_with_attributes(GTK_TREE_VIEW(buffers_tree), -1, "Buffer Number", gtk_cell_renderer_text_new(), "text", 0, NULL);
-		gtk_tree_view_insert_column_with_attributes(GTK_TREE_VIEW(buffers_tree), -1, "Buffer Short Name", gtk_cell_renderer_text_new(), "text", 1, NULL);
-		gtk_tree_view_insert_column_with_attributes(GTK_TREE_VIEW(buffers_tree), -1, "Buffer Name", gtk_cell_renderer_text_new(), "text", 2, NULL);
-		gtk_tree_view_set_model(GTK_TREE_VIEW(buffers_tree), GTK_TREE_MODEL(buffers_list));
-		gtk_tree_view_set_headers_visible(GTK_TREE_VIEW(buffers_tree), FALSE);
-		gtk_tree_view_set_search_column(GTK_TREE_VIEW(buffers_tree), 1);
-
-		gtk_container_add(GTK_CONTAINER(scroll), buffers_tree);
-
-		gtk_box_pack_start(GTK_BOX(vbox), label, FALSE, FALSE, 2);
-		gtk_box_pack_start(GTK_BOX(vbox), scroll, TRUE, TRUE, 2);
-		gtk_box_pack_end(GTK_BOX(vbox), label2, FALSE, FALSE, 2);
-
-		gtk_label_set_justify(GTK_LABEL(label2), GTK_JUSTIFY_LEFT);
-
-		buffers_window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
-		gtk_window_set_decorated(GTK_WINDOW(buffers_window), TRUE);
-
-		gtk_container_add(GTK_CONTAINER(buffers_window), vbox);
-
-		gtk_window_set_default_size(GTK_WINDOW(buffers_window), 400, 300);
-
-		g_signal_connect(G_OBJECT(buffers_window), "delete-event", G_CALLBACK(gtk_widget_hide_on_delete), NULL);
-
-		g_signal_connect(G_OBJECT(buffers_tree), "key-press-event", G_CALLBACK(buffers_key_press_callback), NULL);
-	}
-
 }
 
 static void buffers_grow() {
@@ -258,57 +139,16 @@ void buffers_add(buffer_t *b) {
 	if (i >= buffers_allocated) {
 		buffers_grow();
 		buffers_add(b);
-		return;
-	}
-
-	{
-		GtkTreeIter mah;
-
-		gtk_list_store_append(buffers_list, &mah);
-		if (b->path[0] == '+') {
-			gtk_list_store_set(buffers_list, &mah, 0, i, 1, b->path, 2, b->path, -1);
-		} else {
-			char *namename = strrchr(b->path, '/');
-
-			if ((namename == NULL) || (*namename == '\0')) namename = b->path;
-
-			if (strcmp(namename, "/") == 0) {
-				char *nsn = strdup(b->path);
-				alloc_assert(nsn);
-				nsn[strlen(nsn)-1] = '\0';
-				namename = strrchr(nsn, '/');
-				if ((namename == NULL) || (*namename == '\0')) namename = nsn;
-				else ++namename;
-				gtk_list_store_set(buffers_list, &mah, 0, i, 1, namename, 2, b->path, -1);
-				free(nsn);
-			} else {
-				++namename;
-				gtk_list_store_set(buffers_list, &mah, 0, i, 1, namename, 2, b->path, -1);
-			}
-		}
 	}
 }
 
 void buffers_free(void) {
-	int i;
-	for (i = 0; i < buffers_allocated; ++i) {
+	for (int i = 0; i < buffers_allocated; ++i) {
 		if (buffers[i] != NULL) {
 			buffer_free(buffers[i]);
 			buffers[i] = NULL;
 		}
 	}
-
-	g_object_unref(buffers_list);
-
-	gtk_widget_destroy(buffers_window);
-}
-
-void buffers_show_window(editor_t *editor) {
-	buffers_selector_focus_editor = editor;
-	gtk_window_set_transient_for(GTK_WINDOW(buffers_window), GTK_WINDOW(gtk_widget_get_toplevel(GTK_WIDGET(editor))));
-	gtk_window_set_modal(GTK_WINDOW(buffers_window), TRUE);
-	gtk_widget_show_all(buffers_window);
-	gtk_widget_grab_focus(buffers_tree);
 }
 
 int buffers_close_all(GtkWidget *window) {
@@ -442,6 +282,19 @@ int teddy_buffer_command(ClientData client_data, Tcl_Interp *interp, int argc, c
 		char bufferid[20];
 		buffer_to_buffer_id(buffer, bufferid);
 		Tcl_SetResult(interp, bufferid, TCL_VOLATILE);
+	} else if (strcmp(argv[1], "open") == 0) {
+		if (argc != 3) {
+			Tcl_AddErrorInfo(interp, "Wrong number of arguments to 'buffer open' command");
+			return TCL_ERROR;
+		}
+
+		enum go_file_failure_reason gffr;
+		buffer_t *b = go_file(argv[2], false, &gffr);
+		if (b != NULL) {
+			tframe_t *frame;
+			find_editor_for_buffer(interp_context_buffer(), NULL, &frame, NULL);
+			heuristic_new_frame(columnset, frame, b);
+		}
 	} else if (strcmp(argv[1], "scratch") == 0) {
 		if (argc != 2) {
 			Tcl_AddErrorInfo(interp, "Wrong number of arguments to 'buffer scratch' command");

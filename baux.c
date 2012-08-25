@@ -153,7 +153,7 @@ void buffer_move_point_glyph(buffer_t *buffer, lpoint_t *p, enum movement_type_t
 
 	case MT_ABS:
 		if (arg < 0) return;
-		p->glyph = arg;
+		p->glyph = arg-1;
 		break;
 
 	default:

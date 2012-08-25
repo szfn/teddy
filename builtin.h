@@ -4,11 +4,7 @@
 #define BUILTIN_TCL_CODE "# builtin commands for teddy\n\
 \n\
 proc kill_line {} {\n\
-   m +0:1\n\
-   mark transient\n\
-   mark lines\n\
-   move next line\n\
-   m +0:1\n\
+   m +0:1 +1:1\n\
    if {[undo tag] eq \"kill_line\"} {\n\
    	undo fusenext\n\
    }\n\

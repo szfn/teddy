@@ -241,33 +241,24 @@ static int teddy_save_command(ClientData client_data, Tcl_Interp *interp, int ar
 	return TCL_OK;
 }
 
-static int teddy_bufman_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
+static int teddy_nexteditor_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
 	if (interp_context_editor() == NULL) {
 		Tcl_AddErrorInfo(interp, "No editor open, can not execute 'bufman' command");
 		return TCL_ERROR;
 	}
 
-	if (argc == 2) {
-		if (strcmp(argv[1], "next-editor") == 0) {
-			tframe_t *context_frame;
-			find_editor_for_buffer(interp_context_buffer(), NULL, &context_frame, NULL);
-			if (context_frame != NULL) {
-				tframe_t *next_frame;
-				columns_find_frame(columnset, context_frame, NULL, NULL, NULL, NULL, &next_frame);
-				if (next_frame != NULL) gtk_widget_grab_focus(GTK_WIDGET(next_frame));
-			}
-			return TCL_OK;
-		} else {
-			Tcl_AddErrorInfo(interp, "Wrong argument to 'bufman' command");
-			return TCL_ERROR;
-		}
-	} else if (argc != 1) {
-		Tcl_AddErrorInfo(interp, "Wrong number of arguments to 'bufman' command");
+	if (argc != 1) {
+		Tcl_AddErrorInfo(interp, "Wrong number of arguments to 'next-editor' command");
 		return TCL_ERROR;
 	}
 
-	buffers_show_window(interp_context_editor());
-
+	tframe_t *context_frame;
+	find_editor_for_buffer(interp_context_buffer(), NULL, &context_frame, NULL);
+	if (context_frame != NULL) {
+		tframe_t *next_frame;
+		columns_find_frame(columnset, context_frame, NULL, NULL, NULL, NULL, &next_frame);
+		if (next_frame != NULL) gtk_widget_grab_focus(GTK_WIDGET(next_frame));
+	}
 	return TCL_OK;
 }
 
@@ -972,7 +963,7 @@ void interp_init(void) {
 	Tcl_CreateCommand(interp, "mark", &teddy_mark_command, (ClientData)NULL, NULL);
 	Tcl_CreateCommand(interp, "cb", &teddy_cb_command, (ClientData)NULL, NULL);
 	Tcl_CreateCommand(interp, "save", &teddy_save_command, (ClientData)NULL, NULL);
-	Tcl_CreateCommand(interp, "bufman", &teddy_bufman_command, (ClientData)NULL, NULL);
+	Tcl_CreateCommand(interp, "next-editor", &teddy_nexteditor_command, (ClientData)NULL, NULL);
 	Tcl_CreateCommand(interp, "undo", &teddy_undo_command, (ClientData)NULL, NULL);
 	Tcl_CreateCommand(interp, "search", &teddy_search_command, (ClientData)NULL, NULL);
 
