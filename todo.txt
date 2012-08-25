@@ -1,7 +1,5 @@
 LONG TERM:
 
-BUG first open of iopen window doesn't focus editor (onmap event?)
-
 - autoreload stuff when changed on disk (buffers, tags info) (buffer open should create a new copy)
 
 - implement common awk idioms (like line numbering) with s and m

@@ -361,6 +361,11 @@ static gpointer iopen_tags_thread(gpointer data) {
 	return NULL;
 }
 
+static gboolean map_callback(GtkWidget *widget, GdkEvent *event, gpointer d) {
+	editor_grab_focus(iopen_editor, false);
+	return FALSE;
+}
+
 void iopen_init(GtkWidget *window) {
 	parent_window = window;
 
@@ -434,6 +439,7 @@ void iopen_init(GtkWidget *window) {
 	gtk_window_set_default_size(GTK_WINDOW(iopen_window), 640, 480);
 
 	g_signal_connect(G_OBJECT(iopen_window), "delete-event", G_CALLBACK(delete_callback), NULL);
+	g_signal_connect(G_OBJECT(iopen_window), "map_event", G_CALLBACK(map_callback), NULL);
 
 	gtk_container_add(GTK_CONTAINER(iopen_window), main_vbox);
 
@@ -469,5 +475,5 @@ void iopen(void) {
 
 	gtk_widget_show_all(iopen_window);
 	gtk_widget_set_visible(tags_vbox, top_has_tags());
-	gtk_widget_grab_focus(GTK_WIDGET(iopen_editor));
+	editor_grab_focus(iopen_editor, false);
 }
