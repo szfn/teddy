@@ -431,14 +431,14 @@ static gboolean key_press_callback(GtkWidget *widget, GdkEventKey *event, editor
 				buffer_move_point_glyph(editor->buffer, &(editor->buffer->cursor), MT_REL, +1);
 			}
 			editor_replace_selection(editor, "");
-			goto key_press_return_true;
+			return TRUE;
 		case GDK_KEY_BackSpace:
 			if (editor->buffer->mark.line == NULL) {
 				buffer_set_mark_at_cursor(editor->buffer);
 				buffer_move_point_glyph(editor->buffer, &(editor->buffer->cursor), MT_REL, -1);
 			}
 			editor_replace_selection(editor, "");
-			goto key_press_return_true;
+			return TRUE;
 		}
 	}
 
@@ -448,7 +448,7 @@ static gboolean key_press_callback(GtkWidget *widget, GdkEventKey *event, editor
 			switch(event->keyval) {
 				case GDK_KEY_Up:
 					COMPL_WND_UP(editor->completer);
-					goto key_press_return_true;
+					return TRUE;
 				case GDK_KEY_Down:
 				case GDK_KEY_Tab:
 					if (COMPL_COMMON_SUFFIX(editor->completer) != NULL) {
@@ -456,19 +456,19 @@ static gboolean key_press_callback(GtkWidget *widget, GdkEventKey *event, editor
 					} else {
 						COMPL_WND_DOWN(editor->completer);
 					}
-					goto key_press_return_true;
+					return TRUE;
 				case GDK_KEY_Escape:
 				case GDK_KEY_Left:
 					return FALSE;
 				case GDK_KEY_Return:
 				case GDK_KEY_Right: {
 					editor_complete(editor);
-					goto key_press_return_true;
+					return TRUE;
 				}
 			}
 		} else if (editor->single_line) {
 			if (editor->single_line_other_keys(editor, shift, ctrl, alt, super, event->keyval)) {
-				goto key_press_return_true;
+				return TRUE;
 			}
 		}
 
@@ -505,7 +505,7 @@ static gboolean key_press_callback(GtkWidget *widget, GdkEventKey *event, editor
 				editor_replace_selection(editor, "\t");
 			}
 
-			goto key_press_return_true;
+			return TRUE;
 		}
 
 		case GDK_KEY_Return: {
@@ -525,7 +525,7 @@ static gboolean key_press_callback(GtkWidget *widget, GdkEventKey *event, editor
 					}
 					editor_replace_selection(editor, r);
 				}
-				goto key_press_return_true;
+				return TRUE;
 			}
 		}
 		case GDK_KEY_Escape:
@@ -537,13 +537,13 @@ static gboolean key_press_callback(GtkWidget *widget, GdkEventKey *event, editor
 
 	if (editor->single_line) {
 		if (editor->single_line_other_keys(editor, shift, ctrl, alt, super, event->keyval)) {
-			goto key_press_return_true;
+			return TRUE;
 		}
 	}
 
 	if (!shift && ctrl && !alt && !super && (event->keyval == GDK_KEY_Tab)) {
 		editor_replace_selection(editor, "\t");
-		goto key_press_return_true;
+		return TRUE;
 	}
 
 	if (shift && !ctrl && !alt && !super) {
@@ -565,7 +565,10 @@ static gboolean key_press_callback(GtkWidget *widget, GdkEventKey *event, editor
 
 	if (command != NULL) {
 		interp_eval(editor, command, false);
+		goto key_press_return_true;
 	}
+
+	return TRUE;
 
  key_press_return_true:
 	buffer_extend_selection_by_select_type(editor->buffer);

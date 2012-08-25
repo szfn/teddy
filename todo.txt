@@ -1,5 +1,3 @@
-BUG: autocompletion window not showing anymore (probably editor_complete_move always called)
-
 LONG TERM:
 - go refactoring part 1
  - buffer select-mode command

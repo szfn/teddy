@@ -295,6 +295,8 @@ int teddy_buffer_command(ClientData client_data, Tcl_Interp *interp, int argc, c
 			find_editor_for_buffer(interp_context_buffer(), NULL, &frame, NULL);
 			heuristic_new_frame(columnset, frame, b);
 		}
+	} else if (strcmp(argv[1], "select-mode") == 0) {
+		//TODO
 	} else if (strcmp(argv[1], "scratch") == 0) {
 		if (argc != 2) {
 			Tcl_AddErrorInfo(interp, "Wrong number of arguments to 'buffer scratch' command");
