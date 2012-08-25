@@ -1,11 +1,6 @@
 LONG TERM:
-- go refactoring part 1
- - buffer select-mode command
- - remove mark command
- - remove go command
- - check builtin and example.teddy for uses of go
- - editor_complete_move becomes private (most editor_ functions should be private)
- - ask to save changes on buffer close
+
+BUG first open of iopen window doesn't focus editor (onmap event?)
 
 - autoreload stuff when changed on disk (buffers, tags info) (buffer open should create a new copy)
 

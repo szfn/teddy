@@ -51,7 +51,6 @@ void buffer_set_mark_at_cursor(buffer_t *buffer) {
 	copy_lpoint(&(buffer->mark), &(buffer->cursor));
 	copy_lpoint(&(buffer->savedmark), &(buffer->cursor));
 	buffer->select_type = BST_NORMAL;
-	buffer->mark_transient = false;
 	//printf("Mark set @ %d,%d\n", buffer->mark_line->lineno, buffer->mark_glyph);
 }
 
@@ -59,7 +58,6 @@ void buffer_unset_mark(buffer_t *buffer) {
 	if (buffer->mark.line != NULL) {
 		buffer->mark.line = NULL;
 		buffer->mark.glyph = -1;
-		buffer->mark_transient = false;
 
 		buffer->savedmark.line = NULL;
 		buffer->savedmark.glyph = -1;
@@ -930,7 +928,6 @@ buffer_t *buffer_create(void) {
 
 	buffer->mark.line = NULL;
 	buffer->mark.glyph = -1;
-	buffer->mark_transient = false;
 
 	parmatch_init(&(buffer->parmatch));
 

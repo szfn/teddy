@@ -223,10 +223,13 @@ int column_frame_number(column_t *column) {
 	return g_list_length(GTK_BOX(column)->children);
 }
 
-void column_remove(column_t *column, tframe_t *frame) {
+bool column_remove(column_t *column, tframe_t *frame) {
 	tframe_t *before_tf, *after_tf;
 
+	if (!tframe_close(frame)) return false;
+
 	if (column_find_frame(column, frame, &before_tf, &after_tf)) {
+		tframe_close(frame);
 		if (before_tf != NULL) {
 			tframe_fraction_set(before_tf, tframe_fraction(frame) + tframe_fraction(before_tf));
 		} else if (after_tf != NULL) {
@@ -235,6 +238,8 @@ void column_remove(column_t *column, tframe_t *frame) {
 	}
 
 	gtk_container_remove(GTK_CONTAINER(column), GTK_WIDGET(frame));
+
+	return true;
 }
 
 int column_remove_others(column_t *column, tframe_t *frame) {
@@ -242,8 +247,10 @@ int column_remove_others(column_t *column, tframe_t *frame) {
 	GList *list = gtk_container_get_children(GTK_CONTAINER(column));
 	for (GList *cur = list; cur != NULL; cur = cur->next) {
 		if (cur->data != frame) {
-			column_remove(column, GTK_TFRAME(cur->data));
-			++c;
+			if (tframe_close(GTK_TFRAME(cur->data))) {
+				column_remove(column, GTK_TFRAME(cur->data));
+				++c;
+			}
 		}
 	}
 	g_list_free(list);
@@ -269,4 +276,10 @@ tframe_t *column_get_frame_from_position(column_t *column, double x, double y, b
 	}
 	g_list_free(list);
 	return NULL;
+}
+
+bool column_close(column_t *column) {
+	int n = column_frame_number(column);
+	int r = column_remove_others(column, NULL);
+	return (n == r);
 }

@@ -90,10 +90,13 @@ int main(int argc, char *argv[]) {
 
 	for (int i = 1; i < argc; ++i) {
 		buffer_t *buffer = buffer_create();
-		load_text_file(buffer, argv[i]);
-		buffers_add(buffer);
-		tframe_t *f = heuristic_new_frame(columnset, NULL, buffer);
-		if (frame == NULL) frame = f;
+		if (load_text_file(buffer, argv[i]) < 0) {
+			buffer_free(buffer);
+		} else {
+			buffers_add(buffer);
+			tframe_t *f = heuristic_new_frame(columnset, NULL, buffer);
+			if (frame == NULL) frame = f;
+		}
 	}
 
 	if (frame != NULL) {

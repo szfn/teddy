@@ -3,6 +3,17 @@
 
 #define BUILTIN_TCL_CODE "# builtin commands for teddy\n\
 \n\
+proc toggle_mark {type} {\n\
+	set mark [lindex [m] 0]\n\
+	if {$mark eq \"nil\"} {\n\
+		m +0:+0 +0:+0\n\
+		buffer select-mode $type\n\
+	} else {\n\
+		m nil +0:+0\n\
+		buffer select-mode normal\n\
+	}\n\
+}\n\
+\n\
 proc kill_line {} {\n\
    m +0:1 +1:1\n\
    if {[undo tag] eq \"kill_line\"} {\n\
@@ -282,43 +293,15 @@ proc mgph_trim_parenthesis {text} {\n\
    return [string range $text 1 end-1]\n\
 }\n\
 \n\
-# examples:\n\
-#  include <index.h>\n\
-#  bim/bam/bla.c:\n\
-#  bim/bam/bla.c:7,32: bang\n\
-#  bim/bam/bla.c(2:2): sprac\n\
-#  bim/bam/bla.c:[2,3]: sproc\n\
-#  bim/bam/bla.c[2:3]\n\
-#  bim/bam/bla.c:2: bloc\n\
-#  bim/bam/bla.c(2)\n\
-#  bim/bam/bla.c:[2]\n\
-# go.c\n\
-\n\
-proc mouse_go_preprocessing_hook {text} {\n\
-   set text [mgph_remove_trailing_nonalnum $text]\n\
-   set text [mgph_trim_parenthesis $text]\n\
-\n\
-   #puts \"Text is <$text>\"\n\
-\n\
-   if {[regexp {^([^:]*)(?::|(?::?[\\(\\[]))([[:digit:]]+)[,:]([[:digit:]]+)(?:[\\]\\)])?$} $text -> filename lineno colno]} {\n\
-       #puts \"Returning <$filename:$lineno:$colno>\"\n\
-       return \"$filename:$lineno:$colno\"\n\
-   }\n\
-\n\
-   if {[regexp {^([^:]*)(?::|(?::?[\\(\\[]))([[:digit:]]+)(?:[\\]\\)])?$} $text -> filename lineno]} {\n\
-       #puts \"Returning <$filename:$lineno:0>\"\n\
-       return \"$filename:$lineno:0\"\n\
-   }\n\
-\n\
-   #puts \"Returning <$text>\\n\"\n\
-\n\
-   return $text\n\
-}\n\
-\n\
 proc bindent {direction indentchar} {\n\
-	mark lines\n\
+	set saved_status [m]\n\
 \n\
-	set saved [m]\n\
+	if {[lindex $saved_status 0] == \"nil\"} {\n\
+		m +0:+0 +0:+0\n\
+	}\n\
+\n\
+	buffer select-mode lines\n\
+\n\
 	set text [c]\n\
 \n\
 	switch -exact $direction {\n\
@@ -338,7 +321,8 @@ proc bindent {direction indentchar} {\n\
 	#puts \"Stored mark: $stored_mark\"\n\
 	#puts \"Stored cursor: $stored_cursor\"\n\
 \n\
-	m {*}$saved\n\
+	m {*}$saved_status\n\
+	buffer select-mode normal\n\
 }\n\
 \n\
 proc man {args} {\n\

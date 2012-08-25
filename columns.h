@@ -22,7 +22,7 @@ GType gtk_columns_get_type(void) G_GNUC_CONST;
 columns_t *columns_new(void);
 
 void columns_add_after(columns_t *columns, column_t *before_col, column_t *col);
-void columns_remove(columns_t *columns, column_t *column);
+bool columns_remove(columns_t *columns, column_t *column);
 int columns_remove_others(columns_t *columns, column_t *column);
 
 bool columns_find_frame(columns_t *columns, tframe_t *tf, column_t **before_col, column_t **frame_col, column_t **after_col, tframe_t **before_tf, tframe_t **after_tf);

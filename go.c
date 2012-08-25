@@ -111,131 +111,16 @@ editor_t *go_to_buffer(editor_t *editor, buffer_t *buffer, bool take_over) {
 	return editor;
 }
 
-static int exec_go(const char *specifier, enum go_file_failure_reason *gffr) {
-	char *sc = NULL;
-	char *saveptr, *tok;
-	buffer_t *buffer = NULL;
-	int retval;
+/*
+ examples:
+  bim/bam/bla.c:7,32:
+  bim/bam/bla.c(2:2):
+  bim/bam/bla.c:[2,3]:
+  bim/bam/bla.c[2:3]
+  bim/bam/bla.c:2:
+  bim/bam/bla.c(2)
+  bim/bam/bla.c:[2]
+  bla.c
 
-	*gffr = GFFR_OTHER;
-
-	sc = malloc(sizeof(char) * (strlen(specifier) + 1));
-	strcpy(sc, specifier);
-
-	tok = strtok_r(sc, ":", &saveptr);
-	if (tok == NULL) { retval = 0; goto exec_go_cleanup; }
-
-	buffer = buffer_id_to_buffer(tok);
-	if (buffer == NULL) {
-		buffer = go_file(tok, false, gffr);
-		//printf("buffer = %p gffr = %d\n", buffer, (int)(*gffr));
-		if (buffer == NULL) { retval = 0; goto exec_go_cleanup; }
-	}
-
-	go_to_buffer(interp_context_editor(), buffer, false);
-	// editor will be NULL here if the user decided to select an editor
-
-	tok = strtok_r(NULL, ":", &saveptr);
-	//printf("possible position token: %s\n", tok);
-	if (tok == NULL) { retval = 1; goto exec_go_cleanup; }
-	if (strlen(tok) == 0) { retval = 1; goto exec_go_cleanup; }
-
-	char *tok2 = strtok_r(NULL, ":", &saveptr);
-	char *subspecifier;
-
-	if (tok2 != NULL) {
-		asprintf(&subspecifier, "%s:%s", tok, tok2);
-	} else {
-		asprintf(&subspecifier, "%s", tok);
-	}
-
-	if (subspecifier[0] == '[') ++tok;
-	if (subspecifier[strlen(subspecifier)-1] == ']') subspecifier[strlen(subspecifier)-1] = '\0';
-
-	free(subspecifier);
-
-	retval = 1;
-
- exec_go_cleanup:
-	if (sc != NULL) free(sc);
-	return retval;
-}
-
-int teddy_go_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
-	const char *goarg;
-
-	if (argc == 2) {
-		goarg = argv[1];
-	} else {
-		Tcl_AddErrorInfo(interp, "Wrong number of arguments to 'go', usage: 'go [-here|-select|-new] [<filename>]:[<position-specifier>]");
-		return TCL_ERROR;
-	}
-
-	if (interp_context_editor() == NULL) {
-		Tcl_AddErrorInfo(interp, "No editor open, can not execute 'go' command");
-		return TCL_ERROR;
-	}
-
-	if (strcmp(goarg, "&") == 0) {
-		lpoint_t start, end;
-		buffer_get_selection(interp_context_buffer(), &start, &end);
-
-		if (start.line == NULL) {
-			copy_lpoint(&start, &(interp_context_buffer()->cursor));
-			mouse_open_action(interp_context_editor(), &start, NULL);
-		} else {
-			mouse_open_action(interp_context_editor(), &start, &end);
-		}
-
-		return TCL_OK;
-	}
-
-	enum go_file_failure_reason gffr;
-	if (!exec_go(goarg, &gffr)) {
-		if (gffr == GFFR_BINARYFILE) return TCL_OK;
-
-		char *urp = unrealpath(top_working_directory(), goarg);
-		char *msg;
-		GtkWidget *dialog = gtk_dialog_new_with_buttons("Create file", GTK_WINDOW(gtk_widget_get_toplevel(GTK_WIDGET(interp_context_editor()))), GTK_DIALOG_MODAL|GTK_DIALOG_DESTROY_WITH_PARENT, "Yes", 1, "No", 0, NULL);
-
-		asprintf(&msg, "File [%s] does not exist, do you want to create it?", urp);
-		gtk_container_add(GTK_CONTAINER(gtk_dialog_get_content_area(GTK_DIALOG(dialog))), gtk_label_new(msg));
-		free(msg);
-
-		gtk_widget_show_all(dialog);
-
-		if (gtk_dialog_run(GTK_DIALOG(dialog)) == 1) {
-			FILE *f = fopen(urp, "w");
-
-			gtk_widget_hide(dialog);
-
-			if (!f) {
-				asprintf(&msg, "Could not create [%s]", urp);
-				quick_message("Error", msg);
-				free(msg);
-			} else {
-				buffer_t *buffer = buffer_create();
-				fclose(f);
-				if (load_text_file(buffer, urp) != 0) {
-					buffer_free(buffer);
-					quick_message("Error", "Unexpected error during file creation");
-				} else {
-					buffers_add(buffer);
-					go_to_buffer(interp_context_editor(), buffer, false);
-				}
-			}
-		}
-
-		gtk_widget_destroy(dialog);
-		free(urp);
-		return TCL_OK;
-	} else {
-		interp_context_editor()->center_on_cursor_after_next_expose = TRUE;
-		lexy_update_for_move(interp_context_buffer(), interp_context_buffer()->cursor.line);
-		gtk_widget_queue_draw(GTK_WIDGET(interp_context_editor()));
-		return TCL_OK;
-	}
-}
-
-void mouse_open_action(editor_t *editor, lpoint_t *start, lpoint_t *end) {
-}
+  TODO: check python and perl formats
+*/

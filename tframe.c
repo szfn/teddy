@@ -430,3 +430,11 @@ void tframe_fraction_set(tframe_t *tframe, double fraction) {
 GtkWidget *tframe_content(tframe_t *frame) {
 	return frame->content;
 }
+
+bool tframe_close(tframe_t *tframe) {
+	if (GTK_IS_TEDITOR(tframe->content)) {
+		return buffers_close(GTK_TEDITOR(tframe->content)->buffer, gtk_widget_get_toplevel(GTK_WIDGET(tframe)));
+	} else {
+		return false;
+	}
+}

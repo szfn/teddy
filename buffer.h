@@ -77,7 +77,6 @@ typedef struct _buffer_t {
 	lpoint_t savedmark;
 	enum select_type select_type;
 	parmatch_t parmatch;
-	bool mark_transient;
 
 	/* Undo information */
 	undo_t undo;

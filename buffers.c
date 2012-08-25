@@ -296,7 +296,28 @@ int teddy_buffer_command(ClientData client_data, Tcl_Interp *interp, int argc, c
 			heuristic_new_frame(columnset, frame, b);
 		}
 	} else if (strcmp(argv[1], "select-mode") == 0) {
-		//TODO
+		if (argc != 3) {
+			Tcl_AddErrorInfo(interp, "Wrong number of arguments to 'buffer select-mode' command");
+			return TCL_ERROR;
+		}
+
+		if (strcmp(argv[2], "normal") == 0) {
+			buffer_change_select_type(interp_context_buffer(), BST_NORMAL);
+		} else if (strcmp(argv[2], "words") == 0) {
+			if (interp_context_buffer()->mark.line == NULL) {
+				copy_lpoint(&(interp_context_buffer()->mark), &(interp_context_buffer()->cursor));
+			}
+			buffer_change_select_type(interp_context_buffer(), BST_WORDS);
+		} else if (strcmp(argv[2], "lines") == 0) {
+			if (interp_context_buffer()->mark.line == NULL) {
+				copy_lpoint(&(interp_context_buffer()->mark), &(interp_context_buffer()->cursor));
+			}
+			buffer_change_select_type(interp_context_buffer(), BST_LINES);
+		} else {
+			Tcl_AddErrorInfo(interp, "Bad argument to 'buffer select-mode' command");
+			return TCL_ERROR;
+		}
+		return TCL_OK;
 	} else if (strcmp(argv[1], "scratch") == 0) {
 		if (argc != 2) {
 			Tcl_AddErrorInfo(interp, "Wrong number of arguments to 'buffer scratch' command");

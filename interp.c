@@ -142,58 +142,6 @@ static int teddy_bindkey_command(ClientData client_data, Tcl_Interp *interp, int
 	return TCL_OK;
 }
 
-static int teddy_mark_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
-	if (interp_context_editor() == NULL) {
-		Tcl_AddErrorInfo(interp, "No editor open, can not execute 'mark' command");
-		return TCL_ERROR;
-	}
-
-	if (argc == 1) {
-		editor_mark_action(interp_context_editor());
-	    return TCL_OK;
-	}
-
-	if (argc != 2) {
-	    Tcl_AddErrorInfo(interp, "Wrong number of arguments to 'mark' command");
-		return TCL_ERROR;
-	}
-
-	if (strcmp(argv[1], "start") == 0) {
-		if (interp_context_buffer()->mark.line == NULL) {
-			buffer_set_mark_at_cursor(interp_context_buffer());
-			gtk_widget_queue_draw(GTK_WIDGET(interp_context_editor()));
-		}
-	} else if (strcmp(argv[1], "transient") == 0) {
-		if (interp_context_buffer()->mark.line == NULL) {
-			buffer_set_mark_at_cursor(interp_context_buffer());
-			interp_context_buffer()->mark_transient = true;
-			gtk_widget_queue_draw(GTK_WIDGET(interp_context_editor()));
-		}
-	} else if (strcmp(argv[1], "stop") == 0) {
-		if (interp_context_buffer()->mark.line != NULL) {
-			buffer_unset_mark(interp_context_buffer());
-			gtk_widget_queue_draw(GTK_WIDGET(interp_context_editor()));
-		}
-	} else if (strcmp(argv[1], "words") == 0) {
-		if (interp_context_buffer()->mark.line == NULL) {
-			buffer_set_mark_at_cursor(interp_context_buffer());
-		}
-		buffer_change_select_type(interp_context_buffer(), BST_WORDS);
-		editor_complete_move(interp_context_editor(), FALSE);
-	} else if (strcmp(argv[1], "lines") == 0) {
-		if (interp_context_buffer()->mark.line == NULL) {
-			buffer_set_mark_at_cursor(interp_context_buffer());
-		}
-		buffer_change_select_type(interp_context_buffer(), BST_LINES);
-		editor_complete_move(interp_context_editor(), FALSE);
-	} else {
-		Tcl_AddErrorInfo(interp, "Called mark command with unknown argument");
-		return TCL_ERROR;
-	}
-
-	return TCL_OK;
-}
-
 static int teddy_cb_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
 	if (argc == 2) {
 		if (strcmp(argv[1], "get") == 0) {
@@ -741,6 +689,9 @@ static int teddy_move_command(ClientData client_data, Tcl_Interp *interp, int ar
 		if (!move_command_ex(argv[2], &(interp_context_buffer()->cursor), NULL)) {
 			return TCL_ERROR;
 		}
+
+		copy_lpoint(&(interp_context_buffer()->savedmark), &(interp_context_buffer()->mark));
+		
 		break;
 	default:
 		Tcl_AddErrorInfo(interp, "Wrong number of arguments to 'move' command");
@@ -957,10 +908,8 @@ void interp_init(void) {
 	Tcl_CreateCommand(interp, "pwf", &teddy_pwf_command, (ClientData)NULL, NULL);
 
 	Tcl_CreateCommand(interp, "iopen", &teddy_iopen_command, (ClientData)NULL, NULL);
-	Tcl_CreateCommand(interp, "go", &teddy_go_command, (ClientData)NULL, NULL);
 	Tcl_CreateCommand(interp, "refresh", &teddy_refresh_command, (ClientData)NULL, NULL);
 
-	Tcl_CreateCommand(interp, "mark", &teddy_mark_command, (ClientData)NULL, NULL);
 	Tcl_CreateCommand(interp, "cb", &teddy_cb_command, (ClientData)NULL, NULL);
 	Tcl_CreateCommand(interp, "save", &teddy_save_command, (ClientData)NULL, NULL);
 	Tcl_CreateCommand(interp, "next-editor", &teddy_nexteditor_command, (ClientData)NULL, NULL);
@@ -1153,11 +1102,11 @@ void interp_return_point_pair(lpoint_t *mark, lpoint_t *cursor) {
 	char *r;
 	if (mark->line == NULL) {
 		asprintf(&r, "nil %d:%d",
-			cursor->line->lineno, cursor->glyph);
+			cursor->line->lineno+1, cursor->glyph+1);
 	} else {
 		asprintf(&r, "%d:%d %d:%d",
-			mark->line->lineno, mark->glyph,
-			cursor->line->lineno, cursor->glyph);
+			mark->line->lineno+1, mark->glyph+1,
+			cursor->line->lineno+1, cursor->glyph+1);
 	}
 	alloc_assert(r);
 	Tcl_SetResult(interp, r, TCL_VOLATILE);

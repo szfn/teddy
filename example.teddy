@@ -6,10 +6,10 @@ antique_theme
 
 setcfg focus_follows_mouse 1
 
-bindkey Ctrl-Space mark
-bindkey Ctrl-Shift-Space {mark lines}
+bindkey Ctrl-Space {toggle_mark normal}
+bindkey Ctrl-Shift-Space {toggle_mark lines}
 
-bindkey Ctrl-c {cb put [c]; mark stop}
+bindkey Ctrl-c {cb put [c]; m nil +0:+0}
 bindkey Ctrl-v {c [cb get]}
 bindkey Ctrl-x {cb put [c]; c ""}
 bindkey Ctrl-y {c [cb pget]}

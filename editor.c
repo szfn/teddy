@@ -195,8 +195,6 @@ static void editor_get_primary_selection(GtkClipboard *clipboard, GtkSelectionDa
 	lpoint_t start, end;
 	char *r = NULL;
 
-	if (editor->buffer->mark_transient) return;
-
 	buffer_get_selection(editor->buffer, &start, &end);
 
 	if (start.line == NULL) return;
@@ -236,23 +234,6 @@ void editor_insert_paste(editor_t *editor, GtkClipboard *clipboard) {
 	editor_replace_selection(editor, text);
 
 	g_free(text);
-}
-
-void editor_close_editor(editor_t *editor) {
-	tframe_t *frame;
-	column_t *column;
-
-	if (!find_editor_for_buffer(editor->buffer, &column, &frame, NULL)) return;
-
-	if (column_frame_number(column) > 1) {
-		column_remove(column, frame);
-	} else {
-		if (editor->buffer == null_buffer()) {
-			columns_remove(columnset, column);
-		} else {
-			editor_switch_buffer(editor, null_buffer());
-		}
-	}
 }
 
 void editor_switch_buffer(editor_t *editor, buffer_t *buffer) {
@@ -315,19 +296,16 @@ static const char *keyevent_to_string(guint keyval) {
 }
 
 static void set_primary_selection(editor_t *editor) {
-	if (!editor->buffer->mark_transient && (editor->buffer->mark.line != NULL)) {
+	if (editor->buffer->mark.line != NULL) {
 		gtk_clipboard_set_with_data(selection_clipboard, &selection_clipboard_target_entry, 1, (GtkClipboardGetFunc)editor_get_primary_selection, NULL, editor);
 	}
 }
 
 static void freeze_primary_selection(editor_t *editor) {
-	if (editor->buffer->mark_transient) return;
 	if (editor->buffer->mark.line == NULL) return;
 
 	lpoint_t start, end;
 	char *r = NULL;
-
-	if (editor->buffer->mark_transient) return;
 
 	buffer_get_selection(editor->buffer, &start, &end);
 
@@ -652,21 +630,7 @@ static gboolean button_press_callback(GtkWidget *widget, GdkEventButton *event, 
 		editor_complete_move(editor, TRUE);
 		editor_insert_paste(editor, selection_clipboard);
 	} else if (event->button == 3) {
-		lpoint_t start, end;
-
-		buffer_get_selection(editor->buffer, &start, &end);
-
-		buffer_unset_mark(editor->buffer);
-		move_cursor_to_mouse(editor, event->x, event->y);
-		editor_complete_move(editor, TRUE);
-
-		// here we check if the new cursor position (the one we created by clicking with the mouse) is inside the old selection area, in that case we do execute the mouse_open_action function on the selection. If no selection was active then we create one around the cursor and execute the mouse_open_action function on that
-		if (start.line == NULL) {
-			copy_lpoint(&start, &(editor->buffer->cursor));
-			mouse_open_action(editor, &start, NULL);
-		} else if (inbetween_lpoint(&start, &(editor->buffer->cursor), &end)) {
-			mouse_open_action(editor, &start, &end);
-		}
+		//TODO: 
 	}
 
 	return TRUE;

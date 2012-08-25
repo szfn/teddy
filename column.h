@@ -19,7 +19,7 @@ GType gtk_column_get_type(void) G_GNUC_CONST;
 column_t *column_new(gint spacing);
 
 void column_add_after(column_t *column, tframe_t *before_tf, tframe_t *tf);
-void column_remove(column_t *column, tframe_t *frame);
+bool column_remove(column_t *column, tframe_t *frame);
 int column_remove_others(column_t *column, tframe_t *frame);
 
 double column_fraction(column_t *column);
@@ -31,5 +31,7 @@ int column_frame_number(column_t *column);
 void gtk_column_size_allocate(GtkWidget *widget, GtkAllocation *allocation);
 
 tframe_t *column_get_frame_from_position(column_t *column, double x, double y, bool *ontag);
+
+bool column_close(column_t *column);
 
 #endif

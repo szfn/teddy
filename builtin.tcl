@@ -1,5 +1,16 @@
 # builtin commands for teddy
 
+proc toggle_mark {type} {
+	set mark [lindex [m] 0]
+	if {$mark eq "nil"} {
+		m +0:+0 +0:+0
+		buffer select-mode $type
+	} else {
+		m nil +0:+0
+		buffer select-mode normal
+	}
+}
+
 proc kill_line {} {
    m +0:1 +1:1
    if {[undo tag] eq "kill_line"} {
@@ -279,43 +290,15 @@ proc mgph_trim_parenthesis {text} {
    return [string range $text 1 end-1]
 }
 
-# examples:
-#  include <index.h>
-#  bim/bam/bla.c:
-#  bim/bam/bla.c:7,32: bang
-#  bim/bam/bla.c(2:2): sprac
-#  bim/bam/bla.c:[2,3]: sproc
-#  bim/bam/bla.c[2:3]
-#  bim/bam/bla.c:2: bloc
-#  bim/bam/bla.c(2)
-#  bim/bam/bla.c:[2]
-# go.c
-
-proc mouse_go_preprocessing_hook {text} {
-   set text [mgph_remove_trailing_nonalnum $text]
-   set text [mgph_trim_parenthesis $text]
-
-   #puts "Text is <$text>"
-
-   if {[regexp {^([^:]*)(?::|(?::?[\(\[]))([[:digit:]]+)[,:]([[:digit:]]+)(?:[\]\)])?$} $text -> filename lineno colno]} {
-       #puts "Returning <$filename:$lineno:$colno>"
-       return "$filename:$lineno:$colno"
-   }
-
-   if {[regexp {^([^:]*)(?::|(?::?[\(\[]))([[:digit:]]+)(?:[\]\)])?$} $text -> filename lineno]} {
-       #puts "Returning <$filename:$lineno:0>"
-       return "$filename:$lineno:0"
-   }
-
-   #puts "Returning <$text>\n"
-
-   return $text
-}
-
 proc bindent {direction indentchar} {
-	mark lines
+	set saved_status [m]
 
-	set saved [m]
+	if {[lindex $saved_status 0] == "nil"} {
+		m +0:+0 +0:+0
+	}
+
+	buffer select-mode lines
+
 	set text [c]
 
 	switch -exact $direction {
@@ -335,7 +318,8 @@ proc bindent {direction indentchar} {
 	#puts "Stored mark: $stored_mark"
 	#puts "Stored cursor: $stored_cursor"
 
-	m {*}$saved
+	m {*}$saved_status
+	buffer select-mode normal
 }
 
 proc man {args} {

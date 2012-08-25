@@ -72,7 +72,6 @@ static void ansi_append_escape(job_t *job) {
 		buffer->cursor.line = buffer->real_line;
 		buffer->cursor.glyph = 0;
 		buffer_set_mark_at_cursor(buffer);
-		buffer->mark_transient = true;
 		buffer_move_point_line(buffer, &(buffer->cursor), MT_END, 0);
 		buffer_replace_selection(buffer, "");
 	} else if (command_char == 'm') {
@@ -107,7 +106,6 @@ static void ansi_append(job_t *job, const char *msg, int len) {
 
 				buffer->cursor.glyph = 0;
 				buffer_set_mark_at_cursor(buffer);
-				buffer->mark_transient = true;
 				buffer->cursor.glyph = buffer->cursor.line->cap;
 				buffer_replace_selection(buffer, "");
 			} else if (msg[i] == 0x1b) { /* ANSI escape */
