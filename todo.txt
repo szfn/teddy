@@ -1,13 +1,11 @@
 LONG TERM:
 
-- autoreload stuff when changed on disk (buffers, tags info) (buffer open should create a new copy)
+- when destroying buffers associated with running jobs ask to terminate the program
 
 - implement common awk idioms (like line numbering) with s and m
-- reimplement tag search
 
 - replace tcl regex engine with TRE
 
-- remove complex directory visualization (and graphic builtin font)
 
 - set column number for background processes whenever possible
 - less ugly indicators for autowrapping
@@ -30,6 +28,7 @@ LONG TERM:
 - resize should work across multiple frames
 - some commands should be displayed on the working directory line (last command, two most used commands)
 - move stuff to a namespace
+- in buffers associated to jobs the cursor should be fixed at the end and inserting text should result in input to the job
 
 - comment region command
 - ability to persist the status of a window
@@ -41,6 +40,6 @@ LONG TERM:
 - make easy way to reindent though external filter
 - 's' command: support normal pcre flags
 - use an editor for the command line
-- delete '+' buffers on hide
-
 - cleanup of unused functions (how?)
+- all configuration options in the default configuration file with comments
+- open in a directory view is relative to the directory

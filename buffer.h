@@ -52,6 +52,9 @@ typedef struct _buffer_t {
 	int modified;
 	int editable;
 	uint8_t default_color;
+	int inotify_wd;
+	time_t mtime;
+	bool stale;
 
 	job_t *job;
 

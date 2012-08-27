@@ -2,6 +2,7 @@
 
 #include <stdlib.h>
 
+#include "buffers.h"
 #include "global.h"
 
 struct tag_entry *tag_entries;
@@ -44,9 +45,16 @@ void tags_load(char *wd) {
 	alloc_assert(tags_file);
 
 	FILE *f = fopen(tags_file, "r");
-	free(tags_file);
 
-	if (f == NULL) return;
+	if (f == NULL) {
+		buffers_register_tags(NULL);
+		free(tags_file);
+		return;
+	} else {
+		buffers_register_tags(tags_file);
+	}
+
+	free(tags_file);
 
 	while (fgets(buf, BUF_SIZE, f) != NULL) {
 		if (buf[strlen(buf)-1] == '\n') buf[strlen(buf)-1] = '\0';

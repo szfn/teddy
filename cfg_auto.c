@@ -32,6 +32,7 @@ const char *config_names[] = {
 	"lexy_string",
 	"lexy_literal",
 	"tags_discard_lineno",
+	"autoreload",
 };
 
 void config_init_auto_defaults(void) {
@@ -64,4 +65,5 @@ void config_init_auto_defaults(void) {
 	config_set(&global_config, CFG_LEXY_STRING, "0");
 	config_set(&global_config, CFG_LEXY_LITERAL, "0");
 	config_set(&global_config, CFG_TAGS_DISCARD_LINENO, "1");
+	config_set(&global_config, CFG_AUTORELOAD, "1");
 }

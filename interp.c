@@ -851,22 +851,9 @@ static int teddy_refresh_command(ClientData client_data, Tcl_Interp *interp, int
 		return TCL_ERROR;
 	}
 
-	// do not refresh special buffers
-	if (interp_context_buffer()->path[0] == '+') return TCL_OK;
+	buffers_refresh(interp_context_buffer());
 
-	char *path = strdup(interp_context_buffer()->path);
-	alloc_assert(path);
-
-	if (null_buffer() == interp_context_buffer()) return TCL_OK;
-
-	int r = buffers_close(interp_context_buffer(), gtk_widget_get_toplevel(GTK_WIDGET(interp_context_editor())));
-	if (r == 0) return TCL_OK;
-
-	enum go_file_failure_reason gffr;
-	buffer_t *buffer = go_file(path, false, &gffr);
-	if (buffer != NULL) editor_switch_buffer(interp_context_editor(), buffer);
-
-	free(path);
+	interp_context_editor_set(interp_context_editor());
 
 	return TCL_OK;
 }
@@ -959,6 +946,9 @@ void interp_init(void) {
 		printf("Internal TCL Error: %s\n", Tcl_GetString(stackTrace));
 		exit(EXIT_FAILURE);
 	}
+
+	// Without this tcl screws up the newline character on its own output, it tries to output cr + lf and the terminal converts lf again, resulting in an output of cr + cr + lf, other c programs seem to behave correctly
+	Tcl_Eval(interp, "fconfigure stdin -translation binary; fconfigure stdout -translation binary; fconfigure stderr -translation binary");	
 }
 
 void interp_free(void) {

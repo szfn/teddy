@@ -344,13 +344,6 @@ void buffer_aux_clear(buffer_t *buffer) {
 	buffer_replace_selection(buffer, "");
 }
 
-bool buffer_aux_is_directory(buffer_t *buffer) {
-	if (buffer == NULL) return false;
-	if (buffer->path == NULL) return false;
-
-	return (buffer->path[strlen(buffer->path) - 1] == '/');
-}
-
 void buffer_get_extremes(buffer_t *buffer, lpoint_t *start, lpoint_t *end) {
 	start->line = buffer->real_line;
 	start->glyph = 0;

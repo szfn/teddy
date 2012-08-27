@@ -595,5 +595,16 @@ proc solarized_theme {} {\n\
 	setcfg -global lexy_id $base2\n\
 	setcfg -global lexy_literal $cyan\n\
 }\n\
+\n\
+namespace eval teddy_intl {\n\
+	namespace export iopen_search\n\
+\n\
+	proc iopen_search {z} {\n\
+		set k [s -literal -get $z]\n\
+		#puts \"Searching <$z> -> <$k>\"\n\
+		m nil [lindex $k 0]\n\
+\n\
+	}\n\
+}\n\
 "
 #endif

@@ -19,9 +19,7 @@
 #include "top.h"
 
 buffer_t *go_file(const char *filename, bool create, enum go_file_failure_reason *gffr) {
-	char *p;
-	asprintf(&p, "%s/%s", top_working_directory(), filename);
-	alloc_assert(p);
+	char *p = unrealpath(top_working_directory(), filename);
 	char *urp = realpath(p, NULL);
 	free(p);
 

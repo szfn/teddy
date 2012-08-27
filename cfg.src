@@ -32,3 +32,5 @@ cfg_lexy_string 0
 cfg_lexy_literal 0
 
 cfg_tags_discard_lineno 1
+
+cfg_autoreload 1

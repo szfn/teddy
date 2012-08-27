@@ -4,6 +4,9 @@
 #include "columns.h"
 #include "editor.h"
 #include "go.h"
+#include "baux.h"
+#include "tags.h"
+#include "top.h"
 
 #include "critbit.h"
 
@@ -12,9 +15,15 @@
 
 #include <stdlib.h>
 #include <stdio.h>
+#include <sys/inotify.h>
 
 buffer_t **buffers;
 int buffers_allocated;
+
+int inotify_fd;
+GIOChannel *inotify_channel;
+guint inotify_channel_source_id;
+int tags_wd = -1;
 
 int process_buffers_counter = 0;
 
@@ -92,9 +101,87 @@ int buffers_close(buffer_t *buffer, GtkWidget *window) {
 		buffers[i] = NULL;
 	}
 
+	if (buffer->inotify_wd >= 0) {
+		inotify_rm_watch(inotify_fd, buffer->inotify_wd);
+	}
+
 	buffer_free(buffer);
 
 	return 1;
+}
+
+static buffer_t *get_buffer_by_inotify(int wd) {
+	if (wd < 0) return NULL;
+	for (int i = 0; i < buffers_allocated; ++i) {
+		if (buffers[i] == NULL) continue;
+		if (buffers[i]->inotify_wd == wd) return buffers[i];
+	}
+	return NULL;
+}
+
+static void maybe_stale_buffer(int wd) {
+	buffer_t *buffer = get_buffer_by_inotify(wd);
+
+	if (buffer == NULL) return;
+
+	struct stat buf;
+	if (stat(buffer->path, &buf) < 0) return;
+
+	//printf("<%s> %ld %ld %ld\n", buffer->path, buf.st_mtime, buffer->mtime, buf.st_size);
+
+	if (buf.st_mtime < buffer->mtime) return;
+
+	if (!(buffer->modified) && config_intval(&(buffer->config), CFG_AUTORELOAD) && (buf.st_size > 0)) {
+		buffers_refresh(buffer);
+	} else {
+		buffer->editable = false;
+		buffer->stale = true;
+	}
+
+	editor_t *editor;
+	if (find_editor_for_buffer(buffer, NULL, NULL, &editor)) {
+		gtk_widget_queue_draw(GTK_WIDGET(editor));
+	}
+}
+
+static gboolean inotify_input_watch_function(GIOChannel *source, GIOCondition condition, gpointer data) {
+#define INOTIFY_EVENT_SIZE (sizeof (struct inotify_event))
+#define INOTIFY_BUF_LEN (1024 * (INOTIFY_EVENT_SIZE + 16))
+	char buf[INOTIFY_BUF_LEN];
+	gsize len;
+
+	GIOStatus r = g_io_channel_read_chars(source, buf, INOTIFY_BUF_LEN, &len, NULL);
+
+	switch (r) {
+	case G_IO_STATUS_NORMAL:
+		//continue
+		break;
+	case G_IO_STATUS_ERROR:
+		return FALSE;
+	case G_IO_STATUS_EOF:
+		return FALSE;
+	case G_IO_STATUS_AGAIN:
+		return TRUE;
+	default:
+		return FALSE;
+	}
+
+	int i = 0;
+	while (i < len) {
+		struct inotify_event *event = (struct inotify_event *)(buf+i);
+
+		//printf("mask = %d (%d)\n", event->mask, event->wd);
+
+		if (event->wd == tags_wd) {
+			tags_load(top_working_directory());
+		}
+
+		maybe_stale_buffer(event->wd);
+
+		i += INOTIFY_EVENT_SIZE + event->len;
+	}
+
+	return TRUE;
 }
 
 void buffers_init(void) {
@@ -109,11 +196,21 @@ void buffers_init(void) {
 	}
 
 	buffers[0] = buffer_create();
-	{
-		free(buffers[0]->path);
-		asprintf(&(buffers[0]->path), "+null+");
-		load_empty(buffers[0]);
-		buffers[0]->editable = 0;
+	free(buffers[0]->path);
+	asprintf(&(buffers[0]->path), "+null+");
+	load_empty(buffers[0]);
+	buffers[0]->editable = 0;
+
+	inotify_fd = inotify_init();
+	if (inotify_fd < 0)
+		fprintf(stderr, "Could not start inotify\n");
+	else {
+		inotify_channel = g_io_channel_unix_new(inotify_fd);
+		g_io_channel_set_encoding(inotify_channel, NULL, NULL);
+		GError *error = NULL;
+		g_io_channel_set_flags(inotify_channel, g_io_channel_get_flags(inotify_channel)|G_IO_FLAG_NONBLOCK, &error);
+		if (error != NULL) { fprintf(stderr, "There was a strange error (2)"); g_error_free(error); error = NULL; }
+		inotify_channel_source_id = g_io_add_watch(inotify_channel, G_IO_IN|G_IO_HUP, (GIOFunc)(inotify_input_watch_function), NULL);
 	}
 }
 
@@ -140,6 +237,10 @@ void buffers_add(buffer_t *b) {
 		buffers_grow();
 		buffers_add(b);
 	}
+
+	if ((b->path[0] != '+') && (inotify_fd >= 0)) {
+		b->inotify_wd = inotify_add_watch(inotify_fd, b->path, IN_MODIFY);
+	}
 }
 
 void buffers_free(void) {
@@ -148,6 +249,13 @@ void buffers_free(void) {
 			buffer_free(buffers[i]);
 			buffers[i] = NULL;
 		}
+	}
+
+	if (inotify_fd >= 0) {
+		g_source_remove(inotify_channel_source_id);
+		g_io_channel_shutdown(inotify_channel, FALSE, NULL);
+		g_io_channel_unref(inotify_channel);
+		close(inotify_fd);
 	}
 }
 
@@ -467,4 +575,44 @@ void word_completer_full_update(void) {
 
 		critbit0_allprefixed(&(buffers[i]->cbt), "", refill_word_completer, NULL);
 	}
+}
+
+void buffers_refresh(buffer_t *buffer) {
+	editor_t *editor;
+	find_editor_for_buffer(buffer, NULL, NULL, &editor);
+
+	// do not refresh special buffers
+	if (buffer->path[0] == '+') return;
+
+	char *path = strdup(buffer->path);
+	alloc_assert(path);
+
+	if (null_buffer() == buffer) return;
+
+	int lineno = 1, glyph = 1;
+
+	if (buffer->cursor.line != NULL) {
+		lineno = buffer->cursor.line->lineno+1;
+		glyph = buffer->cursor.glyph+1;
+	}
+
+	int r = buffers_close(buffer, gtk_widget_get_toplevel(GTK_WIDGET(columnset)));
+	if (r == 0) return;
+
+	enum go_file_failure_reason gffr;
+	buffer_t *new_buffer = go_file(path, false, &gffr);
+	if (new_buffer != NULL) {
+		buffer_move_point_line(new_buffer, &(buffer->cursor), MT_ABS, lineno);
+		buffer_move_point_glyph(new_buffer, &(buffer->cursor), MT_ABS, glyph);
+
+		editor_switch_buffer(editor, new_buffer);
+	}
+
+
+	free(path);
+}
+
+void buffers_register_tags(const char *tags_file) {
+	if (tags_wd < 0) inotify_rm_watch(inotify_fd, tags_wd);
+	tags_wd = inotify_add_watch(inotify_fd, tags_file, IN_MODIFY);
 }

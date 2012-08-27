@@ -15,6 +15,7 @@
 #include "tags.h"
 #include "go.h"
 #include "research.h"
+#include "interp.h"
 
 #define IOPEN_RECURSOR_DEPTH_LIMIT 512
 #define IOPEN_MAX_SENT_RESULTS 512
@@ -78,8 +79,10 @@ static void iopen_open(GtkTreeView *tree, GtkTreePath *treepath) {
 			buffer_unset_mark(editor->buffer);
 			editor->buffer->cursor.line = editor->buffer->real_line;
 			editor->buffer->cursor.glyph = 0;
-			//TODO: reimplement
-			//start_regexp_search(editor, search, NULL, false, RM_TOSTART, true);
+
+			const char *argv[] = { "teddy_intl::iopen_search", search };
+			interp_context_editor_set(editor);
+			interp_eval_command(2, argv);
 		}
 	} else {
 		char *msg;
@@ -99,9 +102,10 @@ static void iopen_enter(editor_t *editor) {
 	GtkTreePath *path;
 	gtk_tree_view_get_cursor(GTK_TREE_VIEW(selected_tree), &path, NULL);
 
-	iopen_open(GTK_TREE_VIEW(selected_tree), path);
-
-	gtk_tree_path_free(path);
+	if (path != NULL) {
+		iopen_open(GTK_TREE_VIEW(selected_tree), path);
+		gtk_tree_path_free(path);
+	}
 }
 
 static void result_activated_callback(GtkTreeView *tree, GtkTreePath *treepath, GtkTreeViewColumn *column, gpointer data) {

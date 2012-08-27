@@ -602,6 +602,8 @@ int load_dir(buffer_t *buffer, const char *dirname) {
 }
 
 int load_text_file(buffer_t *buffer, const char *filename) {
+	buffer->mtime = time(NULL);
+
 	FILE *fin = fopen(filename, "r");
 	int ch;
 	int i = 0;
@@ -610,7 +612,7 @@ int load_text_file(buffer_t *buffer, const char *filename) {
 	real_line_t *prev_line = NULL;
 	real_line_t **real_line_pp = &(buffer->real_line);
 	int lineno = 0;
-
+	
 	if (!fin) {
 		return -1;
 	}
@@ -817,6 +819,7 @@ void save_to_text_file(buffer_t *buffer) {
 	free(cmd);
 
 	buffer->modified = 0;
+	buffer->mtime = time(NULL);
 }
 
 void line_get_glyph_coordinates(buffer_t *buffer, lpoint_t *point, double *x, double *y) {
@@ -906,6 +909,9 @@ buffer_t *buffer_create(void) {
 	buffer->editable = 1;
 	buffer->job = NULL;
 	buffer->default_color = 0;
+	buffer->inotify_wd = -1;
+	buffer->mtime = 0;
+	buffer->stale = false;
 
 	asprintf(&(buffer->path), "+unnamed");
 	alloc_assert(buffer->path);

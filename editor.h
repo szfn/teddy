@@ -30,6 +30,7 @@ typedef struct _editor_t {
 	int mouse_marking;
 
 	GtkWidget *search_entry, *search_box;
+	GtkWidget *stale_box;
 
 	gulong current_entry_handler_id;
 

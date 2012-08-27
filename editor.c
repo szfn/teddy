@@ -487,24 +487,19 @@ static gboolean key_press_callback(GtkWidget *widget, GdkEventKey *event, editor
 		}
 
 		case GDK_KEY_Return: {
-			if (buffer_aux_is_directory(editor->buffer)) {
-				rd_open(editor);
-				gtk_widget_queue_draw(GTK_WIDGET(editor));
+			if (editor->single_line) {
+				editor->single_line_return(editor);
 			} else {
-				if (editor->single_line) {
-					editor->single_line_return(editor);
+				char *r = alloca(sizeof(char) * (editor->buffer->cursor.line->cap + 2));
+				if (config_intval(&(editor->buffer->config), CFG_AUTOINDENT)) {
+					buffer_indent_newline(editor->buffer, r);
 				} else {
-					char *r = alloca(sizeof(char) * (editor->buffer->cursor.line->cap + 2));
-					if (config_intval(&(editor->buffer->config), CFG_AUTOINDENT)) {
-						buffer_indent_newline(editor->buffer, r);
-					} else {
-						r[0] = '\n';
-						r[1] = '\0';
-					}
-					editor_replace_selection(editor, r);
+					r[0] = '\n';
+					r[1] = '\0';
 				}
-				return TRUE;
+				editor_replace_selection(editor, r);
 			}
+			return TRUE;
 		}
 		case GDK_KEY_Escape:
 			return TRUE;
@@ -630,7 +625,7 @@ static gboolean button_press_callback(GtkWidget *widget, GdkEventButton *event, 
 		editor_complete_move(editor, TRUE);
 		editor_insert_paste(editor, selection_clipboard);
 	} else if (event->button == 3) {
-		//TODO: 
+		//TODO:
 	}
 
 	return TRUE;
@@ -893,14 +888,16 @@ static gboolean expose_event_callback(GtkWidget *widget, GdkEventExpose *event, 
 	GtkAllocation allocation;
 	gtk_widget_get_allocation(widget, &allocation);
 
-	if (buffer_aux_is_directory(editor->buffer)) {
-		gdk_window_set_cursor(gtk_widget_get_window(editor->drar), gdk_cursor_new(GDK_ARROW));
-	} else {
-		gdk_window_set_cursor(gtk_widget_get_window(editor->drar), gdk_cursor_new(GDK_XTERM));
-	}
+	gdk_window_set_cursor(gtk_widget_get_window(editor->drar), gdk_cursor_new(GDK_XTERM));
 
 	if (editor->research.mode == SM_NONE) {
 		gtk_widget_hide(editor->search_box);
+	}
+
+	if (editor->buffer->stale) {
+		gtk_widget_show_all(editor->stale_box);
+	} else {
+		gtk_widget_hide(editor->stale_box);
 	}
 
 	set_color_cfg(cr, config_intval(&(editor->buffer->config), CFG_EDITOR_BG_COLOR));
@@ -1129,6 +1126,16 @@ static void search_button_execute(GtkButton *btn, editor_t *editor) {
 	move_search(editor, true, true, true);
 }
 
+static void keep_stale_callback(GtkButton *btn, editor_t *editor) {
+	editor->buffer->stale = false;
+	gtk_widget_queue_draw(GTK_WIDGET(editor));
+}
+
+static void reload_stale_callback(GtkButton *btn, editor_t *editor) {
+	editor->buffer->modified = false;
+	buffers_refresh(editor->buffer);
+}
+
 editor_t *new_editor(buffer_t *buffer, bool single_line) {
 	GtkWidget *editor_widget = g_object_new(GTK_TYPE_TEDITOR, NULL);
 	editor_t *r = GTK_TEDITOR(editor_widget);
@@ -1178,35 +1185,52 @@ editor_t *new_editor(buffer_t *buffer, bool single_line) {
 	r->drarscroll = gtk_vscrollbar_new((GtkAdjustment *)(r->adjustment = gtk_adjustment_new(0.0, 0.0, 1.0, 1.0, 1.0, 1.0)));
 	r->drarhscroll = gtk_hscrollbar_new((GtkAdjustment *)(r->hadjustment = gtk_adjustment_new(0.0, 0.0, 1.0, 1.0, 1.0, 1.0)));
 
-	r->search_entry = gtk_entry_new();
-	r->search_box = gtk_hbox_new(FALSE, 0);
-	GtkWidget *search_label = gtk_label_new("Search: ");
+	{ // search box
+		r->search_entry = gtk_entry_new();
+		r->search_box = gtk_hbox_new(FALSE, 0);
+		GtkWidget *search_label = gtk_label_new("Search: ");
 
-	GtkWidget *next_search_button = gtk_button_new();
-	r->prev_search_button = gtk_button_new();
-	GtkWidget *close_search_button = gtk_button_new();
-	r->execute_search_button = gtk_button_new_with_label("Apply");
+		GtkWidget *next_search_button = gtk_button_new();
+		r->prev_search_button = gtk_button_new();
+		GtkWidget *close_search_button = gtk_button_new();
+		r->execute_search_button = gtk_button_new_with_label("Apply");
 
-	gtk_container_add(GTK_CONTAINER(next_search_button), gtk_arrow_new(GTK_ARROW_DOWN, GTK_SHADOW_NONE));
-	gtk_container_add(GTK_CONTAINER(r->prev_search_button), gtk_arrow_new(GTK_ARROW_UP, GTK_SHADOW_NONE));
-	gtk_container_add(GTK_CONTAINER(close_search_button), gtk_image_new_from_stock(GTK_STOCK_CLOSE, GTK_ICON_SIZE_SMALL_TOOLBAR));
+		gtk_container_add(GTK_CONTAINER(next_search_button), gtk_arrow_new(GTK_ARROW_DOWN, GTK_SHADOW_NONE));
+		gtk_container_add(GTK_CONTAINER(r->prev_search_button), gtk_arrow_new(GTK_ARROW_UP, GTK_SHADOW_NONE));
+		gtk_container_add(GTK_CONTAINER(close_search_button), gtk_image_new_from_stock(GTK_STOCK_CLOSE, GTK_ICON_SIZE_SMALL_TOOLBAR));
 
-	g_signal_connect(G_OBJECT(next_search_button), "clicked", G_CALLBACK(search_button_forward), r);
-	g_signal_connect(G_OBJECT(r->prev_search_button), "clicked", G_CALLBACK(search_button_backwards), r);
-	g_signal_connect(G_OBJECT(close_search_button), "clicked", G_CALLBACK(search_button_close), r);
-	g_signal_connect(G_OBJECT(r->execute_search_button), "clicked", G_CALLBACK(search_button_execute), r);
+		g_signal_connect(G_OBJECT(next_search_button), "clicked", G_CALLBACK(search_button_forward), r);
+		g_signal_connect(G_OBJECT(r->prev_search_button), "clicked", G_CALLBACK(search_button_backwards), r);
+		g_signal_connect(G_OBJECT(close_search_button), "clicked", G_CALLBACK(search_button_close), r);
+		g_signal_connect(G_OBJECT(r->execute_search_button), "clicked", G_CALLBACK(search_button_execute), r);
 
-	gtk_box_pack_start(GTK_BOX(r->search_box), GTK_WIDGET(search_label), FALSE, FALSE, 0);
-	gtk_box_pack_start(GTK_BOX(r->search_box), GTK_WIDGET(r->search_entry), TRUE, TRUE, 0);
-	gtk_box_pack_end(GTK_BOX(r->search_box), close_search_button, FALSE, FALSE, 2);
-	gtk_box_pack_end(GTK_BOX(r->search_box), r->prev_search_button, FALSE, FALSE, 2);
-	gtk_box_pack_end(GTK_BOX(r->search_box), next_search_button, FALSE, FALSE, 2);
-	gtk_box_pack_end(GTK_BOX(r->search_box), r->execute_search_button, FALSE, FALSE, 2);
+		gtk_box_pack_start(GTK_BOX(r->search_box), GTK_WIDGET(search_label), FALSE, FALSE, 0);
+		gtk_box_pack_start(GTK_BOX(r->search_box), GTK_WIDGET(r->search_entry), TRUE, TRUE, 0);
+		gtk_box_pack_end(GTK_BOX(r->search_box), close_search_button, FALSE, FALSE, 2);
+		gtk_box_pack_end(GTK_BOX(r->search_box), r->prev_search_button, FALSE, FALSE, 2);
+		gtk_box_pack_end(GTK_BOX(r->search_box), next_search_button, FALSE, FALSE, 2);
+		gtk_box_pack_end(GTK_BOX(r->search_box), r->execute_search_button, FALSE, FALSE, 2);
+	}
 
-	gtk_table_attach(GTK_TABLE(r), r->search_box, 0, 2, 0, 1, GTK_EXPAND|GTK_FILL, 0, 0, 0);
-	gtk_table_attach(GTK_TABLE(r), r->drar, 0, 1, 1, 2, GTK_EXPAND | GTK_FILL, GTK_EXPAND|GTK_FILL, 0, 0);
-	gtk_table_attach(GTK_TABLE(r), r->drarscroll, 1, 2, 1, 2, 0, GTK_EXPAND|GTK_FILL, 0, 0);
-	gtk_table_attach(GTK_TABLE(r), r->drarhscroll, 0, 1, 2, 3, GTK_EXPAND|GTK_FILL, 0, 0, 0);
+	{ // stale box
+		r->stale_box = gtk_hbox_new(FALSE, 0);
+		GtkWidget *stale_label = gtk_label_new("Content of this file changed on disk");
+		GtkWidget *keep_stale_button = gtk_button_new_with_label("Keep this version");
+		GtkWidget *reload_stale_button = gtk_button_new_with_label("Reload from disk");
+
+		gtk_box_pack_start(GTK_BOX(r->stale_box), stale_label, TRUE, TRUE, 0);
+		gtk_box_pack_end(GTK_BOX(r->stale_box), keep_stale_button, FALSE, FALSE, 2);
+		gtk_box_pack_end(GTK_BOX(r->stale_box), reload_stale_button, FALSE, FALSE, 2);
+
+		g_signal_connect(G_OBJECT(keep_stale_button), "clicked", G_CALLBACK(keep_stale_callback), r);
+		g_signal_connect(G_OBJECT(reload_stale_button), "clicked", G_CALLBACK(reload_stale_callback), r);
+	}
+
+	gtk_table_attach(GTK_TABLE(r), r->stale_box, 0, 2, 0, 1, GTK_EXPAND|GTK_FILL, 0, 0, 0);
+	gtk_table_attach(GTK_TABLE(r), r->search_box, 0, 2, 1, 2, GTK_EXPAND|GTK_FILL, 0, 0, 0);
+	gtk_table_attach(GTK_TABLE(r), r->drar, 0, 1, 2, 3, GTK_EXPAND | GTK_FILL, GTK_EXPAND|GTK_FILL, 0, 0);
+	gtk_table_attach(GTK_TABLE(r), r->drarscroll, 1, 2, 2, 3, 0, GTK_EXPAND|GTK_FILL, 0, 0);
+	gtk_table_attach(GTK_TABLE(r), r->drarhscroll, 0, 1, 3, 4, GTK_EXPAND|GTK_FILL, 0, 0, 0);
 
 	g_signal_connect(G_OBJECT(r->drarscroll), "value_changed", G_CALLBACK(scrolled_callback), (gpointer)r);
 	g_signal_connect(G_OBJECT(r->drarhscroll), "value_changed", G_CALLBACK(hscrolled_callback), (gpointer)r);

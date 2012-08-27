@@ -139,7 +139,7 @@ static bool regmatch_to_lpoints(struct augmented_lpoint_t *search_point, regmatc
 }
 
 static bool move_regexp_search_forward(editor_t *editor, bool execute, lpoint_t *mark, lpoint_t *cursor) {
-	if (execute && (editor->research.cmd != NULL) && (editor->buffer->mark.line != NULL)) {
+	if (execute && (editor->research.cmd != NULL) && (mark->line != NULL)) {
 		bool r = interp_eval(editor, editor->research.cmd, false);
 
 		if (r == TCL_ERROR) return false;
@@ -155,8 +155,8 @@ static bool move_regexp_search_forward(editor_t *editor, bool execute, lpoint_t 
 		search_point.offset = 0;
 		editor->research.search_failed = false;
 	} else {
-		search_point.line = editor->buffer->cursor.line;
-		search_point.start_glyph = editor->buffer->cursor.glyph;
+		search_point.line = cursor->line;
+		search_point.start_glyph = cursor->glyph;
 
 		if (search_point.start_glyph == (search_point.line->cap)) {
 			// if the cursor is after the last character of the line just move to the next line
@@ -191,7 +191,7 @@ static bool move_regexp_search_forward(editor_t *editor, bool execute, lpoint_t 
 		} else {
 			//printf("Match on line <%s> at %d %d <%d>\n", "", ovector[0].rm_so, ovector[0].rm_eo, r);
 
-			if (regmatch_to_lpoints(&search_point, ovector+0, &(editor->buffer->mark), &(editor->buffer->cursor))) {
+			if (regmatch_to_lpoints(&search_point, ovector+0, mark, cursor)) {
 				lexy_update_for_move(editor->buffer, cursor->line);
 
 				char name[3] = "g.";
@@ -205,8 +205,8 @@ static bool move_regexp_search_forward(editor_t *editor, bool execute, lpoint_t 
 				}
 
 				// end the search if cursor is now on the last line of the search after the ending glyph
-				if ((editor->buffer->cursor.line == editor->research.regex_endpoint.line)
-					&& (editor->buffer->cursor.glyph > editor->research.regex_endpoint.glyph))
+				if ((cursor->line == editor->research.regex_endpoint.line)
+					&& (cursor->glyph > editor->research.regex_endpoint.glyph))
 					return false;
 
 				return true;
@@ -313,6 +313,8 @@ int teddy_research_command(ClientData client_data, Tcl_Interp *interp, int argc,
 
 	if (get) {
 		lpoint_t mark, cursor;
+		copy_lpoint(&mark, &(editor->buffer->mark));
+		copy_lpoint(&cursor, &(editor->buffer->cursor));
 		move_regexp_search_forward(editor, false, &mark, &cursor);
 		interp_return_point_pair(&mark, &cursor);
 		return TCL_OK;
