@@ -610,11 +610,11 @@ static bool move_command_ex(const char *sin, lpoint_t *p, lpoint_t *ref) {
 		}
 		switch (second[0]) {
 		case '+':
-			colflag = MT_RELW;
+			colflag = words ? MT_RELW : MT_REL;
 			++second;
 			break;
 		case '-':
-			colflag = MT_RELW;
+			colflag = words ? MT_RELW : MT_REL;
 			forward = false;
 			++second;
 			break;
@@ -691,7 +691,7 @@ static int teddy_move_command(ClientData client_data, Tcl_Interp *interp, int ar
 		}
 
 		copy_lpoint(&(interp_context_buffer()->savedmark), &(interp_context_buffer()->mark));
-		
+
 		break;
 	default:
 		Tcl_AddErrorInfo(interp, "Wrong number of arguments to 'move' command");
