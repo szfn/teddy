@@ -21,7 +21,6 @@
 #include "tags.h"
 
 static gboolean delete_callback(GtkWidget *widget, GdkEvent *event, gpointer data) {
-	//TODO: terminate all processes
 	if (buffers_close_all(widget)) return FALSE;
 	return TRUE;
 }

@@ -34,30 +34,55 @@ buffer_t *null_buffer(void) {
 #define SAVE_AND_CLOSE_RESPONSE 1
 #define DISCARD_CHANGES_RESPONSE 2
 #define CANCEL_ACTION_RESPONSE 3
+#define KILL_AND_CLOSE_RESPONSE 4
 
-static int ask_for_closing_and_maybe_save(buffer_t *buffer, GtkWidget *window) {
-	GtkWidget *dialog;
-	GtkWidget *label;
+static int ask_for_closing_and_maybe_terminate(buffer_t *buffer, GtkWidget *window) {
+	GtkWidget *dialog = gtk_dialog_new_with_buttons("Close Buffer", GTK_WINDOW(window), GTK_DIALOG_MODAL|GTK_DIALOG_DESTROY_WITH_PARENT, "Kill and close", KILL_AND_CLOSE_RESPONSE, "Cancel", CANCEL_ACTION_RESPONSE, NULL);
+
 	char *msg;
-	gint result;
+	asprintf(&msg, "A process is attached to buffer %s", buffer->path);
+	alloc_assert(msg);
+	GtkWidget *label = gtk_label_new(msg);
+	free(msg);
 
-	if (!(buffer->has_filename) && (buffer->path[0] == '+')) return 1; /* Trash buffer, can be discarded safely */
+	gtk_container_add(GTK_CONTAINER(gtk_dialog_get_content_area(GTK_DIALOG(dialog))), label);
 
-	if (buffer->has_filename) {
-		dialog = gtk_dialog_new_with_buttons("Close Buffer", (window != NULL) ? GTK_WINDOW(window) : GTK_WINDOW(window), GTK_DIALOG_MODAL|GTK_DIALOG_DESTROY_WITH_PARENT, "Save and close", SAVE_AND_CLOSE_RESPONSE, "Discard changes", DISCARD_CHANGES_RESPONSE, "Cancel", CANCEL_ACTION_RESPONSE, NULL);
-	} else {
-		dialog = gtk_dialog_new_with_buttons("Close Buffer", (window != NULL) ? GTK_WINDOW(window) : GTK_WINDOW(window), GTK_DIALOG_MODAL|GTK_DIALOG_DESTROY_WITH_PARENT, "Discard changes", DISCARD_CHANGES_RESPONSE, "Cancel", CANCEL_ACTION_RESPONSE, NULL);
+	gtk_widget_show_all(dialog);
+	gint result = gtk_dialog_run(GTK_DIALOG(dialog));
+	gtk_widget_destroy(dialog);
+
+	switch (result) {
+	case KILL_AND_CLOSE_RESPONSE:
+		kill(interp_context_buffer()->job->child_pid, SIGTERM);
+		break;
+	case CANCEL_ACTION_RESPONSE:
+	default: return 0;
 	}
 
+	return 1;
+}
+
+static int ask_for_closing_and_maybe_save(buffer_t *buffer, GtkWidget *window) {
+	if (!(buffer->has_filename) && (buffer->path[0] == '+')) return 1; /* Trash buffer, can be discarded safely */
+
+	GtkWidget *dialog;
+	if (buffer->has_filename) {
+		dialog = gtk_dialog_new_with_buttons("Close Buffer", GTK_WINDOW(window), GTK_DIALOG_MODAL|GTK_DIALOG_DESTROY_WITH_PARENT, "Save and close", SAVE_AND_CLOSE_RESPONSE, "Discard changes", DISCARD_CHANGES_RESPONSE, "Cancel", CANCEL_ACTION_RESPONSE, NULL);
+	} else {
+		dialog = gtk_dialog_new_with_buttons("Close Buffer", GTK_WINDOW(window), GTK_DIALOG_MODAL|GTK_DIALOG_DESTROY_WITH_PARENT, "Discard changes", DISCARD_CHANGES_RESPONSE, "Cancel", CANCEL_ACTION_RESPONSE, NULL);
+	}
+
+	char *msg;
 	asprintf(&msg, "Buffer [%s] is modified", buffer->path);
-	label = gtk_label_new(msg);
+	alloc_assert(msg);
+	GtkWidget *label = gtk_label_new(msg);
 	free(msg);
 
 	gtk_container_add(GTK_CONTAINER(gtk_dialog_get_content_area(GTK_DIALOG(dialog))), label);
 
 	//g_signal_connect_swapped(dialog, "response", G_CALLBACK(gtk_widget_destroy), dialog);
 	gtk_widget_show_all(dialog);
-	result = gtk_dialog_run(GTK_DIALOG(dialog));
+	gint result = gtk_dialog_run(GTK_DIALOG(dialog));
 	gtk_widget_destroy(dialog);
 
 	//printf("Response is: %d (%d %d %d)\n", result, SAVE_AND_CLOSE_RESPONSE, DISCARD_CHANGES_RESPONSE, CANCEL_ACTION_RESPONSE);
@@ -81,6 +106,11 @@ int buffers_close(buffer_t *buffer, GtkWidget *window) {
 
 	if (buffer->modified) {
 		int r = ask_for_closing_and_maybe_save(buffer, window);
+		if (r == 0) return 0;
+	}
+
+	if (buffer->job != NULL) {
+		int r = ask_for_closing_and_maybe_terminate(buffer, window);
 		if (r == 0) return 0;
 	}
 
