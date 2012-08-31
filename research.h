@@ -24,6 +24,8 @@ struct research_t {
 	bool next_will_wrap_around;
 
 	lpoint_t regex_endpoint;
+
+	buffer_t *buffer;
 };
 
 struct _editor_t editor;
@@ -31,8 +33,10 @@ struct _editor_t editor;
 extern void research_init(struct research_t *rs);
 
 extern void quit_search_mode(struct _editor_t *editor);
-void move_search(struct _editor_t *editor, bool ctrl_g_invoked, bool direction_forward, bool replace);
+extern void move_search(struct _editor_t *editor, bool ctrl_g_invoked, bool direction_forward, bool replace);
 
 extern int teddy_research_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]);
+
+extern void research_continue_replace_to_end(struct _editor_t *editor);
 
 #endif

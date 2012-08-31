@@ -14,8 +14,8 @@ enum movement_type_t {
 	MT_RELW, // word based relative move (buffer_move_point_glyph only)
 };
 
-void buffer_move_point_line(buffer_t *buffer, lpoint_t *p, enum movement_type_t type, int arg);
-void buffer_move_point_glyph(buffer_t *buffer, lpoint_t *p, enum movement_type_t type, int arg);
+bool buffer_move_point_line(buffer_t *buffer, lpoint_t *p, enum movement_type_t type, int arg);
+bool buffer_move_point_glyph(buffer_t *buffer, lpoint_t *p, enum movement_type_t type, int arg);
 
 /* writes in r the indent of cursor_line + a newline and the 0 byte */
 void buffer_indent_newline(buffer_t *buffer, char *r);

@@ -606,5 +606,12 @@ namespace eval teddy_intl {\n\
 \n\
 	}\n\
 }\n\
+\n\
+namespace eval teddy {\n\
+	namespace export lineof\n\
+	proc lineof {x} {\n\
+		return [lindex [split $x \":\"] 0]\n\
+	}\n\
+}\n\
 "
 #endif

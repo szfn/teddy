@@ -31,50 +31,66 @@ static UBool u_isalnum_or_underscore(uint32_t code) {
 }
 
 /*if it is at the beginning of a word (or inside a word) goes to the end of this word, if it is at the end of a word (or inside a non-word sequence) goes to the beginning of the next one*/
-static void buffer_aux_wnwa_next_ex(lpoint_t *point) {
+static bool buffer_aux_wnwa_next_ex(lpoint_t *point) {
 	UBool searching_alnum;
-	if (point->glyph >= point->line->cap) return;
+	if (point->glyph >= point->line->cap) return false;
 
 	searching_alnum = !u_isalnum_or_underscore(point->line->glyph_info[point->glyph].code);
 
+	bool r = false;
+
 	for ( ; point->glyph < point->line->cap; ++(point->glyph)) {
-		if (u_isalnum_or_underscore(point->line->glyph_info[point->glyph].code) == searching_alnum) break;
+		if (u_isalnum_or_underscore(point->line->glyph_info[point->glyph].code) == searching_alnum) {
+			r = true;
+			break;
+		}
 	}
+
+	return r;
 }
 
 /* If it is at the beginning of a word (or inside a non-word sequence) goes to the end of the previous word, if it is at the end of a word (or inside a word) goes to the beginning of the word) */
-static void buffer_aux_wnwa_prev_ex(lpoint_t *point) {
+static bool buffer_aux_wnwa_prev_ex(lpoint_t *point) {
 	UBool searching_alnum;
-	if (point->glyph <= 0) return;
+	if (point->glyph <= 0) return false;
 
 	--(point->glyph);
 
 	searching_alnum = !u_isalnum_or_underscore(point->line->glyph_info[point->glyph].code);
 
+	bool r = false;
+
 	for ( ; point->glyph >= 0; --(point->glyph)) {
-		if (u_isalnum_or_underscore(point->line->glyph_info[point->glyph].code) == searching_alnum) break;
+		if (u_isalnum_or_underscore(point->line->glyph_info[point->glyph].code) == searching_alnum) {
+			r = true;
+			break;
+		}
 	}
 
 	++(point->glyph);
+
+	return r;
 }
 
-void buffer_move_point_line(buffer_t *buffer, lpoint_t *p, enum movement_type_t type, int arg) {
+bool buffer_move_point_line(buffer_t *buffer, lpoint_t *p, enum movement_type_t type, int arg) {
 	//printf("Move point line: %d (%d)\n", arg, type);
+
+	bool r = true;
 
 	switch (type) {
 	case MT_REL:
-		if (p->line == NULL) return;
+		if (p->line == NULL) return false;
 
 		while (arg < 0) {
 			real_line_t *to = p->line->prev;
-			if (to == NULL) break;
+			if (to == NULL) { r = false; break; }
 			p->line = to;
 			++arg;
 		}
 
 		while (arg > 0) {
 			real_line_t *to = p->line->next;
-			if (to == NULL) break;
+			if (to == NULL) { r = false; break; }
 			p->line = to;
 			--arg;
 		}
@@ -89,24 +105,28 @@ void buffer_move_point_line(buffer_t *buffer, lpoint_t *p, enum movement_type_t 
 	case MT_ABS: {
 		real_line_t *prev = buffer->real_line;
 		for (p->line = buffer->real_line; p->line != NULL; p->line = p->line->next) {
-			if (p->line->lineno+1 == arg) return;
+			if (p->line->lineno+1 == arg) break;
 			prev = p->line;
 		}
-		if (p->line == NULL) p->line = prev;
+		if (p->line == NULL) { r = false; p->line = prev; }
 		break;
 	}
 
 	default:
 		quick_message("Internal error", "Internal error buffer_move_point_line");
-		return;
+		return false;
 	}
 
 	if (p->glyph > p->line->cap) p->glyph = p->line->cap;
 	if (p->glyph < 0) p->glyph = 0;
+
+	return r;
 }
 
-void buffer_move_point_glyph(buffer_t *buffer, lpoint_t *p, enum movement_type_t type, int arg) {
-	if (p->line == NULL) return;
+bool buffer_move_point_glyph(buffer_t *buffer, lpoint_t *p, enum movement_type_t type, int arg) {
+	if (p->line == NULL) return false;
+
+	bool r = true;
 
 	//printf("Move point glyph: %d (%d)\n", arg, type);
 
@@ -115,13 +135,13 @@ void buffer_move_point_glyph(buffer_t *buffer, lpoint_t *p, enum movement_type_t
 		p->glyph += arg;
 
 		while (p->glyph > p->line->cap) {
-			if (p->line->next == NULL) break;
+			if (p->line->next == NULL) { r = false; break; }
 			p->glyph = p->glyph - p->line->cap - 1;
 			p->line = p->line->next;
 		}
 
 		while (p->glyph < 0) {
-			if (p->line->prev == NULL) break;
+			if (p->line->prev == NULL) { r = false; break; }
 			p->line = p->line->prev;
 			p->glyph = p->line->cap + (p->glyph + 1);
 		}
@@ -129,12 +149,12 @@ void buffer_move_point_glyph(buffer_t *buffer, lpoint_t *p, enum movement_type_t
 
 	case MT_RELW:
 		while (arg < 0) {
-			buffer_aux_wnwa_prev_ex(p);
+			r = buffer_aux_wnwa_prev_ex(p);
 			++arg;
 		}
 
 		while (arg > 0) {
-			buffer_aux_wnwa_next_ex(p);
+			r = buffer_aux_wnwa_next_ex(p);
 			--arg;
 		}
 		break;
@@ -152,7 +172,7 @@ void buffer_move_point_glyph(buffer_t *buffer, lpoint_t *p, enum movement_type_t
 		break;
 
 	case MT_ABS:
-		if (arg < 0) return;
+		if (arg < 0) return false;
 		p->glyph = arg-1;
 		break;
 
@@ -162,6 +182,8 @@ void buffer_move_point_glyph(buffer_t *buffer, lpoint_t *p, enum movement_type_t
 
 	if (p->glyph > p->line->cap) p->glyph = p->line->cap;
 	if (p->glyph < 0) p->glyph = 0;
+
+	return r;
 }
 
 void buffer_indent_newline(buffer_t *buffer, char *r) {

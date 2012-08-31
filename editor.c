@@ -971,7 +971,7 @@ static gboolean expose_event_callback(GtkWidget *widget, GdkEventExpose *event, 
 		cairo_text_extents_t posbox_ext;
 		double x, y;
 
-		asprintf(&posbox_text, " %d,%d %0.0f%%", editor->buffer->cursor.line->lineno+1, editor->buffer->cursor.glyph, (100.0 * editor->buffer->cursor.line->lineno / count));
+		asprintf(&posbox_text, " %d,%d %0.0f%%", editor->buffer->cursor.line->lineno+1, editor->buffer->cursor.glyph+1, (100.0 * editor->buffer->cursor.line->lineno / count));
 
 		cairo_set_scaled_font(cr, fontset_get_cairofont_by_name(config_strval(&(editor->buffer->config), CFG_POSBOX_FONT), 0));
 
@@ -1126,6 +1126,13 @@ static void search_button_execute(GtkButton *btn, editor_t *editor) {
 	move_search(editor, true, true, true);
 }
 
+static void search_button_execute_all(GtkButton *btn, editor_t *editor) {
+	research_continue_replace_to_end(editor);
+	editor->research.mode = SM_NONE;
+	gtk_widget_grab_focus(editor->drar);
+	gtk_widget_queue_draw(GTK_WIDGET(editor));
+}
+
 static void keep_stale_callback(GtkButton *btn, editor_t *editor) {
 	editor->buffer->stale = false;
 	gtk_widget_queue_draw(GTK_WIDGET(editor));
@@ -1194,6 +1201,7 @@ editor_t *new_editor(buffer_t *buffer, bool single_line) {
 		r->prev_search_button = gtk_button_new();
 		GtkWidget *close_search_button = gtk_button_new();
 		r->execute_search_button = gtk_button_new_with_label("Apply");
+		r->execute_all_search_button = gtk_button_new_with_label("Apply to all");
 
 		gtk_container_add(GTK_CONTAINER(next_search_button), gtk_arrow_new(GTK_ARROW_DOWN, GTK_SHADOW_NONE));
 		gtk_container_add(GTK_CONTAINER(r->prev_search_button), gtk_arrow_new(GTK_ARROW_UP, GTK_SHADOW_NONE));
@@ -1203,12 +1211,14 @@ editor_t *new_editor(buffer_t *buffer, bool single_line) {
 		g_signal_connect(G_OBJECT(r->prev_search_button), "clicked", G_CALLBACK(search_button_backwards), r);
 		g_signal_connect(G_OBJECT(close_search_button), "clicked", G_CALLBACK(search_button_close), r);
 		g_signal_connect(G_OBJECT(r->execute_search_button), "clicked", G_CALLBACK(search_button_execute), r);
+		g_signal_connect(G_OBJECT(r->execute_all_search_button), "clicked", G_CALLBACK(search_button_execute_all), r);
 
 		gtk_box_pack_start(GTK_BOX(r->search_box), GTK_WIDGET(search_label), FALSE, FALSE, 0);
 		gtk_box_pack_start(GTK_BOX(r->search_box), GTK_WIDGET(r->search_entry), TRUE, TRUE, 0);
 		gtk_box_pack_end(GTK_BOX(r->search_box), close_search_button, FALSE, FALSE, 2);
 		gtk_box_pack_end(GTK_BOX(r->search_box), r->prev_search_button, FALSE, FALSE, 2);
 		gtk_box_pack_end(GTK_BOX(r->search_box), next_search_button, FALSE, FALSE, 2);
+		gtk_box_pack_end(GTK_BOX(r->search_box), r->execute_all_search_button, FALSE, FALSE, 2);
 		gtk_box_pack_end(GTK_BOX(r->search_box), r->execute_search_button, FALSE, FALSE, 2);
 	}
 
@@ -1286,14 +1296,17 @@ void editor_start_search(editor_t *editor, enum search_mode_t search_mode, const
 
 	if (editor->research.mode == SM_LITERAL) {
 		gtk_widget_hide(editor->execute_search_button);
+		gtk_widget_hide(editor->execute_all_search_button);
 		gtk_widget_show_all(editor->prev_search_button);
 		gtk_entry_set_editable(GTK_ENTRY(editor->search_entry), true);
 	} else {
 		gtk_widget_hide(editor->prev_search_button);
 		if (editor->research.cmd != NULL) {
 			gtk_widget_show_all(editor->execute_search_button);
+			gtk_widget_show_all(editor->execute_all_search_button);
 		} else {
 			gtk_widget_hide(editor->execute_search_button);
+			gtk_widget_hide(editor->execute_all_search_button);
 		}
 		gtk_entry_set_editable(GTK_ENTRY(editor->search_entry), false);
 	}

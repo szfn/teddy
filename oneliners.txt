@@ -1,0 +1,283 @@
+# FILE SPACING
+
+# Double space a file
+# sed G
+
+m 1:1 $:$			;# select entire file
+s {^.*$} {			;# for each line (matches of ^.*$)
+	m nil +0:+0		;# deselect line and move to the end
+	c "\n"			;# insert a new line
+}
+
+# double space a file which already has blank lines in it. Output file
+# should contain no more than one blank line between lines of text.
+# sed '/^$/d;G'
+
+m 1:1 $:$			;# select entire file
+s {^$} {				;# for each empty line
+	m +0:+1		;# extend selection to the beginning of the next line
+	c ""			;# delete current selection
+}
+m 1:1 $:$			;# same as double spacing a file
+s {^.*$} {
+	m nil +0:+0
+	c "\n"
+}
+
+# triple space a file
+# sed 'G;G'
+
+m 1:1 $:$			;# same as double spacing a file
+s {^.*$} {
+	m nil +0:+0
+	c "\n\n"
+}
+
+# undo double-spacing (assumes even-numbered lines are always blank)
+# sed 'n;d'
+
+m nil 1:1			;# move to the beginning of the file
+while {[m +1:1]} {		;# move cursor to the next line
+	kill_line		;# removes the current line, this is not a primitive, look up its definition in builtin.tcl
+}
+
+# insert a blank line above every line which matches "regex"
+# sed '/regex/{x;p;x;}'
+
+m 1:1 $:$
+s {regex} {
+	m +0:1 +0:$		;# extend selection to include the entire line
+	c "\n[c]"		;# replace selection with a newline character followed by the selected line
+}
+
+# insert a blank line below every line which matches "regex"
+# sed '/regex/G'
+
+m 1:1 $:$			;# this could be done in a similar way to the previous example, this is just the optimized version
+s {regex} {
+	m nil +0:$		;# move to the end of the matched line
+	c "\n"			;# insert a newline
+}
+
+# insert a blank line above and below every line which matches "regex"
+# sed '/regex/{x;p;x;G;}'
+
+m 1:1 $:$			;# very much like adding a newline at the beginning of each matched line
+s {regex} {
+	m +0:1 +0:$
+	c "\n[c]\n"
+}
+
+# NUMBERING
+
+# number each line of a file (simple left alignment). Using a tab (see
+# note on '\t' at end of file) instead of space will preserve margins.
+# sed = filename | sed 'N;s/\n/\t/'
+
+m 1:1 $:$
+s {^.*$} {
+	set n [teddy::lineof [lindex [m] 1]]	;# retrieves the line number of the current line
+	c "$n\t[c]"				;# replaces the current line with the line number followed by a tab and the previous contents of the line
+}
+
+# number each line of a file (number on left, right-aligned)
+# sed = filename | sed 'N; s/^/     /; s/ *\(.\{6,\}\)\n/\1  /
+
+m 1:1 $:$
+s {^.*$} {					;# like before, but formatting the number
+	set n [teddy::lineof [lindex [m] 1]]
+	set n [format "%6d" $n]
+	c "$n\t[c]"
+}
+
+# number each line of file, but only print numbers if line is not blank
+# sed '/./=' filename | sed '/./N; s/\n/ /'
+
+m 1:1 $:$					;# Very much like the previous examples but uses + instead of * in the regexp
+s {^.+$} {
+	set n [teddy::lineof [lindex [m] 1]]
+	c "$n\t[c]"
+}
+
+# count lines (emulates "wc -l")
+# sed -n '$='
+
+m nil $:1; echo [teddy::lineof [lindex [m] 1]]	;# Echoes the last linenumber
+
+# TEXT CONVERSION AND SUBSTITUTION:
+
+# convert DOS newlines (CR/LF) to Unix format.
+# sed 's/\x0D$//'
+
+m 1:1 $:$
+s "\r" c ""
+
+# convert Unix newlines (LF) to DOS format.
+# sed 's/$/\r/'
+
+m 1:1 $:$
+s "$" c "\r"
+
+# delete leading whitespace (spaces, tabs) from front of each line
+# aligns all text flush left
+# sed 's/^[ \t]*//'                    # see note on '\t' at end of file
+
+m 1:1 $:$
+s {^\s+} c ""			;# watch out for {s {^\s*} c ""} it's an infinite loop
+
+# delete trailing whitespace (spaces, tabs) from end of each line
+# sed 's/[ \t]*$//'                    # see note on '\t' at end of file
+
+m 1:1 $:$
+s {\s+$} c ""
+
+# delete BOTH leading and trailing whitespace from each line
+# sed 's/^[ \t]*//;s/[ \t]*$//'
+
+m 1:1 $:$
+s {\s+$} c ""
+m 1:1 $:$
+s {^\s+} c ""
+
+# insert 5 blank spaces at beginning of each line (make page offset)
+#sed 's/^/     /'
+
+m 1:1 $:$
+s {^} c "     "
+
+
+# align all text flush right on a 79-column width
+#sed -e :a -e 's/^.\{1,78\}$/ &/;ta'  # set at 78 plus 1 space
+
+m 1:1 $:$
+s {^.*$} {
+	set line [c]
+	set padding [string repeat " " [expr 78 - [string length $line]]]
+	c "$padding$line"
+} ;# note that tab characters count as one character, files containing tabs will look weird (the sed version seems to have the same bug)
+
+# center all text in the middle of 79-column width. In method 1,
+# spaces at the beginning of the line are significant, and trailing
+# spaces are appended at the end of the line. In method 2, spaces at
+# the beginning of the line are discarded in centering the line, and
+# no trailing spaces appear at the end of lines.
+# sed  -e :a -e 's/^.\{1,77\}$/ & /;ta'                     # method 1
+
+m 1:1 $:$
+s {^.*$} {
+	set line [c]
+	set padding_len [expr [expr 78 - [string length $line]] / 2]
+	set padding [string repeat " " $padding_len]
+	c "$padding$line$padding"
+} ;# note that teddy by default cleans up trailing whitespaces automatically after several operations
+
+
+# substitute "foo" with "bar" ONLY for lines which contain "baz"
+# sed '/baz/s/foo/bar/g'
+
+m 1:1 $:$
+s {baz} {
+	m +0:1 +0:$
+	s foo bar
+}
+
+
+# substitute "foo" with "bar" EXCEPT for lines which contain "baz"
+# sed '/baz/!s/foo/bar/g'
+
+CAN NOT DO
+
+
+# reverse order of lines (emulates "tac")
+# bug/feature in HHsed v1.5 causes blank lines to be deleted
+# sed '1!G;h;$!d'               # method 1
+
+m 1:1 $:$
+c [join [lreverse [split [c] "\n"]] "\n"]
+
+# reverse each character on the line (emulates "rev")
+# sed '/\n/!G;s/\(.\)\(.*\n\)/&\2\1/;//D;s/.//'
+
+m 1:1 $:$
+s {^.*$} {
+	c [string reverse [c]]
+}
+
+# join pairs of lines side-by-side (like "paste")
+# sed '$!N;s/\n/ /'
+
+m 1:1 $:$
+s {^.*$} {
+	m nil +0:+0
+	m +0:+0 +0:+1
+	c "\t"
+}
+
+# if a line ends with a backslash, append the next line to it
+#sed -e :a -e '/\\$/N; s/\\\n//; ta'
+
+m 1:1 $:$
+s {\\$} {
+	m +0:+1
+	c " "
+}
+
+# if a line begins with an equal sign, append it to the previous line
+# and replace the "=" with a single space
+#sed -e :a -e '$!N;s/\n=/ /;ta' -e 'P;D'
+
+m 1:1 $:$
+s {^=} {
+	m -1:$ +0:+0
+	c " "
+}
+
+# add commas to numeric strings, changing "1234567" to "1,234,567"
+#gsed ':a;s/\B[0-9]\{3\}\>/,&/;ta'                     # GNU sed
+#sed -e :a -e 's/\(.*[0-9]\)\([0-9]\{3\}\)/\1,\2/;ta'  # other seds
+
+BORING (write a function to format numbers then use s {[0-9]+} { c [format_number [c]] }
+
+#SELECTIVE PRINTING OF CERTAIN LINES:
+
+NOT RELEVANT
+
+#SELECTIVE DELETION OF CERTAIN LINES:
+
+# print all of file EXCEPT section between 2 regular expressions
+#sed '/Iowa/,/Montana/d'
+
+set start [s -get {Iowa}]
+m {*}$start
+set end [s -get {Montana}]
+m [lindex $start 0] [lindex $end 1]
+c ""
+
+
+# delete duplicate, consecutive lines from a file (emulates "uniq").
+# First line in a set of duplicate lines is kept, rest are deleted.
+#sed '$!N; /^\(.*\)\n\1$/!P; D'
+
+set cur ""
+s {^.*$} {
+	if {[c] eq $cur} {
+		m +0:+1
+		c ""
+	} else {
+		set cur [c]
+	}
+}
+
+
+# delete all leading blank lines at top of file
+#sed '/./,$!d'
+
+m 1:1; m 1:1 [lindex [s -get {.}] 0]; c ""
+
+# delete all trailing blank lines at end of file
+#sed -e :a -e '/^\n*$/{$d;N;ba' -e '}'  # works on all seds
+#sed -e :a -e '/^\n*$/N;/\n$/ba'        # ditto, except for gsed 3.02.*
+
+s {^.+$} { set saved [m] }
+m [lindex $saved 1] $:$
+c ""

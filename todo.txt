@@ -1,6 +1,17 @@
-LONG TERM:
 
-- implement common awk idioms (like line numbering) with s and m
+- automated scripting test
+
+- BUG mark changes seem to always be relative to cursor even when mark is set
+
+- m shortcus:
+ - m all -> m 1:1 $:$
+ - m sort -> swaps mark and cursor if mark is after cursor
+ - m line -> { m sort; m +0:1 +0:$ }
+- s {^.*$} -> forall
+
+
+
+BUG: highlight matching parenthesis doesn't work anymore
 
 - replace tcl regex engine with TRE
 
@@ -41,3 +52,5 @@ LONG TERM:
 - cleanup of unused functions (how?)
 - all configuration options in the default configuration file with comments
 - open in a directory view is relative to the directory
+
+- s command should only be restricted by a selection to a range of lines, ie make regex_endpoint a line without glyph information and use the first line it shouldn't change

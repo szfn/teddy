@@ -603,3 +603,10 @@ namespace eval teddy_intl {
 
 	}
 }
+
+namespace eval teddy {
+	namespace export lineof
+	proc lineof {x} {
+		return [lindex [split $x ":"] 0]
+	}
+}

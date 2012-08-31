@@ -254,7 +254,7 @@ static int buffer_line_insert_utf8_text(buffer_t *buffer, real_line_t *line, con
 		bool valid = true;
 		uint32_t code = utf8_to_utf32(text, &src, len, &valid);
 		uint8_t fontidx = fontset_fontidx(font, code);
-		/*printf("First char: %02x\n", (uint8_t)text[src]);*/
+		//printf("First char: %02x\n", (uint8_t)text[src]);
 
 		if ((code < 0x20) && (code != 0x09) && (code != 0x0a) && (code != 0x0d)) {
 			valid = false;
@@ -311,7 +311,7 @@ static void buffer_insert_multiline_text(buffer_t *buffer, lpoint_t *start_point
 	//printf("Inserting multiline text [[%s]]\n\n", text);
 
 	while (end < strlen(text)) {
-		if ((text[end] == '\n') || (text[end] == '\r')) {
+		if (text[end] == '\n') {
 			//printf("line cap: %d glyph %d\n", line->cap, glyph);
 			point.glyph += buffer_line_insert_utf8_text(buffer, point.line, text+start, end-start, point.glyph, &valid_chars, &invalid_chars);
 			//printf("    line cap: %d glyph: %d\n", line->cap, glyph);

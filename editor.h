@@ -50,7 +50,7 @@ typedef struct _editor_t {
 	generic_completer_t *completer;
 
 	struct research_t research;
-	GtkWidget *prev_search_button, *execute_search_button;
+	GtkWidget *prev_search_button, *execute_search_button, *execute_all_search_button;
 } editor_t;
 
 typedef struct _editor_class {

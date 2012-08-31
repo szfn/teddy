@@ -639,13 +639,15 @@ static bool move_command_ex(const char *sin, lpoint_t *p, lpoint_t *ref) {
 		if (colflag == MT_REL) goto move_command_relative_with_nil;
 	}
 
-	buffer_move_point_line(interp_context_buffer(), p, lineflag, lineno);
-	buffer_move_point_glyph(interp_context_buffer(), p, colflag, colno);
+	bool rl = buffer_move_point_line(interp_context_buffer(), p, lineflag, lineno);
+	bool rc = buffer_move_point_glyph(interp_context_buffer(), p, colflag, colno);
 
 	if (interp_context_editor() != NULL)
 		editor_complete_move(interp_context_editor(), TRUE);
 
 	free(s);
+
+	Tcl_SetResult(interp, (rl && rc) ? "true" : "false", TCL_VOLATILE);
 
 	return true;
 
@@ -676,7 +678,8 @@ static int teddy_move_command(ClientData client_data, Tcl_Interp *interp, int ar
 
 	switch (argc) {
 	case 1:
-		break;
+		interp_return_point_pair(&(interp_context_buffer()->mark), &(interp_context_buffer()->cursor));
+		return TCL_OK;
 	case 2:
 		if (!move_command_ex(argv[1], &(interp_context_buffer()->cursor), NULL)) {
 			return TCL_ERROR;
@@ -698,7 +701,6 @@ static int teddy_move_command(ClientData client_data, Tcl_Interp *interp, int ar
 		return TCL_ERROR;
 	}
 
-	interp_return_point_pair(&(interp_context_buffer()->mark), &(interp_context_buffer()->cursor));
 	return TCL_OK;
 }
 
@@ -1101,4 +1103,27 @@ void interp_return_point_pair(lpoint_t *mark, lpoint_t *cursor) {
 	alloc_assert(r);
 	Tcl_SetResult(interp, r, TCL_VOLATILE);
 	free(r);
+}
+
+void interp_frame_debug() {
+	const char *info_frame[] = { "info", "frame" };
+	int n = atoi(interp_eval_command(2, info_frame));
+
+	printf("Stack trace:\n");
+	for (int i = 0; i < n; ++i) {
+		char *msg;
+		asprintf(&msg, "%d", i);
+		alloc_assert(msg);
+		const char *info_frame2[] = { "info", "frame", msg };
+		const char *s = interp_eval_command(3, info_frame2);
+		free(msg);
+		printf("\t%d\t%s\n", i, s);
+	}
+}
+
+bool interp_toplevel_frame() {
+	const char *info_frame[] = { "info", "frame" };
+	int n = atoi(interp_eval_command(2, info_frame));
+
+	return n <= 2;
 }
