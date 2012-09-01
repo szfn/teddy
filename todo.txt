@@ -1,7 +1,8 @@
-
-- automated scripting test
-
 - BUG mark changes seem to always be relative to cursor even when mark is set
+- BUG: highlight matching parenthesis doesn't work anymore
+- BUG: autocompletions no longer correctly updated
+- BUG: open a file -> there is a tcl error while searching
+- BUG: open new editor, create three frames, drag the bottom right one to the left -> frame suddenly shows +null+
 
 - m shortcus:
  - m all -> m 1:1 $:$
@@ -9,13 +10,10 @@
  - m line -> { m sort; m +0:1 +0:$ }
 - s {^.*$} -> forall
 
-
-
-BUG: highlight matching parenthesis doesn't work anymore
-
 - replace tcl regex engine with TRE
 
-
+- deduplication for iopen is actually necessary
+- how does one create a new file?
 - set column number for background processes whenever possible
 - less ugly indicators for autowrapping
 - keyboard marking should behave like mouse marking and not constantly update the clipboard with serialized data

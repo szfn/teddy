@@ -625,7 +625,10 @@ static gboolean button_press_callback(GtkWidget *widget, GdkEventButton *event, 
 		editor_complete_move(editor, TRUE);
 		editor_insert_paste(editor, selection_clipboard);
 	} else if (event->button == 3) {
-		//TODO:
+		lpoint_t start, end;
+		buffer_get_selection(editor->buffer, &start, &end);
+		if ((start.line != NULL) && (end.line != NULL))
+			gtk_menu_popup(GTK_MENU(editor->context_menu), NULL, NULL, NULL, NULL, event->button, event->time);
 	}
 
 	return TRUE;
@@ -1143,6 +1146,22 @@ static void reload_stale_callback(GtkButton *btn, editor_t *editor) {
 	buffers_refresh(editor->buffer);
 }
 
+static void eval_menu_item_callback(GtkMenuItem *menuitem, editor_t *editor) {
+	lpoint_t start, end;
+	buffer_get_selection(editor->buffer, &start, &end);
+
+	if (start.line == NULL) return;
+	if (end.line == NULL) return;
+
+	char *selection = buffer_lines_to_text(editor->buffer, &start, &end);
+
+	if (selection == NULL) return;
+
+	interp_eval(editor, selection, true);
+
+	free(selection);
+}
+
 editor_t *new_editor(buffer_t *buffer, bool single_line) {
 	GtkWidget *editor_widget = g_object_new(GTK_TYPE_TEDITOR, NULL);
 	editor_t *r = GTK_TEDITOR(editor_widget);
@@ -1251,6 +1270,14 @@ editor_t *new_editor(buffer_t *buffer, bool single_line) {
 
 	g_signal_connect(G_OBJECT(r->search_entry), "key-press-event", G_CALLBACK(search_key_press_callback), r);
 	g_signal_connect(G_OBJECT(r->search_entry), "changed", G_CALLBACK(search_changed_callback), r);
+
+	r->context_menu = gtk_menu_new();
+
+	GtkWidget *eval_menu_item = gtk_menu_item_new_with_label("Eval");
+	gtk_menu_append(GTK_MENU(r->context_menu), eval_menu_item);
+	gtk_widget_show_all(r->context_menu);
+
+	g_signal_connect(G_OBJECT(eval_menu_item), "activate", G_CALLBACK(eval_menu_item_callback), (gpointer)r);
 
 	return r;
 }

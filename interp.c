@@ -520,8 +520,8 @@ static int teddy_sendinput_command(ClientData client_data, Tcl_Interp *interp, i
 }
 
 static int teddy_change_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
-	if (interp_context_editor() == NULL) {
-		Tcl_AddErrorInfo(interp, "No editor open, can not execute 'change' command");
+	if (interp_context_buffer() == NULL) {
+		Tcl_AddErrorInfo(interp, "No buffer open, can not execute 'change' command");
 		return TCL_ERROR;
 	}
 
@@ -536,7 +536,11 @@ static int teddy_change_command(ClientData client_data, Tcl_Interp *interp, int 
 			return TCL_OK;
 		}
 	case 2:
-		editor_replace_selection(interp_context_editor(), argv[1]);
+		if (interp_context_editor() != NULL) {
+			editor_replace_selection(interp_context_editor(), argv[1]);
+		} else {
+			buffer_replace_selection(interp_context_buffer(), argv[1]);
+		}
 		return TCL_OK;
 	default:
 		Tcl_AddErrorInfo(interp, "Wrong number of arguments to 'selectlines'");
@@ -671,8 +675,8 @@ move_command_relative_with_nil: {
 }
 
 static int teddy_move_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
-	if (interp_context_editor() == NULL) {
-		Tcl_AddErrorInfo(interp, "No editor open, can not execute 'move' command");
+	if (interp_context_buffer() == NULL) {
+		Tcl_AddErrorInfo(interp, "No buffer open, can not execute 'move' command");
 		return TCL_ERROR;
 	}
 
@@ -950,7 +954,7 @@ void interp_init(void) {
 	}
 
 	// Without this tcl screws up the newline character on its own output, it tries to output cr + lf and the terminal converts lf again, resulting in an output of cr + cr + lf, other c programs seem to behave correctly
-	Tcl_Eval(interp, "fconfigure stdin -translation binary; fconfigure stdout -translation binary; fconfigure stderr -translation binary");	
+	Tcl_Eval(interp, "fconfigure stdin -translation binary; fconfigure stdout -translation binary; fconfigure stderr -translation binary");
 }
 
 void interp_free(void) {
@@ -960,7 +964,8 @@ void interp_free(void) {
 int interp_eval(editor_t *editor, const char *command, bool show_ret) {
 	int code;
 
-	interp_context_editor_set(editor);
+	if (editor != NULL)
+		interp_context_editor_set(editor);
 
 	code = Tcl_Eval(interp, command);
 

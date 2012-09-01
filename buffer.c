@@ -819,7 +819,7 @@ void save_to_text_file(buffer_t *buffer) {
 	free(cmd);
 
 	buffer->modified = 0;
-	buffer->mtime = time(NULL);
+	buffer->mtime = time(NULL)+10;
 }
 
 void line_get_glyph_coordinates(buffer_t *buffer, lpoint_t *point, double *x, double *y) {

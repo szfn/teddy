@@ -609,4 +609,13 @@ namespace eval teddy {
 	proc lineof {x} {
 		return [lindex [split $x ":"] 0]
 	}
+
+	namespace export slurp
+	proc slurp {path} {
+		set thefile [open $path]
+		fconfigure $thefile -translation binary
+		set r [read $thefile]
+		close $thefile
+		return $r
+	}
 }

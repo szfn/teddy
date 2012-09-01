@@ -31,6 +31,7 @@ typedef struct _editor_t {
 
 	GtkWidget *search_entry, *search_box;
 	GtkWidget *stale_box;
+	GtkWidget *context_menu;
 
 	gulong current_entry_handler_id;
 

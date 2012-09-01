@@ -416,6 +416,11 @@ int teddy_buffer_command(ClientData client_data, Tcl_Interp *interp, int argc, c
 		}
 
 		buffer_t *buffer = buffers_create_with_name(strdup(argv[2]));
+		if (buffer != NULL) {
+			tframe_t *frame;
+			find_editor_for_buffer(interp_context_buffer(), NULL, &frame, NULL);
+			heuristic_new_frame(columnset, frame, buffer);
+		}
 
 		char bufferid[20];
 		buffer_to_buffer_id(buffer, bufferid);
@@ -584,6 +589,25 @@ int teddy_buffer_command(ClientData client_data, Tcl_Interp *interp, int argc, c
 		buffer->keyprocessor = strdup(argv[3]);
 
 		return TCL_OK;
+	} else if (strcmp(argv[1], "eval") == 0) {
+		if (argc != 4) {
+			Tcl_AddErrorInfo(interp, "Wrong number of arguments to 'buffer eval'");
+			return TCL_ERROR;
+		}
+
+		buffer_t *buffer = buffer_id_to_buffer(argv[2]);
+		editor_t *editor = NULL;
+
+		find_editor_for_buffer(buffer, NULL, NULL, &editor);
+
+		editor_t *saved_context_editor = interp_context_editor();
+		buffer_t *saved_context_buffer = interp_context_buffer();
+
+		interp_context_buffer_set(buffer);
+		interp_eval(editor, argv[3], false);
+
+		if (saved_context_editor != NULL) interp_context_editor_set(saved_context_editor);
+		else interp_context_buffer_set(saved_context_buffer);
 	} else {
 		Tcl_AddErrorInfo(interp, "Unknown subcommmand of 'buffer' command");
 		return TCL_ERROR;
