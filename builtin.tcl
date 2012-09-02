@@ -599,8 +599,9 @@ namespace eval teddy_intl {
 	proc iopen_search {z} {
 		set k [s -literal -get $z]
 		#puts "Searching <$z> -> <$k>"
-		m nil [lindex $k 0]
-
+		if {[lindex $k 0] ne "nil"} {
+			m nil [lindex $k 0]
+		}
 	}
 }
 

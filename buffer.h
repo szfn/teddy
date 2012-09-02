@@ -149,9 +149,6 @@ void buffer_get_selection_pointers(buffer_t *buffer, lpoint_t **start, lpoint_t 
 // converts a selection of line from this buffer into text
 char *buffer_lines_to_text(buffer_t *buffer, lpoint_t *start, lpoint_t *end);
 
-// converts a line from this buffer into text
-char *buffer_line_to_text(buffer_t *buffer, real_line_t *line);
-
 // sets character positions if width has changed
 void buffer_typeset_maybe(buffer_t *buffer, double width, bool single_line, bool force);
 
@@ -159,8 +156,6 @@ void buffer_typeset_maybe(buffer_t *buffer, double width, bool single_line, bool
 void buffer_cursor_position(buffer_t *buffer, double *x, double *y);
 void line_get_glyph_coordinates(buffer_t *buffer, lpoint_t *point, double *x, double *y);
 void buffer_move_cursor_to_position(buffer_t *buffer, double x, double y);
-
-int buffer_real_line_count(buffer_t *buffer);
 
 // removes trailing spaces from line unless line is exclusively made out of spaces
 void buffer_line_clean_trailing_spaces(buffer_t *buffer, real_line_t *line);

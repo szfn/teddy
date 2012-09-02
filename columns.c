@@ -433,17 +433,17 @@ heuristic_new_frame_return:
 	return r;
 }
 
-void columns_column_remove(columns_t *columns, column_t *col, tframe_t *frame) {
+void columns_column_remove(columns_t *columns, column_t *col, tframe_t *frame, bool reparenting) {
 	if (column_frame_number(col) == 1) {
 		if (columns_column_number(columns) == 1) {
 			quick_message("Error", "Can not close last frame of the window\n");
 			return;
 		}
 
-		if (column_remove(col, frame)) {
+		if (column_remove(col, frame, reparenting)) {
 			columns_remove(columns, col);
 		}
 	} else {
-		column_remove(col, frame);
+		column_remove(col, frame, reparenting);
 	}
 }

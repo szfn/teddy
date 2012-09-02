@@ -271,6 +271,8 @@ void buffers_add(buffer_t *b) {
 	if ((b->path[0] != '+') && (inotify_fd >= 0)) {
 		b->inotify_wd = inotify_add_watch(inotify_fd, b->path, IN_MODIFY);
 	}
+
+	word_completer_full_update();
 }
 
 void buffers_free(void) {
@@ -617,12 +619,15 @@ int teddy_buffer_command(ClientData client_data, Tcl_Interp *interp, int argc, c
 }
 
 static int refill_word_completer(const char *entry, void *p) {
+	printf("\t<%s>\n", entry);
 	compl_add(&the_word_completer, entry);
 	return 1;
 }
 
 void word_completer_full_update(void) {
 	critbit0_clear(&(the_word_completer.cbt));
+
+	printf("Filling main word completer:\n");
 
 	for (int i = 0; i < buffers_allocated; ++i) {
 		if (buffers[i] == NULL) continue;

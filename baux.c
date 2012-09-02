@@ -304,6 +304,23 @@ uint16_t *buffer_historycompl_word_at_cursor(buffer_t *buffer, size_t *prefix_le
 	return buffer_to_utf16(buffer, 0, *prefix_len);
 }
 
+static void buffer_wordcompl_update_word(real_line_t *line, int start, int end, critbit0_tree *c) {
+	if (end - start < MINIMUM_WORDCOMPL_WORD_LEN) return;
+
+	int allocated = end-start, cap = 0;
+	char *r = malloc(allocated * sizeof(char));
+	alloc_assert(r);
+
+	for (int j = 0; j < end-start; ++j) {
+		utf32_to_utf8(line->glyph_info[j+start].code, &r, &cap, &allocated);
+	}
+
+	utf32_to_utf8(0, &r, &cap, &allocated);
+
+	critbit0_insert(c, r);
+	free(r);
+}
+
 static void buffer_wordcompl_update_line(real_line_t *line, critbit0_tree *c) {
 	int start = -1;
 	for (int i = 0; i < line->cap; ++i) {
@@ -312,24 +329,13 @@ static void buffer_wordcompl_update_line(real_line_t *line, critbit0_tree *c) {
 			if (wordcompl_charset[line->glyph_info[i].code]) start = i;
 		} else {
 			if ((line->glyph_info[i].code >= 0x10000) || !wordcompl_charset[line->glyph_info[i].code]) {
-				if (i - start >= MINIMUM_WORDCOMPL_WORD_LEN) {
-					int allocated = i-start, cap = 0;
-					char *r = malloc(allocated * sizeof(char));
-					alloc_assert(r);
-
-					for (int j = 0; j < i-start; ++j) {
-						utf32_to_utf8(line->glyph_info[j+start].code, &r, &cap, &allocated);
-					}
-
-					utf32_to_utf8(0, &r, &cap, &allocated);
-
-					critbit0_insert(c, r);
-					free(r);
-				}
+				buffer_wordcompl_update_word(line, start, i, c);
 				start = -1;
 			}
 		}
 	}
+
+	if (start >= 0) buffer_wordcompl_update_word(line, start, line->cap, c);
 }
 
 void buffer_wordcompl_update(buffer_t *buffer, critbit0_tree *cbt) {

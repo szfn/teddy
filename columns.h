@@ -35,6 +35,6 @@ void columns_set_active(columns_t *columns, column_t *column);
 
 tframe_t *heuristic_new_frame(columns_t *columns, tframe_t *spawning_frame, buffer_t *buffer);
 
-void columns_column_remove(columns_t *columns, column_t *col, tframe_t *frame);
+void columns_column_remove(columns_t *columns, column_t *col, tframe_t *frame, bool reparenting);
 
 #endif

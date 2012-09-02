@@ -782,6 +782,8 @@ static void draw_parmatch(editor_t *editor, GtkAllocation *allocation, cairo_t *
 	double x, y;
 	line_get_glyph_coordinates(editor->buffer, &(editor->buffer->parmatch.matched), &x, &y);
 
+	set_color_cfg(cr, config_intval(&(editor->buffer->config), CFG_EDITOR_SEL_COLOR));
+
 	cairo_set_operator(cr, CAIRO_OPERATOR_DIFFERENCE);
 
 	cairo_rectangle(cr, x, y - editor->buffer->ascent, LPOINTGI(editor->buffer->parmatch.matched).x_advance, editor->buffer->ascent + editor->buffer->descent);
@@ -959,6 +961,8 @@ static gboolean expose_event_callback(GtkWidget *widget, GdkEventExpose *event, 
 
 	if (editor->cursor_visible && (editor->research.mode == SM_NONE)) {
 		double cursor_x, cursor_y;
+
+		set_color_cfg(cr, config_intval(&(editor->buffer->config), CFG_EDITOR_FG_COLOR));
 
 		buffer_cursor_position(editor->buffer, &cursor_x, &cursor_y);
 
@@ -1290,7 +1294,7 @@ void editor_grab_focus(editor_t *editor, bool warp) {
 		GdkScreen *screen = gdk_display_get_default_screen(display);
 		GtkAllocation allocation;
 		gtk_widget_get_allocation(editor->drar, &allocation);
-		if ((allocation.x < 0) || (allocation.y < 0)) {
+		if ((allocation.x <= 0) || (allocation.y <= 0)) {
 			editor->warp_mouse_after_next_expose = TRUE;
 		} else {
 			gint wpos_x, wpos_y;

@@ -223,13 +223,13 @@ int column_frame_number(column_t *column) {
 	return g_list_length(GTK_BOX(column)->children);
 }
 
-bool column_remove(column_t *column, tframe_t *frame) {
+bool column_remove(column_t *column, tframe_t *frame, bool reparenting) {
 	tframe_t *before_tf, *after_tf;
 
-	if (!tframe_close(frame)) return false;
+	if (!reparenting)
+		if (!tframe_close(frame)) return false;
 
 	if (column_find_frame(column, frame, &before_tf, &after_tf)) {
-		tframe_close(frame);
 		if (before_tf != NULL) {
 			tframe_fraction_set(before_tf, tframe_fraction(frame) + tframe_fraction(before_tf));
 		} else if (after_tf != NULL) {
@@ -248,7 +248,7 @@ int column_remove_others(column_t *column, tframe_t *frame) {
 	for (GList *cur = list; cur != NULL; cur = cur->next) {
 		if (cur->data != frame) {
 			if (tframe_close(GTK_TFRAME(cur->data))) {
-				column_remove(column, GTK_TFRAME(cur->data));
+				column_remove(column, GTK_TFRAME(cur->data), false);
 				++c;
 			}
 		}

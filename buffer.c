@@ -80,10 +80,7 @@ static void grow_line(real_line_t *line, int insertion_point, int size) {
 		if (line->allocated == 0) line->allocated = 10;
 		/*printf("new size: %d\n", line->allocated_glyphs);*/
 		line->glyph_info = realloc(line->glyph_info, sizeof(my_glyph_info_t) * line->allocated);
-		if (!(line->glyph_info)) {
-			perror("Couldn't allocate glyphs space");
-			exit(EXIT_FAILURE);
-		}
+		alloc_assert(line->glyph_info);
 	}
 
 	if (insertion_point < line->cap) {
@@ -181,10 +178,7 @@ static real_line_t *new_real_line(int lineno) {
 	real_line_t *line = malloc(sizeof(real_line_t));
 	line->allocated = 10;
 	line->glyph_info = malloc(sizeof(my_glyph_info_t) * line->allocated);
-	if (!(line->glyph_info)) {
-		perror("Couldn't allocate glyphs space");
-		exit(EXIT_FAILURE);
-	}
+	alloc_assert(line->glyph_info);
 	line->cap = 0;
 	line->prev = NULL;
 	line->next = NULL;
@@ -609,10 +603,12 @@ int load_text_file(buffer_t *buffer, const char *filename) {
 	int i = 0;
 	int text_allocation = 10;
 	char *text = malloc(sizeof(char) * text_allocation);
+	alloc_assert(text);
+
 	real_line_t *prev_line = NULL;
 	real_line_t **real_line_pp = &(buffer->real_line);
 	int lineno = 0;
-	
+
 	if (!fin) {
 		return -1;
 	}
@@ -626,11 +622,6 @@ int load_text_file(buffer_t *buffer, const char *filename) {
 	buffer->path = realpath(filename, NULL);
 
 	buffer_setup_hook(buffer);
-
-	if (text == NULL) {
-		perror("Couldn't allocate memory");
-		exit(EXIT_FAILURE);
-	}
 
 	int valid_chars = 0, invalid_chars = 0;
 
@@ -692,14 +683,6 @@ int load_text_file(buffer_t *buffer, const char *filename) {
 	}
 
 	return 0;
-}
-
-char *buffer_line_to_text(buffer_t *buffer, real_line_t *line) {
-	lpoint_t start, end;
-	start.line = end.line = line;
-	start.glyph = 0;
-	end.glyph = line->cap;
-	return buffer_lines_to_text(buffer, &start, &end);
 }
 
 char *buffer_lines_to_text(buffer_t *buffer, lpoint_t *startp, lpoint_t *endp) {
@@ -1031,15 +1014,6 @@ void buffer_get_selection(buffer_t *buffer, lpoint_t *start, lpoint_t *end) {
 		copy_lpoint(start, pstart);
 		copy_lpoint(end, pend);
 	}
-}
-
-int buffer_real_line_count(buffer_t *buffer) {
-	real_line_t *cur;
-	int count = 0;
-	for (cur = buffer->real_line; cur != NULL; cur = cur->next) {
-		++count;
-	}
-	return count;
 }
 
 void buffer_typeset_maybe(buffer_t *buffer, double width, bool single_line, bool force) {

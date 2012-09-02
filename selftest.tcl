@@ -220,5 +220,3 @@ reverse_test
 chareverse_test
 pairs_test
 section_delete_test
-
-#TODO: tests from oneliners

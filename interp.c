@@ -633,9 +633,11 @@ static bool move_command_ex(const char *sin, lpoint_t *p, lpoint_t *ref) {
 		if (!forward) colno = -colno;
 	}
 
-	if (ref != NULL) {
-		p->line = ref->line;
-		p->glyph = ref->glyph;
+	if (p->line == NULL) {
+		if (ref != NULL) {
+			p->line = ref->line;
+			p->glyph = ref->glyph;
+		}
 	}
 
 	if (p->line == NULL) {
@@ -846,24 +848,6 @@ static int teddy_kill_command(ClientData client_data, Tcl_Interp *interp, int ar
 	return TCL_OK;
 }
 
-static int teddy_refresh_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
-	if (interp_context_editor() == NULL) {
-		Tcl_AddErrorInfo(interp, "No editor open, can not execute 'refresh' command");
-		return TCL_ERROR;
-	}
-
-	if (argc != 1) {
-		Tcl_AddErrorInfo(interp, "Wrong number of arguments supplied to refresh (accepted: none or a buffer)");
-		return TCL_ERROR;
-	}
-
-	buffers_refresh(interp_context_buffer());
-
-	interp_context_editor_set(interp_context_editor());
-
-	return TCL_OK;
-}
-
 static int teddy_load_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
 	if (argc != 2) {
 		Tcl_AddErrorInfo(interp, "Wrong number of arguments supplied to 'load'");
@@ -901,7 +885,6 @@ void interp_init(void) {
 	Tcl_CreateCommand(interp, "pwf", &teddy_pwf_command, (ClientData)NULL, NULL);
 
 	Tcl_CreateCommand(interp, "iopen", &teddy_iopen_command, (ClientData)NULL, NULL);
-	Tcl_CreateCommand(interp, "refresh", &teddy_refresh_command, (ClientData)NULL, NULL);
 
 	Tcl_CreateCommand(interp, "cb", &teddy_cb_command, (ClientData)NULL, NULL);
 	Tcl_CreateCommand(interp, "save", &teddy_save_command, (ClientData)NULL, NULL);

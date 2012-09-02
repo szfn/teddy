@@ -1,9 +1,3 @@
-- BUG mark changes seem to always be relative to cursor even when mark is set
-- BUG: highlight matching parenthesis doesn't work anymore
-- BUG: autocompletions no longer correctly updated
-- BUG: open a file -> there is a tcl error while searching
-- BUG: open new editor, create three frames, drag the bottom right one to the left -> frame suddenly shows +null+
-
 - m shortcus:
  - m all -> m 1:1 $:$
  - m sort -> swaps mark and cursor if mark is after cursor

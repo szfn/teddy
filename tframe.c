@@ -265,7 +265,7 @@ static gboolean label_button_press_callback(GtkWidget *widget, GdkEventButton *e
 	}
 
 	if ((event->type == GDK_BUTTON_PRESS) && (event->button == 2)) {
-		columns_column_remove(columnset, col, frame);
+		columns_column_remove(columnset, col, frame, false);
 		return TRUE;
 	}
 
@@ -309,7 +309,7 @@ static void tag_drag_behaviour(tframe_t *source, tframe_t *target, double y) {
 	} else if ((tbuf == null_buffer()) && (sbuf != null_buffer())) {
 		// we dragged into a null buffer, take it over
 		editor_switch_buffer(GTK_TEDITOR(target->content), sbuf);
-		columns_column_remove(columnset, source_col, source);
+		columns_column_remove(columnset, source_col, source, false);
 	} else {
 		// actually moving source somewhere else
 
@@ -317,7 +317,7 @@ static void tag_drag_behaviour(tframe_t *source, tframe_t *target, double y) {
 		if (!columns_find_frame(columnset, target, NULL, &target_col, NULL, NULL, NULL)) return;
 
 		g_object_ref(source);
-		columns_column_remove(columnset, source_col, source);
+		columns_column_remove(columnset, source_col, source, true);
 		column_add_after(target_col, target, source);
 		g_object_unref(source);
 

@@ -12,11 +12,11 @@ critbit-test: critbit.o critbit-test.cc
 
 bin/teddy: builtin.h autoconf.h cfg_auto.h cfg_auto.c colors.c $(OBJS)
 	mkdir -p bin
-	$(CC) -o $@ $(OBJS) $(LIBS)
+	$(CC) $(CFLAGS) -o $@ $(OBJS) $(LIBS)
 
 bin/teddy32: builtin.h autoconf.h cfg_auto.h cfg_auto.c colors.c $(OBJS32)
 	mkdir -p bin
-	$(CC) -o $@ -m32 $(OBJS32) $(LIBS)
+	$(CC) $(CFLAGS) -o $@ -m32 $(OBJS32) $(LIBS)
 
 colors.c: rgb.txt colors-compile.pl
 	perl colors-compile.pl > colors.c
