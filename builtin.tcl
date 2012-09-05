@@ -620,3 +620,21 @@ namespace eval teddy {
 		return $r
 	}
 }
+
+proc forlines {args} {
+	if {[llength $args] == 1} {
+		set pattern {^.*$}
+		set body [lindex $args 0]
+	} elseif {[llength $args] == 2} {
+		set pattern [lindex $args 0]
+		set body [lindex $args 1]
+	} else {
+		error "Wrong number of arguments to forlines [llength $args] expected 1 or 2"
+	}
+
+	m all
+	s $pattern {
+		m line
+		uplevel 1 $body
+	}
+}

@@ -623,5 +623,23 @@ namespace eval teddy {\n\
 		return $r\n\
 	}\n\
 }\n\
+\n\
+proc forlines {args} {\n\
+	if {[llength $args] == 1} {\n\
+		set pattern {^.*$}\n\
+		set body [lindex $args 0]\n\
+	} elseif {[llength $args] == 2} {\n\
+		set pattern [lindex $args 0]\n\
+		set body [lindex $args 1]\n\
+	} else {\n\
+		error \"Wrong number of arguments to forlines [llength $args] expected 1 or 2\"\n\
+	}\n\
+\n\
+	m all\n\
+	s $pattern {\n\
+		m line\n\
+		uplevel 1 $body\n\
+	}\n\
+}\n\
 "
 #endif

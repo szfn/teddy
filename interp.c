@@ -676,7 +676,36 @@ move_command_relative_with_nil: {
 	return false; }
 }
 
+static void sort_mark_cursor(buffer_t *buffer) {
+	if (buffer->mark.line == NULL) return;
+	if (before_lpoint(&(buffer->mark), &(buffer->cursor))) return;
+
+	lpoint_t swap;
+
+	copy_lpoint(&swap, &(buffer->mark));
+	copy_lpoint(&(buffer->mark), &(buffer->cursor));
+	copy_lpoint(&(buffer->cursor), &swap);
+}
+
 static int teddy_move_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
+#define MOVE_MARK(argument) { \
+	if (!move_command_ex(argument, &(interp_context_buffer()->mark), &(interp_context_buffer()->cursor))) { \
+		return TCL_ERROR; \
+	} \
+}
+
+#define MOVE_CURSOR(argument) {\
+	if (!move_command_ex(argument, &(interp_context_buffer()->cursor), NULL)) { \
+		return TCL_ERROR; \
+	} \
+}
+
+#define MOVE_MARK_CURSOR(mark_argument, cursor_argument) {\
+	MOVE_MARK(mark_argument);\
+	MOVE_CURSOR(cursor_argument);\
+	copy_lpoint(&(interp_context_buffer()->savedmark), &(interp_context_buffer()->mark));\
+}
+
 	if (interp_context_buffer() == NULL) {
 		Tcl_AddErrorInfo(interp, "No buffer open, can not execute 'move' command");
 		return TCL_ERROR;
@@ -687,20 +716,20 @@ static int teddy_move_command(ClientData client_data, Tcl_Interp *interp, int ar
 		interp_return_point_pair(&(interp_context_buffer()->mark), &(interp_context_buffer()->cursor));
 		return TCL_OK;
 	case 2:
-		if (!move_command_ex(argv[1], &(interp_context_buffer()->cursor), NULL)) {
-			return TCL_ERROR;
+		if (strcmp(argv[1], "all") == 0) {
+			MOVE_MARK_CURSOR("1:1", "$:$");
+		} else if (strcmp(argv[1], "sort") == 0) {
+			sort_mark_cursor(interp_context_buffer());
+		} else if (strcmp(argv[1], "line") == 0) {
+			sort_mark_cursor(interp_context_buffer());
+			MOVE_MARK_CURSOR("+0:1", "+0:$");
+		} else {
+			// not a shortcut, actuall movement command to execute
+			MOVE_CURSOR(argv[1]);
 		}
 		break;
 	case 3:
-		if (!move_command_ex(argv[1], &(interp_context_buffer()->mark), &(interp_context_buffer()->cursor))) {
-			return TCL_ERROR;
-		}
-		if (!move_command_ex(argv[2], &(interp_context_buffer()->cursor), NULL)) {
-			return TCL_ERROR;
-		}
-
-		copy_lpoint(&(interp_context_buffer()->savedmark), &(interp_context_buffer()->mark));
-
+		MOVE_MARK_CURSOR(argv[1], argv[2]);
 		break;
 	default:
 		Tcl_AddErrorInfo(interp, "Wrong number of arguments to 'move' command");

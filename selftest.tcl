@@ -16,7 +16,7 @@ proc selftest_init {} {
 proc cleanup_stage {reset_to_path} {
 	global st_stage
 	buffer eval $st_stage {
-		m 1:1 $:$
+		m all
 		c [teddy::slurp $reset_to_path]
 	}
 }
@@ -26,7 +26,7 @@ proc assert_result {target_file} {
 	set output ""
 	set target [teddy::slurp $target_file]
 	buffer eval $st_stage {
-		m 1:1 $:$
+		m all
 		set output [c]
 		m nil 1:1
 	}
@@ -42,8 +42,7 @@ proc double_spacing_test {} {
 	print_to_result "Double space test... "
 	cleanup_stage "test/input1.txt"
 	buffer eval $st_stage {
-		m 1:1 $:$
-		s {^.*$} {
+		forlines {
 			m nil +0:+0
 			c "\n"
 		}
@@ -56,7 +55,7 @@ proc double_spacing_test {} {
 		while {[m +1:1]} {
 			kill_line
 		}
-		m -1:$ +0:+0
+		m -1:$ +:+
 		c ""
 	}
 
@@ -68,9 +67,8 @@ proc blank_line_above_match_test {} {
 	print_to_result "Blank line above match test... "
 	cleanup_stage "test/input1.txt"
 	buffer eval $st_stage {
-		m 1:1 $:$
-		s {erbetta|farfalletta} {
-			m +0:1 +0:$
+		forlines {erbetta|farfalletta} {
+			m line
 			c "\n[c]"
 		}
 	}
@@ -83,7 +81,7 @@ proc blank_line_below_match_test {} {
 	print_to_result "Blank line below match test... "
 	cleanup_stage "test/input1.txt"
 	buffer eval $st_stage {
-		m 1:1 $:$
+		m all
 		s {erbetta|farfalletta} {
 			m nil +0:$
 			c "\n"
@@ -98,8 +96,7 @@ proc line_numbering_test {} {
 	print_to_result "Line numbering test... "
 	cleanup_stage "test/input1.txt"
 	buffer eval $st_stage {
-		m 1:1 $:$
-		s {^.*$} {
+		forlines {
 			set n [teddy::lineof [lindex [m] 1]]
 			c "$n\t[c]"
 		}
@@ -113,8 +110,7 @@ proc line_numbering_nonempty_test {} {
 	print_to_result "Line numbering of non-empty lines test... "
 	cleanup_stage "test/output1_double.txt"
 	buffer eval $st_stage {
-		m 1:1 $:$
-		s {^.+$} {
+		forlines {^.+$} {
 			set n [teddy::lineof [lindex [m] 1]]
 			c "$n\t[c]"
 		}
@@ -128,7 +124,7 @@ proc todos_test {} {
 	print_to_result "Conversion to DOS test... "
 	cleanup_stage "test/input1.txt"
 	buffer eval $st_stage {
-		m 1:1 $:$
+		m all
 		s "$" c "\r"
 		m $:1 $:$
 		c ""
@@ -142,7 +138,7 @@ proc tounix_test {} {
 	print_to_result "Conversion to UNIX test... "
 	cleanup_stage "test/output1_dos.txt"
 	buffer eval $st_stage {
-		m 1:1 $:$
+		m all
 		s "\r" c ""
 	}
 
@@ -154,7 +150,7 @@ proc reverse_test {} {
 	print_to_result "File reverse test... "
 	cleanup_stage "test/input1.txt"
 	buffer eval $st_stage {
-		m 1:1 $:$
+		m all
 		c [join [lreverse [split [c] "\n"]] "\n"]
 	}
 
@@ -166,8 +162,7 @@ proc chareverse_test {} {
 	print_to_result "Line reverse test... "
 	cleanup_stage "test/input1.txt"
 	buffer eval $st_stage {
-		m 1:1 $:$
-		s {^.*$} {
+		forlines {
 			c [string reverse [c]]
 		}
 	}
@@ -180,10 +175,8 @@ proc pairs_test {} {
 	print_to_result "Couple pairs of lines test... "
 	cleanup_stage "test/input1.txt"
 	buffer eval $st_stage {
-		m 1:1 $:$
-		s {^.*$} {
-			m nil +0:+0
-			m +0:+0 +0:+1
+		forlines {
+			m +:$ +:+1
 			c "\t"
 		}
 	}

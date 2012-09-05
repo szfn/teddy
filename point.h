@@ -26,4 +26,6 @@ void freeze_point(point_t *dst, lpoint_t *src);
 
 bool points_equal(point_t *a, point_t *b);
 
+bool before_lpoint(lpoint_t *a, lpoint_t *b);
+
 #endif

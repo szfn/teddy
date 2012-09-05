@@ -619,7 +619,7 @@ int teddy_buffer_command(ClientData client_data, Tcl_Interp *interp, int argc, c
 }
 
 static int refill_word_completer(const char *entry, void *p) {
-	printf("\t<%s>\n", entry);
+	//printf("\t<%s>\n", entry);
 	compl_add(&the_word_completer, entry);
 	return 1;
 }
@@ -627,7 +627,7 @@ static int refill_word_completer(const char *entry, void *p) {
 void word_completer_full_update(void) {
 	critbit0_clear(&(the_word_completer.cbt));
 
-	printf("Filling main word completer:\n");
+	//printf("Filling main word completer:\n");
 
 	for (int i = 0; i < buffers_allocated; ++i) {
 		if (buffers[i] == NULL) continue;
