@@ -10,13 +10,13 @@ extern Tcl_Interp *interp;
 
 void interp_init(void);
 void interp_free(void);
-int interp_eval(editor_t *editor, const char *command, bool show_ret);
+int interp_eval(editor_t *editor, buffer_t *buffer, const char *command, bool show_ret);
 void read_conf(void);
 
-const char *interp_eval_command(int count, const char *argv[]);
+const char *interp_eval_command(editor_t *editor, buffer_t *buffer, int count, const char *argv[]);
 
-void interp_context_editor_set(editor_t *editor);
-void interp_context_buffer_set(buffer_t *buffer);
+/*void interp_context_editor_set(editor_t *editor);
+void interp_context_buffer_set(buffer_t *buffer);*/
 
 editor_t *interp_context_editor(void);
 buffer_t *interp_context_buffer(void);

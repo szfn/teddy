@@ -641,5 +641,18 @@ proc forlines {args} {\n\
 		uplevel 1 $body\n\
 	}\n\
 }\n\
+\n\
+proc ss {args} {\n\
+	buffer eval temp {\n\
+		c [lindex $args 0]\n\
+		m 1:1\n\
+		s {*}[lrange $args 1 end]\n\
+		m all\n\
+		set text [c]\n\
+		puts \"text is <$text>\"\n\
+	}\n\
+	puts \"text is <$text>\"\n\
+	return $text\n\
+}\n\
 "
 #endif

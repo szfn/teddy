@@ -23,8 +23,6 @@ struct research_t {
 	bool line_limit;
 	bool next_will_wrap_around;
 
-	lpoint_t regex_endpoint;
-
 	buffer_t *buffer;
 };
 

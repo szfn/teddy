@@ -395,7 +395,7 @@ static gboolean key_press_callback(GtkWidget *widget, GdkEventKey *event, editor
 		if (pressed[0] != '\0') {
 			COMPL_WND_HIDE(editor->completer);
 			const char *eval_argv[] = { editor->buffer->keyprocessor, pressed };
-			const char *r = interp_eval_command(2, eval_argv);
+			const char *r = interp_eval_command(editor, NULL, 2, eval_argv);
 
 			if ((r != NULL) && (strcmp(r, "done") == 0)) return FALSE;
 		}
@@ -537,7 +537,7 @@ static gboolean key_press_callback(GtkWidget *widget, GdkEventKey *event, editor
 	//printf("Keybinding [%s] -> {%s}\n", pressed, command);
 
 	if (command != NULL) {
-		interp_eval(editor, command, false);
+		interp_eval(editor, NULL, command, false);
 		goto key_press_return_true;
 	}
 
@@ -1161,7 +1161,23 @@ static void eval_menu_item_callback(GtkMenuItem *menuitem, editor_t *editor) {
 
 	if (selection == NULL) return;
 
-	interp_eval(editor, selection, true);
+	interp_eval(editor, NULL, selection, true);
+
+	free(selection);
+}
+
+static void search_menu_item_callback(GtkMenuItem *menuitem, editor_t *editor) {
+	lpoint_t start, end;
+	buffer_get_selection(editor->buffer, &start, &end);
+
+	if (start.line == NULL) return;
+	if (end.line == NULL) return;
+
+	char *selection = buffer_lines_to_text(editor->buffer, &start, &end);
+
+	if (selection == NULL) return;
+
+	editor_start_search(editor, SM_LITERAL, selection);
 
 	free(selection);
 }
@@ -1279,9 +1295,14 @@ editor_t *new_editor(buffer_t *buffer, bool single_line) {
 
 	GtkWidget *eval_menu_item = gtk_menu_item_new_with_label("Eval");
 	gtk_menu_append(GTK_MENU(r->context_menu), eval_menu_item);
+
+	GtkWidget *search_menu_item = gtk_menu_item_new_with_label("Search");
+	gtk_menu_append(GTK_MENU(r->context_menu), search_menu_item);
+
 	gtk_widget_show_all(r->context_menu);
 
 	g_signal_connect(G_OBJECT(eval_menu_item), "activate", G_CALLBACK(eval_menu_item_callback), (gpointer)r);
+	g_signal_connect(G_OBJECT(search_menu_item), "activate", G_CALLBACK(search_menu_item_callback), (gpointer)r);
 
 	return r;
 }
@@ -1342,5 +1363,6 @@ void editor_start_search(editor_t *editor, enum search_mode_t search_mode, const
 		gtk_entry_set_editable(GTK_ENTRY(editor->search_entry), false);
 	}
 
+	move_search(editor, false, true, false);
 	gtk_widget_queue_draw(GTK_WIDGET(editor));
 }

@@ -27,10 +27,12 @@ static void execute_command(editor_t *editor) {
 
 	char *command = buffer_lines_to_text(editor->buffer, &start, &end);
 
-	interp_eval(top_context_editor(), command, false);
+	//printf("Context editor: %p\n", top_context_editor());
 
-	buffer_extend_selection_by_select_type(interp_context_buffer());
-	editor_complete_move(interp_context_editor(), true);
+	interp_eval(top_context_editor(), NULL, command, false);
+
+	buffer_extend_selection_by_select_type(top_context_editor()->buffer);
+	editor_complete_move(top_context_editor(), true);
 
 	history_add(&command_history, time(NULL), working_directory, command, true);
 

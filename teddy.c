@@ -52,7 +52,7 @@ int main(int argc, char *argv[]) {
 
 	{
 		const char *loadhistory[] = { "loadhistory" };
-		interp_eval_command(1, loadhistory);
+		interp_eval_command(NULL, NULL, 1, loadhistory);
 	}
 
 	window = gtk_window_new(GTK_WINDOW_TOPLEVEL);

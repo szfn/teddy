@@ -638,3 +638,14 @@ proc forlines {args} {
 		uplevel 1 $body
 	}
 }
+
+proc ss {args} {
+	buffer eval temp {
+		c [lindex $args 0]
+		m 1:1
+		s {*}[lrange $args 1 end]
+		m all
+		set text [c]
+	}
+	return $text
+}

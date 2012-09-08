@@ -1,6 +1,3 @@
-
-- replace tcl regex engine with TRE
-
 - deduplication for iopen is actually necessary
 - how does one create a new file?
 - set column number for background processes whenever possible
@@ -15,7 +12,7 @@
 - slash all special mouse actions, add menus and close buttons
 - go-able things become links
 - save, refresh becomes a subcommand of buffer
-- automatically pop-up autocompletion and update autocompletions when leaving dirty rows (enter should not autocomplete, at least on the command line)
+- automatically pop-up autocompletion and update autocompletions when leaving dirty rows (enter should not autocomplete, at least on the command line), add tags to autocompletions, add closed buffer autocompletions to a permanent completions repository
 - guessing indentation (dtrt-indent mode1)
 - auto-equalize indentation on paste
 - multiprocess highlighting
@@ -34,13 +31,11 @@
 - extend regular expressions in 's' to be lexically aware
 - word movement, word selection and tokenization should be tied to syntax analysis
 - make easy way to reindent though external filter
-- 's' command: support normal pcre flags
 - use an editor for the command line
 - cleanup of unused functions (how?)
 - all configuration options in the default configuration file with comments
 - open in a directory view is relative to the directory
 - possibility to specify selection background exactly (instead of difference)
 
-- s command should only be restricted by a selection to a range of lines, ie make regex_endpoint a line without glyph information and use the first line it shouldn't change
 
 https://github.com/chriskempson/tomorrow-theme

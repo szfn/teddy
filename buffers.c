@@ -597,19 +597,20 @@ int teddy_buffer_command(ClientData client_data, Tcl_Interp *interp, int argc, c
 			return TCL_ERROR;
 		}
 
-		buffer_t *buffer = buffer_id_to_buffer(argv[2]);
+		buffer_t *buffer = NULL;
 		editor_t *editor = NULL;
 
-		find_editor_for_buffer(buffer, NULL, NULL, &editor);
+		if (strcmp(argv[2], "temp") == 0) {
+			buffer = buffer_create();
+			load_empty(buffer);
+		} else {
+			buffer = buffer_id_to_buffer(argv[2]);
+			find_editor_for_buffer(buffer, NULL, NULL, &editor);
+		}
 
-		editor_t *saved_context_editor = interp_context_editor();
-		buffer_t *saved_context_buffer = interp_context_buffer();
+		interp_eval(editor, buffer, argv[3], false);
 
-		interp_context_buffer_set(buffer);
-		interp_eval(editor, argv[3], false);
-
-		if (saved_context_editor != NULL) interp_context_editor_set(saved_context_editor);
-		else interp_context_buffer_set(saved_context_buffer);
+		if (strcmp(argv[2], "temp") == 0) buffer_free(buffer);
 	} else {
 		Tcl_AddErrorInfo(interp, "Unknown subcommmand of 'buffer' command");
 		return TCL_ERROR;

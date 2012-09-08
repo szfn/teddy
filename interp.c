@@ -31,6 +31,16 @@ Tcl_Interp *interp;
 editor_t *the_context_editor = NULL;
 buffer_t *the_context_buffer = NULL;
 
+static void interp_context_editor_set(editor_t *editor) {
+	the_context_editor = editor;
+	the_context_buffer = (editor != NULL) ? editor->buffer : NULL;
+}
+
+static void interp_context_buffer_set(buffer_t *buffer) {
+	the_context_editor = NULL;
+	the_context_buffer = buffer;
+}
+
 static int teddy_cd_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
 	if (argc != 2) {
 		Tcl_AddErrorInfo(interp, "Wrong number of arguments to 'cd' command");
@@ -902,6 +912,8 @@ void interp_init(void) {
 	Tcl_HideCommand(interp, "tcl_wordBreakAfter", "hidden_tcl_wordBreakAfter");
 	Tcl_HideCommand(interp, "tcl_wordBreakBefore", "hidden_tcl_wordBreakBefore");
 	Tcl_HideCommand(interp, "exit", "hidden_exit");
+	Tcl_HideCommand(interp, "regexp", "hidden_regexp");
+	Tcl_HideCommand(interp, "regsub", "hidden_regsub");
 
 	Tcl_CreateCommand(interp, "kill", &teddy_kill_command, (ClientData)NULL, NULL);
 
@@ -973,11 +985,8 @@ void interp_free(void) {
 	Tcl_DeleteInterp(interp);
 }
 
-int interp_eval(editor_t *editor, const char *command, bool show_ret) {
+static int interp_eval_ex(const char *command, bool show_ret) {
 	int code;
-
-	if (editor != NULL)
-		interp_context_editor_set(editor);
 
 	code = Tcl_Eval(interp, command);
 
@@ -1014,6 +1023,25 @@ int interp_eval(editor_t *editor, const char *command, bool show_ret) {
 	case TCL_RETURN:
 		break;
 	}
+
+	return code;
+}
+
+int interp_eval(editor_t *editor, buffer_t *buffer, const char *command, bool show_ret) {
+	editor_t *prev_editor = interp_context_editor();
+	buffer_t *prev_buffer = interp_context_buffer();
+
+	//printf("Starting eval: %p %p\n", prev_editor, prev_buffer);
+
+	interp_context_buffer_set(buffer);
+	if (editor != NULL) interp_context_editor_set(editor);
+
+	int code = interp_eval_ex(command, show_ret);
+
+	if (prev_editor != NULL) interp_context_editor_set(prev_editor);
+	else interp_context_buffer_set(prev_buffer);
+
+	//printf("Ending eval: %p %p\n", interp_context_editor(), interp_context_buffer());
 
 	return code;
 }
@@ -1068,7 +1096,7 @@ void read_conf(void) {
 	free(name);
 }
 
-const char *interp_eval_command(int count, const char *argv[]) {
+static const char *interp_eval_command_ex(int count, const char *argv[]) {
 	char *cmd = Tcl_Merge(count, argv);
 	int code = Tcl_Eval(interp, cmd);
 	Tcl_Free(cmd);
@@ -1089,14 +1117,23 @@ const char *interp_eval_command(int count, const char *argv[]) {
 	}
 }
 
-void interp_context_editor_set(editor_t *editor) {
-	the_context_editor = editor;
-	the_context_buffer = (editor != NULL) ? editor->buffer : NULL;
-}
+const char *interp_eval_command(editor_t *editor, buffer_t *buffer, int count, const char *argv[]) {
+	editor_t *prev_editor = interp_context_editor();
+	buffer_t *prev_buffer = interp_context_buffer();
 
-void interp_context_buffer_set(buffer_t *buffer) {
-	the_context_editor = NULL;
-	the_context_buffer = buffer;
+	//printf("Starting eval command: %p %p\n", prev_editor, prev_buffer);
+
+	interp_context_buffer_set(buffer);
+	if (editor != NULL) interp_context_editor_set(editor);
+
+	const char *r = interp_eval_command_ex(count, argv);
+
+	if (prev_editor != NULL) interp_context_editor_set(prev_editor);
+	else interp_context_buffer_set(prev_buffer);
+
+	//printf("Ending eval command: %p %p\n", interp_context_editor(), interp_context_buffer());
+
+	return r;
 }
 
 editor_t *interp_context_editor(void) {
@@ -1124,7 +1161,7 @@ void interp_return_point_pair(lpoint_t *mark, lpoint_t *cursor) {
 
 void interp_frame_debug() {
 	const char *info_frame[] = { "info", "frame" };
-	int n = atoi(interp_eval_command(2, info_frame));
+	int n = atoi(interp_eval_command_ex(2, info_frame));
 
 	printf("Stack trace:\n");
 	for (int i = 0; i < n; ++i) {
@@ -1132,7 +1169,7 @@ void interp_frame_debug() {
 		asprintf(&msg, "%d", i);
 		alloc_assert(msg);
 		const char *info_frame2[] = { "info", "frame", msg };
-		const char *s = interp_eval_command(3, info_frame2);
+		const char *s = interp_eval_command_ex(3, info_frame2);
 		free(msg);
 		printf("\t%d\t%s\n", i, s);
 	}
@@ -1140,7 +1177,7 @@ void interp_frame_debug() {
 
 bool interp_toplevel_frame() {
 	const char *info_frame[] = { "info", "frame" };
-	int n = atoi(interp_eval_command(2, info_frame));
+	int n = atoi(interp_eval_command_ex(2, info_frame));
 
 	return n <= 2;
 }

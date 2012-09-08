@@ -38,13 +38,7 @@ static void buffer_init_font_extents(buffer_t *buffer) {
 
 static void buffer_setup_hook(buffer_t *buffer) {
 	const char *argv[] = { "buffer_setup_hook", buffer->path };
-
-	editor_t *prev_context_editor = interp_context_editor();
-
-	interp_context_buffer_set(buffer);
-	interp_eval_command(2, argv);
-
-	interp_context_editor_set(prev_context_editor);
+	interp_eval_command(NULL, buffer, 2, argv);
 }
 
 void buffer_set_mark_at_cursor(buffer_t *buffer) {

@@ -144,38 +144,14 @@ static bool move_regexp_search_forward(struct research_t *research, bool execute
 	lpoint_t *cursor = &(research->buffer->cursor);
 	lpoint_t *mark = &(research->buffer->mark);
 
-	bool cursor_on_last_line_before = (cursor->line == research->regex_endpoint.line);
-
 	//printf("Moving forward search <%s> limit %p/%d (%p/%d) %d\n", research->cmd, research->regex_endpoint.line, (research->regex_endpoint.line != NULL) ? research->regex_endpoint.line->lineno : -1, cursor->line, cursor->line->lineno, cursor_on_last_line_before);
 	if (execute && (research->cmd != NULL) && (mark->line != NULL)) {
 		editor_t *editor;
 		find_editor_for_buffer(research->buffer, NULL, NULL, &editor);
 
-		if (editor != NULL) interp_context_editor_set(editor);
-		else interp_context_buffer_set(research->buffer);
+		int r = interp_eval(editor, research->buffer, research->cmd, false);
 
-		int r = Tcl_Eval(interp, research->cmd);
-
-		switch (r) {
-		case TCL_ERROR: {
-			Tcl_Obj *options = Tcl_GetReturnOptions(interp, r);
-			Tcl_Obj *key = Tcl_NewStringObj("-errorinfo", -1);
-			Tcl_Obj *stackTrace;
-			Tcl_IncrRefCount(key);
-			Tcl_DictObjGet(NULL, options, key, &stackTrace);
-			Tcl_DecrRefCount(key);
-			quick_message("TCL Error", Tcl_GetString(stackTrace));
-			Tcl_ResetResult(interp);
-			return false;
-		}
-
-		case TCL_BREAK: return false;
-
-		case TCL_OK:
-		case TCL_CONTINUE:
-		default:
-			break;
-		}
+		if ((r == TCL_ERROR) || (r == TCL_BREAK)) return false;
 	}
 
 	struct augmented_lpoint_t search_point;
@@ -186,17 +162,11 @@ static bool move_regexp_search_forward(struct research_t *research, bool execute
 		search_point.offset = 0;
 		research->search_failed = false;
 	} else {
-		if (cursor_on_last_line_before) {
-			if (cursor->line != research->regex_endpoint.line) return false;
-		}
-
 		search_point.line = cursor->line;
 		search_point.start_glyph = cursor->glyph;
 
 		if (search_point.start_glyph == (search_point.line->cap)) {
 			//printf("\tnext line %d %d\n", search_point.start_glyph, search_point.line->cap);
-
-			if (search_point.line == research->regex_endpoint.line) return false;
 
 			// if the cursor is after the last character of the line just move to the next line
 			// this isn't just an optimization
@@ -222,7 +192,6 @@ static bool move_regexp_search_forward(struct research_t *research, bool execute
 		if (r == REG_NOMATCH) {
 			// no other match on this line, end search if there is a line limit or this was the last search line.
 			if (research->line_limit) return false;
-			if (search_point.line == research->regex_endpoint.line) return false;
 
 			search_point.line = search_point.line->next;
 			search_point.start_glyph = 0;
@@ -242,12 +211,6 @@ static bool move_regexp_search_forward(struct research_t *research, bool execute
 					Tcl_SetVar(interp, name, text, TCL_GLOBAL_ONLY);
 					free(text);
 				}
-
-				//printf("\tBail check (%p == %p) (%d > %d)\n", cursor->line, research->regex_endpoint.line, cursor->glyph, research->regex_endpoint.glyph);
-				// end the search if cursor is now on the last line of the search after the ending glyph
-				if ((cursor->line == research->regex_endpoint.line)
-					&& (cursor->glyph > research->regex_endpoint.glyph))
-					return false;
 
 				return true;
 			} else {
@@ -305,7 +268,6 @@ void do_regex_noninteractive_replace(struct research_t *research) {
 
 	research->buffer->mark.line = NULL;
 	research->buffer->mark.glyph = 0;
-	copy_lpoint(&(research->buffer->cursor), &(research->regex_endpoint));
 
 	research_free_temp(research);
 }
@@ -314,9 +276,6 @@ void start_regex_interactive(struct research_t *research, const char *regexp) {
 	if (interp_context_editor() == NULL) {
 		Tcl_AddErrorInfo(interp, "Can not execute interactive 's' without a selection");
 	}
-
-	research->regex_endpoint.line = NULL;
-	research->regex_endpoint.glyph = 0;
 
 	editor_t *editor = interp_context_editor();
 	editor->research = *research;
@@ -345,14 +304,21 @@ int teddy_research_command(ClientData client_data, Tcl_Interp *interp, int argc,
 
 	research.buffer = interp_context_buffer();
 	research.line_limit = false;
+	research.search_failed = false;
+	research.mode = SM_REGEXP;
+
+	int flags = 0;
 
 	int i;
 	for (i = 1; i < argc; ++i) {
 		if (argv[i][0] != '-') break;
 		if (strcmp(argv[i], "--") == 0) { ++i; break; }
-		if (strcmp(argv[i], "-get") == 0) { get = true; }
-		if (strcmp(argv[i], "-line") == 0) { research.line_limit = true; }
-		if (strcmp(argv[i], "-literal") == 0) { literal = true; }
+		else if (strcmp(argv[i], "-get") == 0) { get = true; }
+		else if (strcmp(argv[i], "-line") == 0) { research.line_limit = true; }
+		else if (strcmp(argv[i], "-literal") == 0) { literal = true; }
+		else if (strcmp(argv[i], "-nocase") == 0) { flags = flags | REG_ICASE; }
+		else if (strcmp(argv[i], "-right-assoc") == 0) { flags = flags | REG_RIGHT_ASSOC; }
+		else if (strcmp(argv[i], "-ungreedy") == 0) { flags = flags | REG_UNGREEDY; }
 	}
 
 	if ((i >= argc) || (i+3 < argc)) {
@@ -360,7 +326,7 @@ int teddy_research_command(ClientData client_data, Tcl_Interp *interp, int argc,
 		return TCL_ERROR;
 	}
 
-	int r = tre_regcomp(&(research.regexp), argv[i], literal ? REG_LITERAL : REG_EXTENDED);
+	int r = tre_regcomp(&(research.regexp), argv[i], flags | (literal ? REG_LITERAL : REG_EXTENDED));
 	if (r != REG_OK) {
 #define REGERROR_BUF_SIZE 512
 		char buf[REGERROR_BUF_SIZE];
@@ -402,17 +368,33 @@ int teddy_research_command(ClientData client_data, Tcl_Interp *interp, int argc,
 		lpoint_t start, end;
 		buffer_get_selection(research.buffer, &start, &end);
 
-		if (!interp_toplevel_frame() && (start.line == NULL)) {
-			// if we are not at toplevel this command will be non-interactive anyway
-			buffer_get_extremes(research.buffer, &start, &end);
-			copy_lpoint(&start, &(research.buffer->cursor));
+		if ((start.line != NULL) && (end.line != NULL)) {
+			buffer_t *mainbuf = interp_context_buffer();
+			buffer_t *tempbuf = buffer_create();
+			load_empty(tempbuf);
+
+			char *selection_text = buffer_lines_to_text(mainbuf, &start, &end);
+			buffer_replace_selection(tempbuf, selection_text);
+			free(selection_text);
+
+			tempbuf->cursor.line = tempbuf->real_line;
+			tempbuf->cursor.glyph = 0;
+
+			research.buffer = tempbuf;
+			do_regex_noninteractive_replace(&research);
+
+			char *replaced_text = buffer_all_lines_to_text(tempbuf);
+			buffer_replace_selection(mainbuf, replaced_text);
+			free(replaced_text);
+
+			buffer_free(tempbuf);
+
+			if (interp_context_editor() != NULL) set_label_text(interp_context_editor());
+			
+			return TCL_OK;
 		}
 
-		if ((start.line != NULL) && (end.line != NULL)) {
-			// found a selection, go with non-interactive search and replace
-			copy_lpoint(&(research.buffer->cursor), &start);
-			copy_lpoint(&(research.regex_endpoint), &end);
-
+		if (!interp_toplevel_frame()) {
 			do_regex_noninteractive_replace(&research);
 			return TCL_OK;
 		} else {
@@ -431,8 +413,5 @@ int teddy_research_command(ClientData client_data, Tcl_Interp *interp, int argc,
 }
 
 extern void research_continue_replace_to_end(editor_t *editor) {
-	lpoint_t start, end;
-	buffer_get_extremes(editor->buffer, &start, &end);
-	copy_lpoint(&(editor->research.regex_endpoint), &end);
 	do_regex_noninteractive_replace(&(editor->research));
 }
