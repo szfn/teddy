@@ -649,9 +649,7 @@ proc ss {args} {\n\
 		s {*}[lrange $args 1 end]\n\
 		m all\n\
 		set text [c]\n\
-		puts \"text is <$text>\"\n\
 	}\n\
-	puts \"text is <$text>\"\n\
 	return $text\n\
 }\n\
 "

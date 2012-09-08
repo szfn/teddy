@@ -60,4 +60,6 @@ void utf8_remove_truncated_characters_at_end(char *text);
 
 void alloc_assert(void *p);
 
+int null_strcmp(const char *a, const char *b);
+
 #endif

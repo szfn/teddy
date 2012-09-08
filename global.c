@@ -341,3 +341,18 @@ uint32_t *utf8_to_utf32_string(const char *text, int *dstlen) {
 
 	return r;
 }
+
+int null_strcmp(const char *a, const char *b) {
+	if (a == NULL) {
+		if (b == NULL) return 0;
+		if (strcmp(b, "") == 0) return 0;
+		return -1;
+	}
+
+	if (b == NULL) {
+		if (strcmp(a, "") == 0) return 0;
+		return -1;
+	}
+
+	return strcmp(a, b);
+}

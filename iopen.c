@@ -17,8 +17,8 @@
 #include "research.h"
 #include "interp.h"
 
-#define IOPEN_RECURSOR_DEPTH_LIMIT 512
-#define IOPEN_MAX_SENT_RESULTS 512
+#define IOPEN_RECURSOR_DEPTH_LIMIT 128
+#define IOPEN_MAX_SENT_RESULTS 128
 
 GtkWidget *parent_window;
 
@@ -154,14 +154,39 @@ static bool iopen_other_keys(editor_t *editor, bool shift, bool ctrl, bool alt, 
 	return false;
 }
 
-static gboolean iopen_add_result(struct iopen_result *r) {
-	GtkTreeIter mah;
-	gtk_list_store_append(r->target, &mah);
-	gtk_list_store_set(r->target, &mah, 0, r->show, 1, r->path, 2, (r->search != NULL) ? r->search : "", 3, r->rank, -1);
+static void iopen_result_free(struct iopen_result *r) {
 	free(r->path);
 	free(r->show);
 	if (r->search != NULL) free(r->search);
 	free(r);
+}
+
+static gboolean iopen_add_result(struct iopen_result *r) {
+	bool should_add = true;
+	GtkTreeIter mah;
+
+	if (gtk_tree_model_get_iter_first(GTK_TREE_MODEL(r->target), &mah)) {
+		do {
+			GValue path_value = { 0 }, show_value = { 0 };
+			gtk_tree_model_get_value(GTK_TREE_MODEL(r->target), &mah, 1, &path_value);
+			gtk_tree_model_get_value(GTK_TREE_MODEL(r->target), &mah, 0, &show_value);
+			const char *path = g_value_get_string(&path_value);
+			const char *show = g_value_get_string(&show_value);
+
+			if ((null_strcmp(r->show, show) == 0) && (null_strcmp(r->path, path) == 0)) should_add = false;
+
+			g_value_unset(&path_value);
+			g_value_unset(&show_value);
+		} while (should_add && gtk_tree_model_iter_next(GTK_TREE_MODEL(r->target), &mah));
+	}
+
+	if (should_add) {
+		gtk_list_store_append(r->target, &mah);
+		gtk_list_store_set(r->target, &mah, 0, r->show, 1, r->path, 2, (r->search != NULL) ? r->search : "", 3, r->rank, -1);
+	}
+
+	iopen_result_free(r);
+
 	return FALSE;
 }
 
