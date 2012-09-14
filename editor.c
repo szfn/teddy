@@ -590,35 +590,75 @@ static gboolean key_release_callback(GtkWidget *widget, GdkEventKey *event, edit
 	return FALSE;
 }
 
-static void move_cursor_to_mouse(editor_t *editor, double x, double y) {
+static void absolute_position(editor_t *editor, double *x, double *y) {
 	GtkAllocation allocation;
-
 	gtk_widget_get_allocation(editor->drar, &allocation);
 
-	x += gtk_adjustment_get_value(GTK_ADJUSTMENT(editor->hadjustment));
-	y += gtk_adjustment_get_value(GTK_ADJUSTMENT(editor->adjustment));
+	*x += gtk_adjustment_get_value(GTK_ADJUSTMENT(editor->hadjustment));
+	*y += gtk_adjustment_get_value(GTK_ADJUSTMENT(editor->adjustment));
+}
 
+static void move_cursor_to_mouse(editor_t *editor, double x, double y) {
+	absolute_position(editor, &x, &y);
 	buffer_move_cursor_to_position(editor->buffer, x, y);
+}
+
+static bool on_file_link(editor_t *editor, double x, double y, lpoint_t *r) {
+	absolute_position(editor, &x, &y);
+	lpoint_t p;
+	buffer_point_from_position(editor->buffer, x, y, &p);
+
+	if (r != NULL) copy_lpoint(r, &p);
+
+	if (p.glyph < p.line->cap) {
+		if (p.line->glyph_info[p.glyph].color == (CFG_LEXY_FILE - CFG_LEXY_NOTHING)) {
+			return true;
+		}
+	}
+
+	return false;
 }
 
 static gboolean button_press_callback(GtkWidget *widget, GdkEventButton *event, editor_t *editor) {
 	gtk_widget_grab_focus(editor->drar);
 
 	if (event->button == 1) {
-		move_cursor_to_mouse(editor, event->x, event->y);
+		lpoint_t p;
+		if (on_file_link(editor, event->x, event->y, &p)) {
+			lpoint_t start, end;
+			start.line = p.line; end.line = p.line;
+			for (start.glyph = p.glyph; start.glyph > 0; --(start.glyph))
+				if (p.line->glyph_info[start.glyph].color != CFG_LEXY_FILE - CFG_LEXY_NOTHING) {
+					++(start.glyph);
+					break;
+				}
 
-		editor->mouse_marking = 1;
-		buffer_set_mark_at_cursor(editor->buffer);
+			for (end.glyph = p.glyph; end.glyph < p.line->cap; ++(end.glyph))
+				if (p.line->glyph_info[end.glyph].color != CFG_LEXY_FILE - CFG_LEXY_NOTHING) break;
 
-		if (event->type == GDK_2BUTTON_PRESS) {
-			buffer_change_select_type(editor->buffer, BST_WORDS);
-			set_primary_selection(editor);
-		} else if (event->type == GDK_3BUTTON_PRESS) {
-			buffer_change_select_type(editor->buffer, BST_LINES);
-			set_primary_selection(editor);
+			char *text = buffer_lines_to_text(editor->buffer, &start, &end);
+			const char *cmd = lexy_get_link_fn(editor->buffer);
+			const char *argv[] = { cmd, "1", text };
+
+			interp_eval_command(editor, NULL, 3, argv);
+
+			free(text);
+		} else {
+			move_cursor_to_mouse(editor, event->x, event->y);
+
+			editor->mouse_marking = 1;
+			buffer_set_mark_at_cursor(editor->buffer);
+
+			if (event->type == GDK_2BUTTON_PRESS) {
+				buffer_change_select_type(editor->buffer, BST_WORDS);
+				set_primary_selection(editor);
+			} else if (event->type == GDK_3BUTTON_PRESS) {
+				buffer_change_select_type(editor->buffer, BST_LINES);
+				set_primary_selection(editor);
+			}
+
+			editor_complete_move(editor, TRUE);
 		}
-
-		editor_complete_move(editor, TRUE);
 	} else if (event->button == 2) {
 		move_cursor_to_mouse(editor, event->x, event->y);
 		buffer_unset_mark(editor->buffer);
@@ -717,6 +757,12 @@ static gboolean motion_callback(GtkWidget *widget, GdkEventMotion *event, editor
 
 		set_primary_selection(editor);
 	} else {
+		if (on_file_link(editor, event->x, event->y, NULL)) {
+			gdk_window_set_cursor(gtk_widget_get_window(editor->drar), gdk_cursor_new(GDK_HAND1));
+		} else {
+			gdk_window_set_cursor(gtk_widget_get_window(editor->drar), gdk_cursor_new(GDK_XTERM));
+		}
+
 		end_selection_scroll(editor);
 	}
 
@@ -796,6 +842,14 @@ struct growable_glyph_array {
 	cairo_glyph_t *glyphs;
 	int n;
 	int allocated;
+
+	struct underline_info_t {
+		double filey, filex_start, filex_end;
+	} *underline_info;
+
+	int underline_n;
+	int underline_allocated;
+
 	uint16_t kind;
 };
 
@@ -806,11 +860,18 @@ static struct growable_glyph_array *growable_glyph_array_init(void) {
 	gga->kind = 0;
 	gga->glyphs = malloc(sizeof(cairo_glyph_t) * gga->allocated);
 	alloc_assert(gga->glyphs);
+
+	gga->underline_n = 0;
+	gga->underline_allocated = 1;
+	gga->underline_info = malloc(sizeof(struct underline_info_t) * gga->underline_allocated);
+	alloc_assert(gga->underline_info);
+
 	return gga;
 }
 
 static void growable_glyph_array_free(struct growable_glyph_array *gga) {
 	free(gga->glyphs);
+	free(gga->underline_info);
 	free(gga);
 }
 
@@ -818,16 +879,33 @@ static void growable_glyph_array_append(struct growable_glyph_array *gga, cairo_
 	if (gga->n >= gga->allocated) {
 		gga->allocated *= 2;
 		gga->glyphs = realloc(gga->glyphs, sizeof(cairo_glyph_t) * gga->allocated);
+		alloc_assert(gga->glyphs);
 	}
 
 	gga->glyphs[gga->n] = glyph;
 	++(gga->n);
 }
 
+static void growable_glyph_array_append_underline(struct growable_glyph_array *gga, double filey, double filex_start, double filex_end) {
+	if (gga->underline_n >= gga->underline_allocated) {
+		gga->underline_allocated *= 2;
+		gga->underline_info = realloc(gga->underline_info, sizeof(struct underline_info_t) * gga->underline_allocated);
+		alloc_assert(gga->underline_info);
+	}
+
+	gga->underline_info[gga->underline_n].filey = filey;
+	gga->underline_info[gga->underline_n].filex_start = filex_start;
+	gga->underline_info[gga->underline_n].filex_end = filex_end;
+	++(gga->underline_n);
+}
+
 static void draw_line(editor_t *editor, GtkAllocation *allocation, cairo_t *cr, real_line_t *line, GHashTable *ht) {
 	struct growable_glyph_array *gga_current = NULL;
 
 	double cury = line->start_y;
+
+	double filey, filex_start, filex_end;
+	bool onfile = false;
 
 	for (int i = 0; i < line->cap; ++i) {
 		// draws soft wrvoid compl_wnd_hide(struct completer capping indicators
@@ -851,6 +929,35 @@ static void draw_line(editor_t *editor, GtkAllocation *allocation, cairo_t *cr, 
 
 		uint16_t type = (uint16_t)(line->glyph_info[i].color) + ((uint16_t)(line->glyph_info[i].fontidx) << 8);
 
+		bool thisfile = line->glyph_info[i].color == (CFG_LEXY_FILE - CFG_LEXY_NOTHING);
+
+		if (thisfile) {
+			if (onfile && (filey - line->glyph_info[i].y < 0.001)) {
+				// we are still on the same line and still on a file, extend underline
+				filex_end = line->glyph_info[i].x + line->glyph_info[i].x_advance;
+			} else {
+				// either we weren't on a file or we moved to a different line,
+				// start a new set of underline information
+
+				if (onfile) {
+					assert(gga_current != NULL);
+					// we moved to a different line
+					growable_glyph_array_append_underline(gga_current, filey, filex_start, filex_end);
+				}
+
+				filey = line->glyph_info[i].y;
+				filex_start = line->glyph_info[i].x;
+				filex_end = line->glyph_info[i].x + line->glyph_info[i].x_advance;
+				onfile = true;
+			}
+		} else {
+			if (onfile) {
+				assert(gga_current != NULL);
+				growable_glyph_array_append_underline(gga_current, filey, filex_start, filex_end);
+				onfile = false;
+			}
+		}
+
 		if ((gga_current == NULL) || (gga_current->kind != type)) {
 			gga_current = g_hash_table_lookup(ht, (gconstpointer)(uint64_t)type);
 			if (gga_current == NULL) {
@@ -866,6 +973,10 @@ static void draw_line(editor_t *editor, GtkAllocation *allocation, cairo_t *cr, 
 		g.y = line->glyph_info[i].y;
 
 		growable_glyph_array_append(gga_current, g);
+	}
+
+	if (onfile && (gga_current != NULL)) {
+		growable_glyph_array_append_underline(gga_current, filey, filex_start, filex_end);
 	}
 }
 
@@ -885,6 +996,16 @@ static void draw_cursorline(cairo_t *cr, editor_t *editor) {
 
 	cairo_rectangle(cr, cursor_x - allocation.width, cursor_y-editor->buffer->ascent, 2*allocation.width, editor->buffer->ascent+editor->buffer->descent);
 	cairo_fill(cr);
+}
+
+static void draw_underline(editor_t *editor, cairo_t *cr, struct growable_glyph_array *gga) {
+	for (int i = 0; i < gga->underline_n; ++i) {
+		struct underline_info_t *u = (gga->underline_info + i);
+		//cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
+		cairo_rectangle(cr, u->filex_start, u->filey - editor->buffer->underline_position, u->filex_end - u->filex_start, editor->buffer->underline_thickness);
+		cairo_fill(cr);
+		//printf("Drawing underline from %g to %g at (%g+%g) (thickness: %g)\n", u->filex_start, u->filex_end, u->filey, editor->buffer->underline_position, editor->buffer->underline_thickness);
+	}
 }
 
 static gboolean expose_event_callback(GtkWidget *widget, GdkEventExpose *event, editor_t *editor) {
@@ -944,10 +1065,12 @@ static gboolean expose_event_callback(GtkWidget *widget, GdkEventExpose *event, 
 		while (g_hash_table_iter_next(&it, (gpointer *)&type, (gpointer *)&gga)) {
 			uint8_t color = (uint8_t)type;
 			uint8_t fontidx = (uint8_t)(type >> 8);
-			//printf("Printing text with font %d, color %d\n", fontidx, color);
 			cairo_set_scaled_font(cr, fontset_get_cairofont_by_name(config_strval(&(editor->buffer->config), CFG_MAIN_FONT), fontidx));
 			set_color_cfg(cr, config_intval(&(editor->buffer->config), CFG_LEXY_NOTHING+color));
 			cairo_show_glyphs(cr, gga->glyphs, gga->n);
+			//set_color_cfg(cr, config_intval(&(editor->buffer->config), CFG_LEXY_FILE));
+			draw_underline(editor, cr, gga);
+
 			growable_glyph_array_free(gga);
 		}
 	}
@@ -1182,6 +1305,25 @@ static void search_menu_item_callback(GtkMenuItem *menuitem, editor_t *editor) {
 	free(selection);
 }
 
+static void open_link_menu_item_callback(GtkMenuItem *menuitem, editor_t *editor) {
+	lpoint_t start, end;
+	buffer_get_selection(editor->buffer, &start, &end);
+
+	if (start.line == NULL) return;
+	if (end.line == NULL) return;
+
+	char *selection = buffer_lines_to_text(editor->buffer, &start, &end);
+
+	if (selection == NULL) return;
+
+	const char *cmd = lexy_get_link_fn(editor->buffer);
+	const char *argv[] = { cmd, "0", selection };
+
+	interp_eval_command(editor, NULL, 3, argv);
+
+	free(selection);
+}
+
 editor_t *new_editor(buffer_t *buffer, bool single_line) {
 	GtkWidget *editor_widget = g_object_new(GTK_TYPE_TEDITOR, NULL);
 	editor_t *r = GTK_TEDITOR(editor_widget);
@@ -1296,6 +1438,9 @@ editor_t *new_editor(buffer_t *buffer, bool single_line) {
 	GtkWidget *eval_menu_item = gtk_menu_item_new_with_label("Eval");
 	gtk_menu_append(GTK_MENU(r->context_menu), eval_menu_item);
 
+	GtkWidget *open_link_menu_item = gtk_menu_item_new_with_label("Open Selected");
+	gtk_menu_append(GTK_MENU(r->context_menu), open_link_menu_item);
+
 	GtkWidget *search_menu_item = gtk_menu_item_new_with_label("Search");
 	gtk_menu_append(GTK_MENU(r->context_menu), search_menu_item);
 
@@ -1303,6 +1448,7 @@ editor_t *new_editor(buffer_t *buffer, bool single_line) {
 
 	g_signal_connect(G_OBJECT(eval_menu_item), "activate", G_CALLBACK(eval_menu_item_callback), (gpointer)r);
 	g_signal_connect(G_OBJECT(search_menu_item), "activate", G_CALLBACK(search_menu_item_callback), (gpointer)r);
+	g_signal_connect(G_OBJECT(open_link_menu_item), "activate", G_CALLBACK(open_link_menu_item_callback), (gpointer)r);
 
 	return r;
 }

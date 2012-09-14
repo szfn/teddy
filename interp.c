@@ -912,8 +912,6 @@ void interp_init(void) {
 	Tcl_HideCommand(interp, "tcl_wordBreakAfter", "hidden_tcl_wordBreakAfter");
 	Tcl_HideCommand(interp, "tcl_wordBreakBefore", "hidden_tcl_wordBreakBefore");
 	Tcl_HideCommand(interp, "exit", "hidden_exit");
-	Tcl_HideCommand(interp, "regexp", "hidden_regexp");
-	Tcl_HideCommand(interp, "regsub", "hidden_regsub");
 
 	Tcl_CreateCommand(interp, "kill", &teddy_kill_command, (ClientData)NULL, NULL);
 
@@ -948,6 +946,7 @@ void interp_init(void) {
 	Tcl_CreateCommand(interp, "lexydef-append", &lexy_append_command, (ClientData)NULL, NULL);
 	Tcl_CreateCommand(interp, "lexyassoc", &lexy_assoc_command, (ClientData)NULL, NULL);
 	Tcl_CreateCommand(interp, "lexy_dump", &lexy_dump_command, (ClientData)NULL, NULL);
+	Tcl_CreateCommand(interp, "lexy-token", &lexy_token_command, (ClientData)NULL, NULL);
 
 	Tcl_CreateCommand(interp, "buffer", &teddy_buffer_command, (ClientData)NULL, NULL);
 

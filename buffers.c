@@ -437,9 +437,34 @@ int teddy_buffer_command(ClientData client_data, Tcl_Interp *interp, int argc, c
 		buffer_t *b = go_file(argv[2], false, &gffr);
 		if (b != NULL) {
 			tframe_t *frame;
-			find_editor_for_buffer(interp_context_buffer(), NULL, &frame, NULL);
-			heuristic_new_frame(columnset, frame, b);
+			find_editor_for_buffer(b, NULL, &frame, NULL);
+			if (frame == NULL) {
+				find_editor_for_buffer(interp_context_buffer(), NULL, &frame, NULL);
+				heuristic_new_frame(columnset, frame, b);
+			}
+
+			char bufferid[20];
+			buffer_to_buffer_id(b, bufferid);
+			Tcl_SetResult(interp, bufferid, TCL_VOLATILE);
+		} else {
+			Tcl_SetResult(interp, "", TCL_VOLATILE);
 		}
+	} else if (strcmp(argv[1], "focus") == 0) {
+		if (argc != 3) {
+			Tcl_AddErrorInfo(interp, "Wrong number of arguments to 'buffer focus' command");
+			return TCL_ERROR;
+		}
+
+		buffer_t *buffer = buffer_id_to_buffer(argv[2]);
+		if (buffer == NULL) {
+			Tcl_AddErrorInfo(interp, "Argument passed to 'buffer focus' was not a buffer");
+			return TCL_ERROR;
+		}
+
+		editor_t *editor;
+		find_editor_for_buffer(buffer, NULL, NULL, &editor);
+		
+		if (editor != NULL) editor_grab_focus(editor, true);
 	} else if (strcmp(argv[1], "select-mode") == 0) {
 		if (argc != 3) {
 			Tcl_AddErrorInfo(interp, "Wrong number of arguments to 'buffer select-mode' command");
@@ -587,6 +612,11 @@ int teddy_buffer_command(ClientData client_data, Tcl_Interp *interp, int argc, c
 
 		buffer_t *buffer = buffer_id_to_buffer(argv[2]);
 
+		if (buffer == NULL) {
+			Tcl_AddErrorInfo(interp, "Unknown buffer id");
+			return TCL_ERROR;
+		}
+
 		if (buffer->keyprocessor != NULL) free(buffer->keyprocessor);
 		buffer->keyprocessor = strdup(argv[3]);
 
@@ -608,9 +638,13 @@ int teddy_buffer_command(ClientData client_data, Tcl_Interp *interp, int argc, c
 			find_editor_for_buffer(buffer, NULL, NULL, &editor);
 		}
 
-		interp_eval(editor, buffer, argv[3], false);
-
-		if (strcmp(argv[2], "temp") == 0) buffer_free(buffer);
+		if (buffer != NULL) {
+			interp_eval(editor, buffer, argv[3], false);
+			if (strcmp(argv[2], "temp") == 0) buffer_free(buffer);
+		} else {
+			Tcl_AddErrorInfo(interp, "Wrong buffer id");
+			return TCL_ERROR;
+		}
 	} else {
 		Tcl_AddErrorInfo(interp, "Unknown subcommmand of 'buffer' command");
 		return TCL_ERROR;

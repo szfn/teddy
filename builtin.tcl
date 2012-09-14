@@ -351,7 +351,7 @@ proc lexydef {name args} {
 lexydef c 0 {
 		"\\<(?:auto|_Bool|break|case|char|_Complex|const|continue|default|do|double|else|enum|extern|float|for|goto|if|_Imaginary|inline|int|long|register|restrict|return|short|signed|sizeof|static|struct|switch|typedef|union|unsigned|void|volatile|while|int8_t|uint8_t|int16_t|uint16_t|int32_t|uint32_t|int64_t|uint64_t|size_t|time_t|bool)\\>" keyword
 
-		"#(?:include|ifdef|ifndef|if|else|endif|pragma|define)\\>" keyword
+		{#\s*(?:include|ifdef|ifndef|if|else|endif|pragma|define)\>} keyword
 
 		"-?(?:0x)[0-9a-fA-F]*" literal
 		"-?[0-9][0-9]*(?:\\.[0-9]+)?(?:e-[0-9]+?)?" literal
@@ -491,6 +491,18 @@ lexydef go 0 {
 
 lexyassoc go {\.go$}
 
+lexydef filesearch 0 {
+		{([^:[:space:]]+):(\d+)(?::(\d+))?} file,1,2,3
+		{\<File "(.+?)", line (\d+)} file,1,2
+		{\<at (\S+) line (\d+)} file,1,2
+		{\<in (\S+) on line (\d+)} file,1,2
+		{([^:[:space:]]+):\[(\d+),(\d+)\]} file,1,2,3
+		{\<([^:[:space:]]+\.[^:[:space:]]+)\>} file
+		"." nothing
+	}
+
+lexyassoc filesearch {^\+bg}
+lexyassoc filesearch {/$}
 
 proc clear {} {
 	m 1:1 $:$
@@ -535,6 +547,7 @@ proc antique_theme {} {
 	setcfg -global lexy_string [rgbcolor "saddle brown"]
 	setcfg -global lexy_id [rgbcolor black]
 	setcfg -global lexy_literal [rgbcolor "saddle brown"]
+	setcfg -global lexy_file [rgbcolor "midnight blue"]
 }
 
 proc zenburn_theme {} {
@@ -595,13 +608,37 @@ proc solarized_theme {} {
 
 namespace eval teddy_intl {
 	namespace export iopen_search
-
 	proc iopen_search {z} {
 		set k [s -literal -get $z]
 		#puts "Searching <$z> -> <$k>"
 		if {[lindex $k 0] ne "nil"} {
 			m nil [lindex $k 0]
 		}
+	}
+
+	namespace export link_open
+	proc link_open {islink text} {
+		if {$islink} {
+			set r [lexy-token 0 $text]
+		} else {
+			set r [list nothing $text "" ""]
+		}
+
+		set b [buffer open [lindex $r 1]]
+
+		if {$b eq ""} { return }
+
+		set line [lindex $r 2]
+		set col [lindex $r 3]
+
+		if {$line eq ""} { set line 1 }
+		if {$col eq ""} { set col 1 }
+
+		buffer eval $b {
+			m $line:$col
+		}
+
+		buffer focus $b
 	}
 }
 

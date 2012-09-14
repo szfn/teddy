@@ -1,7 +1,7 @@
 #ifndef __CFG_AUTO__
 #define __CFG_AUTO__
 
-#define CONFIG_NUM 29
+#define CONFIG_NUM 30
 
 #define CFG_MAIN_FONT 0
 #define CFG_MAIN_FONT_HEIGHT_REDUCTION 1
@@ -30,7 +30,8 @@
 #define CFG_LEXY_COMMENT 24
 #define CFG_LEXY_STRING 25
 #define CFG_LEXY_LITERAL 26
-#define CFG_TAGS_DISCARD_LINENO 27
-#define CFG_AUTORELOAD 28
+#define CFG_LEXY_FILE 27
+#define CFG_TAGS_DISCARD_LINENO 28
+#define CFG_AUTORELOAD 29
 
 #endif

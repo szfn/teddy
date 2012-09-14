@@ -19,7 +19,7 @@ static void buffer_init_font_extents(buffer_t *buffer) {
 	cairo_text_extents_t extents;
 	cairo_font_extents_t font_extents;
 
-	teddy_fontset_t *font = foundry_lookup(config_strval(&(buffer->config), CFG_MAIN_FONT), false);
+	teddy_fontset_t *font = foundry_lookup(config_strval(&(buffer->config), CFG_MAIN_FONT), true);
 
 	cairo_scaled_font_text_extents(fontset_get_cairofont(font, 0), "M", &extents);
 	buffer->em_advance = extents.x_advance;
@@ -34,6 +34,10 @@ static void buffer_init_font_extents(buffer_t *buffer) {
 	buffer->line_height = font_extents.height - config_intval(&(buffer->config), CFG_MAIN_FONT_HEIGHT_REDUCTION);
 	buffer->ascent = font_extents.ascent;
 	buffer->descent = font_extents.descent;
+
+	fontset_underline_info(font, 0, &(buffer->underline_thickness), &(buffer->underline_position));
+
+	foundry_release(font);
 }
 
 static void buffer_setup_hook(buffer_t *buffer) {
@@ -825,9 +829,9 @@ void buffer_cursor_position(buffer_t *buffer, double *x, double *y) {
 	line_get_glyph_coordinates(buffer, &(buffer->cursor), x, y);
 }
 
-void buffer_move_cursor_to_position(buffer_t *buffer, double x, double y) {
+void buffer_point_from_position(buffer_t *buffer, double x, double y, lpoint_t *p) {
 	real_line_t *line, *prev = NULL;
-	int i;
+	int i, glyph = 0;
 
 	for (line = buffer->real_line; line->next != NULL; line = line->next) {
 		//printf("Cur y: %g (searching %g)\n", line->start_y, y);
@@ -835,10 +839,8 @@ void buffer_move_cursor_to_position(buffer_t *buffer, double x, double y) {
 	}
 
 	//printf("New position lineno: %d\n", line->lineno);
-	buffer->cursor.line = line;
 
 	if (line == NULL) line = prev;
-
 	assert(line != NULL);
 
 	for (i = 0; i < line->cap; ++i) {
@@ -847,7 +849,7 @@ void buffer_move_cursor_to_position(buffer_t *buffer, double x, double y) {
 			double glyph_end = glyph_start + line->glyph_info[i].x_advance;
 
 			if (x < glyph_start) {
-				buffer->cursor.glyph = i;
+				glyph = i;
 				break;
 			}
 
@@ -855,18 +857,25 @@ void buffer_move_cursor_to_position(buffer_t *buffer, double x, double y) {
 				double dist_start = x - glyph_start;
 				double dist_end = glyph_end - x;
 				if (dist_start < dist_end) {
-					buffer->cursor.glyph = i;
+					glyph = i;
 				} else {
-					buffer->cursor.glyph = i+1;
+					glyph = i+1;
 				}
 				break;
 			}
 		}
 	}
 
-	if (i >= line->cap) {
-		buffer->cursor.glyph = line->cap;
-	}
+	if (i >= line->cap) glyph = line->cap;
+
+	p->line = line; p->glyph = glyph;
+}
+
+void buffer_move_cursor_to_position(buffer_t *buffer, double x, double y) {
+	lpoint_t p;
+	buffer_point_from_position(buffer, x, y, &p);
+
+	copy_lpoint(&(buffer->cursor), &p);
 
 	buffer_extend_selection_by_select_type(buffer);
 }

@@ -354,7 +354,7 @@ proc lexydef {name args} {\n\
 lexydef c 0 {\n\
 		\"\\\\<(?:auto|_Bool|break|case|char|_Complex|const|continue|default|do|double|else|enum|extern|float|for|goto|if|_Imaginary|inline|int|long|register|restrict|return|short|signed|sizeof|static|struct|switch|typedef|union|unsigned|void|volatile|while|int8_t|uint8_t|int16_t|uint16_t|int32_t|uint32_t|int64_t|uint64_t|size_t|time_t|bool)\\\\>\" keyword\n\
 \n\
-		\"#(?:include|ifdef|ifndef|if|else|endif|pragma|define)\\\\>\" keyword\n\
+		{#\\s*(?:include|ifdef|ifndef|if|else|endif|pragma|define)\\>} keyword\n\
 \n\
 		\"-?(?:0x)[0-9a-fA-F]*\" literal\n\
 		\"-?[0-9][0-9]*(?:\\\\.[0-9]+)?(?:e-[0-9]+?)?\" literal\n\
@@ -494,6 +494,18 @@ lexydef go 0 {\n\
 \n\
 lexyassoc go {\\.go$}\n\
 \n\
+lexydef filesearch 0 {\n\
+		{([^:[:space:]]+):(\\d+)(?::(\\d+))?} file,1,2,3\n\
+		{\\<File \"(.+?)\", line (\\d+)} file,1,2\n\
+		{\\<at (\\S+) line (\\d+)} file,1,2\n\
+		{\\<in (\\S+) on line (\\d+)} file,1,2\n\
+		{([^:[:space:]]+):\\[(\\d+),(\\d+)\\]} file,1,2,3\n\
+		{\\<([^:[:space:]]+\\.[^:[:space:]]+)\\>} file\n\
+		\".\" nothing\n\
+	}\n\
+\n\
+lexyassoc filesearch {^\\+bg}\n\
+lexyassoc filesearch {/$}\n\
 \n\
 proc clear {} {\n\
 	m 1:1 $:$\n\
@@ -538,6 +550,7 @@ proc antique_theme {} {\n\
 	setcfg -global lexy_string [rgbcolor \"saddle brown\"]\n\
 	setcfg -global lexy_id [rgbcolor black]\n\
 	setcfg -global lexy_literal [rgbcolor \"saddle brown\"]\n\
+	setcfg -global lexy_file [rgbcolor \"midnight blue\"]\n\
 }\n\
 \n\
 proc zenburn_theme {} {\n\
@@ -598,13 +611,37 @@ proc solarized_theme {} {\n\
 \n\
 namespace eval teddy_intl {\n\
 	namespace export iopen_search\n\
-\n\
 	proc iopen_search {z} {\n\
 		set k [s -literal -get $z]\n\
 		#puts \"Searching <$z> -> <$k>\"\n\
 		if {[lindex $k 0] ne \"nil\"} {\n\
 			m nil [lindex $k 0]\n\
 		}\n\
+	}\n\
+\n\
+	namespace export link_open\n\
+	proc link_open {islink text} {\n\
+		if {$islink} {\n\
+			set r [lexy-token 0 $text]\n\
+		} else {\n\
+			set r [list nothing $text \"\" \"\"]\n\
+		}\n\
+\n\
+		set b [buffer open [lindex $r 1]]\n\
+\n\
+		if {$b eq \"\"} { return }\n\
+\n\
+		set line [lindex $r 2]\n\
+		set col [lindex $r 3]\n\
+\n\
+		if {$line eq \"\"} { set line 1 }\n\
+		if {$col eq \"\"} { set col 1 }\n\
+\n\
+		buffer eval $b {\n\
+			m $line:$col\n\
+		}\n\
+\n\
+		buffer focus $b\n\
 	}\n\
 }\n\
 \n\

@@ -30,6 +30,7 @@ cfg_lexy_id 0
 cfg_lexy_comment 0
 cfg_lexy_string 0
 cfg_lexy_literal 0
+cfg_lexy_file 0
 
 cfg_tags_discard_lineno 1
 

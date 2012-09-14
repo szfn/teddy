@@ -66,6 +66,7 @@ typedef struct _buffer_t {
 	double ex_height;
 	double line_height;
 	double ascent, descent;
+	double underline_position, underline_thickness;
 
 	/* Buffer's text and glyphs */
 	real_line_t *real_line;
@@ -155,6 +156,7 @@ void buffer_typeset_maybe(buffer_t *buffer, double width, bool single_line, bool
 // functions to get screen coordinates of things (yes, I have no idea anymore what the hell they do or are used for)
 void buffer_cursor_position(buffer_t *buffer, double *x, double *y);
 void line_get_glyph_coordinates(buffer_t *buffer, lpoint_t *point, double *x, double *y);
+void buffer_point_from_position(buffer_t *buffer, double x, double y, lpoint_t *p);
 void buffer_move_cursor_to_position(buffer_t *buffer, double x, double y);
 
 // removes trailing spaces from line unless line is exclusively made out of spaces

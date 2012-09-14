@@ -25,6 +25,8 @@ double fontset_x_advance(teddy_fontset_t *fontset, int fontidx, FT_UInt glyph);
 cairo_scaled_font_t *fontset_get_cairofont(teddy_fontset_t *fontset, int fontidx);
 cairo_scaled_font_t *fontset_get_cairofont_by_name(const char *name, int fontidx);
 
+void fontset_underline_info(teddy_fontset_t *fontset, int fontidx, double *underline_thickness, double *underline_position);
+
 void foundry_free(void);
 
 #endif

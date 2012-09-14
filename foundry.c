@@ -224,6 +224,11 @@ double fontset_get_kerning(teddy_fontset_t *fontset, int fontidx, FT_UInt previo
 	}
 }
 
+void fontset_underline_info(teddy_fontset_t *fontset, int fontidx, double *underline_thickness, double *underline_position) {
+	*underline_thickness = fontset->fonts[fontidx].scaled_face->underline_thickness >> 6;
+	*underline_position = fontset->fonts[fontidx].scaled_face->underline_position >> 6;
+}
+
 double fontset_x_advance(teddy_fontset_t *fontset, int fontidx, FT_UInt glyph) {
 	cairo_text_extents_t extents;
 	cairo_glyph_t g;
