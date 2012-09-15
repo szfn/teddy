@@ -645,9 +645,7 @@ namespace eval teddy_intl {\n\
 		if {$line eq \"\"} { set line 1 }\n\
 		if {$col eq \"\"} { set col 1 }\n\
 \n\
-		buffer eval $b {\n\
-			m $line:$col\n\
-		}\n\
+		buffer eval $b { m $line:$col }\n\
 \n\
 		buffer focus $b\n\
 	}\n\

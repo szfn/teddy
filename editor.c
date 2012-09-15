@@ -1491,6 +1491,7 @@ editor_t *new_editor(buffer_t *buffer, bool single_line) {
 }
 
 void editor_grab_focus(editor_t *editor, bool warp) {
+	//printf("Grabbing focus %p %d %d\n", editor, warp, config_intval(&(editor->buffer->config), CFG_WARP_MOUSE));
 	gtk_widget_grab_focus(editor->drar);
 
 	if (config_intval(&(editor->buffer->config), CFG_WARP_MOUSE) && warp) {
@@ -1498,7 +1499,8 @@ void editor_grab_focus(editor_t *editor, bool warp) {
 		GdkScreen *screen = gdk_display_get_default_screen(display);
 		GtkAllocation allocation;
 		gtk_widget_get_allocation(editor->drar, &allocation);
-		if ((allocation.x <= 0) || (allocation.y <= 0)) {
+		//printf("allocation: %d %d\n", allocation.x, allocation.y);
+		if ((allocation.x < 0) || (allocation.y < 0)) {
 			editor->warp_mouse_after_next_expose = TRUE;
 		} else {
 			gint wpos_x, wpos_y;

@@ -642,9 +642,7 @@ namespace eval teddy_intl {
 		if {$line eq ""} { set line 1 }
 		if {$col eq ""} { set col 1 }
 
-		buffer eval $b {
-			m $line:$col
-		}
+		buffer eval $b { m $line:$col }
 
 		buffer focus $b
 	}
