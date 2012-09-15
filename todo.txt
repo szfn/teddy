@@ -1,6 +1,3 @@
-- go-able things become links (+ go popup menu item)
-  - menu key should pop up menu
-  - do the same thing with man pages
 - BUG: mouse warp not working
 
 - popup menu item to search in tags

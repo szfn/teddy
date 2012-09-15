@@ -378,6 +378,27 @@ static void editor_complete(editor_t *editor) {
 	}
 }
 
+static void menu_position_function(GtkMenu *menu, gint *x, gint *y, gboolean *push_in, editor_t *editor) {
+	*push_in = TRUE;
+
+	double dx, dy, alty;
+	editor_absolute_cursor_position(editor, &dx, &dy, &alty);
+	*x = (int)dx;
+	*y = (int)dy;
+}
+
+static void select_file(buffer_t *buffer, lpoint_t *p, lpoint_t *start, lpoint_t *end) {
+	start->line = p->line; end->line = p->line;
+	for (start->glyph = p->glyph; start->glyph > 0; --(start->glyph))
+		if (p->line->glyph_info[start->glyph].color != CFG_LEXY_FILE - CFG_LEXY_NOTHING) {
+			++(start->glyph);
+			break;
+		}
+
+	for (end->glyph = p->glyph; end->glyph < p->line->cap; ++(end->glyph))
+		if (p->line->glyph_info[end->glyph].color != CFG_LEXY_FILE - CFG_LEXY_NOTHING) break;
+}
+
 static gboolean key_press_callback(GtkWidget *widget, GdkEventKey *event, editor_t *editor) {
 	char pressed[40] = "";
 	const char *command;
@@ -483,6 +504,15 @@ static gboolean key_press_callback(GtkWidget *widget, GdkEventKey *event, editor
 				editor_replace_selection(editor, "\t");
 			}
 
+			return TRUE;
+		}
+
+		case GDK_KEY_Menu: {
+			lpoint_t start, end;
+			buffer_get_selection(editor->buffer, &start, &end);
+
+			if (((start.line != NULL) && (end.line != NULL)) || ((editor->buffer->cursor.glyph < editor->buffer->cursor.line->cap) && (editor->buffer->cursor.line->glyph_info[editor->buffer->cursor.glyph].color == (CFG_LEXY_FILE - CFG_LEXY_NOTHING))))
+				gtk_menu_popup(GTK_MENU(editor->context_menu), NULL, NULL, (GtkMenuPositionFunc)menu_position_function, editor, 0, event->time);
 			return TRUE;
 		}
 
@@ -626,15 +656,7 @@ static gboolean button_press_callback(GtkWidget *widget, GdkEventButton *event, 
 		lpoint_t p;
 		if (on_file_link(editor, event->x, event->y, &p)) {
 			lpoint_t start, end;
-			start.line = p.line; end.line = p.line;
-			for (start.glyph = p.glyph; start.glyph > 0; --(start.glyph))
-				if (p.line->glyph_info[start.glyph].color != CFG_LEXY_FILE - CFG_LEXY_NOTHING) {
-					++(start.glyph);
-					break;
-				}
-
-			for (end.glyph = p.glyph; end.glyph < p.line->cap; ++(end.glyph))
-				if (p.line->glyph_info[end.glyph].color != CFG_LEXY_FILE - CFG_LEXY_NOTHING) break;
+			select_file(editor->buffer, &p, &start, &end);
 
 			char *text = buffer_lines_to_text(editor->buffer, &start, &end);
 			const char *cmd = lexy_get_link_fn(editor->buffer);
@@ -1289,15 +1311,27 @@ static void eval_menu_item_callback(GtkMenuItem *menuitem, editor_t *editor) {
 	free(selection);
 }
 
-static void search_menu_item_callback(GtkMenuItem *menuitem, editor_t *editor) {
+static char *get_selection_or_file_link(editor_t *editor, bool *islink) {
+	buffer_t *buffer = editor->buffer;
 	lpoint_t start, end;
 	buffer_get_selection(editor->buffer, &start, &end);
 
-	if (start.line == NULL) return;
-	if (end.line == NULL) return;
+	*islink = false;
 
-	char *selection = buffer_lines_to_text(editor->buffer, &start, &end);
+	if ((start.line != NULL) && (end.line != NULL)) return buffer_lines_to_text(editor->buffer, &start, &end);
 
+	if ((buffer->cursor.glyph < buffer->cursor.line->cap) && (buffer->cursor.line->glyph_info[buffer->cursor.glyph].color == (CFG_LEXY_FILE - CFG_LEXY_NOTHING))) {
+		select_file(editor->buffer, &(editor->buffer->cursor), &start, &end);
+		*islink = true;
+		return buffer_lines_to_text(editor->buffer, &start, &end);
+	}
+
+	return NULL;
+}
+
+static void search_menu_item_callback(GtkMenuItem *menuitem, editor_t *editor) {
+	bool islink;
+	char *selection = get_selection_or_file_link(editor, &islink);
 	if (selection == NULL) return;
 
 	editor_start_search(editor, SM_LITERAL, selection);
@@ -1306,18 +1340,13 @@ static void search_menu_item_callback(GtkMenuItem *menuitem, editor_t *editor) {
 }
 
 static void open_link_menu_item_callback(GtkMenuItem *menuitem, editor_t *editor) {
-	lpoint_t start, end;
-	buffer_get_selection(editor->buffer, &start, &end);
-
-	if (start.line == NULL) return;
-	if (end.line == NULL) return;
-
-	char *selection = buffer_lines_to_text(editor->buffer, &start, &end);
-
+	bool islink;
+	char *selection = get_selection_or_file_link(editor, &islink);
+	//printf("Returned selection %s\n", selection);
 	if (selection == NULL) return;
 
 	const char *cmd = lexy_get_link_fn(editor->buffer);
-	const char *argv[] = { cmd, "0", selection };
+	const char *argv[] = { cmd, islink ? "1": "0", selection };
 
 	interp_eval_command(editor, NULL, 3, argv);
 

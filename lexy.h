@@ -17,9 +17,9 @@ int lexy_append_command(ClientData client_data, Tcl_Interp *interp, int argc, co
 int lexy_assoc_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]);
 
 int lexy_dump_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]);
+int lexy_token_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]);
 
 const char *lexy_get_link_fn(buffer_t *buffer);
 
-int lexy_token_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]);
 
 #endif

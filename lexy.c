@@ -77,6 +77,7 @@ struct lexy_tokenizer {
 	struct lexy_row rows[LEXY_ROW_NUMBER];
 	struct lexy_status_pointer status_pointers[LEXY_STATUS_NUMBER];
 	const char *link_fn;
+	bool verify_file;
 };
 
 struct lexy_association {
@@ -94,6 +95,7 @@ void lexy_init(void) {
 		lexy_tokenizers[i].rows[0].jump = false;
 		lexy_tokenizers[i].status_pointers[0].status_name = NULL;
 		lexy_tokenizers[i].link_fn = "teddy_intl::link_open";
+		lexy_tokenizers[i].verify_file = true;
 	}
 
 	for (int i = 0; i < LEXY_ASSOCIATION_NUMBER; ++i) {
@@ -105,13 +107,23 @@ void lexy_init(void) {
 	}
 }
 
+static struct lexy_tokenizer *find_tokenizer(const char *tokenizer_name) {
+	for (int i = 0; i < LEXY_TOKENIZER_NUMBER; ++i) {
+		if (lexy_tokenizers[i].tokenizer_name == NULL) return NULL;
+		if (strcmp(lexy_tokenizers[i].tokenizer_name, tokenizer_name) == 0) return lexy_tokenizers+i;
+	}
+	return NULL;
+}
+
 int lexy_create_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
-	if ((argc < 2) || (argc > 3)) {
-		Tcl_AddErrorInfo(interp, "Wrong number of arguments to 'lexydef-create', usage: 'lexydef-create <lexy name> [<link open function>]'");
+	if ((argc < 2) || (argc > 4)) {
+		Tcl_AddErrorInfo(interp, "Wrong number of arguments to 'lexydef-create', usage: 'lexydef-create <lexy name> [<link open function> <verify file existence>]'");
 		return TCL_ERROR;
 	}
 
 	const char *name = argv[1];
+
+	if (find_tokenizer(name) != NULL) return TCL_OK;
 
 	int i;
 	for (i = 0; i < LEXY_TOKENIZER_NUMBER; ++i) {
@@ -128,21 +140,15 @@ int lexy_create_command(ClientData client_data, Tcl_Interp *interp, int argc, co
 		lexy_tokenizers[i].tokenizer_name = strdup(name);
 		alloc_assert(lexy_tokenizers[i].tokenizer_name);
 
-		if (argc > 2) {
+		if (argc == 4) {
 			char *t = strdup(argv[2]);
 			alloc_assert(t);
 			lexy_tokenizers[i].link_fn = t;
+
+			lexy_tokenizers[i].verify_file = atoi(argv[3]);
 		}
 		return TCL_OK;
 	}
-}
-
-static struct lexy_tokenizer *find_tokenizer(const char *tokenizer_name) {
-	for (int i = 0; i < LEXY_TOKENIZER_NUMBER; ++i) {
-		if (lexy_tokenizers[i].tokenizer_name == NULL) return NULL;
-		if (strcmp(lexy_tokenizers[i].tokenizer_name, tokenizer_name) == 0) return lexy_tokenizers+i;
-	}
-	return NULL;
 }
 
 static int find_state(struct lexy_tokenizer *tokenizer, const char *status_name) {
@@ -468,8 +474,9 @@ static struct lexy_tokenizer *tokenizer_from_buffer(buffer_t *buffer) {
 	return NULL;
 }
 
-static bool check_file_match(struct lexy_row *row, buffer_t *buffer, real_line_t *line, int glyph, int nmatch, regmatch_t *pmatch) {
-	//printf("file_group %d nmatch %d\n", row->file_group, nmatch);
+static bool check_file_match(struct lexy_tokenizer *tokenizer, struct lexy_row *row, buffer_t *buffer, real_line_t *line, int glyph, int nmatch, regmatch_t *pmatch) {
+	//printf("file_group %d nmatch %d (%d)\n", row->file_group, nmatch, tokenizer->verify_file);
+	if (!tokenizer->verify_file) return true;
 	if (row->file_group >= nmatch) return false;
 
 	lpoint_t start, end;
@@ -595,7 +602,7 @@ static void lexy_update_one_token(buffer_t *buffer, real_line_t *line, int *glyp
 			uint8_t token_type = row->token_type;
 
 			if (row->token_type == CFG_LEXY_FILE - CFG_LEXY_NOTHING) {
-				if (!check_file_match(row, buffer, line, *glyph, NMATCH, pmatch)) {
+				if (!check_file_match(tokenizer, row, buffer, line, *glyph, NMATCH, pmatch)) {
 					token_type = CFG_LEXY_NOTHING - CFG_LEXY_NOTHING;
 				}
 			}
@@ -677,3 +684,4 @@ const char *lexy_get_link_fn(buffer_t *buffer) {
 	if (tokenizer == NULL) return "";
 	return tokenizer->link_fn;
 }
+

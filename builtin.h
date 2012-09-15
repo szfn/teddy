@@ -507,6 +507,14 @@ lexydef filesearch 0 {\n\
 lexyassoc filesearch {^\\+bg}\n\
 lexyassoc filesearch {/$}\n\
 \n\
+lexydef-create mansearch teddy_intl::man_link_open 0\n\
+lexydef mansearch 0 {\n\
+		{\\<(\\S+)\\((\\d+)\\)} file,1,2\n\
+		\".\" nothing\n\
+	}\n\
+\n\
+lexyassoc mansearch {^\\+man}\n\
+\n\
 proc clear {} {\n\
 	m 1:1 $:$\n\
 	c \"\"\n\
@@ -642,6 +650,16 @@ namespace eval teddy_intl {\n\
 		}\n\
 \n\
 		buffer focus $b\n\
+	}\n\
+\n\
+	namespace export man_link_open\n\
+	proc man_link_open {islink text} {\n\
+		if {!$islink} { return }\n\
+\n\
+		set r [lexy-token 0 $text]\n\
+		if {[lindex $r 2] eq \"\"} { return }\n\
+\n\
+		man [lindex $r 2] [lindex $r 1]\n\
 	}\n\
 }\n\
 \n\
