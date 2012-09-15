@@ -1043,7 +1043,7 @@ static gboolean expose_event_callback(GtkWidget *widget, GdkEventExpose *event, 
 	}
 
 	if (editor->buffer->stale) {
-		gtk_widget_show_all(editor->stale_box);
+		gtk_widget_show(editor->stale_box);
 	} else {
 		gtk_widget_hide(editor->stale_box);
 	}
@@ -1430,6 +1430,10 @@ editor_t *new_editor(buffer_t *buffer, bool single_line) {
 		gtk_box_pack_end(GTK_BOX(r->search_box), next_search_button, FALSE, FALSE, 2);
 		gtk_box_pack_end(GTK_BOX(r->search_box), r->execute_all_search_button, FALSE, FALSE, 2);
 		gtk_box_pack_end(GTK_BOX(r->search_box), r->execute_search_button, FALSE, FALSE, 2);
+
+		gtk_widget_show_all(r->search_box);
+		gtk_widget_set_no_show_all(r->search_box, TRUE);
+		gtk_widget_hide(r->search_box);
 	}
 
 	{ // stale box
@@ -1444,6 +1448,10 @@ editor_t *new_editor(buffer_t *buffer, bool single_line) {
 
 		g_signal_connect(G_OBJECT(keep_stale_button), "clicked", G_CALLBACK(keep_stale_callback), r);
 		g_signal_connect(G_OBJECT(reload_stale_button), "clicked", G_CALLBACK(reload_stale_callback), r);
+
+		gtk_widget_show_all(r->stale_box);
+		gtk_widget_set_no_show_all(r->stale_box, TRUE);
+		gtk_widget_hide(r->stale_box);
 	}
 
 	gtk_table_attach(GTK_TABLE(r), r->stale_box, 0, 2, 0, 1, GTK_EXPAND|GTK_FILL, 0, 0, 0);
@@ -1494,9 +1502,9 @@ void editor_grab_focus(editor_t *editor, bool warp) {
 			editor->warp_mouse_after_next_expose = TRUE;
 		} else {
 			gint wpos_x, wpos_y;
-			gdk_window_get_position(gtk_widget_get_window(gtk_widget_get_toplevel(GTK_WIDGET(editor))), &wpos_x, &wpos_y);
+			gdk_window_get_position(gtk_widget_get_window(GTK_WIDGET(columnset)), &wpos_x, &wpos_y);
 
-			//printf("allocation: %d,%d\n", allocation.x, allocation.y);
+			//printf("Moving mouse %d+%d %d+%d %d\n", allocation.x, wpos_x, allocation.y, wpos_y, gtk_widget_get_mapped(GTK_WIDGET(editor)));
 			gdk_display_warp_pointer(display, screen, allocation.x+wpos_x+5, allocation.y+wpos_y+5);
 		}
 	}
@@ -1519,7 +1527,7 @@ void editor_start_search(editor_t *editor, enum search_mode_t search_mode, const
 
 	gtk_entry_set_text(GTK_ENTRY(editor->search_entry), (initial_search_term != NULL) ? initial_search_term : "");
 
-	gtk_widget_show_all(editor->search_box);
+	gtk_widget_show(editor->search_box);
 
 	if (editor->research.mode == SM_LITERAL) {
 		gtk_widget_hide(editor->execute_search_button);

@@ -90,6 +90,8 @@ void gtk_columns_size_allocate(GtkWidget *widget, GtkAllocation *allocation) {
 
 	widget->allocation = *allocation;
 
+	//printf("Column fractions/width requisition: ");
+
 	double total_width_request = 0.0;
 	gint minimum_residual_width = 0;
 	GList *children = box->children;
@@ -102,11 +104,18 @@ void gtk_columns_size_allocate(GtkWidget *widget, GtkAllocation *allocation) {
 
 		GtkRequisition child_requisition;
 		gtk_widget_size_request(col, &child_requisition);
+
+		//printf("%g/%d ", column_fraction(GTK_COLUMN(col)), child_requisition.width);
+
 		minimum_residual_width += child_requisition.width;
 	}
 
+	//printf("\n");
+
 	gint x = allocation->x + GTK_CONTAINER(box)->border_width;
 	gint remaining_width = allocation->width;
+
+	//printf("Columns size allocate: ");
 
 	children = box->children;
 	while (children) {
@@ -144,8 +153,12 @@ void gtk_columns_size_allocate(GtkWidget *widget, GtkAllocation *allocation) {
 
 		x += child_allocation.width;
 
+		//printf("%d ", child_allocation.width);
+
 		gtk_widget_size_allocate(col, &child_allocation);
 	}
+
+	//printf("\n");
 }
 
 void columns_add_after(columns_t *columns, column_t *before_col, column_t *col) {
@@ -352,7 +365,6 @@ tframe_t *heuristic_new_frame(columns_t *columns, tframe_t *spawning_frame, buff
 
 	//printf("heuristic_new_frame\n");
 	GList *list_cols = gtk_container_get_children(GTK_CONTAINER(columns));
-
 
 	column_t *spawning_col = NULL;
 	if (spawning_frame != NULL) {

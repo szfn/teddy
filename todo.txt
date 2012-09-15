@@ -1,4 +1,3 @@
-- BUG: mouse warp on iopen is oddly displaced
 - BUG: mouse warp when clicking on links doesn't work (but it does for manpages)
 - BUG: opening and moving to a line doesn't center the frame on the cursor still
 
