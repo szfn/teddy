@@ -1,5 +1,4 @@
 - BUG: mouse warp when clicking on links doesn't work (but it does for manpages)
-- BUG: opening and moving to a line doesn't center the frame on the cursor still
 
 - popup menu item to search in tags
 - automatically pop-up autocompletion and update autocompletions when leaving dirty rows (enter should not autocomplete, at least on the command line), add tags to autocompletions, add closed buffer autocompletions to a permanent completions repository

@@ -1361,7 +1361,7 @@ editor_t *new_editor(buffer_t *buffer, bool single_line) {
 	r->cursor_visible = FALSE;
 	r->mouse_marking = 0;
 	r->ignore_next_entry_keyrelease = FALSE;
-	r->center_on_cursor_after_next_expose = FALSE;
+	r->center_on_cursor_after_next_expose = TRUE;
 	r->warp_mouse_after_next_expose = FALSE;
 	r->completer = &the_generic_word_completer;
 
