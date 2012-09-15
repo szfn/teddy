@@ -954,7 +954,7 @@ static void draw_line(editor_t *editor, GtkAllocation *allocation, cairo_t *cr, 
 		bool thisfile = line->glyph_info[i].color == (CFG_LEXY_FILE - CFG_LEXY_NOTHING);
 
 		if (thisfile) {
-			if (onfile && (filey - line->glyph_info[i].y < 0.001)) {
+			if (onfile && (abs(filey - line->glyph_info[i].y) < 0.001)) {
 				// we are still on the same line and still on a file, extend underline
 				filex_end = line->glyph_info[i].x + line->glyph_info[i].x_advance;
 			} else {
