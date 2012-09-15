@@ -492,12 +492,12 @@ lexydef go 0 {
 lexyassoc go {\.go$}
 
 lexydef filesearch 0 {
-		{([^:[:space:]]+):(\d+)(?::(\d+))?} file,1,2,3
+		{([^:[:space:]()]+):(\d+)(?::(\d+))?} file,1,2,3
 		{\<File "(.+?)", line (\d+)} file,1,2
 		{\<at (\S+) line (\d+)} file,1,2
 		{\<in (\S+) on line (\d+)} file,1,2
-		{([^:[:space:]]+):\[(\d+),(\d+)\]} file,1,2,3
-		{\<([^:[:space:]]+\.[^:[:space:]]+)\>} file
+		{([^:[:space:]()]+):\[(\d+),(\d+)\]} file,1,2,3
+		{\<([^:[:space:]()]+\.[^:[:space:]()]+)\>} file
 		"." nothing
 	}
 

@@ -53,10 +53,6 @@ proc buffer_setup_hook {name} {\n\
 	} elseif { [string range $name 0 3] == \"+man\" } {\n\
 		setcfg autowrap 0\n\
 		setcfg main_font $monospaced_font\n\
-	} elseif { [string range $name 0 6] == \"+dirrec\"} {\n\
-		setcfg autowrap 0\n\
-		setcfg main_font $monospaced_font\n\
-		setcfg tab_width 8\n\
 	} else {\n\
 		return { }\n\
 	}\n\

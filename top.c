@@ -31,8 +31,10 @@ static void execute_command(editor_t *editor) {
 
 	interp_eval(top_context_editor(), NULL, command, false);
 
-	buffer_extend_selection_by_select_type(top_context_editor()->buffer);
-	editor_complete_move(top_context_editor(), true);
+	if (top_context_editor() != NULL) {
+		buffer_extend_selection_by_select_type(top_context_editor()->buffer);
+		editor_complete_move(top_context_editor(), true);
+	}
 
 	history_add(&command_history, time(NULL), working_directory, command, true);
 

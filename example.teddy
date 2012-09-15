@@ -50,10 +50,6 @@ proc buffer_setup_hook {name} {
 	} elseif { [string range $name 0 3] == "+man" } {
 		setcfg autowrap 0
 		setcfg main_font $monospaced_font
-	} elseif { [string range $name 0 6] == "+dirrec"} {
-		setcfg autowrap 0
-		setcfg main_font $monospaced_font
-		setcfg tab_width 8
 	} else {
 		return { }
 	}
