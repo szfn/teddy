@@ -174,7 +174,7 @@ void column_add_after(column_t *column, tframe_t *before_tf, tframe_t *tf) {
 
 	gtk_box_reorder_child(GTK_BOX(column), GTK_WIDGET(tf), before_index+1);
 
-	gtk_widget_show_all(GTK_WIDGET(column));
+	gtk_widget_show_all(GTK_WIDGET(tf));
 	gtk_widget_queue_draw(GTK_WIDGET(column));
 }
 

@@ -170,7 +170,7 @@ void columns_add_after(columns_t *columns, column_t *before_col, column_t *col) 
 
 	gtk_box_reorder_child(GTK_BOX(columns), GTK_WIDGET(col), before_index+1);
 
-	gtk_widget_show_all(GTK_WIDGET(columns));
+	gtk_widget_show_all(GTK_WIDGET(col));
 	gtk_widget_queue_draw(GTK_WIDGET(columns));
 }
 
