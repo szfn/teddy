@@ -1016,6 +1016,8 @@ static void draw_cursorline(cairo_t *cr, editor_t *editor) {
 	set_color_cfg(cr, config_intval(&(editor->buffer->config), CFG_EDITOR_BG_CURSORLINE));
 	cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
 
+	//printf("Cursor line %g,%g %d - %g | %g\n", cursor_x, cursor_y, allocation.width, editor->buffer->ascent, editor->buffer->descent);
+
 	cairo_rectangle(cr, cursor_x - allocation.width, cursor_y-editor->buffer->ascent, 2*allocation.width, editor->buffer->ascent+editor->buffer->descent);
 	cairo_fill(cr);
 }
@@ -1054,9 +1056,9 @@ static gboolean expose_event_callback(GtkWidget *widget, GdkEventExpose *event, 
 
 	cairo_translate(cr, -gtk_adjustment_get_value(GTK_ADJUSTMENT(editor->hadjustment)), -gtk_adjustment_get_value(GTK_ADJUSTMENT(editor->adjustment)));
 
-	draw_cursorline(cr, editor);
-
 	buffer_typeset_maybe(editor->buffer, allocation.width, editor->single_line, false);
+
+	draw_cursorline(cr, editor);
 
 	editor->buffer->rendered_height = 0.0;
 

@@ -1,7 +1,10 @@
-- BUG: current line highlight incorrect after first expose
+- BUG: changing font after intialization results in trash
 
+- add tags to autocompletions
+- add closed buffer autocompletions to a permanent completions repository
+- automatically pop-up autocompletion and update autocompletions when leaving dirty rows (enter should not autocomplete, at least on the command line)
+- update autocompletions more frequently
 - popup menu item to search in tags
-- automatically pop-up autocompletion and update autocompletions when leaving dirty rows (enter should not autocomplete, at least on the command line), add tags to autocompletions, add closed buffer autocompletions to a permanent completions repository
 
 - make lexy a flat table, lexyassoc just gives the starting state but we can move to other states (implement mixed html / javascript mode)
 - multiprocess highlighting

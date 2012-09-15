@@ -28,6 +28,10 @@ void quit_search_mode(editor_t *editor) {
 		history_add(&search_history, time(NULL), NULL, gtk_entry_get_text(GTK_ENTRY(editor->search_entry)), true);
 	editor->research.mode = SM_NONE;
 	editor->ignore_next_entry_keyrelease = TRUE;
+
+	editor->buffer->mark.line = NULL;
+	editor->buffer->mark.glyph = 0;
+	
 	gtk_widget_grab_focus(editor->drar);
 	gtk_widget_queue_draw(GTK_WIDGET(editor));
 }
