@@ -101,7 +101,7 @@ static int ask_for_closing_and_maybe_save(buffer_t *buffer, GtkWidget *window) {
 	return 1;
 }
 
-int buffers_close(buffer_t *buffer, GtkWidget *window) {
+int buffers_close(buffer_t *buffer, GtkWidget *window, bool save_critbit) {
 	if (buffers[0] == buffer) return 1;
 
 	if (buffer->modified) {
@@ -135,7 +135,7 @@ int buffers_close(buffer_t *buffer, GtkWidget *window) {
 		inotify_rm_watch(inotify_fd, buffer->inotify_wd);
 	}
 
-	buffer_free(buffer);
+	buffer_free(buffer, save_critbit);
 
 	return 1;
 }
@@ -159,7 +159,7 @@ static void maybe_stale_buffer(int wd) {
 
 	//printf("<%s> %ld %ld %ld\n", buffer->path, buf.st_mtime, buffer->mtime, buf.st_size);
 
-	if (buf.st_mtime < buffer->mtime) return;
+	if (buf.st_mtime < buffer->mtime+60) return;
 
 	if (!(buffer->modified) && config_intval(&(buffer->config), CFG_AUTORELOAD) && (buf.st_size > 0)) {
 		buffers_refresh(buffer);
@@ -278,7 +278,7 @@ void buffers_add(buffer_t *b) {
 void buffers_free(void) {
 	for (int i = 0; i < buffers_allocated; ++i) {
 		if (buffers[i] != NULL) {
-			buffer_free(buffers[i]);
+			buffer_free(buffers[i], false);
 			buffers[i] = NULL;
 		}
 	}
@@ -294,7 +294,7 @@ void buffers_free(void) {
 int buffers_close_all(GtkWidget *window) {
 	for (int i = 0; i < buffers_allocated; ++i) {
 		if (buffers[i] == NULL) continue;
-		if (!buffers_close(buffers[i], window)) return 0;
+		if (!buffers_close(buffers[i], window, false)) return 0;
 	}
 	for (int i = 0; i < buffers_allocated; ++i) {
 		if (buffers[i] == NULL) continue;
@@ -640,7 +640,7 @@ int teddy_buffer_command(ClientData client_data, Tcl_Interp *interp, int argc, c
 
 		if (buffer != NULL) {
 			interp_eval(editor, buffer, argv[3], false);
-			if (strcmp(argv[2], "temp") == 0) buffer_free(buffer);
+			if (strcmp(argv[2], "temp") == 0) buffer_free(buffer, false);
 		} else {
 			Tcl_AddErrorInfo(interp, "Wrong buffer id");
 			return TCL_ERROR;
@@ -669,6 +669,9 @@ void word_completer_full_update(void) {
 
 		critbit0_allprefixed(&(buffers[i]->cbt), "", refill_word_completer, NULL);
 	}
+
+	critbit0_allprefixed(&closed_buffers_critbit, "", refill_word_completer, NULL);
+	critbit0_allprefixed(&tags_file_critbit, "", refill_word_completer, NULL);
 }
 
 void buffers_refresh(buffer_t *buffer) {
@@ -690,14 +693,14 @@ void buffers_refresh(buffer_t *buffer) {
 		glyph = buffer->cursor.glyph+1;
 	}
 
-	int r = buffers_close(buffer, gtk_widget_get_toplevel(GTK_WIDGET(columnset)));
+	int r = buffers_close(buffer, gtk_widget_get_toplevel(GTK_WIDGET(columnset)), false);
 	if (r == 0) return;
 
 	enum go_file_failure_reason gffr;
 	buffer_t *new_buffer = go_file(path, false, &gffr);
 	if (new_buffer != NULL) {
-		buffer_move_point_line(new_buffer, &(buffer->cursor), MT_ABS, lineno);
-		buffer_move_point_glyph(new_buffer, &(buffer->cursor), MT_ABS, glyph);
+		buffer_move_point_line(new_buffer, &(new_buffer->cursor), MT_ABS, lineno);
+		buffer_move_point_glyph(new_buffer, &(new_buffer->cursor), MT_ABS, glyph);
 
 		editor_switch_buffer(editor, new_buffer);
 	}

@@ -391,10 +391,10 @@ int teddy_research_command(ClientData client_data, Tcl_Interp *interp, int argc,
 			buffer_replace_selection(mainbuf, replaced_text);
 			free(replaced_text);
 
-			buffer_free(tempbuf);
+			buffer_free(tempbuf, false);
 
 			if (interp_context_editor() != NULL) set_label_text(interp_context_editor());
-			
+
 			return TCL_OK;
 		}
 

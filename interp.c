@@ -799,7 +799,7 @@ static int teddy_kill_command(ClientData client_data, Tcl_Interp *interp, int ar
 		if (interp_context_buffer()->job != NULL) {
 			kill(interp_context_buffer()->job->child_pid, SIGTERM);
 		} else {
-			buffers_close(interp_context_buffer(), gtk_widget_get_toplevel(GTK_WIDGET(interp_context_editor())));
+			buffers_close(interp_context_buffer(), gtk_widget_get_toplevel(GTK_WIDGET(interp_context_editor())), true);
 		}
 
 		return TCL_OK;
@@ -821,7 +821,7 @@ static int teddy_kill_command(ClientData client_data, Tcl_Interp *interp, int ar
 				Tcl_AddErrorInfo(interp, "No active buffer");
 				return TCL_ERROR;
 			}
-			buffers_close(interp_context_buffer(), gtk_widget_get_toplevel(GTK_WIDGET(interp_context_editor())));
+			buffers_close(interp_context_buffer(), gtk_widget_get_toplevel(GTK_WIDGET(interp_context_editor())), true);
 		} else if (argv[1][0] == '-') {
 			// kill current process with specific signal (check that context_editor is defined and associated buffer has a job)
 			if (interp_context_editor() == NULL) {
@@ -856,7 +856,7 @@ static int teddy_kill_command(ClientData client_data, Tcl_Interp *interp, int ar
 		if (strcmp(argv[1], "buffer") == 0) {
 			buffer_t *buffer = buffer_id_to_buffer(argv[2]);
 			if (buffer != NULL) {
-				buffers_close(buffer, gtk_widget_get_toplevel(GTK_WIDGET(interp_context_editor())));
+				buffers_close(buffer, gtk_widget_get_toplevel(GTK_WIDGET(interp_context_editor())), true);
 			} else {
 				Tcl_AddErrorInfo(interp, "Couldn't find specified buffer");
 				return TCL_ERROR;

@@ -14,7 +14,7 @@ void buffers_free(void);
 buffer_t *null_buffer(void);
 
 // returns non-zero if close was successful, zero if the user cancelled the action
-int buffers_close(buffer_t *buffer, GtkWidget *window);
+int buffers_close(buffer_t *buffer, GtkWidget *window, bool save_critbit);
 int buffers_close_all(GtkWidget *window);
 
 buffer_t *buffers_find_buffer_from_path(const char *path);

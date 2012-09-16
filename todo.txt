@@ -1,10 +1,11 @@
-- add tags to autocompletions
-- add closed buffer autocompletions to a permanent completions repository
 - automatically pop-up autocompletion and update autocompletions when leaving dirty rows (enter should not autocomplete, at least on the command line)
 - update autocompletions more frequently
 - popup menu item to search in tags
 
+- BUG: occasional memory corruption bug (run under valgrind)
+- BUG: open three columns, drag one frame filling a column to an empty column -> crash
 - BUG: changing font after intialization results in trash (stuff in glyph_info isn't reloaded)
+- BUG: links should be resolved relative to directory for directory view
 
 - make lexy a flat table, lexyassoc just gives the starting state but we can move to other states (implement mixed html / javascript mode)
 - multiprocess highlighting

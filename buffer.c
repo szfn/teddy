@@ -938,23 +938,26 @@ buffer_t *buffer_create(void) {
 	return buffer;
 }
 
-void buffer_free(buffer_t *buffer) {
-	{
-		real_line_t *cursor;
+static int to_closed_buffers_critbit(const char *entry, void *p) {
+	critbit0_insert(&closed_buffers_critbit, entry);
+	return 1;
+}
 
-		cursor = buffer->real_line;
-
-		while (cursor != NULL) {
-			real_line_t *next = cursor->next;
-			free(cursor->glyph_info);
-			free(cursor);
-			cursor = next;
-		}
+void buffer_free(buffer_t *buffer, bool save_critbit) {
+	for (real_line_t *cursor = buffer->real_line; cursor != NULL; ) {
+		real_line_t *next = cursor->next;
+		free(cursor->glyph_info);
+		free(cursor);
+		cursor = next;
 	}
 
 	g_hash_table_destroy(buffer->props);
 
 	undo_free(&(buffer->undo));
+
+	if (save_critbit) critbit0_allprefixed(&(buffer->cbt), "", to_closed_buffers_critbit, NULL);
+
+	critbit0_clear(&(buffer->cbt));
 
 	free(buffer->path);
 	if (buffer->keyprocessor != NULL) free(buffer->keyprocessor);

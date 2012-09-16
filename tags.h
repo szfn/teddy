@@ -3,6 +3,8 @@
 
 #include <stdbool.h>
 
+#include "critbit.h"
+
 struct tag_entry {
 	char *tag;
 	char *path;
@@ -12,6 +14,8 @@ struct tag_entry {
 
 extern struct tag_entry *tag_entries;
 extern int tag_entries_cap;
+
+extern critbit0_tree tags_file_critbit;
 
 void tags_init(void);
 void tags_load(char *wd);

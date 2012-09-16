@@ -18,6 +18,8 @@ generic_completer_t the_generic_word_completer;
 struct clcompleter the_cmd_completer;
 generic_completer_t the_generic_cmd_completer;
 
+critbit0_tree closed_buffers_critbit;
+
 int focus_can_follow_mouse = 1;
 
 gboolean streq(gconstpointer a, gconstpointer b) {
@@ -27,6 +29,8 @@ gboolean streq(gconstpointer a, gconstpointer b) {
 void global_init() {
 	selection_clipboard = gtk_clipboard_get(GDK_SELECTION_PRIMARY);
 	default_clipboard = gtk_clipboard_get(GDK_SELECTION_CLIPBOARD);
+
+	closed_buffers_critbit.root = NULL;
 
 	elements_font_description = pango_font_description_from_string("tahoma,arial,sans-serif 11");
 

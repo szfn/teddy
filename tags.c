@@ -5,6 +5,8 @@
 #include "buffers.h"
 #include "global.h"
 
+critbit0_tree tags_file_critbit;
+
 struct tag_entry *tag_entries;
 int allocated;
 int tag_entries_cap;
@@ -15,6 +17,7 @@ void tags_init(void) {
 	alloc_assert(tag_entries);
 	for (int i = 0; i < allocated; ++i) tag_entries[i].tag = NULL;
 	tag_entries_cap = 0;
+	tags_file_critbit.root = NULL;
 }
 
 static void tags_grow(void) {
@@ -39,6 +42,8 @@ void tags_load(char *wd) {
 	char buf[BUF_SIZE];
 
 	tags_free();
+
+	critbit0_clear(&tags_file_critbit);
 
 	char *tags_file;
 	asprintf(&tags_file, "%s/%s", wd, "tags");
@@ -68,6 +73,8 @@ void tags_load(char *wd) {
 		if (path == NULL) continue;
 		char *search = strtok_r(NULL, "", &toks);
 		if (search == NULL) continue;
+
+		critbit0_insert(&tags_file_critbit, tag);		
 
 		char *d = strstr(search, ";\"\t");
 		if (d != NULL) *d = '\0';
@@ -135,8 +142,9 @@ void tags_load(char *wd) {
 	}
 
 	//printf("loaded: %d\n", tag_entries_cap);
-
 	fclose(f);
+
+	word_completer_full_update();
 }
 
 bool tags_loaded(void) {

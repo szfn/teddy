@@ -15,6 +15,7 @@
 
 extern GtkClipboard *selection_clipboard;
 extern GtkClipboard *default_clipboard;
+extern critbit0_tree closed_buffers_critbit;
 
 extern void quick_message(const char *title, const char *msg);
 

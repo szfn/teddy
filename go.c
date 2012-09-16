@@ -55,7 +55,7 @@ buffer_t *go_file(const char *filename, bool create, enum go_file_failure_reason
 
 	if (S_ISDIR(s.st_mode)) {
 		if (load_dir(buffer, urp) != 0) {
-			buffer_free(buffer);
+			buffer_free(buffer, false);
 			buffer = NULL;
 		}
 	} else {
@@ -64,7 +64,7 @@ buffer_t *go_file(const char *filename, bool create, enum go_file_failure_reason
 			if (r == -2) {
 				*gffr = GFFR_BINARYFILE;
 			}
-			buffer_free(buffer);
+			buffer_free(buffer, false);
 			buffer = NULL;
 		}
 	}

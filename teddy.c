@@ -90,7 +90,7 @@ int main(int argc, char *argv[]) {
 	for (int i = 1; i < argc; ++i) {
 		buffer_t *buffer = buffer_create();
 		if (load_text_file(buffer, argv[i]) < 0) {
-			buffer_free(buffer);
+			buffer_free(buffer, false);
 		} else {
 			buffers_add(buffer);
 			tframe_t *f = heuristic_new_frame(columnset, NULL, buffer);

@@ -299,11 +299,9 @@ int lexy_append_command(ClientData client_data, Tcl_Interp *interp, int argc, co
 		return TCL_ERROR;
 	}
 
-	char *fixed_pattern = malloc(sizeof(char) * (strlen(pattern) + strlen("^(?:)") + 1));
+	char *fixed_pattern;
+	asprintf(&fixed_pattern, "^(?:%s)", pattern);
 	alloc_assert(fixed_pattern);
-	strcpy(fixed_pattern, "^(?:");
-	strcat(fixed_pattern, pattern);
-	strcat(fixed_pattern, ")");
 
 	regex_t compiled_pattern;
 	int r = tre_regcomp(&compiled_pattern, fixed_pattern, REG_EXTENDED);

@@ -103,7 +103,7 @@ typedef struct _buffer_t {
 } buffer_t;
 
 buffer_t *buffer_create(void);
-void buffer_free(buffer_t *buffer);
+void buffer_free(buffer_t *buffer, bool save_critbit);
 
 /* Initialization completion function (at least one of these two must be called after buffer_create, before the buffer is used in any way)
    - load_text_file: loads a text file
