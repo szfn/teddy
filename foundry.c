@@ -225,8 +225,13 @@ double fontset_get_kerning(teddy_fontset_t *fontset, int fontidx, FT_UInt previo
 }
 
 void fontset_underline_info(teddy_fontset_t *fontset, int fontidx, double *underline_thickness, double *underline_position) {
-	*underline_thickness = fontset->fonts[fontidx].scaled_face->underline_thickness >> 6;
-	*underline_position = fontset->fonts[fontidx].scaled_face->underline_position >> 6;
+	FT_Face *f = &(fontset->fonts[fontidx].scaled_face);
+	double y_scale = (double)((*f)->size->metrics.y_scale) / 65535;
+
+	//printf("underline position %d thickness %d y_scale %ld\n", (*f)->underline_position, (*f)->underline_thickness, (*f)->size->metrics.y_scale);
+
+	*underline_thickness = ((*f)->underline_thickness * y_scale) / 64;
+	*underline_position = ((*f)->underline_position * y_scale) / 64;
 }
 
 double fontset_x_advance(teddy_fontset_t *fontset, int fontidx, FT_UInt glyph) {

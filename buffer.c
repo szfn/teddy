@@ -37,6 +37,8 @@ static void buffer_init_font_extents(buffer_t *buffer) {
 
 	fontset_underline_info(font, 0, &(buffer->underline_thickness), &(buffer->underline_position));
 
+	//printf("Underline thickness: %g position: %g\n", buffer->underline_thickness, buffer->underline_position);
+
 	foundry_release(font);
 }
 

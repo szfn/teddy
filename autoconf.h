@@ -20,7 +20,6 @@ bindkey Ctrl-y {c [cb pget]}\n\
 bindkey Ctrl-u undo\n\
 \n\
 bindkey Ctrl-s save\n\
-bindkey Ctrl-b bufman\n\
 \n\
 bindkey Ctrl-f search\n\
 bindkey Ctrl-g {search [teddyhistory search 1]}\n\

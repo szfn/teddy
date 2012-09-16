@@ -930,7 +930,7 @@ static void draw_line(editor_t *editor, GtkAllocation *allocation, cairo_t *cr, 
 	bool onfile = false;
 
 	for (int i = 0; i < line->cap; ++i) {
-		// draws soft wrvoid compl_wnd_hide(struct completer capping indicators
+		// draws soft wrapping indicators
 		if (line->glyph_info[i].y - cury > 0.001) {
 			/* draw ending tract */
 			cairo_set_line_width(cr, 4.0);
