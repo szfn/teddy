@@ -308,6 +308,7 @@ static void tag_drag_behaviour(tframe_t *source, tframe_t *target, double y) {
 		column_resize_frame_pair(source_col, before_tf, new_above_size, source, new_source_size);
 	} else if ((tbuf == null_buffer()) && (sbuf != null_buffer())) {
 		// we dragged into a null buffer, take it over
+		editor_switch_buffer(GTK_TEDITOR(source->content), null_buffer());
 		editor_switch_buffer(GTK_TEDITOR(target->content), sbuf);
 		columns_column_remove(columnset, source_col, source, false);
 	} else {

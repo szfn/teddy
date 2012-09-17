@@ -114,6 +114,8 @@ int buffers_close(buffer_t *buffer, GtkWidget *window, bool save_critbit) {
 		if (r == 0) return 0;
 	}
 
+	printf("Removing buffer: <%s>\n", buffer->path);
+
 	{
 		editor_t *editor;
 		find_editor_for_buffer(buffer, NULL, NULL, &editor);
