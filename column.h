@@ -20,7 +20,7 @@ column_t *column_new(gint spacing);
 
 void column_add_after(column_t *column, tframe_t *before_tf, tframe_t *tf);
 bool column_remove(column_t *column, tframe_t *frame, bool reparenting);
-int column_remove_others(column_t *column, tframe_t *frame);
+int column_hide_others(column_t *column, tframe_t *frame);
 
 double column_fraction(column_t *column);
 void column_fraction_set(column_t *column, double fraction);
@@ -33,5 +33,7 @@ void gtk_column_size_allocate(GtkWidget *widget, GtkAllocation *allocation);
 tframe_t *column_get_frame_from_position(column_t *column, double x, double y, bool *ontag);
 
 bool column_close(column_t *column);
+
+void column_expand_frame(column_t *column, tframe_t *frame);
 
 #endif

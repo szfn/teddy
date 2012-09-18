@@ -242,18 +242,23 @@ bool column_remove(column_t *column, tframe_t *frame, bool reparenting) {
 	return true;
 }
 
-int column_remove_others(column_t *column, tframe_t *frame) {
+int column_hide_others(column_t *column, tframe_t *frame) {
 	int c = 0;
+	double fraction = tframe_fraction(frame);
 	GList *list = gtk_container_get_children(GTK_CONTAINER(column));
 	for (GList *cur = list; cur != NULL; cur = cur->next) {
 		if (cur->data != frame) {
-			if (tframe_close(GTK_TFRAME(cur->data))) {
-				column_remove(column, GTK_TFRAME(cur->data), false);
-				++c;
-			}
+			fraction += tframe_fraction(GTK_TFRAME(cur->data));
+			tframe_fraction_set(GTK_TFRAME(cur->data), 0);
+			++c;
 		}
 	}
 	g_list_free(list);
+
+	tframe_fraction_set(frame, fraction);
+
+	gtk_column_size_allocate(GTK_WIDGET(column), &(GTK_WIDGET(column)->allocation));
+
 	return c;
 }
 
@@ -280,6 +285,39 @@ tframe_t *column_get_frame_from_position(column_t *column, double x, double y, b
 
 bool column_close(column_t *column) {
 	int n = column_frame_number(column);
-	int r = column_remove_others(column, NULL);
-	return (n == r);
+
+	int c = 0;
+	GList *list = gtk_container_get_children(GTK_CONTAINER(column));
+	for (GList *cur = list; cur != NULL; cur = cur->next) {
+		if (tframe_close(GTK_TFRAME(cur->data))) {
+			column_remove(column, GTK_TFRAME(cur->data), false);
+			++c;
+		}
+	}
+	g_list_free(list);
+
+	return (n == c);
+}
+
+void column_expand_frame(column_t *column, tframe_t *frame) {
+	if (tframe_fraction(frame) > 0.2) return;
+
+	tframe_t *biggest = NULL;
+	double biggest_fraction = 0.0;
+
+	GList *list = gtk_container_get_children(GTK_CONTAINER(column));
+	for (GList *cur = list; cur != NULL; cur = cur->next) {
+		tframe_t *curtf = GTK_TFRAME(cur->data);
+		if (tframe_fraction(curtf) > biggest_fraction) {
+			biggest_fraction = tframe_fraction(curtf);
+			biggest = curtf;
+		}
+	}
+	g_list_free(list);
+
+	if (biggest == NULL) return;
+
+	tframe_fraction_set(biggest, biggest_fraction / 2.0);
+	tframe_fraction_set(frame, biggest_fraction / 2.0);
+	gtk_column_size_allocate(GTK_WIDGET(column), &(GTK_WIDGET(column)->allocation));
 }

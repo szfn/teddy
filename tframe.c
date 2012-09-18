@@ -111,6 +111,11 @@ static gboolean reshandle_button_press_callback(GtkWidget *widget, GdkEventButto
 		tf->motion_prev_tf = prev_tf;
 
 		return TRUE;
+	} else {
+		column_t *col;
+		if (!columns_find_frame(tf->columns, tf, NULL, &col, NULL, NULL, NULL)) return FALSE;
+		column_expand_frame(col, tf);
+
 	}
 
 	return FALSE;
@@ -184,8 +189,14 @@ static void column_resize_frame_pair(column_t *column, tframe_t *above, double n
 
 static gboolean reshandle_button_release_callback(GtkWidget *widget, GdkEventButton *event, tframe_t *tf) {
 	tf->moving = false;
-
 	return TRUE;
+}
+
+bool dragging = false;
+
+static gboolean label_motion_callback(GtkWidget *widget, GdkEventMotion *event, tframe_t *tf) {
+	dragging = true;
+	return FALSE;
 }
 
 static gboolean label_expose_callback(GtkWidget *widget, GdkEventExpose *event, tframe_t *tf) {
@@ -245,8 +256,6 @@ static gboolean label_map_callback(GtkWidget *widget, GdkEvent *event, tframe_t 
 	return FALSE;
 }
 
-bool dragging = false;
-
 static gboolean label_button_press_callback(GtkWidget *widget, GdkEventButton *event, tframe_t *frame) {
 	column_t *col;
 	if (!columns_find_frame(columnset, frame, NULL, &col, NULL, NULL, NULL)) return TRUE;
@@ -254,13 +263,10 @@ static gboolean label_button_press_callback(GtkWidget *widget, GdkEventButton *e
 	if (event->button == 1) {
 		if (event->type == GDK_2BUTTON_PRESS) {
 			dragging = false;
-
-			if (column_remove_others(col, frame) == 0) {
-				columns_remove_others(columnset, col);
-			}
+			column_hide_others(col, frame);
 			return TRUE;
 		} else {
-			dragging = true;
+			dragging = false;
 		}
 	}
 
@@ -333,14 +339,19 @@ static void tag_drag_behaviour(tframe_t *source, tframe_t *target, double y) {
 }
 
 static gboolean label_button_release_callback(GtkWidget *widget, GdkEventButton *event, tframe_t *tf) {
+	if (event->button != 1) return FALSE;
+	if (!dragging) {
+		column_t *col;
+		if (!columns_find_frame(tf->columns, tf, NULL, &col, NULL, NULL, NULL)) return FALSE;
+		column_expand_frame(col, tf);
+		return FALSE;
+	}
+
 	GtkAllocation allocation;
 	gtk_widget_get_allocation(widget, &allocation);
 
 	double x = event->x + allocation.x;
 	double y = event->y + allocation.y;
-
-	if (event->button != 1) return FALSE;
-	if (!dragging) return FALSE;
 
 	dragging = false;
 
@@ -382,7 +393,7 @@ tframe_t *tframe_new(const char *title, GtkWidget *content, columns_t *columns) 
 
 	gtk_widget_add_events(r->resdr, GDK_BUTTON_PRESS_MASK|GDK_BUTTON_RELEASE_MASK|GDK_POINTER_MOTION_MASK|GDK_POINTER_MOTION_HINT_MASK|GDK_STRUCTURE_MASK);
 
-	gtk_widget_add_events(r->drarla, GDK_BUTTON_PRESS_MASK|GDK_BUTTON_RELEASE_MASK|GDK_STRUCTURE_MASK);
+	gtk_widget_add_events(r->drarla, GDK_BUTTON_PRESS_MASK|GDK_BUTTON_RELEASE_MASK|GDK_STRUCTURE_MASK|GDK_POINTER_MOTION_MASK|GDK_POINTER_MOTION_HINT_MASK);
 
 	g_signal_connect(G_OBJECT(r->resdr), "expose_event", G_CALLBACK(reshandle_expose_callback), r);
 	g_signal_connect(G_OBJECT(r->resdr), "map_event", G_CALLBACK(reshandle_map_callback), r);
@@ -393,6 +404,7 @@ tframe_t *tframe_new(const char *title, GtkWidget *content, columns_t *columns) 
 	g_signal_connect(G_OBJECT(r->drarla), "expose_event", G_CALLBACK(label_expose_callback), r);
 	g_signal_connect(G_OBJECT(r->drarla), "map_event", G_CALLBACK(label_map_callback), r);
 	g_signal_connect(G_OBJECT(r->drarla), "button-press-event", G_CALLBACK(label_button_press_callback), r);
+	g_signal_connect(G_OBJECT(r->drarla), "motion_notify_event", G_CALLBACK(label_motion_callback), r);
 	g_signal_connect(G_OBJECT(r->drarla), "button-release-event", G_CALLBACK(label_button_release_callback), r);
 
 	gtk_box_pack_start(GTK_BOX(r->tag), r->resdr, FALSE, FALSE, 0);
