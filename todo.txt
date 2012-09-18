@@ -1,9 +1,10 @@
+- resize should work across multiple frames
+
 - make selection behave normally (movement disables it, shift+movement starts it)
 - automatically pop-up autocompletion and update autocompletions when leaving dirty rows (enter should not autocomplete, at least on the command line)
 - update autocompletions more frequently
 - popup menu item to search in tags
 
-- resize should work across multiple frames
 - save, refresh becomes a subcommand of buffer
 - better shell command, better pipe command
 - non editable bg buffers, send typed text to job stdin

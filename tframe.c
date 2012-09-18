@@ -115,7 +115,6 @@ static gboolean reshandle_button_press_callback(GtkWidget *widget, GdkEventButto
 		column_t *col;
 		if (!columns_find_frame(tf->columns, tf, NULL, &col, NULL, NULL, NULL)) return FALSE;
 		column_expand_frame(col, tf);
-
 	}
 
 	return FALSE;
@@ -363,6 +362,20 @@ static gboolean label_button_release_callback(GtkWidget *widget, GdkEventButton 
 	return TRUE;
 }
 
+static gboolean close_box_button_press_callback(GtkWidget *widget, GdkEventButton *event, tframe_t *tf) {
+	column_t *col;
+	if (!columns_find_frame(tf->columns, tf, NULL, &col, NULL, NULL, NULL)) return FALSE;
+	columns_column_remove(columnset, col, tf, false);
+	return TRUE;
+}
+
+static gboolean magnify_box_button_press_callback(GtkWidget *widget, GdkEventButton *event, tframe_t *tf) {
+	column_t *col;
+	if (!columns_find_frame(tf->columns, tf, NULL, &col, NULL, NULL, NULL)) return FALSE;
+	column_hide_others(col, tf);
+	return TRUE;
+}
+
 tframe_t *tframe_new(const char *title, GtkWidget *content, columns_t *columns) {
 	GtkWidget *tframe_widget = g_object_new(GTK_TYPE_TFRAME, NULL);
 	tframe_t *r = GTK_TFRAME(tframe_widget);
@@ -387,6 +400,13 @@ tframe_t *tframe_new(const char *title, GtkWidget *content, columns_t *columns) 
 	r->resdr = gtk_drawing_area_new();
 	gtk_widget_set_size_request(r->resdr, 14, 14);
 
+	GtkWidget *close_box = gtk_event_box_new();
+	gtk_container_add(GTK_CONTAINER(close_box), gtk_image_new_from_stock(GTK_STOCK_CLOSE, GTK_ICON_SIZE_MENU));
+	GtkWidget *magnify_box = gtk_event_box_new();
+	gtk_container_add(GTK_CONTAINER(magnify_box), gtk_image_new_from_stock(GTK_STOCK_GOTO_TOP, GTK_ICON_SIZE_MENU));
+	gtk_widget_add_events(close_box, GDK_BUTTON_PRESS_MASK);
+	gtk_widget_add_events(magnify_box, GDK_BUTTON_PRESS_MASK);
+
 	cairo_font_extents_t tag_font_extents;
 	cairo_scaled_font_extents(fontset_get_cairofont_by_name(config_strval(&global_config, CFG_TAG_FONT), 0), &tag_font_extents);
 	gtk_widget_set_size_request(r->drarla, 1, tag_font_extents.ascent + tag_font_extents.descent);
@@ -406,9 +426,14 @@ tframe_t *tframe_new(const char *title, GtkWidget *content, columns_t *columns) 
 	g_signal_connect(G_OBJECT(r->drarla), "button-press-event", G_CALLBACK(label_button_press_callback), r);
 	g_signal_connect(G_OBJECT(r->drarla), "motion_notify_event", G_CALLBACK(label_motion_callback), r);
 	g_signal_connect(G_OBJECT(r->drarla), "button-release-event", G_CALLBACK(label_button_release_callback), r);
+	g_signal_connect(G_OBJECT(close_box), "button_press_event", G_CALLBACK(close_box_button_press_callback), r);
+	g_signal_connect(G_OBJECT(magnify_box), "button_press_event", G_CALLBACK(magnify_box_button_press_callback), r);
 
 	gtk_box_pack_start(GTK_BOX(r->tag), r->resdr, FALSE, FALSE, 0);
 	gtk_box_pack_start(GTK_BOX(r->tag), r->drarla, TRUE, TRUE, 0);
+
+	gtk_box_pack_end(GTK_BOX(r->tag), close_box, FALSE, TRUE, 2);
+	gtk_box_pack_end(GTK_BOX(r->tag), magnify_box, FALSE, TRUE, 2);
 
 	place_frame_piece(GTK_WIDGET(t), TRUE, 0, 2);
 	place_frame_piece(GTK_WIDGET(t), FALSE, 1, 4);
