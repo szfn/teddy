@@ -3,17 +3,6 @@
 
 #define BUILTIN_TCL_CODE "# builtin commands for teddy\n\
 \n\
-proc toggle_mark {type} {\n\
-	set mark [lindex [m] 0]\n\
-	if {$mark eq \"nil\"} {\n\
-		m +0:+0 +0:+0\n\
-		buffer select-mode $type\n\
-	} else {\n\
-		m nil +0:+0\n\
-		buffer select-mode normal\n\
-	}\n\
-}\n\
-\n\
 proc kill_line {} {\n\
    m +0:1 +1:1\n\
    if {[undo tag] eq \"kill_line\"} {\n\

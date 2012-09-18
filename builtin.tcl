@@ -1,16 +1,5 @@
 # builtin commands for teddy
 
-proc toggle_mark {type} {
-	set mark [lindex [m] 0]
-	if {$mark eq "nil"} {
-		m +0:+0 +0:+0
-		buffer select-mode $type
-	} else {
-		m nil +0:+0
-		buffer select-mode normal
-	}
-}
-
 proc kill_line {} {
    m +0:1 +1:1
    if {[undo tag] eq "kill_line"} {

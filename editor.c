@@ -320,15 +320,22 @@ static void freeze_primary_selection(editor_t *editor) {
 	free(r);
 }
 
-void editor_mark_action(editor_t *editor) {
+static bool mark_move(editor_t *editor, bool shift) {
 	if (editor->buffer->mark.line == NULL) {
-		buffer_set_mark_at_cursor(editor->buffer);
-		set_primary_selection(editor);
+		if (shift) {
+			buffer_set_mark_at_cursor(editor->buffer);
+			set_primary_selection(editor);
+		}
+		return true;
 	} else {
-		freeze_primary_selection(editor);
-		buffer_unset_mark(editor->buffer);
+		if (!shift) {
+			freeze_primary_selection(editor);
+			buffer_unset_mark(editor->buffer);
+			return false;
+		} else {
+			return true;
+		}
 	}
-	gtk_widget_queue_draw(editor->drar);
 }
 
 void editor_save_action(editor_t *editor) {
@@ -422,26 +429,7 @@ static gboolean key_press_callback(GtkWidget *widget, GdkEventKey *event, editor
 		}
 	}
 
-	if (!ctrl && !alt && !super) {
-		switch(event->keyval) {
-		case GDK_KEY_Delete:
-			if (editor->buffer->mark.line == NULL) {
-				buffer_set_mark_at_cursor(editor->buffer);
-				buffer_move_point_glyph(editor->buffer, &(editor->buffer->cursor), MT_REL, +1);
-			}
-			editor_replace_selection(editor, "");
-			return TRUE;
-		case GDK_KEY_BackSpace:
-			if (editor->buffer->mark.line == NULL) {
-				buffer_set_mark_at_cursor(editor->buffer);
-				buffer_move_point_glyph(editor->buffer, &(editor->buffer->cursor), MT_REL, -1);
-			}
-			editor_replace_selection(editor, "");
-			return TRUE;
-		}
-	}
-
-	/* Default key bindings */
+	/* Manipulation of completions window */
 	if (!shift && !ctrl && !alt && !super) {
 		if (COMPL_WND_VISIBLE(editor->completer)) {
 			switch(event->keyval) {
@@ -470,35 +458,63 @@ static gboolean key_press_callback(GtkWidget *widget, GdkEventKey *event, editor
 				return TRUE;
 			}
 		}
+	}
 
+	/* Motion and keys that are invariant to shift */
+	if (!ctrl && !alt && !super) {
 		switch(event->keyval) {
+		case GDK_KEY_Delete:
+			if (editor->buffer->mark.line == NULL) {
+				buffer_set_mark_at_cursor(editor->buffer);
+				buffer_move_point_glyph(editor->buffer, &(editor->buffer->cursor), MT_REL, +1);
+			}
+			editor_replace_selection(editor, "");
+			return TRUE;
+
+		case GDK_KEY_BackSpace:
+			if (editor->buffer->mark.line == NULL) {
+				buffer_set_mark_at_cursor(editor->buffer);
+				buffer_move_point_glyph(editor->buffer, &(editor->buffer->cursor), MT_REL, -1);
+			}
+			editor_replace_selection(editor, "");
+			return TRUE;
+
 		case GDK_KEY_Up:
-			buffer_move_point_line(editor->buffer, &(editor->buffer->cursor), MT_REL, -1);
+			if (mark_move(editor, shift)) buffer_move_point_line(editor->buffer, &(editor->buffer->cursor), MT_REL, -1);
 			goto key_press_return_true;
 		case GDK_KEY_Down:
-			buffer_move_point_line(editor->buffer, &(editor->buffer->cursor), MT_REL, +1);
+			if (mark_move(editor, shift)) buffer_move_point_line(editor->buffer, &(editor->buffer->cursor), MT_REL, +1);
 			goto key_press_return_true;
 		case GDK_KEY_Right:
-			buffer_move_point_glyph(editor->buffer, &(editor->buffer->cursor), MT_REL, +1);
+			if (mark_move(editor, shift)) buffer_move_point_glyph(editor->buffer, &(editor->buffer->cursor), MT_REL, +1);
 			goto key_press_return_true;
 		case GDK_KEY_Left:
-			buffer_move_point_glyph(editor->buffer, &(editor->buffer->cursor), MT_REL, -1);
+			if (mark_move(editor, shift)) buffer_move_point_glyph(editor->buffer, &(editor->buffer->cursor), MT_REL, -1);
 			goto key_press_return_true;
 
 		case GDK_KEY_Page_Up:
+			mark_move(editor, shift);
 			buffer_move_point_line(editor->buffer, &(editor->buffer->cursor), MT_REL, -(allocation.height / editor->buffer->line_height) + 2);
 			goto key_press_return_true;
 		case GDK_KEY_Page_Down:
+			mark_move(editor, shift);
 			buffer_move_point_line(editor->buffer, &(editor->buffer->cursor), MT_REL, +(allocation.height / editor->buffer->line_height) - 2);
 			goto key_press_return_true;
 
 		case GDK_KEY_Home:
+			mark_move(editor, shift);
 			buffer_move_point_glyph(editor->buffer, &(editor->buffer->cursor), MT_HOME, 0);
 			goto key_press_return_true;
 		case GDK_KEY_End:
+			mark_move(editor, shift);
 			buffer_move_point_glyph(editor->buffer, &(editor->buffer->cursor), MT_END, 0);
 			goto key_press_return_true;
+		}
+	}
 
+	/* Other default keybindings */
+	if (!shift && !ctrl && !alt && !super) {
+		switch(event->keyval) {
 		case GDK_KEY_Tab: {
 			if (!editor_maybe_show_completions(editor, true)) {
 				editor_replace_selection(editor, "\t");
@@ -538,12 +554,14 @@ static gboolean key_press_callback(GtkWidget *widget, GdkEventKey *event, editor
 		}
 	}
 
+	/* Keybindings specially defined for a single-line editor */
 	if (editor->single_line) {
 		if (editor->single_line_other_keys(editor, shift, ctrl, alt, super, event->keyval)) {
 			return TRUE;
 		}
 	}
 
+	/* Ctrl-Tab for tab insertion */
 	if (!shift && ctrl && !alt && !super && (event->keyval == GDK_KEY_Tab)) {
 		editor_replace_selection(editor, "\t");
 		return TRUE;

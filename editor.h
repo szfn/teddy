@@ -69,7 +69,6 @@ void editor_center_on_cursor(editor_t *editor);
 void editor_replace_selection(editor_t *editor, const char *new_text);
 
 /* actions */
-void editor_mark_action(editor_t *editor);
 void editor_copy_action(editor_t *editor);
 void editor_insert_paste(editor_t *editor, GtkClipboard *clipboard); /* default_clipboard, selection_clipboard */
 void editor_cut_action(editor_t *editor);
