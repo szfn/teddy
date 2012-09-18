@@ -921,6 +921,7 @@ static void growable_glyph_array_append_underline(struct growable_glyph_array *g
 	++(gga->underline_n);
 }
 
+#define AUTOWRAP_INDICATOR_WIDTH 2.0
 static void draw_line(editor_t *editor, GtkAllocation *allocation, cairo_t *cr, real_line_t *line, GHashTable *ht) {
 	struct growable_glyph_array *gga_current = NULL;
 
@@ -933,16 +934,20 @@ static void draw_line(editor_t *editor, GtkAllocation *allocation, cairo_t *cr, 
 		// draws soft wrapping indicators
 		if (line->glyph_info[i].y - cury > 0.001) {
 			/* draw ending tract */
-			cairo_set_line_width(cr, 4.0);
-			cairo_move_to(cr, line->glyph_info[i-1].x + line->glyph_info[i-1].x_advance, cury-(editor->buffer->ex_height/2.0));
-			cairo_line_to(cr, allocation->width, cury-(editor->buffer->ex_height/2.0));
+			cairo_set_line_width(cr, AUTOWRAP_INDICATOR_WIDTH);
+
+			double indy = cury - (editor->buffer->ex_height/2.0);
+			cairo_move_to(cr, allocation->width - editor->buffer->right_margin, indy);
+			cairo_line_to(cr, allocation->width, indy);
+
+			/*cairo_move_to(cr, line->glyph_info[i-1].x + line->glyph_info[i-1].x_advance, indy);
+			cairo_line_to(cr, allocation->width, indy);*/
 			cairo_stroke(cr);
-			cairo_set_line_width(cr, 2.0);
 
 			cury = line->glyph_info[i].y;
 
 			/* draw initial tract */
-			cairo_set_line_width(cr, 4.0);
+			cairo_set_line_width(cr, AUTOWRAP_INDICATOR_WIDTH);
 			cairo_move_to(cr, 0.0, cury-(editor->buffer->ex_height/2.0));
 			cairo_line_to(cr, editor->buffer->left_margin, cury-(editor->buffer->ex_height/2.0));
 			cairo_stroke(cr);
@@ -1224,7 +1229,7 @@ static gboolean search_key_press_callback(GtkWidget *widget, GdkEventKey *event,
 	int super = event->state & GDK_SUPER_MASK;
 
 	if (!shift && !ctrl && !alt && !super) {
-		if (event->keyval == GDK_KEY_Escape) {
+		if ((event->keyval == GDK_KEY_Escape) || (event->keyval == GDK_KEY_Return)) {
 			quit_search_mode(editor);
 			return TRUE;
 		}
