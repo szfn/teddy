@@ -9,6 +9,7 @@
 #include "global.h"
 #include "baux.h"
 #include "tags.h"
+#include "buffers.h"
 
 GtkWidget *top_notebook;
 buffer_t *cmdline_buffer;
@@ -16,6 +17,7 @@ editor_t *cmdline_editor;
 editor_t *the_top_context_editor;
 
 GtkWidget *dir_label;
+GtkWidget *tools_menu;
 
 char *working_directory;
 
@@ -95,6 +97,46 @@ bool cmdline_other_keys(struct _editor_t *editor, bool shift, bool ctrl, bool al
 	return false;
 }
 
+static gboolean tools_label_map_callback(GtkWidget *widget, GdkEvent *event, gpointer data) {
+	gdk_window_set_cursor(gtk_widget_get_window(widget), gdk_cursor_new(GDK_HAND1));
+	return false;
+}
+
+static void tools_menu_position_function(GtkMenu *menu, gint *x, gint *y, gboolean *push_in, GtkWidget *widget) {
+	GtkAllocation allocation;
+	gtk_widget_get_allocation(widget, &allocation);
+
+	GtkAllocation menu_allocation;
+	gtk_widget_get_allocation(GTK_WIDGET(menu), &menu_allocation);
+
+	gint wpos_x, wpos_y;
+	gdk_window_get_position(gtk_widget_get_window(gtk_widget_get_toplevel(widget)), &wpos_x, &wpos_y);
+
+	*x = wpos_x + allocation.x + allocation.width - menu_allocation.width;
+	*y = wpos_y + allocation.y + allocation.height;
+}
+
+static gboolean tools_label_popup_callback(GtkWidget *widget, GdkEventButton *event, gpointer data) {
+	if (event->type != GDK_BUTTON_PRESS) return FALSE;
+	if (event->button != 1) return FALSE;
+
+	gtk_menu_popup(GTK_MENU(tools_menu), NULL, NULL, (GtkMenuPositionFunc)tools_menu_position_function, widget, 0, event->time);
+
+	return FALSE;
+}
+
+static void new_column_mitem_callback(GtkMenuItem *menuitem, gpointer data) {
+	column_t *col = column_new(0);
+	columns_add_after(columnset, NULL, col);
+	heuristic_new_frame(columnset, NULL, null_buffer());
+}
+
+static void close_mitem_callback(GtkMenuItem *menuitem, gpointer data) {
+	GtkWidget *toplevel = gtk_widget_get_toplevel(GTK_WIDGET(columnset));
+	if (!buffers_close_all(toplevel)) return;
+	gtk_widget_destroy(toplevel);
+}
+
 GtkWidget *top_init(void) {
 	top_notebook = gtk_notebook_new();
 	gtk_notebook_set_show_tabs(GTK_NOTEBOOK(top_notebook), FALSE);
@@ -125,9 +167,37 @@ GtkWidget *top_init(void) {
 
 	dir_label = gtk_label_new(working_directory);
 
-	gtk_box_pack_start(GTK_BOX(box), dir_label, FALSE, FALSE, 0);
+	GtkWidget *events = gtk_event_box_new();
 
-	status_notebook_page = gtk_notebook_append_page(GTK_NOTEBOOK(top_notebook), GTK_WIDGET(box), NULL);
+	GtkWidget *tools_label = gtk_label_new("");
+	gtk_label_set_markup(GTK_LABEL(tools_label), "<u>Tools</u>");
+
+	gtk_box_pack_start(GTK_BOX(box), dir_label, FALSE, FALSE, 0);
+	gtk_container_add(GTK_CONTAINER(events), tools_label);
+	gtk_box_pack_end(GTK_BOX(box), events, FALSE, TRUE, 0);
+
+	gtk_widget_add_events(events, GDK_STRUCTURE_MASK);
+
+	g_signal_connect(G_OBJECT(events), "map_event", G_CALLBACK(tools_label_map_callback), NULL);
+	g_signal_connect(G_OBJECT(events), "button_press_event", G_CALLBACK(tools_label_popup_callback), NULL);
+
+	status_notebook_page = gtk_notebook_append_page(GTK_NOTEBOOK(top_notebook), box, NULL);
+
+	/**** TOOLS MENU ****/
+
+	tools_menu = gtk_menu_new();
+
+	GtkWidget *new_column_mitem = gtk_menu_item_new_with_label("New column");
+	g_signal_connect(G_OBJECT(new_column_mitem), "activate", G_CALLBACK(new_column_mitem_callback), NULL);
+	gtk_menu_append(tools_menu, new_column_mitem);
+
+	gtk_menu_append(tools_menu, gtk_separator_menu_item_new());
+
+	GtkWidget *close_mitem = gtk_menu_item_new_with_label("Quit");
+	g_signal_connect(G_OBJECT(close_mitem), "activate", G_CALLBACK(close_mitem_callback), NULL);
+	gtk_menu_append(tools_menu, close_mitem);
+
+	gtk_widget_show_all(tools_menu);
 
 	/**** END ****/
 	gtk_notebook_set_current_page(GTK_NOTEBOOK(top_notebook), status_notebook_page);

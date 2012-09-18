@@ -1,16 +1,20 @@
+-  opening current directory on startup (like before)
+
+- enter should end incremental search (like esc)
+
+- magnify frame should make fraction = 1, editor_grab_focus should increase fraction if it is 0
+
+- make selection behave normally (movement disables it, shift+movement starts it)
 - automatically pop-up autocompletion and update autocompletions when leaving dirty rows (enter should not autocomplete, at least on the command line)
 - update autocompletions more frequently
 - popup menu item to search in tags
 
-- BUG: occasional memory corruption bug (run under valgrind)
-- BUG: open three columns, drag one frame filling a column to an empty column -> crash
-- BUG: changing font after intialization results in trash (stuff in glyph_info isn't reloaded)
-- BUG: links should be resolved relative to directory for directory view
-
-- make lexy a flat table, lexyassoc just gives the starting state but we can move to other states (implement mixed html / javascript mode)
-- multiprocess highlighting
-- set column number for background processes whenever possible
+- resize should work across multiple frames
+- save, refresh becomes a subcommand of buffer
+- better shell command, better pipe command
 - non editable bg buffers, send typed text to job stdin
+
+- set column number for background processes whenever possible
 - less ugly indicators for autowrapping
 - keyboard marking should behave like mouse marking and not constantly update the clipboard with serialized data
  - after command execution, keypress and mouse movement execute the following:
@@ -20,15 +24,15 @@
  - no primary clipboard implicit management happens inside scripts or on macro recording
 - tabs
 - slash all special mouse actions, add menus and close buttons
-- save, refresh becomes a subcommand of buffer
 - guessing indentation (dtrt-indent mode1)
 - auto-equalize indentation on paste
 - sloppy focus (change focus only when the mouse moves to a different frame) and disable warping
 - macro recording
-- resize should work across multiple frames
 - some commands should be displayed on the working directory line (last command, two most used commands)
 - move stuff to a namespace
 - in buffers associated to jobs the cursor should be fixed at the end and inserting text should result in input to the job
+- make lexy a flat table, lexyassoc just gives the starting state but we can move to other states (implement mixed html / javascript mode)
+- multiprocess highlighting
 
 - comment region command
 - ability to persist the status of a window
@@ -46,5 +50,8 @@
 
 - document:
  s, c, m, ss, regexp, regsub, new buffer subcommands
+
+- BUG: changing font after intialization results in trash (stuff in glyph_info isn't reloaded)
+- BUG: links should be resolved relative to directory for directory view
 
 https://github.com/chriskempson/tomorrow-theme

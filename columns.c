@@ -187,6 +187,12 @@ void columns_add_after(columns_t *columns, column_t *before_col, column_t *col) 
 	gtk_widget_queue_draw(GTK_WIDGET(columns));
 }
 
+void columns_append(columns_t *columns, column_t *column) {
+	GList *list_cols = gtk_container_get_children(GTK_CONTAINER(columns));
+	columns_add_after(columns, g_list_last(list_cols)->data, column);
+	g_list_free(list_cols);
+}
+
 bool columns_find_frame(columns_t *columns, tframe_t *tf, column_t **before_col, column_t **frame_col, column_t **after_col, tframe_t **before_tf, tframe_t **after_tf) {
 	GList *list = gtk_container_get_children(GTK_CONTAINER(columns));
 

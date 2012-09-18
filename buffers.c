@@ -164,6 +164,7 @@ static void maybe_stale_buffer(int wd) {
 	if (buf.st_mtime < buffer->mtime+60) return;
 
 	if (!(buffer->modified) && config_intval(&(buffer->config), CFG_AUTORELOAD) && (buf.st_size > 0)) {
+		printf("Refreshing stale buffer: <%s>\n", buffer->path);
 		buffers_refresh(buffer);
 	} else {
 		buffer->editable = false;
