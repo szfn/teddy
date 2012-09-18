@@ -19,6 +19,7 @@
 #include "iopen.h"
 #include "top.h"
 #include "tags.h"
+#include "go.h"
 
 static gboolean delete_callback(GtkWidget *widget, GdkEvent *event, gpointer data) {
 	if (buffers_close_all(widget)) return FALSE;
@@ -83,7 +84,10 @@ int main(int argc, char *argv[]) {
 	columns_add_after(columnset, col1, col2);
 
 	heuristic_new_frame(columnset, NULL, null_buffer());
-	heuristic_new_frame(columnset, NULL, null_buffer());
+
+	enum go_file_failure_reason gffr;
+	buffer_t *cur_dir_buffer = go_file(".", false, &gffr);
+	heuristic_new_frame(columnset, NULL, cur_dir_buffer);
 
 	tframe_t *frame = NULL;
 
@@ -97,6 +101,8 @@ int main(int argc, char *argv[]) {
 			if (frame == NULL) frame = f;
 		}
 	}
+
+
 
 	if (frame != NULL) {
 		GtkWidget *w = tframe_content(frame);

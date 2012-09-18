@@ -1,5 +1,3 @@
--  opening current directory on startup (like before)
-
 - enter should end incremental search (like esc)
 
 - magnify frame should make fraction = 1, editor_grab_focus should increase fraction if it is 0
