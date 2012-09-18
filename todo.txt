@@ -1,5 +1,3 @@
-- resize should work across multiple frames
-
 - make selection behave normally (movement disables it, shift+movement starts it)
 - automatically pop-up autocompletion and update autocompletions when leaving dirty rows (enter should not autocomplete, at least on the command line)
 - update autocompletions more frequently
