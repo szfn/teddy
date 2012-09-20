@@ -628,7 +628,7 @@ static gboolean key_release_callback(GtkWidget *widget, GdkEventKey *event, edit
 				if (editor->single_line) {
 					editor->single_line_escape(editor);
 				} else {
-					top_start_command_line(editor);
+					top_start_command_line(editor, NULL);
 				}
 			}
 			return TRUE;
@@ -1378,6 +1378,28 @@ static void open_link_menu_item_callback(GtkMenuItem *menuitem, editor_t *editor
 	free(selection);
 }
 
+static void tag_search_menu_item_callback(GtkMenuItem *menuitem, editor_t *editor) {
+	bool islink;
+	char *selection = get_selection_or_file_link(editor, &islink);
+	if (selection == NULL) return;
+
+	const char *argv[] = { "teddy_intl::tags_search_menu_command", selection };
+
+	interp_eval_command(editor, NULL, 2, argv);
+
+	free(selection);
+}
+
+static void copy_to_cmdline_callback(GtkMenuItem *menuitem, editor_t *editor) {
+	bool islink;
+	char *selection = get_selection_or_file_link(editor, &islink);
+	if (selection == NULL) return;
+
+	top_start_command_line(editor, selection);	
+
+	free(selection);
+}
+
 editor_t *new_editor(buffer_t *buffer, bool single_line) {
 	GtkWidget *editor_widget = g_object_new(GTK_TYPE_TEDITOR, NULL);
 	editor_t *r = GTK_TEDITOR(editor_widget);
@@ -1500,17 +1522,25 @@ editor_t *new_editor(buffer_t *buffer, bool single_line) {
 	GtkWidget *eval_menu_item = gtk_menu_item_new_with_label("Eval");
 	gtk_menu_append(GTK_MENU(r->context_menu), eval_menu_item);
 
-	GtkWidget *open_link_menu_item = gtk_menu_item_new_with_label("Open Selected");
+	GtkWidget *copy_to_cmdline_mitem = gtk_menu_item_new_with_label("Copy text to command line");
+	gtk_menu_append(GTK_MENU(r->context_menu), copy_to_cmdline_mitem);
+
+	GtkWidget *open_link_menu_item = gtk_menu_item_new_with_label("Open selected text");
 	gtk_menu_append(GTK_MENU(r->context_menu), open_link_menu_item);
 
-	GtkWidget *search_menu_item = gtk_menu_item_new_with_label("Search");
+	GtkWidget *search_menu_item = gtk_menu_item_new_with_label("Search text");
 	gtk_menu_append(GTK_MENU(r->context_menu), search_menu_item);
+
+	GtkWidget *tag_search_menu_item = gtk_menu_item_new_with_label("Search in TAGS");
+	gtk_menu_append(GTK_MENU(r->context_menu), tag_search_menu_item);
 
 	gtk_widget_show_all(r->context_menu);
 
 	g_signal_connect(G_OBJECT(eval_menu_item), "activate", G_CALLBACK(eval_menu_item_callback), (gpointer)r);
+	g_signal_connect(G_OBJECT(copy_to_cmdline_mitem), "activate", G_CALLBACK(copy_to_cmdline_callback), (gpointer)r);
 	g_signal_connect(G_OBJECT(search_menu_item), "activate", G_CALLBACK(search_menu_item_callback), (gpointer)r);
 	g_signal_connect(G_OBJECT(open_link_menu_item), "activate", G_CALLBACK(open_link_menu_item_callback), (gpointer)r);
+	g_signal_connect(G_OBJECT(tag_search_menu_item), "activate", G_CALLBACK(tag_search_menu_item_callback), (gpointer)r);
 
 	return r;
 }

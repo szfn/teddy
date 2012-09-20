@@ -504,6 +504,13 @@ lexydef mansearch 0 {\n\
 \n\
 lexyassoc mansearch {^\\+man}\n\
 \n\
+lexydef-create tagsearch teddy_intl::tags_link_open 0\n\
+lexydef tagsearch 0 {\n\
+		{(\\S+)\\t/(.+)/$} file,1,2\n\
+	}\n\
+\n\
+lexyassoc tagsearch {^\\+tags}\n\
+\n\
 proc clear {} {\n\
 	m 1:1 $:$\n\
 	c \"\"\n\
@@ -647,6 +654,37 @@ namespace eval teddy_intl {\n\
 		if {[lindex $r 2] eq \"\"} { return }\n\
 \n\
 		man [lindex $r 2] [lindex $r 1]\n\
+	}\n\
+\n\
+	namespace export tags_search_menu_command\n\
+	proc tags_search_menu_command {text} {\n\
+		set tagout [teddy::tags $text]\n\
+		if {[llength $tagout] > 1} {\n\
+			set b [buffer make +tags/$text]\n\
+			buffer eval $b {\n\
+				foreach x $tagout {\n\
+					c \"$x\\n\"\n\
+				}\n\
+			}\n\
+		} else {\n\
+			tags_link_open 0 [lindex $tagout 0]\n\
+		}\n\
+	}\n\
+\n\
+	namespace export tags_link_open\n\
+	proc tags_link_open {islink text} {\n\
+		set r [lexy-token tagsearch/0 $text]\n\
+\n\
+		set b [buffer open [lindex $r 1]]\n\
+\n\
+		if {[lindex $r 2] ne \"\"} {\n\
+			buffer eval $b {\n\
+				m nil 1:1\n\
+				m {*}[s -literal [lindex $r 2]]\n\
+			}\n\
+		}\n\
+\n\
+		buffer focus $b\n\
 	}\n\
 }\n\
 \n\

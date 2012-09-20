@@ -74,7 +74,7 @@ void tags_load(char *wd) {
 		char *search = strtok_r(NULL, "", &toks);
 		if (search == NULL) continue;
 
-		critbit0_insert(&tags_file_critbit, tag);		
+		critbit0_insert(&tags_file_critbit, tag);
 
 		char *d = strstr(search, ";\"\t");
 		if (d != NULL) *d = '\0';
@@ -149,4 +149,37 @@ void tags_load(char *wd) {
 
 bool tags_loaded(void) {
 	return tag_entries_cap > 0;
+}
+
+int teddy_tags_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
+	if (argc != 2) {
+		Tcl_AddErrorInfo(interp, "Wrong number of arguments to 'tags' command");
+		return TCL_ERROR;
+	}
+
+	if (tag_entries_cap == 0) {
+		Tcl_AddErrorInfo(interp, "No tags loaded");
+		return TCL_ERROR;
+	}
+
+	Tcl_Obj *retlist = Tcl_NewListObj(0, NULL);
+	Tcl_IncrRefCount(retlist);
+
+	for (int i = 0; i < tag_entries_cap; ++i) {
+		if (strcmp(tag_entries[i].tag, argv[1]) == 0) {
+			char *text;
+			asprintf(&text, "%s\t/%s/", tag_entries[i].path, tag_entries[i].search!=NULL ? tag_entries[i].search : "");
+			alloc_assert(text);
+
+			Tcl_Obj *text_obj = Tcl_NewStringObj(text, strlen(text));
+			Tcl_ListObjAppendElement(interp, retlist, text_obj);
+
+			free(text);
+		}
+	}
+
+	Tcl_SetObjResult(interp, retlist);
+	Tcl_DecrRefCount(retlist);
+
+	return TCL_OK;
 }

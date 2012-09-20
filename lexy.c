@@ -544,11 +544,31 @@ int lexy_token_command(ClientData client_data, Tcl_Interp *interp, int argc, con
 	int r = 0;
 	char *file = NULL, *line = NULL, *col = NULL;
 
-	struct lexy_tokenizer *tokenizer = tokenizer_from_buffer(interp_context_buffer());
-	if (tokenizer != NULL) {
-		int state = find_state(tokenizer, argv[1]);
+	struct lexy_tokenizer *tokenizer;
+	char *slash = strchr(argv[1], '/');
+	if (slash != NULL) {
+		char *tokenizer_name = malloc(sizeof(char) * ((slash - argv[1]) + 1));
+		alloc_assert(tokenizer_name);
+		strncpy(tokenizer_name, argv[1], slash-argv[1]);
+		tokenizer_name[slash-argv[1]] = '\0';
+		//printf("tokenizer_name <%s> <%s>\n", tokenizer_name, slash);
+		++slash;
+		tokenizer = find_tokenizer(tokenizer_name);
+		if (tokenizer == NULL) {
+			Tcl_AddErrorInfo(interp, "Can not find tokenizer");
+			return TCL_ERROR;
+		}
+		int state = find_state(tokenizer, slash);
 		if (state != -1) {
 			r = lexy_parse_token(tokenizer, state, argv[2], &file, &line, &col);
+		}
+	} else {
+		tokenizer = tokenizer_from_buffer(interp_context_buffer());
+		if (tokenizer != NULL) {
+			int state = find_state(tokenizer, argv[1]);
+			if (state != -1) {
+				r = lexy_parse_token(tokenizer, state, argv[2], &file, &line, &col);
+			}
 		}
 	}
 

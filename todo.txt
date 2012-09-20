@@ -1,6 +1,20 @@
+- BUG: close a buffer with an attached process, select kill & close -> everything closes
+- BUG: cd command doesn't work correctly?
+- BUG: never start on the command line
+- BUG: ctrl-backspace cuts to primary selection, it shouldn't
+- BUG: focusin should remove focus from all editors and redraw those who had it
+
+- add iopen to Tools menu (also add buffer open)
+- show file name before path in iopen window file panel
+- change where pid is displayed
+- commands that terminate quickly and leave no output should not get a buffer window
 - automatically pop-up autocompletion and update autocompletions when leaving dirty rows (enter should not autocomplete, at least on the command line)
 - update autocompletions more frequently
-- popup menu item to search in tags
+- focus refactoring
+	- focus follows mouse should be sloppy
+	- warp modes should include no-warp, warp-to-top, warp-to-cursor
+	- the two options should be set simultaneously
+- dup buffer function?
 
 - save, refresh becomes a subcommand of buffer
 - better shell command, better pipe command
@@ -17,7 +31,6 @@
 - slash all special mouse actions, add menus and close buttons
 - guessing indentation (dtrt-indent mode1)
 - auto-equalize indentation on paste
-- sloppy focus (change focus only when the mouse moves to a different frame) and disable warping
 - macro recording
 - some commands should be displayed on the working directory line (last command, two most used commands)
 - move stuff to a namespace
@@ -40,7 +53,7 @@
 - possibility to specify selection background exactly (instead of difference)
 
 - document:
- s, c, m, ss, regexp, regsub, new buffer subcommands
+ s, c, m, ss, regexp, regsub, new buffer subcommands, tags
 
 - BUG: changing font after intialization results in trash (stuff in glyph_info isn't reloaded)
 - BUG: links should be resolved relative to directory for directory view

@@ -5,7 +5,7 @@
 
 GtkWidget *top_init(void);
 
-void top_start_command_line(editor_t *editor);
+void top_start_command_line(editor_t *editor, const char *text);
 editor_t *top_context_editor(void);
 char *top_working_directory(void);
 void top_show_status(void);

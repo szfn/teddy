@@ -24,10 +24,7 @@ char *working_directory;
 guint cmdline_notebook_page, status_notebook_page;
 
 static void execute_command(editor_t *editor) {
-	lpoint_t start, end;
-	buffer_get_extremes(editor->buffer, &start, &end);
-
-	char *command = buffer_lines_to_text(editor->buffer, &start, &end);
+	char *command = buffer_all_lines_to_text(editor->buffer);
 
 	//printf("Context editor: %p\n", top_context_editor());
 
@@ -41,10 +38,6 @@ static void execute_command(editor_t *editor) {
 	history_add(&command_history, time(NULL), working_directory, command, true);
 
 	free(command);
-
-	copy_lpoint(&(editor->buffer->mark), &start);
-	copy_lpoint(&(editor->buffer->cursor), &end);
-	editor_replace_selection(editor, "");
 }
 
 static void release_command_line(editor_t *editor) {
@@ -205,10 +198,16 @@ GtkWidget *top_init(void) {
 	return top_notebook;
 }
 
-void top_start_command_line(editor_t *editor) {
+void top_start_command_line(editor_t *editor, const char *text) {
 	gtk_notebook_set_current_page(GTK_NOTEBOOK(top_notebook), cmdline_notebook_page);
 	the_top_context_editor = editor;
 	buffer_select_all(cmdline_editor->buffer);
+	if (text != NULL) {
+		buffer_replace_selection(cmdline_editor->buffer, " {");
+		buffer_replace_selection(cmdline_editor->buffer, text);
+		buffer_replace_selection(cmdline_editor->buffer, "}");
+		cmdline_editor->buffer->cursor.glyph = 0;
+	}
 	editor_grab_focus(cmdline_editor, false);
 }
 

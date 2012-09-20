@@ -26,6 +26,7 @@
 #include "autoconf.h"
 #include "top.h"
 #include "iopen.h"
+#include "tags.h"
 
 Tcl_Interp *interp;
 editor_t *the_context_editor = NULL;
@@ -962,6 +963,8 @@ void interp_init(void) {
 	Tcl_CreateCommand(interp, "posixexit", &teddy_posixexit_command, (ClientData)NULL, NULL);
 
 	Tcl_CreateCommand(interp, "fd2channel", &teddy_fd2channel_command, (ClientData)NULL, NULL);
+
+	Tcl_CreateCommand(interp, "teddy::tags", &teddy_tags_command, (ClientData)NULL, NULL);
 
 	int code = Tcl_Eval(interp, BUILTIN_TCL_CODE);
 	if (code != TCL_OK) {

@@ -2,6 +2,7 @@
 #define __TAGS__
 
 #include <stdbool.h>
+#include <tcl.h>
 
 #include "critbit.h"
 
@@ -20,5 +21,7 @@ extern critbit0_tree tags_file_critbit;
 void tags_init(void);
 void tags_load(char *wd);
 bool tags_loaded(void);
+
+int teddy_tags_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]);
 
 #endif
