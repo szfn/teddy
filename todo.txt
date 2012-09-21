@@ -1,6 +1,3 @@
-- BUG: focusin should remove focus from all editors and redraw those who had it
-
-- invert files and tags columns
 - add iopen to Tools menu (also add buffer open)
 - heuristic_new_open avoid thin columns
 - show file name before path in iopen window file panel
@@ -55,5 +52,7 @@
 
 - BUG: changing font after intialization results in trash (stuff in glyph_info isn't reloaded)
 - BUG: links should be resolved relative to directory for directory view
+- BUG: focusin should remove focus from all editors and redraw those who had it
+
 
 https://github.com/chriskempson/tomorrow-theme

@@ -456,9 +456,9 @@ void iopen_init(GtkWidget *window) {
 	gtk_container_add(GTK_CONTAINER(tags_scroll), tags_tree);
 
 	gtk_box_pack_start(GTK_BOX(tags_vbox),  tags_scroll, TRUE, TRUE, 0);
-
-	gtk_container_add(GTK_CONTAINER(results_hbox), files_vbox);
+	
 	gtk_container_add(GTK_CONTAINER(results_hbox), tags_vbox);
+	gtk_container_add(GTK_CONTAINER(results_hbox), files_vbox);
 
 	gtk_box_pack_start(GTK_BOX(main_vbox), results_hbox, TRUE, TRUE, 0);
 
