@@ -33,22 +33,25 @@ static void job_destroy(job_t *job) {
 	g_io_channel_unref(job->pipe_from_child);
 	job->pipe_from_child = NULL;
 
-	job->buffer->job = NULL;
+	if (job->buffer != NULL) {
+		job->buffer->job = NULL;
 
-	job->buffer->cursor.line = job->buffer->real_line;
-	job->buffer->cursor.glyph = 0;
+		job->buffer->cursor.line = job->buffer->real_line;
+		job->buffer->cursor.glyph = 0;
 
-	editor_t *editor;
-	find_editor_for_buffer(job->buffer, NULL, NULL, &editor);
-	if (editor != NULL) {
-		editor_center_on_cursor(editor);
-		gtk_widget_queue_draw(GTK_WIDGET(editor));
+		editor_t *editor;
+		find_editor_for_buffer(job->buffer, NULL, NULL, &editor);
+		if (editor != NULL) {
+			editor_center_on_cursor(editor);
+			gtk_widget_queue_draw(GTK_WIDGET(editor));
+		}
 	}
 
 	job->used = 0;
 }
 
 static void job_append(job_t *job, const char *msg, int len, int on_new_line) {
+	if (job->buffer == NULL) return;
 	buffer_append(job->buffer, msg, len, on_new_line);
 
 	editor_t *editor;
@@ -63,6 +66,7 @@ static void ansi_append_escape(job_t *job) {
 	if (job->ansiseq[0] != '[') return;
 
 	buffer_t *buffer = job->buffer;
+	if (buffer == NULL) return;
 	const char command_char = job->ansiseq[job->ansiseq_cap-1];
 
 	if (command_char == 'J') {
@@ -92,6 +96,7 @@ static void ansi_append_escape(job_t *job) {
 
 static void ansi_append(job_t *job, const char *msg, int len) {
 	buffer_t *buffer = job->buffer;
+	if (buffer == NULL) return;
 
 	int start = 0;
 	for (int i = 0; i < len; ++i) {

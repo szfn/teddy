@@ -1,4 +1,3 @@
-- BUG: close a buffer with an attached process, select kill & close -> everything closes
 - BUG: cd command doesn't work correctly?
 - BUG: never start on the command line
 - BUG: ctrl-backspace cuts to primary selection, it shouldn't
@@ -6,6 +5,7 @@
 
 - invert files and tags columns
 - add iopen to Tools menu (also add buffer open)
+- heuristic_new_open avoid thin columns
 - show file name before path in iopen window file panel
 - change where pid is displayed
 - commands that terminate quickly and leave no output should not get a buffer window

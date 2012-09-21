@@ -53,7 +53,8 @@ static int ask_for_closing_and_maybe_terminate(buffer_t *buffer, GtkWidget *wind
 
 	switch (result) {
 	case KILL_AND_CLOSE_RESPONSE:
-		kill(interp_context_buffer()->job->child_pid, SIGTERM);
+		kill(buffer->job->child_pid, SIGTERM);
+		buffer->job->buffer = NULL;
 		break;
 	case CANCEL_ACTION_RESPONSE:
 	default: return 0;
