@@ -42,11 +42,29 @@ static void interp_context_buffer_set(buffer_t *buffer) {
 	the_context_buffer = buffer;
 }
 
+#define ARGNUM(expr, name) { \
+	if (expr) { \
+		Tcl_AddErrorInfo(interp, "Wrong number of arguments to '" name "' command");\
+		return TCL_ERROR;\
+	} \
+}
+
+#define HASED(name) { \
+	if (interp_context_editor() == NULL) { \
+		Tcl_AddErrorInfo(interp, "No editor open, can not execute '" name "' command"); \
+		return TCL_ERROR; \
+	} \
+}
+
+#define HASBUF(name) { \
+	if (interp_context_buffer() == NULL) { \
+		Tcl_AddErrorInfo(interp, "No editor open, can not execute '" name "' command"); \
+		return TCL_ERROR; \
+	} \
+}
+
 static int teddy_cd_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
-	if (argc != 2) {
-		Tcl_AddErrorInfo(interp, "Wrong number of arguments to 'cd' command");
-		return TCL_ERROR;
-	}
+	ARGNUM((argc != 2), "cd");
 
 	top_cd(argv[1]);
 
@@ -54,10 +72,7 @@ static int teddy_cd_command(ClientData client_data, Tcl_Interp *interp, int argc
 }
 
 static int teddy_in_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
-	if (argc < 3) {
-		Tcl_AddErrorInfo(interp, "Wrong number of arguments to 'in' command");
-		return TCL_ERROR;
-	}
+	ARGNUM((argc < 3), "in");
 
 	char *wd = get_current_dir_name();
 	chdir(argv[1]);
@@ -73,10 +88,7 @@ static int teddy_in_command(ClientData client_data, Tcl_Interp *interp, int argc
 }
 
 static int teddy_pwf_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
-	if (interp_context_buffer() == NULL) {
-		Tcl_AddErrorInfo(interp, "No editor open, can not execute 'pwf' command");
-		return TCL_ERROR;
-	}
+	HASBUF("pwf");
 
 	Tcl_SetResult(interp, interp_context_buffer()->path, TCL_VOLATILE);
 	return TCL_OK;
@@ -88,10 +100,7 @@ static int teddy_iopen_command(ClientData client_data, Tcl_Interp *interp, int a
 }
 
 static int teddy_setcfg_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
-	if (argc < 3) {
-		Tcl_AddErrorInfo(interp, "Wrong number of arguments to setcfg");
-		return TCL_ERROR;
-	}
+	ARGNUM((argc < 3), "setcfg");
 
 	const char *name = NULL, *value = NULL;
 	config_t *config = (interp_context_buffer() != NULL) ? &(interp_context_buffer()->config) : &global_config;
@@ -136,16 +145,11 @@ static int teddy_setcfg_command(ClientData client_data, Tcl_Interp *interp, int 
 }
 
 static int teddy_bindkey_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
-	char *key, *value;
+	ARGNUM((argc != 3), "bindkey")
 
-	if (argc != 3) {
-		Tcl_AddErrorInfo(interp, "Wrong number of arguments to setcfg");
-		return TCL_ERROR;
-	}
-
-	key = malloc(sizeof(char) * (strlen(argv[1]) + 1));
+	char *key = malloc(sizeof(char) * (strlen(argv[1]) + 1));
 	strcpy(key, argv[1]);
-	value = malloc(sizeof(char) * (strlen(argv[2]) + 1));
+	char *value = malloc(sizeof(char) * (strlen(argv[2]) + 1));
 	strcpy(value, argv[2]);
 
 	g_hash_table_replace(keybindings, key, value);
@@ -184,48 +188,8 @@ static int teddy_cb_command(ClientData client_data, Tcl_Interp *interp, int argc
 	return TCL_OK;
 }
 
-static int teddy_save_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
-	if (interp_context_editor() == NULL) {
-		Tcl_AddErrorInfo(interp, "No editor open, can not execute 'save' command");
-		return TCL_ERROR;
-	}
-
-	if (argc != 1) {
-		Tcl_AddErrorInfo(interp, "Wrong number of arguments to 'save' command");
-		return TCL_ERROR;
-	}
-
-	editor_save_action(interp_context_editor());
-
-	return TCL_OK;
-}
-
-static int teddy_nexteditor_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
-	if (interp_context_editor() == NULL) {
-		Tcl_AddErrorInfo(interp, "No editor open, can not execute 'bufman' command");
-		return TCL_ERROR;
-	}
-
-	if (argc != 1) {
-		Tcl_AddErrorInfo(interp, "Wrong number of arguments to 'next-editor' command");
-		return TCL_ERROR;
-	}
-
-	tframe_t *context_frame;
-	find_editor_for_buffer(interp_context_buffer(), NULL, &context_frame, NULL);
-	if (context_frame != NULL) {
-		tframe_t *next_frame;
-		columns_find_frame(columnset, context_frame, NULL, NULL, NULL, NULL, &next_frame);
-		if (next_frame != NULL) gtk_widget_grab_focus(GTK_WIDGET(next_frame));
-	}
-	return TCL_OK;
-}
-
 static int teddy_undo_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
-	if (interp_context_editor() == NULL) {
-		Tcl_AddErrorInfo(interp, "No editor open, can not execute 'undo' command");
-		return TCL_ERROR;
-	}
+	HASED("undo");
 
 	if (argc == 1) {
 		editor_undo_action(interp_context_editor());
@@ -288,15 +252,8 @@ static int teddy_undo_command(ClientData client_data, Tcl_Interp *interp, int ar
 }
 
 static int teddy_search_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
-	if (interp_context_editor() == NULL) {
-		Tcl_AddErrorInfo(interp, "No editor open, can not execute 'search' command");
-		return TCL_ERROR;
-	}
-
-	if (argc > 2) {
-		Tcl_AddErrorInfo(interp, "Wrong number of arguments to 'search' command");
-		return TCL_ERROR;
-	}
+	HASED("search");
+	ARGNUM((argc > 2), "search");
 
 	editor_start_search(interp_context_editor(), SM_LITERAL, (argc == 1) ? NULL : argv[1]);
 
@@ -319,14 +276,9 @@ static void waitall(void) {
 }
 
 static int teddy_backgrounded_bg_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
-	pid_t child;
+	ARGNUM((argc != 2), "bg");
 
-	if (argc != 2) {
-		Tcl_AddErrorInfo(interp, "Wrong number of arguments to 'bg' command");
-		return TCL_ERROR;
-	}
-
-	child = fork();
+	pid_t child = fork();
 	if (child == -1) {
 		Tcl_AddErrorInfo(interp, "Fork failed");
 		return TCL_ERROR;
@@ -336,33 +288,28 @@ static int teddy_backgrounded_bg_command(ClientData client_data, Tcl_Interp *int
 		return TCL_OK;
 	}
 
-	{
-		int code = Tcl_Eval(interp, argv[1]);
-		if (code != TCL_OK) {
-			Tcl_Obj *options = Tcl_GetReturnOptions(interp, code);
-			Tcl_Obj *key = Tcl_NewStringObj("-errorinfo", -1);
-			Tcl_Obj *stackTrace;
-			Tcl_IncrRefCount(key);
-			Tcl_DictObjGet(NULL, options, key, &stackTrace);
-			Tcl_DecrRefCount(key);
+	int code = Tcl_Eval(interp, argv[1]);
+	if (code != TCL_OK) {
+		Tcl_Obj *options = Tcl_GetReturnOptions(interp, code);
+		Tcl_Obj *key = Tcl_NewStringObj("-errorinfo", -1);
+		Tcl_Obj *stackTrace;
+		Tcl_IncrRefCount(key);
+		Tcl_DictObjGet(NULL, options, key, &stackTrace);
+		Tcl_DecrRefCount(key);
 
-			fprintf(stderr, "TCL Exception: %s\n", Tcl_GetString(stackTrace));
-			waitall();
-			exit(EXIT_FAILURE);
-		} else {
-			waitall();
-			exit(atoi(Tcl_GetStringResult(interp)));
-		}
+		fprintf(stderr, "TCL Exception: %s\n", Tcl_GetString(stackTrace));
+		waitall();
+		exit(EXIT_FAILURE);
+	} else {
+		waitall();
+		exit(atoi(Tcl_GetStringResult(interp)));
 	}
 
 	exit(EXIT_SUCCESS); // the child's life end's here (if we didn't exec something before)
 }
 
 static int teddy_setenv_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
-	if (argc != 3) {
-		Tcl_AddErrorInfo(interp, "Wrong number of arguments to 'setenv' command");
-		return TCL_ERROR;
-	}
+	ARGNUM((argc != 3), "setenv");
 
 	if (setenv(argv[1], argv[2], 1) == -1) {
 		Tcl_AddErrorInfo(interp, "Error executing 'setenv' command");
@@ -397,10 +344,7 @@ static int teddy_bg_command(ClientData client_data, Tcl_Interp *interp, int argc
 	int masterfd;
 	struct termios term;
 
-	if (interp_context_editor() == NULL) {
-		Tcl_AddErrorInfo(interp, "No editor open, can not execute 'bg' command");
-		return TCL_ERROR;
-	}
+	HASED("bg");
 
 	const char *codearg;
 	buffer_t *buffer = NULL;
@@ -445,23 +389,21 @@ static int teddy_bg_command(ClientData client_data, Tcl_Interp *interp, int argc
 
 	configure_for_bg_execution(interp);
 
-	{
-		int code = Tcl_Eval(interp, codearg);
-		if (code != TCL_OK) {
-			Tcl_Obj *options = Tcl_GetReturnOptions(interp, code);
-			Tcl_Obj *key = Tcl_NewStringObj("-errorinfo", -1);
-			Tcl_Obj *stackTrace;
-			Tcl_IncrRefCount(key);
-			Tcl_DictObjGet(NULL, options, key, &stackTrace);
-			Tcl_DecrRefCount(key);
+	int code = Tcl_Eval(interp, codearg);
+	if (code != TCL_OK) {
+		Tcl_Obj *options = Tcl_GetReturnOptions(interp, code);
+		Tcl_Obj *key = Tcl_NewStringObj("-errorinfo", -1);
+		Tcl_Obj *stackTrace;
+		Tcl_IncrRefCount(key);
+		Tcl_DictObjGet(NULL, options, key, &stackTrace);
+		Tcl_DecrRefCount(key);
 
-			fprintf(stderr, "TCL Exception: %s\n", Tcl_GetString(stackTrace));
-			waitall();
-			exit(EXIT_FAILURE);
-		} else {
-			waitall();
-			exit(atoi(Tcl_GetStringResult(interp)));
-		}
+		fprintf(stderr, "TCL Exception: %s\n", Tcl_GetString(stackTrace));
+		waitall();
+		exit(EXIT_FAILURE);
+	} else {
+		waitall();
+		exit(atoi(Tcl_GetStringResult(interp)));
 	}
 
 	exit(EXIT_SUCCESS); // the child's life end's here (if we didn't exec something before)
@@ -486,27 +428,17 @@ static int teddy_rgbcolor_command(ClientData client_data, Tcl_Interp *interp, in
 }
 
 static int teddy_sendinput_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
-	job_t *job;
-	int i;
+	HASED("<");
+	ARGNUM((argc < 2), "<");
 
-	if (interp_context_editor() == NULL) {
-		Tcl_AddErrorInfo(interp, "No editor open, can not execute '<' command");
-		return TCL_ERROR;
-	}
-
-	if (argc < 2) {
-		Tcl_AddErrorInfo(interp, "Wrong number of arguments to '<' command");
-		return TCL_ERROR;
-	}
-
-	job = interp_context_buffer()->job;
+	job_t *job = interp_context_buffer()->job;
 
 	if (job == NULL) {
 		Tcl_AddErrorInfo(interp, "No job associated with this buffer, can not send input");
 		return TCL_ERROR;
 	}
 
-	for (i = 1; i < argc; ++i) {
+	for (int i = 1; i < argc; ++i) {
 		if (write_all(job->masterfd, argv[i]) < 0) {
 			Tcl_AddErrorInfo(interp, "Error sending input to process");
 			return TCL_ERROR;
@@ -530,10 +462,7 @@ static int teddy_sendinput_command(ClientData client_data, Tcl_Interp *interp, i
 }
 
 static int teddy_change_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
-	if (interp_context_buffer() == NULL) {
-		Tcl_AddErrorInfo(interp, "No buffer open, can not execute 'change' command");
-		return TCL_ERROR;
-	}
+	HASBUF("change");
 
 	switch (argc) {
 	case 1:
@@ -716,10 +645,7 @@ static int teddy_move_command(ClientData client_data, Tcl_Interp *interp, int ar
 	copy_lpoint(&(interp_context_buffer()->savedmark), &(interp_context_buffer()->mark));\
 }
 
-	if (interp_context_buffer() == NULL) {
-		Tcl_AddErrorInfo(interp, "No buffer open, can not execute 'move' command");
-		return TCL_ERROR;
-	}
+	HASBUF("move");
 
 	switch (argc) {
 	case 1:
@@ -806,10 +732,7 @@ static int teddy_kill_command(ClientData client_data, Tcl_Interp *interp, int ar
 	} else if (argc == 2) {
 		if (strcmp(argv[1], "process") == 0) {
 			// kill current process with SIGTERM (check that context_editor is defined and associated buffer has a job)
-			if (interp_context_buffer() == NULL) {
-				Tcl_AddErrorInfo(interp, "No active buffer");
-				return TCL_ERROR;
-			}
+			HASBUF("kill process");
 			if (interp_context_buffer()->job == NULL) {
 				Tcl_AddErrorInfo(interp, "No active job");
 				return TCL_ERROR;
@@ -817,17 +740,11 @@ static int teddy_kill_command(ClientData client_data, Tcl_Interp *interp, int ar
 			kill(interp_context_buffer()->job->child_pid, SIGTERM);
 		} else if (strcmp(argv[1], "buffer") == 0) {
 			// close buffer (check that context_editor is defined)
-			if (interp_context_buffer() == NULL) {
-				Tcl_AddErrorInfo(interp, "No active buffer");
-				return TCL_ERROR;
-			}
+			HASBUF("kill buffer");
 			buffers_close(interp_context_buffer(), gtk_widget_get_toplevel(GTK_WIDGET(interp_context_editor())), true);
 		} else if (argv[1][0] == '-') {
 			// kill current process with specific signal (check that context_editor is defined and associated buffer has a job)
-			if (interp_context_editor() == NULL) {
-				Tcl_AddErrorInfo(interp, "No active editor");
-				return TCL_ERROR;
-			}
+			HASBUF("kill -");
 			if (interp_context_buffer()->job == NULL) {
 				Tcl_AddErrorInfo(interp, "No active job");
 				return TCL_ERROR;
@@ -887,15 +804,6 @@ static int teddy_kill_command(ClientData client_data, Tcl_Interp *interp, int ar
 	return TCL_OK;
 }
 
-static int teddy_load_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
-	if (argc != 2) {
-		Tcl_AddErrorInfo(interp, "Wrong number of arguments supplied to 'load'");
-		return TCL_ERROR;
-	}
-
-	return Tcl_EvalFile(interp, argv[1]);
-}
-
 void interp_init(void) {
 	interp = Tcl_CreateInterp();
 	if (interp == NULL) {
@@ -926,8 +834,6 @@ void interp_init(void) {
 	Tcl_CreateCommand(interp, "iopen", &teddy_iopen_command, (ClientData)NULL, NULL);
 
 	Tcl_CreateCommand(interp, "cb", &teddy_cb_command, (ClientData)NULL, NULL);
-	Tcl_CreateCommand(interp, "save", &teddy_save_command, (ClientData)NULL, NULL);
-	Tcl_CreateCommand(interp, "next-editor", &teddy_nexteditor_command, (ClientData)NULL, NULL);
 	Tcl_CreateCommand(interp, "undo", &teddy_undo_command, (ClientData)NULL, NULL);
 	Tcl_CreateCommand(interp, "search", &teddy_search_command, (ClientData)NULL, NULL);
 
@@ -949,8 +855,6 @@ void interp_init(void) {
 	Tcl_CreateCommand(interp, "lexy-token", &lexy_token_command, (ClientData)NULL, NULL);
 
 	Tcl_CreateCommand(interp, "buffer", &teddy_buffer_command, (ClientData)NULL, NULL);
-
-	Tcl_CreateCommand(interp, "load", &teddy_load_command, (ClientData)NULL, NULL);
 
 	Tcl_CreateCommand(interp, "fdopen", &teddy_fdopen_command, (ClientData)NULL, NULL);
 	Tcl_CreateCommand(interp, "fdclose", &teddy_fdclose_command, (ClientData)NULL, NULL);

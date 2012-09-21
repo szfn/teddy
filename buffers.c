@@ -434,6 +434,13 @@ int teddy_buffer_command(ClientData client_data, Tcl_Interp *interp, int argc, c
 		char bufferid[20];
 		buffer_to_buffer_id(buffer, bufferid);
 		Tcl_SetResult(interp, bufferid, TCL_VOLATILE);
+	} else if (strcmp(argv[1], "save") == 0) {
+		if (argc != 2) {
+			Tcl_AddErrorInfo(interp, "Wrong number of arguments to 'save' command");
+			return TCL_ERROR;
+		}
+
+		editor_save_action(interp_context_editor());
 	} else if (strcmp(argv[1], "open") == 0) {
 		if (argc != 3) {
 			Tcl_AddErrorInfo(interp, "Wrong number of arguments to 'buffer open' command");
@@ -470,7 +477,7 @@ int teddy_buffer_command(ClientData client_data, Tcl_Interp *interp, int argc, c
 
 		editor_t *editor;
 		find_editor_for_buffer(buffer, NULL, NULL, &editor);
-		
+
 		if (editor != NULL) editor_grab_focus(editor, true);
 	} else if (strcmp(argv[1], "select-mode") == 0) {
 		if (argc != 3) {

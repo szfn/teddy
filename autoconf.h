@@ -16,7 +16,7 @@ bindkey Ctrl-y {c [cb pget]}\n\
 \n\
 bindkey Ctrl-u undo\n\
 \n\
-bindkey Ctrl-s save\n\
+bindkey Ctrl-s {buffer save}\n\
 \n\
 bindkey Ctrl-f search\n\
 bindkey Ctrl-g {search [teddyhistory search 1]}\n\

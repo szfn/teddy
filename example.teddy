@@ -13,7 +13,7 @@ bindkey Ctrl-y {c [cb pget]}
 
 bindkey Ctrl-u undo
 
-bindkey Ctrl-s save
+bindkey Ctrl-s {buffer save}
 
 bindkey Ctrl-f search
 bindkey Ctrl-g {search [teddyhistory search 1]}

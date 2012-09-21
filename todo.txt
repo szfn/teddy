@@ -7,7 +7,6 @@
 - dup buffer function?
 
 - show file name before path in iopen window file panel
-- save, refresh becomes a subcommand of buffer
 - better shell command, better pipe command
 - non editable bg buffers, send typed text to job stdin
 
