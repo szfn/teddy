@@ -30,7 +30,7 @@ bindkey Ctrl-End {m $:0}\n\
 \n\
 bindkey Ctrl-l iopen\n\
 \n\
-bindkey Ctrl-Backspace {m +0:-1w +0:+0; cb pput [c]; c \"\"}\n\
+bindkey Ctrl-Backspace {m +0:-1w +0:+0; c \"\"}\n\
 bindkey Ctrl-k kill_line\n\
 \n\
 bindkey Ctrl-, {bindent decr \"\\t\"}\n\

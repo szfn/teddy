@@ -87,7 +87,7 @@ int main(int argc, char *argv[]) {
 
 	enum go_file_failure_reason gffr;
 	buffer_t *cur_dir_buffer = go_file(".", false, &gffr);
-	heuristic_new_frame(columnset, NULL, cur_dir_buffer);
+	tframe_t *dirframe = heuristic_new_frame(columnset, NULL, cur_dir_buffer);
 
 	tframe_t *frame = NULL;
 
@@ -102,7 +102,7 @@ int main(int argc, char *argv[]) {
 		}
 	}
 
-
+	if (frame == NULL) frame = dirframe;
 
 	if (frame != NULL) {
 		GtkWidget *w = tframe_content(frame);

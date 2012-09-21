@@ -27,7 +27,7 @@ bindkey Ctrl-End {m $:0}
 
 bindkey Ctrl-l iopen
 
-bindkey Ctrl-Backspace {m +0:-1w +0:+0; cb pput [c]; c ""}
+bindkey Ctrl-Backspace {m +0:-1w +0:+0; c ""}
 bindkey Ctrl-k kill_line
 
 bindkey Ctrl-, {bindent decr "\t"}

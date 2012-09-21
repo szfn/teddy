@@ -1,6 +1,3 @@
-- BUG: cd command doesn't work correctly?
-- BUG: never start on the command line
-- BUG: ctrl-backspace cuts to primary selection, it shouldn't
 - BUG: focusin should remove focus from all editors and redraw those who had it
 
 - invert files and tags columns
