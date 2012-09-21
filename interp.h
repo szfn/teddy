@@ -25,4 +25,25 @@ void interp_return_point_pair(lpoint_t *mark, lpoint_t *cursor);
 void interp_frame_debug();
 bool interp_toplevel_frame();
 
+#define ARGNUM(expr, name) { \
+	if (expr) { \
+		Tcl_AddErrorInfo(interp, "Wrong number of arguments to '" name "' command");\
+		return TCL_ERROR;\
+	} \
+}
+
+#define HASED(name) { \
+	if (interp_context_editor() == NULL) { \
+		Tcl_AddErrorInfo(interp, "No editor open, can not execute '" name "' command"); \
+		return TCL_ERROR; \
+	} \
+}
+
+#define HASBUF(name) { \
+	if (interp_context_buffer() == NULL) { \
+		Tcl_AddErrorInfo(interp, "No editor open, can not execute '" name "' command"); \
+		return TCL_ERROR; \
+	} \
+}
+
 #endif

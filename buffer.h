@@ -162,7 +162,6 @@ void buffer_move_cursor_to_position(buffer_t *buffer, double x, double y);
 // removes trailing spaces from line unless line is exclusively made out of spaces
 void buffer_line_clean_trailing_spaces(buffer_t *buffer, real_line_t *line);
 
-void freeze_selection(buffer_t *buffer, selection_t *selection, lpoint_t *start, lpoint_t *end);
 void buffer_thaw_selection(buffer_t *buffer, selection_t *selection, lpoint_t *start, lpoint_t *end);
 
 void buffer_config_changed(buffer_t *buffer);

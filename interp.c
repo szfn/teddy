@@ -42,27 +42,6 @@ static void interp_context_buffer_set(buffer_t *buffer) {
 	the_context_buffer = buffer;
 }
 
-#define ARGNUM(expr, name) { \
-	if (expr) { \
-		Tcl_AddErrorInfo(interp, "Wrong number of arguments to '" name "' command");\
-		return TCL_ERROR;\
-	} \
-}
-
-#define HASED(name) { \
-	if (interp_context_editor() == NULL) { \
-		Tcl_AddErrorInfo(interp, "No editor open, can not execute '" name "' command"); \
-		return TCL_ERROR; \
-	} \
-}
-
-#define HASBUF(name) { \
-	if (interp_context_buffer() == NULL) { \
-		Tcl_AddErrorInfo(interp, "No editor open, can not execute '" name "' command"); \
-		return TCL_ERROR; \
-	} \
-}
-
 static int teddy_cd_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
 	ARGNUM((argc != 2), "cd");
 

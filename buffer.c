@@ -350,7 +350,7 @@ static void buffer_insert_multiline_text(buffer_t *buffer, lpoint_t *start_point
 	copy_lpoint(&(buffer->cursor), &point);
 }
 
-void freeze_selection(buffer_t *buffer, selection_t *selection, lpoint_t *start, lpoint_t *end) {
+static void freeze_selection(buffer_t *buffer, selection_t *selection, lpoint_t *start, lpoint_t *end) {
 	if ((start->line == NULL) || (end->line == NULL)) {
 		freeze_point(&(selection->start), &(buffer->cursor));
 		freeze_point(&(selection->end), &(buffer->cursor));

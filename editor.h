@@ -70,13 +70,12 @@ void editor_replace_selection(editor_t *editor, const char *new_text);
 
 /* actions */
 void editor_copy_action(editor_t *editor);
-void editor_insert_paste(editor_t *editor, GtkClipboard *clipboard); /* default_clipboard, selection_clipboard */
 void editor_cut_action(editor_t *editor);
 void editor_save_action(editor_t *editor);
 void editor_start_search(editor_t *editor, enum search_mode_t search_mode, const char *initial_search_term);
 void editor_undo_action(editor_t *editor);
 
-void set_label_text(editor_t *editor);
+//void set_label_text(editor_t *editor);
 
 void editor_complete_move(editor_t *editor, gboolean should_move_origin);
 

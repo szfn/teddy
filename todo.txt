@@ -1,3 +1,7 @@
+- replace rd with running ls with some options
+
+- BUG: two buffers can have focus after executing a program
+
 - automatically pop-up autocompletion and update autocompletions when leaving dirty rows (enter should not autocomplete, at least on the command line)
 - update autocompletions more frequently
 - focus refactoring
@@ -47,7 +51,6 @@
 
 - BUG: changing font after intialization results in trash (stuff in glyph_info isn't reloaded)
 - BUG: links should be resolved relative to directory for directory view
-- BUG: focusin should remove focus from all editors and redraw those who had it
 
 
 https://github.com/chriskempson/tomorrow-theme

@@ -391,38 +391,19 @@ buffer_t *buffer_id_to_buffer(const char *bufferid) {
 	return buffers[bid];
 }
 
-static void tcl_dict_add_string(Tcl_Obj *dict, const char *key, const char *value) {
-	Tcl_Obj *kobj = Tcl_NewStringObj(key, strlen(key));
-	Tcl_IncrRefCount(kobj);
-	Tcl_Obj *vobj;
-	if (value == NULL) {
-		vobj = Tcl_NewStringObj("", 0);
-	} else {
-		vobj = Tcl_NewStringObj(value, strlen(value));
-	}
-	Tcl_IncrRefCount(vobj);
-
-	Tcl_DictObjPut(interp, dict, kobj, vobj);
-	Tcl_DecrRefCount(kobj);
-	Tcl_DecrRefCount(vobj);
+#define BUFIDCHECK(buffer) { \
+	if (buffer == NULL) { \
+		Tcl_AddErrorInfo(interp, "Unknown buffer id");\
+		return TCL_ERROR;\
+	}\
 }
 
 int teddy_buffer_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
-	if (argc < 2) {
-		Tcl_AddErrorInfo(interp, "Wrong number of arguments to 'buffer' command");
-		return TCL_ERROR;
-	}
-
-	if (interp_context_editor() == NULL) {
-		Tcl_AddErrorInfo(interp, "buffer command invoked when no editor is active");
-		return TCL_ERROR;
-	}
+	ARGNUM((argc < 2), "buffer");
+	HASED("buffer");
 
 	if (strcmp(argv[1], "make") == 0) {
-		if (argc != 3) {
-			Tcl_AddErrorInfo(interp, "Wrong number of arguments to 'buffer make' command");
-			return TCL_ERROR;
-		}
+		ARGNUM((argc != 3), "buffer make");
 
 		buffer_t *buffer = buffers_create_with_name(strdup(argv[2]));
 		if (buffer != NULL) {
@@ -435,17 +416,11 @@ int teddy_buffer_command(ClientData client_data, Tcl_Interp *interp, int argc, c
 		buffer_to_buffer_id(buffer, bufferid);
 		Tcl_SetResult(interp, bufferid, TCL_VOLATILE);
 	} else if (strcmp(argv[1], "save") == 0) {
-		if (argc != 2) {
-			Tcl_AddErrorInfo(interp, "Wrong number of arguments to 'save' command");
-			return TCL_ERROR;
-		}
+		ARGNUM((argc != 2), "buffer save");
 
 		editor_save_action(interp_context_editor());
 	} else if (strcmp(argv[1], "open") == 0) {
-		if (argc != 3) {
-			Tcl_AddErrorInfo(interp, "Wrong number of arguments to 'buffer open' command");
-			return TCL_ERROR;
-		}
+		ARGNUM((argc != 3), "buffer open");
 
 		enum go_file_failure_reason gffr;
 		buffer_t *b = go_file(argv[2], false, &gffr);
@@ -464,10 +439,7 @@ int teddy_buffer_command(ClientData client_data, Tcl_Interp *interp, int argc, c
 			Tcl_SetResult(interp, "", TCL_VOLATILE);
 		}
 	} else if (strcmp(argv[1], "focus") == 0) {
-		if (argc != 3) {
-			Tcl_AddErrorInfo(interp, "Wrong number of arguments to 'buffer focus' command");
-			return TCL_ERROR;
-		}
+		ARGNUM((argc != 3), "buffer focus");
 
 		buffer_t *buffer = buffer_id_to_buffer(argv[2]);
 		if (buffer == NULL) {
@@ -480,10 +452,7 @@ int teddy_buffer_command(ClientData client_data, Tcl_Interp *interp, int argc, c
 
 		if (editor != NULL) editor_grab_focus(editor, true);
 	} else if (strcmp(argv[1], "select-mode") == 0) {
-		if (argc != 3) {
-			Tcl_AddErrorInfo(interp, "Wrong number of arguments to 'buffer select-mode' command");
-			return TCL_ERROR;
-		}
+		ARGNUM((argc != 3), "buffer select-mode");
 
 		if (strcmp(argv[2], "normal") == 0) {
 			buffer_change_select_type(interp_context_buffer(), BST_NORMAL);
@@ -502,61 +471,25 @@ int teddy_buffer_command(ClientData client_data, Tcl_Interp *interp, int argc, c
 			return TCL_ERROR;
 		}
 		return TCL_OK;
-	} else if (strcmp(argv[1], "scratch") == 0) {
-		if (argc != 2) {
-			Tcl_AddErrorInfo(interp, "Wrong number of arguments to 'buffer scratch' command");
-			return TCL_ERROR;
-		}
-
-		if (interp_context_editor() == NULL) {
-			Tcl_AddErrorInfo(interp, "Can not call 'buffer scratch' when no editor is active");
-			return TCL_ERROR;
-		}
-
-		int i;
-
-		for (i = 0; i < buffers_allocated; ++i) {
-			if (buffers[i] == NULL) continue;
-			if (strcmp(buffers[i]->path, "+scrach+") == 0) break;
-		}
-
-		buffer_t *buffer;
-
-		if (i >= buffers_allocated) {
-			buffer = buffers_create_with_name(strdup("+scratch+"));
-		} else {
-			buffer = buffers[i];
-		}
-
-		go_to_buffer(interp_context_editor(), buffer, false);
 	} else if (strcmp(argv[1], "current") == 0) {
+		HASBUF("buffer current");
 		char bufferid[20];
 		buffer_to_buffer_id(interp_context_buffer(), bufferid);
 		Tcl_SetResult(interp, bufferid, TCL_VOLATILE);
 	} else if (strcmp(argv[1], "propget") == 0) {
-		if (argc != 4) {
-			Tcl_AddErrorInfo(interp, "Wrong number of arguments to 'buffer propget' command");
-			return TCL_ERROR;
-		}
+		ARGNUM((argc != 4), "buffer propget");
 
 		const char *bufferid = argv[2];
 		const char *propname = argv[3];
 
 		buffer_t *buffer = buffer_id_to_buffer(bufferid);
-
-		if (buffer == NULL) {
-			Tcl_AddErrorInfo(interp, "Unknown buffer id");
-			return TCL_ERROR;
-		}
+		BUFIDCHECK(buffer);
 
 		char *propvalue = g_hash_table_lookup(buffer->props, propname);
 
 		Tcl_SetResult(interp, (propvalue != NULL) ? propvalue : "", TCL_VOLATILE);
 	} else if (strcmp(argv[1], "propset") == 0) {
-		if (argc != 5) {
-			Tcl_AddErrorInfo(interp, "Wrong number of arguments to 'buffer propset' command");
-			return TCL_ERROR;
-		}
+		ARGNUM((argc != 5), "buffer propset");
 
 		const char *bufferid = argv[2];
 		char *propname = strdup(argv[3]);
@@ -565,11 +498,7 @@ int teddy_buffer_command(ClientData client_data, Tcl_Interp *interp, int argc, c
 		alloc_assert(propname);
 
 		buffer_t *buffer = buffer_id_to_buffer(bufferid);
-
-		if (buffer == NULL) {
-			Tcl_AddErrorInfo(interp, "Unknown buffer id");
-			return TCL_ERROR;
-		}
+		BUFIDCHECK(buffer);
 
 		g_hash_table_insert(buffer->props, propname, propvalue);
 	} else if (strcmp(argv[1], "ls") == 0) {
@@ -595,51 +524,18 @@ int teddy_buffer_command(ClientData client_data, Tcl_Interp *interp, int argc, c
 		}
 
 		free(retval);
-	} else if (strcmp(argv[1], "info") == 0) {
-		if (argc != 3) {
-			Tcl_AddErrorInfo(interp, "Wrong number of arguments to 'buffer info'");
-			return TCL_ERROR;
-		}
-
-		const char *bufferid = argv[2];
-
-		buffer_t *buffer = buffer_id_to_buffer(bufferid);
-
-		if (buffer == NULL) {
-			Tcl_AddErrorInfo(interp, "Unknown buffer id");
-			return TCL_ERROR;
-		}
-
-		Tcl_Obj *ret = Tcl_NewDictObj();
-		Tcl_SetObjResult(interp, ret);
-
-		tcl_dict_add_string(ret, "id", bufferid);
-		tcl_dict_add_string(ret, "name", buffer->path);
-		tcl_dict_add_string(ret, "path", buffer->path);
-
-		return TCL_OK;
 	} else if (strcmp(argv[1], "setkeyprocessor") == 0) {
-		if (argc != 4) {
-			Tcl_AddErrorInfo(interp, "Wrong number of arguments to 'buffer setkeyprocessor'");
-			return TCL_ERROR;
-		}
+		ARGNUM((argc != 4), "buffer setkeyprocessor");
 
 		buffer_t *buffer = buffer_id_to_buffer(argv[2]);
-
-		if (buffer == NULL) {
-			Tcl_AddErrorInfo(interp, "Unknown buffer id");
-			return TCL_ERROR;
-		}
+		BUFIDCHECK(buffer);
 
 		if (buffer->keyprocessor != NULL) free(buffer->keyprocessor);
 		buffer->keyprocessor = strdup(argv[3]);
 
 		return TCL_OK;
 	} else if (strcmp(argv[1], "eval") == 0) {
-		if (argc != 4) {
-			Tcl_AddErrorInfo(interp, "Wrong number of arguments to 'buffer eval'");
-			return TCL_ERROR;
-		}
+		ARGNUM((argc != 4), "buffer eval");
 
 		buffer_t *buffer = NULL;
 		editor_t *editor = NULL;
@@ -652,13 +548,10 @@ int teddy_buffer_command(ClientData client_data, Tcl_Interp *interp, int argc, c
 			find_editor_for_buffer(buffer, NULL, NULL, &editor);
 		}
 
-		if (buffer != NULL) {
-			interp_eval(editor, buffer, argv[3], false);
-			if (strcmp(argv[2], "temp") == 0) buffer_free(buffer, false);
-		} else {
-			Tcl_AddErrorInfo(interp, "Wrong buffer id");
-			return TCL_ERROR;
-		}
+		BUFIDCHECK(buffer);
+
+		interp_eval(editor, buffer, argv[3], false);
+		if (strcmp(argv[2], "temp") == 0) buffer_free(buffer, false);
 	} else {
 		Tcl_AddErrorInfo(interp, "Unknown subcommmand of 'buffer' command");
 		return TCL_ERROR;

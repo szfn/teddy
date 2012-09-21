@@ -55,7 +55,7 @@ static void gtk_teditor_class_init(editor_class *class) {
 static void gtk_teditor_init(editor_t *editor) {
 }
 
-void set_label_text(editor_t *editor) {
+static void set_label_text(editor_t *editor) {
 	tframe_t *frame;
 	find_editor_for_buffer(editor->buffer, NULL, &frame, NULL);
 
@@ -122,22 +122,6 @@ static bool editor_maybe_show_completions(editor_t *editor, bool autoinsert) {
 	return true;
 }
 
-void editor_replace_selection(editor_t *editor, const char *new_text) {
-	buffer_replace_selection(editor->buffer, new_text);
-
-	column_t *column;
-	if (find_editor_for_buffer(editor->buffer, &column, NULL, NULL))
-		columns_set_active(columnset, column);
-
-	set_label_text(editor);
-	editor_center_on_cursor(editor);
-	gtk_widget_queue_draw(editor->drar);
-
-	if (COMPL_WND_VISIBLE(editor->completer)) {
-		editor_maybe_show_completions(editor, false);
-	}
-}
-
 void editor_center_on_cursor(editor_t *editor) {
 	double x, y;
 	GtkAllocation allocation;
@@ -164,6 +148,22 @@ void editor_center_on_cursor(editor_t *editor) {
 		}
 	}
 
+}
+
+void editor_replace_selection(editor_t *editor, const char *new_text) {
+	buffer_replace_selection(editor->buffer, new_text);
+
+	column_t *column;
+	if (find_editor_for_buffer(editor->buffer, &column, NULL, NULL))
+		columns_set_active(columnset, column);
+
+	set_label_text(editor);
+	editor_center_on_cursor(editor);
+	gtk_widget_queue_draw(editor->drar);
+
+	if (COMPL_WND_VISIBLE(editor->completer)) {
+		editor_maybe_show_completions(editor, false);
+	}
 }
 
 static void editor_include_cursor(editor_t *editor) {
@@ -210,30 +210,13 @@ static void editor_get_primary_selection(GtkClipboard *clipboard, GtkSelectionDa
 void editor_complete_move(editor_t *editor, gboolean should_move_origin) {
 	COMPL_WND_HIDE(editor->completer);
 	gtk_widget_queue_draw(editor->drar);
-
 	editor->cursor_visible = TRUE;
-
-	if (should_move_origin) {
-		editor_center_on_cursor(editor);
-	}
-
+	if (should_move_origin) editor_center_on_cursor(editor);
 	lexy_update_for_move(editor->buffer, editor->buffer->cursor.line);
 }
 
-static void text_entry_callback(GtkIMContext *context, gchar *str, gpointer data) {
-	editor_t *editor = (editor_t *)data;
-	//printf("entered: %s\n", str);
-
+static void text_entry_callback(GtkIMContext *context, gchar *str, editor_t *editor) {
 	editor_replace_selection(editor, str);
-}
-
-void editor_insert_paste(editor_t *editor, GtkClipboard *clipboard) {
-	gchar *text = gtk_clipboard_wait_for_text(clipboard);
-	if (text == NULL) return;
-
-	editor_replace_selection(editor, text);
-
-	g_free(text);
 }
 
 void editor_switch_buffer(editor_t *editor, buffer_t *buffer) {
@@ -703,7 +686,12 @@ static gboolean button_press_callback(GtkWidget *widget, GdkEventButton *event, 
 		move_cursor_to_mouse(editor, event->x, event->y);
 		buffer_unset_mark(editor->buffer);
 		editor_complete_move(editor, TRUE);
-		editor_insert_paste(editor, selection_clipboard);
+
+		gchar *text = gtk_clipboard_wait_for_text(selection_clipboard);
+		if (text != NULL) {
+			editor_replace_selection(editor, text);
+			g_free(text);
+		}
 	} else if (event->button == 3) {
 		lpoint_t start, end;
 		buffer_get_selection(editor->buffer, &start, &end);
@@ -1320,22 +1308,6 @@ static void reload_stale_callback(GtkButton *btn, editor_t *editor) {
 	buffers_refresh(editor->buffer);
 }
 
-static void eval_menu_item_callback(GtkMenuItem *menuitem, editor_t *editor) {
-	lpoint_t start, end;
-	buffer_get_selection(editor->buffer, &start, &end);
-
-	if (start.line == NULL) return;
-	if (end.line == NULL) return;
-
-	char *selection = buffer_lines_to_text(editor->buffer, &start, &end);
-
-	if (selection == NULL) return;
-
-	interp_eval(editor, NULL, selection, true);
-
-	free(selection);
-}
-
 static char *get_selection_or_file_link(editor_t *editor, bool *islink) {
 	buffer_t *buffer = editor->buffer;
 	lpoint_t start, end;
@@ -1352,6 +1324,16 @@ static char *get_selection_or_file_link(editor_t *editor, bool *islink) {
 	}
 
 	return NULL;
+}
+
+static void eval_menu_item_callback(GtkMenuItem *menuitem, editor_t *editor) {
+	bool islink;
+	char *selection = get_selection_or_file_link(editor, &islink);
+	if (selection == NULL) return;
+
+	interp_eval(editor, NULL, selection, true);
+
+	free(selection);
 }
 
 static void search_menu_item_callback(GtkMenuItem *menuitem, editor_t *editor) {
@@ -1395,7 +1377,7 @@ static void copy_to_cmdline_callback(GtkMenuItem *menuitem, editor_t *editor) {
 	char *selection = get_selection_or_file_link(editor, &islink);
 	if (selection == NULL) return;
 
-	top_start_command_line(editor, selection);	
+	top_start_command_line(editor, selection);
 
 	free(selection);
 }

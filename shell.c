@@ -9,15 +9,14 @@
 #include <sys/wait.h>
 #include <sys/types.h>
 
+#include "interp.h"
+
 int teddy_fdopen_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
 	int i, intr;
 	int flags = 0;
 	Tcl_Obj *r;
 
-	if (argc < 3) {
-		Tcl_AddErrorInfo(interp, "Wrong number of arguments ot 'fdopen' command");
-		return TCL_ERROR;
-	}
+	ARGNUM((argc < 3), "fdopen");
 
 	for (i = 1; i < argc; ++i) {
 		if (argv[i][0] != '-') break;
@@ -88,10 +87,7 @@ int teddy_fdclose_command(ClientData client_data, Tcl_Interp *interp, int argc, 
 	Tcl_Obj *r;
 	int intr;
 
-	if (argc != 2) {
-		Tcl_AddErrorInfo(interp, "Wrong number of arguments to 'fdclose' command");
-		return TCL_ERROR;
-	}
+	ARGNUM((argc != 2), "fdclose");
 
 	intr = close(atoi(argv[1]));
 	r = Tcl_NewIntObj(intr);
@@ -108,10 +104,7 @@ int teddy_fddup2_command(ClientData client_data, Tcl_Interp *interp, int argc, c
 	Tcl_Obj *r;
 	int intr;
 
-	if (argc != 3) {
-		Tcl_AddErrorInfo(interp, "Wrong number of arguments to 'fddup2' command");
-		return TCL_ERROR;
-	}
+	ARGNUM((argc != 3), "fddup2");
 
 	intr = dup2(atoi(argv[1]), atoi(argv[2]));
 	r = Tcl_NewIntObj(intr);
@@ -129,10 +122,7 @@ int teddy_fdpipe_command(ClientData client_data, Tcl_Interp *interp, int argc, c
 	int ret;
 	Tcl_Obj *pipeobj[2], *retlist;
 
-	if (argc != 1) {
-		Tcl_AddErrorInfo(interp, "Wrong number of arguments to 'fdpipe' command");
-		return TCL_ERROR;
-	}
+	ARGNUM((argc != 1), "fdpipe");
 
 	ret = pipe(pipefd);
 
@@ -156,20 +146,15 @@ int teddy_fdpipe_command(ClientData client_data, Tcl_Interp *interp, int argc, c
 }
 
 int teddy_posixfork_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
-	Tcl_Obj *r;
-	int intr;
+	ARGNUM((argc != 1), "posixfork");
 
-	if (argc != 1) {
-		Tcl_AddErrorInfo(interp, "Wrong number of arguments to posixfork command");
-		return TCL_ERROR;
-	}
-
-	intr = fork();
-	r = Tcl_NewIntObj(intr);
+	int intr = fork();
 	if (intr == -1) {
 		Tcl_AddErrorInfo(interp, "Error executing posixfork command");
 		return TCL_ERROR;
 	}
+
+	Tcl_Obj *r = Tcl_NewIntObj(intr);
 	Tcl_SetObjResult(interp, r);
 
 	return TCL_OK;
@@ -178,10 +163,9 @@ int teddy_posixfork_command(ClientData client_data, Tcl_Interp *interp, int argc
 int teddy_posixexec_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
 	// first argument passed to this command is the name of this command (i.e. the string "posixexec") this needs to be discarded before calling execvp and a NULL needs to be appended to argv as a terminator
 
-	int i;
 	char ** newargv = malloc(sizeof(char *) * argc);
 
-	for (i = 1; i < argc; ++i) {
+	for (int i = 1; i < argc; ++i) {
 		newargv[i-1] = (char *)argv[i];
 	}
 	newargv[argc-1] = NULL;
@@ -201,10 +185,7 @@ int teddy_posixwaitpid_command(ClientData client_data, Tcl_Interp *interp, int a
 	pid_t pid;
 	Tcl_Obj *retval[2], *retlist;
 
-	if (argc < 2) {
-		Tcl_AddErrorInfo(interp, "Wrong number of arguments ot 'posixwaitpid' command");
-		return TCL_ERROR;
-	}
+	ARGNUM((argc < 2), "posixwaitpid");
 
 	for (i = 1; i < argc; ++i) {
 		if (argv[i][0] != '-') break;
@@ -254,21 +235,13 @@ int teddy_posixwaitpid_command(ClientData client_data, Tcl_Interp *interp, int a
 }
 
 int teddy_posixexit_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
-	if (argc != 2) {
-		Tcl_AddErrorInfo(interp, "Wrong number of arguments ot 'posixwaitpid' command");
-		return TCL_ERROR;
-	}
-
+	ARGNUM((argc != 2), "posixexit");
 	exit(atoi(argv[1]));
-
 	return TCL_OK;
 }
 
 int teddy_fd2channel_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
-	if (argc != 3) {
-		Tcl_AddErrorInfo(interp, "fd2channel command can not be called without an argument");
-		return TCL_ERROR;
-	}
+	ARGNUM((argc != 3), "fd2channel");
 
 	int fd = atoi(argv[1]);
 	const char *type = argv[2];
