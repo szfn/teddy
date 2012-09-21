@@ -53,6 +53,7 @@ Associates one tokenizer with a file extension.
 #define LEXY_TOKENIZER_NUMBER 0xff
 #define LEXY_STATE_BLOCK_SIZE 16
 #define LEXY_ASSOCIATION_NUMBER 1024
+#define LEXY_LINE_LENGTH_LIMIT 512
 
 #define LEXY_LOAD_HOOK_MAX_COUNT 1000
 
@@ -587,6 +588,14 @@ int lexy_token_command(ClientData client_data, Tcl_Interp *interp, int argc, con
 
 static void lexy_update_one_token(buffer_t *buffer, real_line_t *line, int *glyph, struct lexy_tokenizer *tokenizer, int *state) {
 	int base = tokenizer->status_pointers[*state].index;
+
+	if (line->cap > LEXY_LINE_LENGTH_LIMIT)  {
+		for (; *glyph < line->cap; ++(*glyph)) {
+			line->glyph_info[*glyph].color = CFG_LEXY_NOTHING - CFG_LEXY_NOTHING;
+		}
+		return;
+	}
+
 	for (int offset = 0; offset < LEXY_STATE_BLOCK_SIZE; ++offset) {
 		struct lexy_row *row = tokenizer->rows + base + offset;
 		//printf("\t\toffset = %d base = %d enabled = %d\n", offset, base, row->enabled);

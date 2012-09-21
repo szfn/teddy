@@ -4,6 +4,7 @@
 - BUG: ctrl-backspace cuts to primary selection, it shouldn't
 - BUG: focusin should remove focus from all editors and redraw those who had it
 
+- invert files and tags columns
 - add iopen to Tools menu (also add buffer open)
 - show file name before path in iopen window file panel
 - change where pid is displayed
