@@ -19,6 +19,7 @@ typedef struct _job_t {
 	int used;
 	pid_t child_pid;
 	struct _buffer_t *buffer;
+	bool terminating;
 
 	int masterfd;
 	GIOChannel *pipe_from_child;
@@ -33,6 +34,8 @@ typedef struct _job_t {
 	enum ansi_state ansi_state;
 	char ansiseq[ANSI_SEQ_MAX_LEN];
 	int ansiseq_cap;
+
+	char *command;
 } job_t;
 
 #define MAX_JOBS 128

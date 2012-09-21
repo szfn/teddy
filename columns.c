@@ -437,11 +437,20 @@ tframe_t *heuristic_new_frame(columns_t *columns, tframe_t *spawning_frame, buff
 		if (!garbage) destcol = columns_active(columns);
 
 		if (destcol == NULL) {
-			destcol = GTK_COLUMN(g_list_last(list_cols)->data);
+			GList *cur = g_list_last(list_cols);
+			while (cur != NULL) {
+				GtkAllocation allocation;
+				gtk_widget_get_allocation(cur->data, &allocation);
+				if (allocation.width >= 200) break;
+				cur = cur->prev;
+			}
+			if (cur != NULL) destcol = cur->data;
 		}
 
-		r = new_in_column(columns, destcol, buffer);
-		goto heuristic_new_frame_return;
+		if (destcol != NULL) {
+			r = new_in_column(columns, destcol, buffer);
+			goto heuristic_new_frame_return;
+		}
 	}
 
 	// couldn't make a new frame, we fail

@@ -395,7 +395,6 @@ static void configure_for_bg_execution(Tcl_Interp *interp) {
 static int teddy_bg_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
 	pid_t child;
 	int masterfd;
-	buffer_t *buffer;
 	struct termios term;
 
 	if (interp_context_editor() == NULL) {
@@ -404,12 +403,12 @@ static int teddy_bg_command(ClientData client_data, Tcl_Interp *interp, int argc
 	}
 
 	const char *codearg;
+	buffer_t *buffer = NULL;
 	if (argc == 2) {
 		if (strcmp(argv[1], "-setup") == 0) {
 			configure_for_bg_execution(interp);
 			return TCL_OK;
 		} else {
-			buffer = buffers_get_buffer_for_process();
 			codearg = argv[1];
 		}
 	} else if (argc == 3) {
@@ -420,7 +419,7 @@ static int teddy_bg_command(ClientData client_data, Tcl_Interp *interp, int argc
 		return TCL_ERROR;
 	}
 
-	go_to_buffer(interp_context_editor(), buffer, false);
+	if (buffer != NULL) go_to_buffer(interp_context_editor(), buffer, false);
 
 	bzero(&term, sizeof(struct termios));
 

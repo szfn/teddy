@@ -10,6 +10,7 @@
 #include "baux.h"
 #include "tags.h"
 #include "buffers.h"
+#include "iopen.h"
 
 GtkWidget *top_notebook;
 buffer_t *cmdline_buffer;
@@ -130,6 +131,10 @@ static void close_mitem_callback(GtkMenuItem *menuitem, gpointer data) {
 	gtk_widget_destroy(toplevel);
 }
 
+static void iopen_mitem_callback(GtkMenuItem *menuitem, gpointer data) {
+	iopen();
+}
+
 GtkWidget *top_init(void) {
 	top_notebook = gtk_notebook_new();
 	gtk_notebook_set_show_tabs(GTK_NOTEBOOK(top_notebook), FALSE);
@@ -179,6 +184,10 @@ GtkWidget *top_init(void) {
 	/**** TOOLS MENU ****/
 
 	tools_menu = gtk_menu_new();
+
+	GtkWidget *iopen_mitem = gtk_menu_item_new_with_label("Search file");
+	g_signal_connect(G_OBJECT(iopen_mitem), "activate", G_CALLBACK(iopen_mitem_callback), NULL);
+	gtk_menu_append(tools_menu, iopen_mitem);
 
 	GtkWidget *new_column_mitem = gtk_menu_item_new_with_label("New column");
 	g_signal_connect(G_OBJECT(new_column_mitem), "activate", G_CALLBACK(new_column_mitem_callback), NULL);

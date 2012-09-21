@@ -13,8 +13,11 @@
 #include "lexy.h"
 #include "top.h"
 #include "global.h"
+#include "buffers.h"
+#include "go.h"
 
 #define JOBS_READ_BUFFER_SIZE 2048
+#define SHOWANYWAY_TIMO 500
 
 void jobs_init(void) {
 	int i;
@@ -150,6 +153,33 @@ static void jobs_child_watch_function(GPid pid, gint status, job_t *job) {
 	job_destroy(job);
 }
 
+
+static void job_attach_to_buffer(job_t *job, const char *command, buffer_t *buffer) {
+	if (job->buffer != NULL) return;
+	job->buffer = buffer;
+	job->buffer->job = job;
+
+	buffer_aux_clear(buffer);
+
+	if (command != NULL) {
+		char *msg;
+		asprintf(&msg, "%% %s\n", command);
+		job_append(job, msg, strlen(msg), 0);
+		free(msg);
+	}
+}
+
+static void job_create_buffer(job_t *job) {
+	if (job->buffer != NULL) return;
+	if (job->terminating) return;
+
+	buffer_t *buffer = buffers_get_buffer_for_process();
+	job_attach_to_buffer(job, job->command, buffer);
+	go_to_buffer(NULL, buffer, false);
+	free(job->command);
+	job->command = NULL;
+}
+
 static gboolean jobs_input_watch_function(GIOChannel *source, GIOCondition condition, job_t *job) {
 	char buf[JOBS_READ_BUFFER_SIZE];
 	char *msg;
@@ -157,6 +187,10 @@ static gboolean jobs_input_watch_function(GIOChannel *source, GIOCondition condi
 	GIOStatus r = g_io_channel_read_chars(source, buf, JOBS_READ_BUFFER_SIZE-1, &bytes_read, NULL);
 
 	buf[bytes_read] = '\0';
+
+	if (r != G_IO_STATUS_EOF) {
+		job_create_buffer(job);
+	}
 
 	if (!job->ratelimit_silenced) {
 		ansi_append(job, buf, (size_t)bytes_read);
@@ -206,7 +240,12 @@ static gboolean jobs_input_watch_function(GIOChannel *source, GIOCondition condi
 	}
 }
 
-int jobs_register(pid_t child_pid, int masterfd, struct _buffer_t *buffer, const char *command) {
+static gboolean autoshow_job_buffer(job_t *job) {
+	job_create_buffer(job);
+	return FALSE;
+}
+
+int jobs_register(pid_t child_pid, int masterfd, buffer_t *buffer, const char *command) {
 	int i;
 	for (i = 0; i < MAX_JOBS; ++i) {
 		if (!(jobs[i].used)) break;
@@ -217,8 +256,8 @@ int jobs_register(pid_t child_pid, int masterfd, struct _buffer_t *buffer, const
 	jobs[i].used = 1;
 	jobs[i].child_pid = child_pid;
 	jobs[i].masterfd = masterfd;
-	jobs[i].buffer = buffer;
-	jobs[i].buffer->job = jobs+i;
+	jobs[i].buffer = NULL;
+	jobs[i].terminating = false;
 
 	jobs[i].pipe_from_child = g_io_channel_unix_new(masterfd);
 	g_io_channel_set_encoding(jobs[i].pipe_from_child, NULL, NULL);
@@ -238,12 +277,12 @@ int jobs_register(pid_t child_pid, int masterfd, struct _buffer_t *buffer, const
 
 	jobs[i].pipe_from_child_source_id = g_io_add_watch(jobs[i].pipe_from_child, G_IO_IN|G_IO_HUP, (GIOFunc)(jobs_input_watch_function), jobs+i);
 
-	buffer_aux_clear(buffer);
-
-	char *msg;
-	asprintf(&msg, "%% %s\t\t(pid: %d)\n", command, child_pid);
-	job_append(jobs+i, msg, strlen(msg), 0);
-	free(msg);
+	if (buffer != NULL) {
+		job_attach_to_buffer(jobs+i, command, buffer);
+	} else {
+		jobs[i].command = strdup(command);
+		g_timeout_add(SHOWANYWAY_TIMO, (GSourceFunc)autoshow_job_buffer, (gpointer)(jobs+i));
+	}
 
 	return 1;
 }
