@@ -31,7 +31,7 @@ void quit_search_mode(editor_t *editor) {
 
 	editor->buffer->mark.line = NULL;
 	editor->buffer->mark.glyph = 0;
-	
+
 	gtk_widget_grab_focus(editor->drar);
 	gtk_widget_queue_draw(GTK_WIDGET(editor));
 }
@@ -144,10 +144,7 @@ static bool regmatch_to_lpoints(struct augmented_lpoint_t *search_point, regmatc
 	}
 }
 
-static bool move_regexp_search_forward(struct research_t *research, bool execute) {
-	lpoint_t *cursor = &(research->buffer->cursor);
-	lpoint_t *mark = &(research->buffer->mark);
-
+static bool move_regexp_search_forward(struct research_t *research, bool execute, lpoint_t *mark, lpoint_t *cursor) {
 	//printf("Moving forward search <%s> limit %p/%d (%p/%d) %d\n", research->cmd, research->regex_endpoint.line, (research->regex_endpoint.line != NULL) ? research->regex_endpoint.line->lineno : -1, cursor->line, cursor->line->lineno, cursor_on_last_line_before);
 	if (execute && (research->cmd != NULL) && (mark->line != NULL)) {
 		editor_t *editor;
@@ -237,7 +234,7 @@ void move_search(editor_t *editor, bool ctrl_g_invoked, bool direction_forward, 
 		break;
 	case SM_REGEXP:
 		if (ctrl_g_invoked) {
-			move_regexp_search_forward(&(editor->research), replace);
+			move_regexp_search_forward(&(editor->research), replace, &(editor->buffer->mark), &(editor->buffer->cursor));
 		}
 		break;
 	case SM_NONE:
@@ -257,8 +254,15 @@ void research_init(struct research_t *r) {
 }
 
 void do_regex_noninteractive_search(struct research_t *research) {
-	move_regexp_search_forward(research, false);
-	interp_return_point_pair(&(research->buffer->mark), &(research->buffer->cursor));
+	lpoint_t mark;
+	lpoint_t cursor;
+	copy_lpoint(&mark, &(research->buffer->mark));
+	copy_lpoint(&cursor, &(research->buffer->cursor));
+
+	printf("cursor %p buffer cursor %p\n", cursor.line, research->buffer->cursor.line);
+
+	move_regexp_search_forward(research, false, &mark, &cursor);
+	interp_return_point_pair(&mark, &cursor);
 	research_free_temp(research);
 }
 
@@ -266,7 +270,7 @@ void do_regex_noninteractive_replace(struct research_t *research) {
 	bool execute = false;
 	bool r = true;
 	do {
-		r = move_regexp_search_forward(research, execute);
+		r = move_regexp_search_forward(research, execute, &(research->buffer->mark), &(research->buffer->cursor));
 		execute = true;
 	} while (r);
 
@@ -288,7 +292,7 @@ void start_regex_interactive(struct research_t *research, const char *regexp) {
 	asprintf(&msg, "Regexp {%s} {%s}", regexp, (editor->research.cmd != NULL) ? editor->research.cmd : "");
 	alloc_assert(msg);
 	editor_start_search(editor, SM_REGEXP, msg);
-	move_regexp_search_forward(&(editor->research), false);
+	move_regexp_search_forward(&(editor->research), false, &(research->buffer->mark), &(research->buffer->cursor));
 	free(msg);
 }
 
@@ -388,12 +392,13 @@ int teddy_research_command(ClientData client_data, Tcl_Interp *interp, int argc,
 			do_regex_noninteractive_replace(&research);
 
 			char *replaced_text = buffer_all_lines_to_text(tempbuf);
-			buffer_replace_selection(mainbuf, replaced_text);
+			if (interp_context_editor() != NULL)
+				editor_replace_selection(interp_context_editor(), replaced_text);
+			else
+				buffer_replace_selection(mainbuf, replaced_text);
 			free(replaced_text);
 
 			buffer_free(tempbuf, false);
-
-			if (interp_context_editor() != NULL) set_label_text(interp_context_editor());
 
 			return TCL_OK;
 		}
