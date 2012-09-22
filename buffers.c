@@ -37,6 +37,13 @@ buffer_t *null_buffer(void) {
 #define KILL_AND_CLOSE_RESPONSE 4
 
 static int ask_for_closing_and_maybe_terminate(buffer_t *buffer, GtkWidget *window) {
+	if (buffer->path[strlen(buffer->path)-1] == '/') {
+		kill(buffer->job->child_pid, SIGTERM);
+		buffer->job->terminating = true;
+		buffer->job->buffer = NULL;
+		return 1;
+	}
+
 	GtkWidget *dialog = gtk_dialog_new_with_buttons("Close Buffer", GTK_WINDOW(window), GTK_DIALOG_MODAL|GTK_DIALOG_DESTROY_WITH_PARENT, "Kill and close", KILL_AND_CLOSE_RESPONSE, "Cancel", CANCEL_ACTION_RESPONSE, NULL);
 
 	char *msg;
@@ -108,7 +115,7 @@ static int ask_for_closing_and_maybe_save(buffer_t *buffer, GtkWidget *window) {
 int buffers_close(buffer_t *buffer, GtkWidget *window, bool save_critbit) {
 	if (buffers[0] == buffer) return 1;
 
-	if (buffer->modified) {
+	if (buffer->modified && (buffer->path[strlen(buffer->path)-1] != '/')) {
 		int r = ask_for_closing_and_maybe_save(buffer, window);
 		if (r == 0) return 0;
 	}
@@ -165,10 +172,15 @@ static void maybe_stale_buffer(int wd) {
 
 	//printf("<%s> %ld %ld %ld\n", buffer->path, buf.st_mtime, buffer->mtime, buf.st_size);
 
-	if (buf.st_mtime < buffer->mtime+60) return;
+	if (buf.st_mtime < buffer->mtime+30) return;
+	if (buf.st_size <= 0) return;
 
-	if (!(buffer->modified) && config_intval(&(buffer->config), CFG_AUTORELOAD) && (buf.st_size > 0)) {
+	//printf("Checking for staleness <%s>\n", buffer->path);
+
+	if (buffer->path[strlen(buffer->path)-1] == '/') {
 		//printf("Refreshing stale buffer: <%s>\n", buffer->path);
+		buffers_refresh(buffer);
+	} else if (!(buffer->modified) && config_intval(&(buffer->config), CFG_AUTORELOAD)) {
 		buffers_refresh(buffer);
 	} else {
 		buffer->editable = false;
@@ -310,29 +322,6 @@ int buffers_close_all(GtkWidget *window) {
 	return 1;
 }
 
-buffer_t *buffers_find_buffer_from_path(const char *urp) {
-	char *rp = realpath(urp, NULL);
-	buffer_t *r = NULL;
-	int i;
-
-	if (rp == NULL) {
-		return NULL;
-	}
-
-	for (i = 0; i < buffers_allocated; ++i) {
-		if (buffers[i] == NULL) continue;
-		if (!(buffers[i]->has_filename)) continue;
-		if (buffers[i]->path == NULL) continue;
-		if (strcmp(buffers[i]->path, rp) == 0) {
-			r = buffers[i];
-			break;
-		}
-	}
-
-	free(rp);
-	return r;
-}
-
 buffer_t *buffers_create_with_name(char *name) {
 	buffer_t *buffer = buffer_create();
 	if (buffer->path != NULL) {
@@ -398,18 +387,53 @@ buffer_t *buffer_id_to_buffer(const char *bufferid) {
 	}\
 }
 
+buffer_t *buffers_find_buffer_from_path(const char *urp) {
+	char *rp = realpath(urp, NULL);
+	buffer_t *r = NULL;
+	int i;
+
+	if (rp == NULL) {
+		return NULL;
+	}
+
+	for (i = 0; i < buffers_allocated; ++i) {
+		if (buffers[i] == NULL) continue;
+		if (!(buffers[i]->has_filename)) continue;
+		if (buffers[i]->path == NULL) continue;
+		if (strcmp(buffers[i]->path, rp) == 0) {
+			r = buffers[i];
+			break;
+		}
+	}
+
+	free(rp);
+	return r;
+}
+
+static buffer_t *buffers_find_buffer_with_name(const char *name) {
+	for (int i = 0; i < buffers_allocated; ++i) {
+		if (strcmp(buffers[i]->path, name) == 0) {
+			return buffers[i];
+		}
+	}
+
+	return NULL;
+}
+
 int teddy_buffer_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
 	ARGNUM((argc < 2), "buffer");
-	HASED("buffer");
 
 	if (strcmp(argv[1], "make") == 0) {
 		ARGNUM((argc != 3), "buffer make");
 
-		buffer_t *buffer = buffers_create_with_name(strdup(argv[2]));
-		if (buffer != NULL) {
-			tframe_t *frame;
-			find_editor_for_buffer(interp_context_buffer(), NULL, &frame, NULL);
-			heuristic_new_frame(columnset, frame, buffer);
+		buffer_t *buffer = buffers_find_buffer_with_name(argv[2]);
+		if (buffer == NULL) {
+			buffer = buffers_create_with_name(strdup(argv[2]));
+			if (buffer != NULL) {
+				tframe_t *frame;
+				find_editor_for_buffer(interp_context_buffer(), NULL, &frame, NULL);
+				heuristic_new_frame(columnset, frame, buffer);
+			}
 		}
 
 		char bufferid[20];
@@ -417,10 +441,12 @@ int teddy_buffer_command(ClientData client_data, Tcl_Interp *interp, int argc, c
 		Tcl_SetResult(interp, bufferid, TCL_VOLATILE);
 	} else if (strcmp(argv[1], "save") == 0) {
 		ARGNUM((argc != 2), "buffer save");
+		HASED("buffer");
 
 		editor_save_action(interp_context_editor());
 	} else if (strcmp(argv[1], "open") == 0) {
 		ARGNUM((argc != 3), "buffer open");
+		HASBUF("buffer open");
 
 		enum go_file_failure_reason gffr;
 		buffer_t *b = go_file(argv[2], false, &gffr);
@@ -442,10 +468,7 @@ int teddy_buffer_command(ClientData client_data, Tcl_Interp *interp, int argc, c
 		ARGNUM((argc != 3), "buffer focus");
 
 		buffer_t *buffer = buffer_id_to_buffer(argv[2]);
-		if (buffer == NULL) {
-			Tcl_AddErrorInfo(interp, "Argument passed to 'buffer focus' was not a buffer");
-			return TCL_ERROR;
-		}
+		BUFIDCHECK(buffer);
 
 		editor_t *editor;
 		find_editor_for_buffer(buffer, NULL, NULL, &editor);
@@ -453,6 +476,7 @@ int teddy_buffer_command(ClientData client_data, Tcl_Interp *interp, int argc, c
 		if (editor != NULL) editor_grab_focus(editor, true);
 	} else if (strcmp(argv[1], "select-mode") == 0) {
 		ARGNUM((argc != 3), "buffer select-mode");
+		HASBUF("buffer select-mode");
 
 		if (strcmp(argv[2], "normal") == 0) {
 			buffer_change_select_type(interp_context_buffer(), BST_NORMAL);
@@ -584,6 +608,14 @@ void word_completer_full_update(void) {
 void buffers_refresh(buffer_t *buffer) {
 	editor_t *editor;
 	find_editor_for_buffer(buffer, NULL, NULL, &editor);
+
+	if (buffer->path[strlen(buffer->path)-1] == '/') {
+		buffer_aux_clear(buffer);
+		const char *cmd[] = { "teddy_intl::dir", buffer->path };
+		interp_eval_command(NULL, NULL, 2, cmd);
+		buffer->mtime = time(NULL);
+		return;
+	}
 
 	// do not refresh special buffers
 	if (buffer->path[0] == '+') return;

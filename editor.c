@@ -16,7 +16,6 @@
 #include "go.h"
 #include "cfg.h"
 #include "lexy.h"
-#include "rd.h"
 #include "foundry.h"
 #include "top.h"
 

@@ -1,7 +1,8 @@
-- replace rd with running ls with some options
-
 - BUG: two buffers can have focus after executing a program
 
+- BUG: autoscroll doesn't work again at the end of the screen (and make it faster)
+- inotify execute things 30 seconds after they are requested to eliminate duplicate requests
+- searching shouldn't put stuff into primary selection
 - automatically pop-up autocompletion and update autocompletions when leaving dirty rows (enter should not autocomplete, at least on the command line)
 - update autocompletions more frequently
 - focus refactoring
@@ -10,6 +11,7 @@
 	- the two options should be set simultaneously
 - dup buffer function?
 
+- cmdcompl should have only one critbit tree (discard it and remerge with path executables when changing directory)
 - show file name before path in iopen window file panel
 - better shell command, better pipe command
 - non editable bg buffers, send typed text to job stdin
@@ -44,6 +46,7 @@
 - cleanup of unused functions (how?)
 - all configuration options in the default configuration file with comments
 - open in a directory view is relative to the directory
+- directories should be links too
 - possibility to specify selection background exactly (instead of difference)
 
 - document:

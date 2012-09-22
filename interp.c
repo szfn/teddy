@@ -323,8 +323,6 @@ static int teddy_bg_command(ClientData client_data, Tcl_Interp *interp, int argc
 	int masterfd;
 	struct termios term;
 
-	HASED("bg");
-
 	const char *codearg;
 	buffer_t *buffer = NULL;
 	if (argc == 2) {
@@ -335,14 +333,17 @@ static int teddy_bg_command(ClientData client_data, Tcl_Interp *interp, int argc
 			codearg = argv[1];
 		}
 	} else if (argc == 3) {
-		buffer = buffers_create_with_name(strdup(argv[1]));
+		buffer = buffer_id_to_buffer(argv[1]);
+		if (buffer == NULL) {
+			buffer = buffers_create_with_name(strdup(argv[1]));
+			if (buffer != NULL) go_to_buffer(interp_context_editor(), buffer, false);
+		}
 		codearg = argv[2];
 	} else {
 		Tcl_AddErrorInfo(interp, "Wrong number of arguments to 'bg' command");
 		return TCL_ERROR;
 	}
 
-	if (buffer != NULL) go_to_buffer(interp_context_editor(), buffer, false);
 
 	bzero(&term, sizeof(struct termios));
 

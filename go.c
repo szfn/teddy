@@ -15,7 +15,6 @@
 #include "global.h"
 #include "columns.h"
 #include "lexy.h"
-#include "rd.h"
 #include "top.h"
 
 buffer_t *go_file(const char *filename, bool create, enum go_file_failure_reason *gffr) {
@@ -54,10 +53,11 @@ buffer_t *go_file(const char *filename, bool create, enum go_file_failure_reason
 	buffer = buffer_create();
 
 	if (S_ISDIR(s.st_mode)) {
-		if (load_dir(buffer, urp) != 0) {
-			buffer_free(buffer, false);
-			buffer = NULL;
-		}
+		load_dir(buffer, urp);
+		buffers_add(buffer);
+		const char *cmd[] = { "teddy_intl::dir", urp };
+		interp_eval_command(NULL, NULL, 2, cmd);
+		buffer->mtime = time(NULL);
 	} else {
 		int r = load_text_file(buffer, urp);
 		if (r != 0) {
@@ -67,10 +67,10 @@ buffer_t *go_file(const char *filename, bool create, enum go_file_failure_reason
 			buffer_free(buffer, false);
 			buffer = NULL;
 		}
-	}
 
-	if (buffer != NULL) {
-		buffers_add(buffer);
+		if (buffer != NULL) {
+			buffers_add(buffer);
+		}
 	}
 
 go_file_return:
@@ -108,17 +108,3 @@ editor_t *go_to_buffer(editor_t *editor, buffer_t *buffer, bool take_over) {
 
 	return editor;
 }
-
-/*
- examples:
-  bim/bam/bla.c:7,32:
-  bim/bam/bla.c(2:2):
-  bim/bam/bla.c:[2,3]:
-  bim/bam/bla.c[2:3]
-  bim/bam/bla.c:2:
-  bim/bam/bla.c(2)
-  bim/bam/bla.c:[2]
-  bla.c
-
-  TODO: check python and perl formats
-*/

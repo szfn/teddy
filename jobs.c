@@ -87,13 +87,6 @@ static void ansi_append_escape(job_t *job) {
 		}
 	} else {
 		job_append(job, "<esc>", strlen("<esc>"), 0);
-
-		/*
-		printf("esc is [");
-		for (int j = esc_start; j <= i; ++j) {
-			printf("%c", msg[j]);
-		}
-		printf("]\n");*/
 	}
 }
 
@@ -146,10 +139,12 @@ static void ansi_append(job_t *job, const char *msg, int len) {
 }
 
 static void jobs_child_watch_function(GPid pid, gint status, job_t *job) {
-	char *msg;
-	asprintf(&msg, "~ %d\n", status);
-	job_append(job, msg, strlen(msg), 1);
-	free(msg);
+	if ((job->buffer == NULL) || (job->buffer->path[0] != '+')) {
+		char *msg;
+		asprintf(&msg, "~ %d\n", status);
+		job_append(job, msg, strlen(msg), 1);
+		free(msg);
+	}
 	job_destroy(job);
 }
 
@@ -161,7 +156,7 @@ static void job_attach_to_buffer(job_t *job, const char *command, buffer_t *buff
 
 	buffer_aux_clear(buffer);
 
-	if (command != NULL) {
+	if ((command != NULL) && (buffer->path[0] == '+')) {
 		char *msg;
 		asprintf(&msg, "%% %s\n", command);
 		job_append(job, msg, strlen(msg), 0);
@@ -214,9 +209,6 @@ static gboolean jobs_input_watch_function(GIOChannel *source, GIOCondition condi
 	case G_IO_STATUS_ERROR:
 		if (condition & G_IO_HUP) {
 			// we don't say nothing here, just wait for death
-			/*asprintf(&msg, "~ HUP for PID %d\n", job->child_pid);
-			job_append(job, msg, strlen(msg), 1);
-			free(msg);*/
 		} else {
 			asprintf(&msg, "~ (i/o error)\n");
 			job_append(job, msg, strlen(msg), 1);

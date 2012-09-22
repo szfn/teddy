@@ -11,7 +11,6 @@
 #include "columns.h"
 #include "baux.h"
 #include "lexy.h"
-#include "rd.h"
 #include "interp.h"
 #include "foundry.h"
 
@@ -565,10 +564,10 @@ void load_empty(buffer_t *buffer) {
 }
 
 int load_dir(buffer_t *buffer, const char *dirname) {
-	DIR *dir = opendir(dirname);
+	/*DIR *dir = opendir(dirname);
 	if (dir == NULL) {
 		return -1;
-	}
+	}*/
 
 	buffer->cursor.line = buffer->real_line = new_real_line(0);
 	buffer->cursor.glyph = 0;
@@ -585,9 +584,9 @@ int load_dir(buffer_t *buffer, const char *dirname) {
 
 	buffer_setup_hook(buffer);
 
-	rd(dir, buffer);
+	/*rd(dir, buffer);
 
-	closedir(dir);
+	closedir(dir);*/
 
 	//buffer->editable = false;
 	buffer->modified = false;

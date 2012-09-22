@@ -10,7 +10,7 @@ proc kill_line {} {\n\
    }\n\
    c \"\"\n\
    undo tag kill_line\n\
-   cb pput [undo get before]\n\
+   cb put [undo get before]\n\
 }\n\
 \n\
 proc shell_perform_redirection {redirection} {\n\
@@ -686,9 +686,23 @@ namespace eval teddy_intl {\n\
 \n\
 		buffer focus $b\n\
 	}\n\
+\n\
+	namespace export dir\n\
+	proc dir {directory} {\n\
+	 	if {[string index $directory end] != \"/\"} {\n\
+	 		set directory \"$directory/\"\n\
+	 	}\n\
+		set b [buffer make $directory]\n\
+		#buffer eval $b { c \"CIAO!\" }\n\
+		bg $b { shell ls {*}$teddy::ls_options $directory }\n\
+	}\n\
 }\n\
 \n\
 namespace eval teddy {\n\
+	namespace export ls_options\n\
+\n\
+	set ls_options {-F -1 --group-directories-first}\n\
+\n\
 	namespace export lineof\n\
 	proc lineof {x} {\n\
 		return [lindex [split $x \":\"] 0]\n\

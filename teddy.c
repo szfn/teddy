@@ -13,7 +13,6 @@
 #include "cfg.h"
 #include "research.h"
 #include "lexy.h"
-#include "rd.h"
 #include "baux.h"
 #include "foundry.h"
 #include "iopen.h"
@@ -32,7 +31,6 @@ int main(int argc, char *argv[]) {
 	gtk_init(&argc, &argv);
 
 	foundry_init();
-	rd_init();
 
 	history_init(&command_history);
 	history_init(&search_history);
