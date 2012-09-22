@@ -1,5 +1,3 @@
-- automatically pop-up autocompletion and update autocompletions when leaving dirty rows (enter should not autocomplete, at least on the command line)
-- update autocompletions more frequently
 - focus refactoring
 	- focus follows mouse should be sloppy
 	- warp modes should include no-warp, warp-to-top, warp-to-cursor
@@ -7,19 +5,11 @@
 - dup buffer function?
 
 - cmdcompl should have only one critbit tree (discard it and remerge with path executables when changing directory)
-- show file name before path in iopen window file panel
-- better shell command, better pipe command
+- better shell command, remove pipe command (can be done with c and shell)
 - non editable bg buffers, send typed text to job stdin
 
 - set column number for background processes whenever possible
-- keyboard marking should behave like mouse marking and not constantly update the clipboard with serialized data
- - after command execution, keypress and mouse movement execute the following:
- - if no selection is active release the primary clipboard
- - if a selection is active capture the primary clipboard
- - center click paste needs to collect the selection text before changing mark and cursor. That's all
- - no primary clipboard implicit management happens inside scripts or on macro recording
 - tabs
-- slash all special mouse actions, add menus and close buttons
 - guessing indentation (dtrt-indent mode1)
 - auto-equalize indentation on paste
 - macro recording
@@ -29,18 +19,11 @@
 - make lexy a flat table, lexyassoc just gives the starting state but we can move to other states (implement mixed html / javascript mode)
 - multiprocess highlighting
 
-- comment region command
 - ability to persist the status of a window
-- auto-reloading buffers when there is no change and the file on disk was changed
-- debugger integration (just displaying currently executed line)
-- selection should copy selected text on past not on selection, for better efficiency (selection slowdown is noticeable on mouse selection)
 - extend regular expressions in 's' to be lexically aware
-- word movement, word selection and tokenization should be tied to syntax analysis
-- make easy way to reindent though external filter
-- use an editor for the command line
 - cleanup of unused functions (how?)
 - all configuration options in the default configuration file with comments
-- open in a directory view is relative to the directory
+- open in a directory view should be relative to the directory
 - directories should be links too
 - possibility to specify selection background exactly (instead of difference)
 
@@ -48,7 +31,6 @@
  s, c, m, ss, regexp, regsub, new buffer subcommands, tags
 
 - BUG: changing font after intialization results in trash (stuff in glyph_info isn't reloaded)
-- BUG: links should be resolved relative to directory for directory view
 
 
 https://github.com/chriskempson/tomorrow-theme

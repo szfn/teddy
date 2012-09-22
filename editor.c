@@ -65,6 +65,12 @@ static void set_label_text(editor_t *editor) {
 	}
 }
 
+static void dirty_line_update(editor_t *editor) {
+	editor->dirty_line = false;
+	buffer_wordcompl_update_line(editor->buffer->cursor.line, &(editor->buffer->cbt));
+	word_completer_full_update();
+}
+
 void editor_absolute_cursor_position(editor_t *editor, double *x, double *y, double *alty) {
 	buffer_cursor_position(editor->buffer, x, y);
 	*y -= gtk_adjustment_get_value(GTK_ADJUSTMENT(editor->adjustment));
@@ -86,7 +92,7 @@ static bool editor_maybe_show_completions(editor_t *editor, bool autoinsert) {
 	size_t wordcompl_prefix_len;
 	uint16_t *prefix = editor->completer->prefix_from_buffer(editor->completer->this, editor->buffer, &wordcompl_prefix_len);
 
-	if (wordcompl_prefix_len == 0) {
+	if (wordcompl_prefix_len <= (autoinsert ? 0 : 2)) {
 		COMPL_WND_HIDE(editor->completer);
 		return false;
 	}
@@ -160,9 +166,9 @@ void editor_replace_selection(editor_t *editor, const char *new_text) {
 	editor_center_on_cursor(editor);
 	gtk_widget_queue_draw(editor->drar);
 
-	if (COMPL_WND_VISIBLE(editor->completer)) {
-		editor_maybe_show_completions(editor, false);
-	}
+	editor->dirty_line = true;
+
+	editor_maybe_show_completions(editor, false);
 }
 
 static void editor_include_cursor(editor_t *editor) {
@@ -311,7 +317,7 @@ static bool mark_move(editor_t *editor, bool shift) {
 		return true;
 	} else {
 		if (!shift) {
-			freeze_primary_selection(editor);
+			//freeze_primary_selection(editor);
 			buffer_unset_mark(editor->buffer);
 			return false;
 		} else {
@@ -462,9 +468,11 @@ static gboolean key_press_callback(GtkWidget *widget, GdkEventKey *event, editor
 			return TRUE;
 
 		case GDK_KEY_Up:
+			dirty_line_update(editor);
 			if (mark_move(editor, shift)) buffer_move_point_line(editor->buffer, &(editor->buffer->cursor), MT_REL, -1);
 			goto key_press_return_true;
 		case GDK_KEY_Down:
+			dirty_line_update(editor);
 			if (mark_move(editor, shift)) buffer_move_point_line(editor->buffer, &(editor->buffer->cursor), MT_REL, +1);
 			goto key_press_return_true;
 		case GDK_KEY_Right:
@@ -475,10 +483,12 @@ static gboolean key_press_callback(GtkWidget *widget, GdkEventKey *event, editor
 			goto key_press_return_true;
 
 		case GDK_KEY_Page_Up:
+			dirty_line_update(editor);
 			mark_move(editor, shift);
 			buffer_move_point_line(editor->buffer, &(editor->buffer->cursor), MT_REL, -(allocation.height / editor->buffer->line_height) + 2);
 			goto key_press_return_true;
 		case GDK_KEY_Page_Down:
+			dirty_line_update(editor);
 			mark_move(editor, shift);
 			buffer_move_point_line(editor->buffer, &(editor->buffer->cursor), MT_REL, +(allocation.height / editor->buffer->line_height) - 2);
 			goto key_press_return_true;
@@ -518,6 +528,7 @@ static gboolean key_press_callback(GtkWidget *widget, GdkEventKey *event, editor
 			if (editor->single_line) {
 				editor->single_line_return(editor);
 			} else {
+				dirty_line_update(editor);
 				char *r = alloca(sizeof(char) * (editor->buffer->cursor.line->cap + 2));
 				if (config_intval(&(editor->buffer->config), CFG_AUTOINDENT)) {
 					buffer_indent_newline(editor->buffer, r);
@@ -651,6 +662,8 @@ static bool on_file_link(editor_t *editor, double x, double y, lpoint_t *r) {
 
 static gboolean button_press_callback(GtkWidget *widget, GdkEventButton *event, editor_t *editor) {
 	gtk_widget_grab_focus(editor->drar);
+
+	dirty_line_update(editor);
 
 	if (event->button == 1) {
 		lpoint_t p;
@@ -1395,6 +1408,7 @@ editor_t *new_editor(buffer_t *buffer, bool single_line) {
 	r->center_on_cursor_after_next_expose = TRUE;
 	r->warp_mouse_after_next_expose = FALSE;
 	r->completer = &the_generic_word_completer;
+	r->dirty_line = false;
 
 	r->single_line_escape = NULL;
 	r->single_line_return = NULL;

@@ -40,5 +40,6 @@ void buffer_aux_clear(buffer_t *buffer);
 void buffer_get_extremes(buffer_t *buffer, lpoint_t *start, lpoint_t *end);
 char *buffer_all_lines_to_text(buffer_t *buffer);
 void buffer_select_all(buffer_t *buffer);
+void buffer_wordcompl_update_line(real_line_t *line, critbit0_tree *c);
 
 #endif

@@ -321,7 +321,7 @@ static void buffer_wordcompl_update_word(real_line_t *line, int start, int end, 
 	free(r);
 }
 
-static void buffer_wordcompl_update_line(real_line_t *line, critbit0_tree *c) {
+void buffer_wordcompl_update_line(real_line_t *line, critbit0_tree *c) {
 	int start = -1;
 	for (int i = 0; i < line->cap; ++i) {
 		if (start < 0) {
