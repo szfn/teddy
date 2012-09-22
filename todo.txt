@@ -1,4 +1,3 @@
-- searching shouldn't put stuff into primary selection
 - automatically pop-up autocompletion and update autocompletions when leaving dirty rows (enter should not autocomplete, at least on the command line)
 - update autocompletions more frequently
 - focus refactoring

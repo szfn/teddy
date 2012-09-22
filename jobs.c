@@ -139,7 +139,7 @@ static void ansi_append(job_t *job, const char *msg, int len) {
 }
 
 static void jobs_child_watch_function(GPid pid, gint status, job_t *job) {
-	if ((job->buffer == NULL) || (job->buffer->path[0] != '+')) {
+	if ((job->buffer != NULL) && (job->buffer->path[0] == '+')) {
 		char *msg;
 		asprintf(&msg, "~ %d\n", status);
 		job_append(job, msg, strlen(msg), 1);

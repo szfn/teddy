@@ -259,8 +259,6 @@ void do_regex_noninteractive_search(struct research_t *research) {
 	copy_lpoint(&mark, &(research->buffer->mark));
 	copy_lpoint(&cursor, &(research->buffer->cursor));
 
-	printf("cursor %p buffer cursor %p\n", cursor.line, research->buffer->cursor.line);
-
 	move_regexp_search_forward(research, false, &mark, &cursor);
 	interp_return_point_pair(&mark, &cursor);
 	research_free_temp(research);
