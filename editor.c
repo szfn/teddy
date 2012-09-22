@@ -741,7 +741,7 @@ static gboolean scroll_callback(GtkWidget *widget, GdkEventScroll *event, editor
 }
 
 static void selection_move(editor_t *editor, double x, double y) {
-	move_cursor_to_mouse(editor, x, y);
+	move_cursor_to_mouse(editor, x+editor->buffer->em_advance, y+editor->buffer->line_height);
 	gtk_clipboard_set_with_data(selection_clipboard, &selection_clipboard_target_entry, 1, (GtkClipboardGetFunc)editor_get_primary_selection, NULL, editor);
 	//editor_center_on_cursor(editor);
 	editor_include_cursor(editor);
@@ -770,6 +770,9 @@ static gboolean motion_callback(GtkWidget *widget, GdkEventMotion *event, editor
 	if (editor->mouse_marking) {
 		GtkAllocation allocation;
 		gtk_widget_get_allocation(editor->drar, &allocation);
+
+		allocation.width -= 10;
+		allocation.height -= 10;
 
 		gdouble x = event->x + allocation.x, y = event->y + allocation.y;
 

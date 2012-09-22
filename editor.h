@@ -8,7 +8,7 @@
 #include <gtk/gtk.h>
 
 #define LOCKED_COMMAND_LINE_SIZE 256
-#define AUTOSCROLL_TIMO 250
+#define AUTOSCROLL_TIMO 100
 
 #define GTK_TYPE_TEDITOR (gtk_teditor_get_type())
 #define GTK_TEDITOR(obj) (G_TYPE_CHECK_INSTANCE_CAST((obj), GTK_TYPE_TEDITOR, editor_t))
