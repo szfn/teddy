@@ -27,14 +27,9 @@ guint cmdline_notebook_page, status_notebook_page;
 static void execute_command(editor_t *editor) {
 	char *command = buffer_all_lines_to_text(editor->buffer);
 
-	//printf("Context editor: %p\n", top_context_editor());
-
 	interp_eval(top_context_editor(), NULL, command, false);
 
-	if (top_context_editor() != NULL) {
-		buffer_extend_selection_by_select_type(top_context_editor()->buffer);
-		editor_complete_move(top_context_editor(), true);
-	}
+	if (top_context_editor() != NULL) gtk_widget_queue_draw(GTK_WIDGET(top_context_editor()));
 
 	history_add(&command_history, time(NULL), working_directory, command, true);
 

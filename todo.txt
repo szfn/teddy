@@ -1,5 +1,3 @@
-- BUG: two buffers can have focus after executing a program
-
 - BUG: autoscroll doesn't work again at the end of the screen (and make it faster)
 - inotify execute things 30 seconds after they are requested to eliminate duplicate requests
 - searching shouldn't put stuff into primary selection
