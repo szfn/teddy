@@ -288,7 +288,7 @@ void buffers_add(buffer_t *b) {
 	}
 
 	if ((b->path[0] != '+') && (inotify_fd >= 0)) {
-		b->inotify_wd = inotify_add_watch(inotify_fd, b->path, IN_MODIFY);
+		b->inotify_wd = inotify_add_watch(inotify_fd, b->path, IN_CLOSE_WRITE);
 	}
 
 	word_completer_full_update();
@@ -650,5 +650,5 @@ void buffers_refresh(buffer_t *buffer) {
 
 void buffers_register_tags(const char *tags_file) {
 	if (tags_wd < 0) inotify_rm_watch(inotify_fd, tags_wd);
-	tags_wd = inotify_add_watch(inotify_fd, tags_file, IN_MODIFY);
+	tags_wd = inotify_add_watch(inotify_fd, tags_file, IN_CLOSE_WRITE);
 }

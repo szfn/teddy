@@ -115,7 +115,7 @@ static bool iopen_other_keys(editor_t *editor, bool shift, bool ctrl, bool alt, 
 	if (!shift && !ctrl && !alt && !super) {
 		GtkTreePath *path;
 
-		if (selected_tree == NULL) selected_tree = files_tree;
+		if (selected_tree == NULL) selected_tree = tags_tree;
 
 		switch (keyval) {
 		case GDK_KEY_Up:
