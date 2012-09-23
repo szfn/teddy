@@ -30,17 +30,13 @@ extern GHashTable *keybindings;
 #define MIN_LINES_HEIGHT_REQUEST 0
 #define MIN_EM_COLUMN_SIZE_ATTEMPTED 50
 
-#define SPACEMAN_SAVE_RADIUS 150
-
 extern int focus_can_follow_mouse;
 
 extern struct history search_history;
 extern struct history command_history;
 
 extern struct completer the_word_completer;
-extern generic_completer_t the_generic_word_completer;
-extern struct clcompleter the_cmd_completer;
-extern generic_completer_t the_generic_cmd_completer;
+extern struct completer the_cmd_completer;
 
 void global_init();
 

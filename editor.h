@@ -50,7 +50,8 @@ typedef struct _editor_t {
 
 	char locked_command_line[LOCKED_COMMAND_LINE_SIZE];
 
-	generic_completer_t *completer;
+	struct completer *completer;
+	struct completer *alt_completer;
 
 	struct research_t research;
 	GtkWidget *prev_search_button, *execute_search_button, *execute_all_search_button;
@@ -65,19 +66,13 @@ GType gtk_teditor_get_type(void) G_GNUC_CONST;
 editor_t *new_editor(buffer_t *buffer, bool single_line);
 void editor_free(editor_t *editor);
 void editor_switch_buffer(editor_t *editor, buffer_t *buffer);
-gint editor_get_height_request(editor_t *editor);
 void editor_center_on_cursor(editor_t *editor);
 
 void editor_replace_selection(editor_t *editor, const char *new_text);
 
-/* actions */
-void editor_copy_action(editor_t *editor);
-void editor_cut_action(editor_t *editor);
-void editor_save_action(editor_t *editor);
 void editor_start_search(editor_t *editor, enum search_mode_t search_mode, const char *initial_search_term);
+void editor_save_action(editor_t *editor);
 void editor_undo_action(editor_t *editor);
-
-//void set_label_text(editor_t *editor);
 
 void editor_complete_move(editor_t *editor, gboolean should_move_origin);
 

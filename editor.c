@@ -71,17 +71,17 @@ static void dirty_line_update(editor_t *editor) {
 	word_completer_full_update();
 }
 
-static bool editor_maybe_show_completions(editor_t *editor, bool autoinsert) {
+static bool editor_maybe_show_completions(editor_t *editor, struct completer *completer, bool autoinsert, int min) {
 	size_t wordcompl_prefix_len;
-	uint16_t *prefix = editor->completer->prefix_from_buffer(editor->completer->this, editor->buffer, &wordcompl_prefix_len);
+	uint16_t *prefix = completer->prefix_from_buffer(editor->buffer, &wordcompl_prefix_len);
 
-	if (wordcompl_prefix_len <= (autoinsert ? 0 : 2)) {
-		COMPL_WND_HIDE(editor->completer);
+	if (wordcompl_prefix_len <= min) {
+		compl_wnd_hide(completer);
 		return false;
 	}
 
 	char *utf8prefix = string_utf16_to_utf8(prefix, wordcompl_prefix_len);
-	char *completion = COMPL_COMPLETE(editor->completer, utf8prefix);
+	char *completion = compl_complete(completer, utf8prefix);
 
 	if (completion != NULL) {
 		bool empty_completion = strcmp(completion, "") == 0;
@@ -91,17 +91,17 @@ static bool editor_maybe_show_completions(editor_t *editor, bool autoinsert) {
 		editor_absolute_cursor_position(editor, &x, &y, &alty);
 
 		if (empty_completion || !autoinsert) {
-			COMPL_WND_SHOW(editor->completer, utf8prefix, x, y, alty, gtk_widget_get_toplevel(GTK_WIDGET(editor)));
+			compl_wnd_show(completer, utf8prefix, x, y, alty, gtk_widget_get_toplevel(GTK_WIDGET(editor)), false, false);
 		} else {
 			char *new_prefix;
 			asprintf(&new_prefix, "%s%s", utf8prefix, completion);
 			alloc_assert(new_prefix);
-			COMPL_WND_SHOW(editor->completer, new_prefix, x, y, alty, gtk_widget_get_toplevel(GTK_WIDGET(editor)));
+			compl_wnd_show(completer, new_prefix, x, y, alty, gtk_widget_get_toplevel(GTK_WIDGET(editor)), false, false);
 			free(new_prefix);
 		}
 		free(completion);
 	} else {
-		COMPL_WND_HIDE(editor->completer);
+		compl_wnd_hide(completer);
 	}
 
 	free(prefix);
@@ -135,7 +135,6 @@ void editor_center_on_cursor(editor_t *editor) {
 			gtk_adjustment_set_value(GTK_ADJUSTMENT(editor->hadjustment), x - allocation.width / 2);
 		}
 	}
-
 }
 
 void editor_replace_selection(editor_t *editor, const char *new_text) {
@@ -151,8 +150,12 @@ void editor_replace_selection(editor_t *editor, const char *new_text) {
 
 	editor->dirty_line = true;
 
-	if (config_intval(&(editor->buffer->config), CFG_AUTOCOMPL_POPUP) || COMPL_WND_VISIBLE(editor->completer)) {
-		editor_maybe_show_completions(editor, false);
+	if (compl_wnd_visible(editor->completer)) {
+		editor_maybe_show_completions(editor, editor->completer, false, 2);
+	} else if (compl_wnd_visible(editor->alt_completer)) {
+		editor_maybe_show_completions(editor, editor->alt_completer, false, 0);
+	} else if (config_intval(&(editor->buffer->config), CFG_AUTOCOMPL_POPUP)) {
+		editor_maybe_show_completions(editor, editor->completer, false, 2);
 	}
 }
 
@@ -198,7 +201,8 @@ static void editor_get_primary_selection(GtkClipboard *clipboard, GtkSelectionDa
 }
 
 void editor_complete_move(editor_t *editor, gboolean should_move_origin) {
-	COMPL_WND_HIDE(editor->completer);
+	compl_wnd_hide(editor->completer);
+	compl_wnd_hide(editor->alt_completer);
 	gtk_widget_queue_draw(editor->drar);
 	editor->cursor_visible = TRUE;
 	if (should_move_origin) editor_center_on_cursor(editor);
@@ -312,6 +316,7 @@ static bool mark_move(editor_t *editor, bool shift) {
 }
 
 void editor_save_action(editor_t *editor) {
+	interp_eval(editor, NULL, "buffer_save_hook", false);
 	save_to_text_file(editor->buffer);
 	set_label_text(editor);
 }
@@ -349,9 +354,9 @@ static void full_keyevent_to_string(guint keyval, int super, int ctrl, int alt, 
 	strcat(pressed, converted);
 }
 
-static void editor_complete(editor_t *editor) {
-	char *completion = COMPL_WND_GET(editor->completer, false);
-	COMPL_WND_HIDE(editor->completer);
+static void editor_complete(editor_t *editor, struct completer *completer) {
+	char *completion = compl_wnd_get(completer, false);
+	compl_wnd_hide(completer);
 	if (completion != NULL) {
 		editor_replace_selection(editor, completion);
 		free(completion);
@@ -367,16 +372,25 @@ static void menu_position_function(GtkMenu *menu, gint *x, gint *y, gboolean *pu
 	*y = (int)dy;
 }
 
-static void select_file(buffer_t *buffer, lpoint_t *p, lpoint_t *start, lpoint_t *end) {
-	start->line = p->line; end->line = p->line;
-	for (start->glyph = p->glyph; start->glyph > 0; --(start->glyph))
-		if (p->line->glyph_info[start->glyph].color != CFG_LEXY_FILE - CFG_LEXY_NOTHING) {
-			++(start->glyph);
+static char *select_file(buffer_t *buffer, lpoint_t *p) {
+	lpoint_t start, end;
+	start.line = p->line; end.line = p->line;
+	for (start.glyph = p->glyph; start.glyph > 0; --(start.glyph))
+		if (p->line->glyph_info[start.glyph].color != CFG_LEXY_FILE - CFG_LEXY_NOTHING) {
+			++(start.glyph);
 			break;
 		}
 
-	for (end->glyph = p->glyph; end->glyph < p->line->cap; ++(end->glyph))
-		if (p->line->glyph_info[end->glyph].color != CFG_LEXY_FILE - CFG_LEXY_NOTHING) break;
+	for (end.glyph = p->glyph; end.glyph < p->line->cap; ++(end.glyph))
+		if (p->line->glyph_info[end.glyph].color != CFG_LEXY_FILE - CFG_LEXY_NOTHING) break;
+
+	return buffer_lines_to_text(buffer, &start, &end);
+}
+
+static struct completer *editor_visible_completer(editor_t *editor) {
+	if (compl_wnd_visible(editor->completer)) return editor->completer;
+	if (compl_wnd_visible(editor->alt_completer)) return editor->alt_completer;
+	return NULL;
 }
 
 static gboolean key_press_callback(GtkWidget *widget, GdkEventKey *event, editor_t *editor) {
@@ -394,7 +408,8 @@ static gboolean key_press_callback(GtkWidget *widget, GdkEventKey *event, editor
 		printf("Keyprocessor invocation\n");
 		full_keyevent_to_string(event->keyval, super, ctrl, alt, shift, pressed);
 		if (pressed[0] != '\0') {
-			COMPL_WND_HIDE(editor->completer);
+			compl_wnd_hide(editor->completer);
+			compl_wnd_hide(editor->alt_completer);
 			const char *eval_argv[] = { editor->buffer->keyprocessor, pressed };
 			const char *r = interp_eval_command(editor, NULL, 2, eval_argv);
 
@@ -404,19 +419,20 @@ static gboolean key_press_callback(GtkWidget *widget, GdkEventKey *event, editor
 
 	/* Manipulation of completions window */
 	if (!shift && !ctrl && !alt && !super) {
-		if (COMPL_WND_VISIBLE(editor->completer)) {
+		struct completer *visible_completer = editor_visible_completer(editor);
+		if (visible_completer != NULL) {
 			switch(event->keyval) {
 				case GDK_KEY_Tab:
-					if (COMPL_COMMON_SUFFIX(editor->completer) != NULL) {
-						editor_replace_selection(editor, COMPL_COMMON_SUFFIX(editor->completer));
+					if (visible_completer->common_suffix != NULL) {
+						editor_replace_selection(editor, visible_completer->common_suffix);
 					} else {
-						COMPL_WND_DOWN(editor->completer);
+						compl_wnd_down(visible_completer);
 					}
 					return TRUE;
 				case GDK_KEY_Escape:
 					return FALSE;
 				case GDK_KEY_Return:
-					editor_complete(editor);
+					editor_complete(editor, visible_completer);
 					return TRUE;
 			}
 		} else if (editor->single_line) {
@@ -486,7 +502,9 @@ static gboolean key_press_callback(GtkWidget *widget, GdkEventKey *event, editor
 	if (!shift && !ctrl && !alt && !super) {
 		switch(event->keyval) {
 		case GDK_KEY_Tab: {
-			if (!editor_maybe_show_completions(editor, true)) {
+			struct completer *c = editor_visible_completer(editor);
+			if (c == NULL) c = editor->completer;
+			if (!editor_maybe_show_completions(editor, c, true, 0)) {
 				editor_replace_selection(editor, "\t");
 			}
 
@@ -544,7 +562,8 @@ static gboolean key_press_callback(GtkWidget *widget, GdkEventKey *event, editor
 		}
 	}
 
-	COMPL_WND_HIDE(editor->completer);
+	compl_wnd_hide(editor->completer);
+	compl_wnd_hide(editor->alt_completer);
 
 	if (strcmp(pressed, "") == 0) {
 		full_keyevent_to_string(event->keyval, super, ctrl, alt, shift, pressed);
@@ -593,8 +612,10 @@ static gboolean key_release_callback(GtkWidget *widget, GdkEventKey *event, edit
 	if (!shift && !ctrl && !alt && !super) {
 		switch(event->keyval) {
 		case GDK_KEY_Escape:
-			if (COMPL_WND_VISIBLE(editor->completer)) {
-				COMPL_WND_HIDE(editor->completer);
+			if (compl_wnd_visible(editor->completer)) {
+				compl_wnd_hide(editor->completer);
+			} else if (compl_wnd_visible(editor->alt_completer)) {
+				compl_wnd_hide(editor->alt_completer);
 			} else {
 				if (editor->single_line) {
 					editor->single_line_escape(editor);
@@ -661,33 +682,30 @@ static gboolean button_press_callback(GtkWidget *widget, GdkEventButton *event, 
 	dirty_line_update(editor);
 
 	if (event->button == 1) {
+		move_cursor_to_mouse(editor, event->x, event->y);
+
+		editor->mouse_marking = 1;
+		buffer_set_mark_at_cursor(editor->buffer);
+
+		if (event->type == GDK_2BUTTON_PRESS) {
+			buffer_change_select_type(editor->buffer, BST_WORDS);
+			set_primary_selection(editor);
+		} else if (event->type == GDK_3BUTTON_PRESS) {
+			buffer_change_select_type(editor->buffer, BST_LINES);
+			set_primary_selection(editor);
+		}
+
+		editor_complete_move(editor, TRUE);
+
 		lpoint_t p;
 		if (on_file_link(editor, event->x, event->y, &p)) {
-			lpoint_t start, end;
-			select_file(editor->buffer, &p, &start, &end);
-
-			char *text = buffer_lines_to_text(editor->buffer, &start, &end);
+			char *text = select_file(editor->buffer, &p);
 			const char *cmd = lexy_get_link_fn(editor->buffer);
 			const char *argv[] = { cmd, "1", text };
 
 			interp_eval_command(editor, NULL, 3, argv);
 
 			free(text);
-		} else {
-			move_cursor_to_mouse(editor, event->x, event->y);
-
-			editor->mouse_marking = 1;
-			buffer_set_mark_at_cursor(editor->buffer);
-
-			if (event->type == GDK_2BUTTON_PRESS) {
-				buffer_change_select_type(editor->buffer, BST_WORDS);
-				set_primary_selection(editor);
-			} else if (event->type == GDK_3BUTTON_PRESS) {
-				buffer_change_select_type(editor->buffer, BST_LINES);
-				set_primary_selection(editor);
-			}
-
-			editor_complete_move(editor, TRUE);
 		}
 	} else if (event->button == 2) {
 		move_cursor_to_mouse(editor, event->x, event->y);
@@ -751,7 +769,6 @@ static gboolean scroll_callback(GtkWidget *widget, GdkEventScroll *event, editor
 static void selection_move(editor_t *editor, double x, double y) {
 	move_cursor_to_mouse(editor, x, y);
 	gtk_clipboard_set_with_data(selection_clipboard, &selection_clipboard_target_entry, 1, (GtkClipboardGetFunc)editor_get_primary_selection, NULL, editor);
-	//editor_center_on_cursor(editor);
 	editor_include_cursor(editor);
 	gtk_widget_queue_draw(editor->drar);
 }
@@ -801,7 +818,6 @@ static gboolean motion_callback(GtkWidget *widget, GdkEventMotion *event, editor
 			gdk_window_set_cursor(gtk_widget_get_window(editor->drar), cursor_arrow);
 		} else {
 			gdk_window_set_cursor(gtk_widget_get_window(editor->drar), cursor_xterm);
-
 		}
 
 		end_selection_scroll(editor);
@@ -1205,16 +1221,12 @@ static gboolean expose_event_callback(GtkWidget *widget, GdkEventExpose *event, 
 	return TRUE;
 }
 
-static gboolean scrolled_callback(GtkAdjustment *adj, gpointer data) {
-	editor_t *editor = (editor_t *)data;
-	//printf("Scrolled to: %g\n", gtk_adjustment_get_value(GTK_ADJUSTMENT(adjustment)));
+static gboolean scrolled_callback(GtkAdjustment *adj, editor_t *editor) {
 	gtk_widget_queue_draw(editor->drar);
 	return TRUE;
 }
 
-static gboolean hscrolled_callback(GtkAdjustment *adj, gpointer data) {
-	editor_t *editor = (editor_t *)data;
-	//printf("HScrolled to: %g\n", gtk_adjustment_get_value(GTK_ADJUSTMENT(hadjustment)));
+static gboolean hscrolled_callback(GtkAdjustment *adj, editor_t *editor) {
 	gtk_widget_queue_draw(editor->drar);
 	return TRUE;
 }
@@ -1232,7 +1244,8 @@ static gboolean editor_focusin_callback(GtkWidget *widget, GdkEventFocus *event,
 }
 
 static gboolean editor_focusout_callback(GtkWidget *widget, GdkEventFocus *event, editor_t *editor) {
-	COMPL_WND_HIDE(editor->completer);
+	compl_wnd_hide(editor->completer);
+	compl_wnd_hide(editor->completer);
 	editor->cursor_visible = 0;
 	gtk_widget_queue_draw(editor->drar);
 	end_selection_scroll(editor);
@@ -1320,7 +1333,6 @@ static void reload_stale_callback(GtkButton *btn, editor_t *editor) {
 }
 
 static char *get_selection_or_file_link(editor_t *editor, bool *islink) {
-	buffer_t *buffer = editor->buffer;
 	lpoint_t start, end;
 	buffer_get_selection(editor->buffer, &start, &end);
 
@@ -1328,10 +1340,10 @@ static char *get_selection_or_file_link(editor_t *editor, bool *islink) {
 
 	if ((start.line != NULL) && (end.line != NULL)) return buffer_lines_to_text(editor->buffer, &start, &end);
 
-	if ((buffer->cursor.glyph < buffer->cursor.line->cap) && (buffer->cursor.line->glyph_info[buffer->cursor.glyph].color == (CFG_LEXY_FILE - CFG_LEXY_NOTHING))) {
-		select_file(editor->buffer, &(editor->buffer->cursor), &start, &end);
+	if ((editor->buffer->cursor.glyph < editor->buffer->cursor.line->cap) && (editor->buffer->cursor.line->glyph_info[editor->buffer->cursor.glyph].color == (CFG_LEXY_FILE - CFG_LEXY_NOTHING))) {
+		char *r = select_file(editor->buffer, &(editor->buffer->cursor));
 		*islink = true;
-		return buffer_lines_to_text(editor->buffer, &start, &end);
+		return r;
 	}
 
 	return NULL;
@@ -1403,7 +1415,8 @@ editor_t *new_editor(buffer_t *buffer, bool single_line) {
 	r->ignore_next_entry_keyrelease = FALSE;
 	r->center_on_cursor_after_next_expose = TRUE;
 	r->warp_mouse_after_next_expose = FALSE;
-	r->completer = &the_generic_word_completer;
+	r->completer = &the_word_completer;
+	r->alt_completer = NULL;
 	r->dirty_line = false;
 
 	r->single_line_escape = NULL;
@@ -1570,6 +1583,7 @@ void editor_grab_focus(editor_t *editor, bool warp) {
 				double cx, cy;
 				buffer_cursor_position(editor->buffer, &cx, &cy);
 				y += cy - gtk_adjustment_get_value(GTK_ADJUSTMENT(editor->adjustment));
+				x += 5;
 			} else {
 				x += 5; y += 5;
 			}

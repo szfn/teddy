@@ -118,7 +118,7 @@ int main(int argc, char *argv[]) {
 	buffers_free();
 	interp_free();
 	compl_free(&the_word_completer);
-	cmdcompl_free(&the_cmd_completer);
+	compl_free(&the_cmd_completer);
 	foundry_free();
 
 	history_free(&search_history);

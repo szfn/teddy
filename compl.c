@@ -42,6 +42,9 @@ void compl_init(struct completer *c) {
 	c->list = gtk_list_store_new(1, G_TYPE_STRING);
 	c->tree = gtk_tree_view_new();
 	c->common_suffix = NULL;
+	c->prefix_from_buffer = &buffer_wordcompl_word_at_cursor;
+	c->recalc = NULL;
+	c->tmpdata = NULL;
 
 	gtk_tree_view_insert_column_with_attributes(GTK_TREE_VIEW(c->tree), -1, "Completion", gtk_cell_renderer_text_new(), "text", 0, NULL);
 	gtk_tree_view_set_model(GTK_TREE_VIEW(c->tree), GTK_TREE_MODEL(c->list));
@@ -76,33 +79,36 @@ void compl_init(struct completer *c) {
 }
 
 void compl_reset(struct completer *c) {
+	if (c == NULL) return;
 	critbit0_clear(&(c->cbt));
 }
 
 void compl_add(struct completer *c, const char *text) {
+	if (c == NULL) return;
 	critbit0_insert(&(c->cbt), text);
 }
 
 char *compl_complete(struct completer *c, const char *prefix) {
+	if (c == NULL) return NULL;
+	if (c->recalc != NULL) c->recalc(c, prefix);
 	char *r = critbit0_common_suffix_for_prefix(&(c->cbt), prefix);
 	utf8_remove_truncated_characters_at_end(r);
 	return r;
 }
 
-void compl_add_to_list(struct completer *c, const char *text) {
-	GtkTreeIter mah;
-	gtk_list_store_append(c->list, &mah);
-	gtk_list_store_set(c->list, &mah, 0, text, -1);
-	++(c->size);
-}
-
 static int compl_wnd_fill_callback(const char *entry, void *p) {
 	struct completer *c = (struct completer *)p;
-	compl_add_to_list(c, entry);
+	GtkTreeIter mah;
+	gtk_list_store_append(c->list, &mah);
+	gtk_list_store_set(c->list, &mah, 0, entry, -1);
+	++(c->size);
 	return 1;
 }
 
 void compl_wnd_show(struct completer *c, const char *prefix, double x, double y, double alty, GtkWidget *parent, bool show_empty, bool show_empty_prefix) {
+	if (c == NULL) return;
+	if (c->recalc != NULL) c->recalc(c, prefix);
+
 	c->size = 0;
 	c->alty = alty;
 
@@ -154,6 +160,7 @@ void compl_wnd_show(struct completer *c, const char *prefix, double x, double y,
 }
 
 void compl_wnd_up(struct completer *c) {
+	if (c == NULL) return;
 	GtkTreePath *path;
 
 	gtk_tree_view_get_cursor(GTK_TREE_VIEW(c->tree), &path, NULL);
@@ -172,6 +179,7 @@ void compl_wnd_up(struct completer *c) {
 }
 
 void compl_wnd_down(struct completer *c) {
+	if (c == NULL) return;
 	GtkTreePath *path;
 
 	gtk_tree_view_get_cursor(GTK_TREE_VIEW(c->tree), &path, NULL);
@@ -196,6 +204,7 @@ void compl_wnd_down(struct completer *c) {
 }
 
 char *compl_wnd_get(struct completer *c, bool all) {
+	if (c == NULL) return NULL;
 	GtkTreePath *focus_path;
 	GtkTreeIter iter;
 
@@ -228,6 +237,7 @@ char *compl_wnd_get(struct completer *c, bool all) {
 }
 
 void compl_wnd_hide(struct completer *c) {
+	if (c == NULL) return;
 	if (!(c->visible)) return;
 	gtk_widget_hide(c->window);
 	c->visible = false;
@@ -240,43 +250,22 @@ void compl_wnd_hide(struct completer *c) {
 }
 
 bool compl_wnd_visible(struct completer *c) {
+	if (c == NULL) return false;
 	return c->visible;
 }
 
 void compl_free(struct completer *c) {
+	if (c == NULL) return;
 	critbit0_clear(&(c->cbt));
 	if (c->common_suffix != NULL) {
 		free(c->common_suffix);
 		c->common_suffix = NULL;
 	}
+	if (c->tmpdata != NULL) free(c->tmpdata);
 }
 
 int compl_wnd_size(struct completer *c) {
+	if (c == NULL) return 0;
 	return c->size;
 }
 
-static void generic_compl_wnd_show(void *this, const char *prefix, double x, double y, double alty, GtkWidget *parent) {
-	compl_wnd_show((struct completer *)this, prefix, x, y, alty, parent, false, false);
-}
-
-static char *generic_compl_common_suffix(void *this) {
-	return ((struct completer *)this)->common_suffix;
-}
-
-static uint16_t *generic_compl_prefix_from_buffer(void *this, buffer_t *buffer, size_t *prefix_len) {
-	return buffer_wordcompl_word_at_cursor(buffer, prefix_len);
-}
-
-void compl_as_generic_completer(struct completer *c, generic_completer_t *gc) {
-	gc->this = c;
-	gc->complete = (complete_fn *)compl_complete;
-	gc->wnd_show = generic_compl_wnd_show;
-	gc->wnd_up = (other_completer_fn *)compl_wnd_up;
-	gc->wnd_down = (other_completer_fn *)compl_wnd_down;
-	gc->wnd_get = (wnd_get_fn *)compl_wnd_get;
-	gc->wnd_hide = (other_completer_fn *)compl_wnd_hide;
-	gc->wnd_visible = (wnd_visible_fn *)compl_wnd_visible;
-	gc->common_suffix = generic_compl_common_suffix;
-	gc->prefix_from_buffer = generic_compl_prefix_from_buffer;
-	//gc->prefix_from_buffer = buffer_wordcompl_word_at_cursor;
-}

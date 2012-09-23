@@ -9,35 +9,10 @@
 #include "buffer.h"
 #include "critbit.h"
 
-#define COMPL_COMPLETE(c, prefix) ((c)->complete((c)->this, (prefix)))
-#define COMPL_WND_SHOW(c, prefix, x, y, alty, parent) ((c)->wnd_show((c)->this, (prefix), (x), (y), (alty), (parent)))
-#define COMPL_WND_HIDE(c) ((c)->wnd_hide((c)->this))
-#define COMPL_WND_UP(c) ((c)->wnd_up((c)->this))
-#define COMPL_WND_DOWN(c) ((c)->wnd_down((c)->this))
-#define COMPL_WND_GET(c, all) ((c)->wnd_get((c)->this, (all)))
-#define COMPL_WND_VISIBLE(c) ((c)->wnd_visible((c)->this))
-#define COMPL_COMMON_SUFFIX(c) ((c)->common_suffix((c)->this))
+struct completer;
 
-typedef char *complete_fn(void *this, const char *prefix);
-typedef bool wnd_visible_fn(void *this);
-typedef void wnd_show_fn(void *this, const char *prefix, double x, double y, double alty, GtkWidget *parent);
-typedef char *wnd_get_fn(void *this, bool all);
-typedef char *common_suffix_fn(void *this);
-typedef void other_completer_fn(void *this);
-
-typedef struct _generic_completer_t {
-	void *this;
-	complete_fn *complete;
-	wnd_show_fn *wnd_show;
-	other_completer_fn *wnd_up;
-	other_completer_fn *wnd_down;
-	wnd_get_fn *wnd_get;
-	other_completer_fn *wnd_hide;
-	wnd_visible_fn *wnd_visible;
-	common_suffix_fn *common_suffix;
-
-	uint16_t *(*prefix_from_buffer)(void *this, buffer_t *buffer, size_t *prefix_len);
-} generic_completer_t;
+typedef void recalc_fn(struct completer *c, const char *prefix);
+typedef uint16_t *prefix_from_buffer_fn(buffer_t *buffer, size_t *lenout);
 
 struct completer {
 	critbit0_tree cbt;
@@ -52,6 +27,11 @@ struct completer {
 	double alty;
 
 	char *common_suffix;
+
+	recalc_fn *recalc;
+	prefix_from_buffer_fn *prefix_from_buffer;
+
+	void *tmpdata;
 };
 
 void compl_init(struct completer *c);
@@ -66,7 +46,5 @@ int compl_wnd_size(struct completer *c);
 void compl_wnd_hide(struct completer *c);
 bool compl_wnd_visible(struct completer *c);
 void compl_free(struct completer *c);
-void compl_add_to_list(struct completer *c, const char *text);
-void compl_as_generic_completer(struct completer *c, generic_completer_t *gc);
 
 #endif

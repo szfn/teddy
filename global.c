@@ -1,6 +1,7 @@
 #include "global.h"
 
 #include "cfg.h"
+#include "baux.h"
 
 GtkClipboard *selection_clipboard;
 GtkClipboard *default_clipboard;
@@ -16,9 +17,7 @@ struct history search_history;
 struct history command_history;
 
 struct completer the_word_completer;
-generic_completer_t the_generic_word_completer;
-struct clcompleter the_cmd_completer;
-generic_completer_t the_generic_cmd_completer;
+struct completer the_cmd_completer;
 
 critbit0_tree closed_buffers_critbit;
 
@@ -43,10 +42,13 @@ void global_init() {
 
 	keybindings = g_hash_table_new(g_str_hash, streq);
 
-	cmdcompl_init(&the_cmd_completer, &command_history);
-	compl_as_generic_completer(&the_word_completer, &the_generic_word_completer);
+	cmdcompl_init();
+	compl_init(&the_cmd_completer);
+	the_cmd_completer.prefix_from_buffer = &buffer_cmdcompl_word_at_cursor;
+	the_cmd_completer.recalc = &cmdcompl_recalc;
+	the_cmd_completer.tmpdata = strdup("");
+	alloc_assert(the_cmd_completer.tmpdata);
 	compl_init(&the_word_completer);
-	cmdcompl_as_generic_completer(&the_cmd_completer, &the_generic_cmd_completer);
 
 	cursor_arrow = gdk_cursor_new(GDK_ARROW);
 	cursor_xterm = gdk_cursor_new(GDK_XTERM);

@@ -5,9 +5,11 @@
 
 #include "global.h"
 #include "interp.h"
+#include "baux.h"
 
 void history_init(struct history *h) {
 	compl_init(&(h->c));
+	h->c.prefix_from_buffer = &buffer_historycompl_word_at_cursor;
 	memset(h->items, 0, sizeof(struct history_item) * HISTORY_SIZE);
 	h->index = 0;
 	h->cap = 0;

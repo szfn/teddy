@@ -52,18 +52,22 @@ const char *list_internal_commands[] = {
 	"wordcompl_dump", "lexy_dump"
 };
 
-void cmdcompl_init(struct clcompleter *c, struct history *h) {
-	int i;
+const char **external_commands = NULL;
+int external_commands_cap;
+int external_commands_allocated;
+
+/* TODO inside the recalc function
+
+*/
+
+
+void cmdcompl_init(void) {
 	char *path, *saveptr, *dir;
 
-	compl_init(&(c->c));
-	c->cbt.root = NULL;
-
-	c->h = h;
-
-	for (i = 0; i < sizeof(list_internal_commands) / sizeof(const char *); ++i) {
-		compl_add(&(c->c), list_internal_commands[i]);
-	}
+	external_commands_allocated = 10;
+	external_commands_cap = 0;
+	external_commands = malloc(sizeof(const char *) * external_commands_allocated);
+	alloc_assert(external_commands);
 
 	/*** Getting all executable names ***/
 
@@ -75,21 +79,23 @@ void cmdcompl_init(struct clcompleter *c, struct history *h) {
 		struct dirent *den;
 		for (den = readdir(dh); den != NULL; den = readdir(dh)) {
 			struct stat den_stat;
-			char *den_path;
 
 			if (den->d_type == DT_REG) {
-				den_path = malloc(sizeof(char) * (strlen(dir) + strlen(den->d_name) + 2));
-
-				strcpy(den_path, dir);
-				strcat(den_path, "/");
-				strcat(den_path, den->d_name);
+				char *den_path;
+				asprintf(&den_path, "%s/%s", dir, den->d_name);
+				alloc_assert(den_path);
 
 				memset(&den_stat, 0, sizeof(den_stat));
-
 				if (stat(den_path, &den_stat) == 0) {
-
 					if (S_ISREG(den_stat.st_mode) && (den_stat.st_mode & (S_IXUSR | S_IXGRP | S_IXOTH))) {
-						compl_add(&(c->c), den->d_name);
+						if (external_commands_cap >= external_commands_allocated) {
+							external_commands_allocated *= 2;
+							external_commands = realloc(external_commands, sizeof(const char *) * external_commands_allocated);
+							alloc_assert(external_commands);
+						}
+						char *r = strdup(den->d_name);
+						alloc_assert(r);
+						external_commands[external_commands_cap++] = r;
 					}
 				}
 
@@ -100,14 +106,6 @@ void cmdcompl_init(struct clcompleter *c, struct history *h) {
 	}
 
 	free(path);
-
-	c->absdir = strdup("");
-	alloc_assert(c->absdir);
-}
-
-void cmdcompl_free(struct clcompleter *c) {
-	compl_free(&(c->c));
-	critbit0_clear(&(c->cbt));
 }
 
 static int cmdcompl_find_rightmost_slash(const char *text) {
@@ -118,14 +116,32 @@ static int cmdcompl_find_rightmost_slash(const char *text) {
 	return rlidx;
 }
 
-static void load_directory_completions(struct clcompleter *c, const char *text, const char *working_directory) {
+static void load_directory_completions(struct completer *c, const char *absdir, const char *reldir) {
+	DIR *dh = opendir(absdir);
+	if (dh != NULL) {
+		struct dirent *den;
+		for (den = readdir(dh); den != NULL; den = readdir(dh)) {
+			if (den->d_name[0] != '.') {
+				char *relname;
+				asprintf(&relname, "%s%s%s", reldir, den->d_name, (den->d_type == DT_DIR) ? "/" : "");
+				alloc_assert(relname);
+				critbit0_insert(&(c->cbt), relname);
+				free(relname);
+			}
+		}
+		closedir(dh);
+	}
+}
+
+void cmdcompl_recalc(struct completer *c, const char *prefix) {
+	char *working_directory = top_working_directory();
 	char *reldir = NULL;
 	char *absdir = NULL;
 
-	int rlidx = cmdcompl_find_rightmost_slash(text);
+	int rlidx = cmdcompl_find_rightmost_slash(prefix);
 	if (rlidx != -1) {
 		reldir = malloc(sizeof(char) * (rlidx + 2));
-		strncpy(reldir, text, rlidx+1);
+		strncpy(reldir, prefix, rlidx+1);
 		reldir[rlidx+1] = '\0';
 	}
 
@@ -138,171 +154,28 @@ static void load_directory_completions(struct clcompleter *c, const char *text, 
 		strcpy(absdir, working_directory);
 	}
 
-	if (strcmp(absdir, c->absdir) == 0) {
+	if (strcmp(absdir, c->tmpdata) == 0) {
+		// same directory as before, do nothing
 		free(reldir);
 		free(absdir);
 		return;
 	}
 
-	free(c->absdir);
-	c->absdir = absdir;
+	// we actually need to recalculate
+	free(c->tmpdata);
+	c->tmpdata = absdir;
+
 	critbit0_clear(&(c->cbt));
 
-	DIR *dh = opendir(absdir);
-	if (dh != NULL) {
-		struct dirent *den;
-		for (den = readdir(dh); den != NULL; den = readdir(dh)) {
-			if (den->d_name[0] != '.') {
-				char *relname = malloc(sizeof(char) * (strlen(reldir) + strlen(den->d_name) + 2));
-				relname[0] = '\0';
-
-				strcat(relname, reldir);
-				strcat(relname, den->d_name);
-				if (den->d_type == DT_DIR) {
-					strcat(relname, "/");
-				}
-
-				critbit0_insert(&(c->cbt), relname);
-
-				free(relname);
-			}
-		}
-		closedir(dh);
+	for (int i = 0; i < sizeof(list_internal_commands) / sizeof(const char *); ++i) {
+		compl_add(c, list_internal_commands[i]);
 	}
+
+	for (int i = 0; i < external_commands_cap; ++i) {
+		compl_add(c, external_commands[i]);
+	}
+
+	load_directory_completions(c, absdir, reldir);
 
 	free(reldir);
-}
-
-char *cmdcompl_complete(struct clcompleter *c, const char *text) {
-	load_directory_completions(c, text, top_working_directory());
-
-	char *rcmd = compl_complete(&(c->c), text);
-	char *rdir = critbit0_common_suffix_for_prefix(&(c->cbt), text);
-
-	utf8_remove_truncated_characters_at_end(rdir);
-
-	if (rcmd == NULL) {
-		return rdir;
-	} else {
-		if (rdir == NULL) {
-			return rcmd;
-		} else {
-			free(rcmd);
-			free(rdir);
-			char *r = strdup("");
-			alloc_assert(r);
-			return r;
-		}
-	}
-}
-
-static int cmdcompl_wnd_fill_extra(const char *entry, void *p) {
-	struct clcompleter *c = (struct clcompleter *)p;
-	compl_add_to_list(&(c->c), entry);
-	return 1;
-}
-
-void cmdcompl_wnd_show(struct clcompleter *c, const char *text, double x, double y, double alty, GtkWidget *parent) {
-	char *working_directory = top_working_directory();
-	compl_wnd_show(&(c->c), text, x, y, alty, parent, true, false);
-
-	load_directory_completions(c, text, working_directory);
-
-	critbit0_allprefixed(&(c->cbt), text, cmdcompl_wnd_fill_extra, (void *)c);
-
-	if (c->c.size <= 0) {
-		compl_wnd_hide(&(c->c));
-	}
-}
-
-static void generic_cmdcompl_wnd_up(void *this) {
-	struct clcompleter *c = (struct clcompleter *)this;
-	if (compl_wnd_visible(&(c->c))) {
-		compl_wnd_up(&(c->c));
-	} else if (compl_wnd_visible(&(c->h->c))) {
-		compl_wnd_up(&(c->h->c));
-	}
-}
-
-static void generic_cmdcompl_wnd_down(void *this) {
-	struct clcompleter *c = (struct clcompleter *)this;
-	if (compl_wnd_visible(&(c->c))) {
-		compl_wnd_down(&(c->c));
-	} else if (compl_wnd_visible(&(c->h->c))) {
-		compl_wnd_down(&(c->h->c));
-	}
-}
-
-static char *generic_cmdcompl_wnd_get(void *this, bool all) {
-	struct clcompleter *c = (struct clcompleter *)this;
-	if (compl_wnd_visible(&(c->c))) {
-		return compl_wnd_get(&(c->c), all);
-	} else if (compl_wnd_visible(&(c->h->c))) {
-		return compl_wnd_get(&(c->h->c), all);
-	}
-	return NULL;
-}
-
-static bool generic_cmdcompl_wnd_visible(void *this) {
-	struct clcompleter *c = (struct clcompleter *)this;
-	return compl_wnd_visible(&(c->c)) || compl_wnd_visible(&(c->h->c));
-}
-
-static void generic_cmdcompl_wnd_hide(void *this) {
-	struct clcompleter *c = (struct clcompleter *)this;
-	if (compl_wnd_visible(&(c->c))) {
-		return compl_wnd_hide(&(c->c));
-	} else if (compl_wnd_visible(&(c->h->c))) {
-		return compl_wnd_hide(&(c->h->c));
-	}
-}
-
-static char *generic_cmdcompl_common_suffix(void *this) {
-	struct clcompleter *c = (struct clcompleter *)this;
-	if (compl_wnd_visible(&(c->c))) {
-		return c->c.common_suffix;
-	} else if (compl_wnd_visible(&(c->h->c))) {
-		return c->h->c.common_suffix;
-	}
-	return "";
-}
-
-static char *generic_cmdcompl_complete(void *this, const char *text) {
-	struct clcompleter *c = (struct clcompleter *)this;
-	if (compl_wnd_visible(&(c->h->c))) {
-		return compl_complete(&(c->h->c), text);
-	} else {
-		return cmdcompl_complete(c, text);
-	}
-}
-
-static void generic_cmdcompl_wnd_show(void *this, const char *text, double x, double y, double alty, GtkWidget *parent) {
-	struct clcompleter *c = (struct clcompleter *)this;
-	if (compl_wnd_visible(&(c->h->c))) {
-		compl_wnd_show(&(c->h->c), text, x, y, alty, parent, false, true);
-	} else {
-		cmdcompl_wnd_show(c, text, x, y, alty, parent);
-	}
-}
-
-static uint16_t *generic_cmdcompl_prefix_from_buffer(void *this, buffer_t *buffer, size_t *prefix_len) {
-	struct clcompleter *c = (struct clcompleter *)this;
-	if (compl_wnd_visible(&(c->h->c))) {
-		return buffer_historycompl_word_at_cursor(buffer, prefix_len);
-	} else {
-		return buffer_cmdcompl_word_at_cursor(buffer, prefix_len);
-	}
-}
-
-void cmdcompl_as_generic_completer(struct clcompleter *c, generic_completer_t *gc) {
-	gc->this = c;
-	gc->complete = generic_cmdcompl_complete;
-	gc->wnd_show = generic_cmdcompl_wnd_show;
-	gc->wnd_up = generic_cmdcompl_wnd_up;
-	gc->wnd_down = generic_cmdcompl_wnd_down;
-	gc->wnd_get = generic_cmdcompl_wnd_get;
-	gc->wnd_hide = generic_cmdcompl_wnd_hide;
-	gc->wnd_visible = generic_cmdcompl_wnd_visible;
-	gc->common_suffix = generic_cmdcompl_common_suffix;
-	gc->prefix_from_buffer = generic_cmdcompl_prefix_from_buffer;
 }
