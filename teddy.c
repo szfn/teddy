@@ -50,7 +50,7 @@ int main(int argc, char *argv[]) {
 	buffers_init();
 
 	{
-		const char *loadhistory[] = { "loadhistory" };
+		const char *loadhistory[] = { "teddy_intl::loadhistory" };
 		interp_eval_command(NULL, NULL, 1, loadhistory);
 	}
 

@@ -1,4 +1,5 @@
-# builtin commands for teddy
+#### UTILITIES ##################################################################
+# Utility commands the user could find interesting
 
 proc kill_line {} {
    m +0:1 +1:1
@@ -10,105 +11,217 @@ proc kill_line {} {
    cb put [undo get before]
 }
 
-proc shell_perform_redirection {redirection} {
-   set redirected_descriptor [dict get $redirection redirected_descriptor]
-   set open_direction [dict get $redirection open_direction]
-   set target [dict get $redirection target]
+proc bindent {direction indentchar} {
+	set saved_status [m]
 
-   switch -exact $open_direction {
-      ">" {
-         if {$redirected_descriptor eq ""} {set redirected_descriptor 1}
-         if {$target eq ""} { error "Output redirect without filename" }
-         set fd [fdopen -wronly -trunc -creat $target]
-         fddup2 $fd $redirected_descriptor
-         fdclose $fd
-      }
-      ">&" {
-         if {$redirected_descriptor eq ""} {set redirected_descriptor 1}
-         fddup2 $target $redirected_descriptor
-      }
-      "<" {
-         if {$redirected_descriptor eq ""} {set redirected_descriptor 0}
-         if {$target eq ""} { error "Input redirect without filename" }
-         set fd [fdopen -rdonly $target]
-         fddup2 $fd $redirected_descriptor
-         fdclose $fd
-      }
-      "<&" {
-         if {$redirected_descriptor eq ""} {set redirected_descriptor 0}
-         fddup2 $target $redirected_descriptor
-      }
-      ">>" {
-         if {$redirected_descriptor eq ""} {set redirected_descriptor 1}
-         set fd [fdopen -creat -wronly -append $target]
-         fddup2 $fd $redirected_descriptor
-         fdclose $fd
-      }
-   }
-}
+	if {[lindex $saved_status 0] == "nil"} {
+		m +0:+0 +0:+0
+	}
 
-proc shell_eat {args i specialVarName normalVarName} {
-   set special {}
-   set normal {}
+	buffer select-mode lines
 
-   for {} {$i < [llength $args]} {incr i} {
-      set cur [lindex $args $i]
+	set text [c]
 
-      if {$cur eq "&&"} { break }
-      if {$cur eq "||"} { break }
-      if {$cur eq "|"} { break }
-
-      set isspecial [regexp {^([0-9]*)(>|>&|<&|<|>>)(.*)$} $cur -> redirected_descriptor open_direction target]
-
-      if {$isspecial} {
-         lappend special [dict create redirected_descriptor $redirected_descriptor open_direction $open_direction target $target]
-      } elseif {[string first ! $cur] == 0} {
-      	lappend normal [string range $cur 1 end]
-      } else {
-         if {[string first ~ $cur] == 0} {
-         	global env
-         	set cur $env(HOME)/[string range $cur 1 end]
-         }
-
-         if {[string first * $cur] >= 0} {
-			# Perform autoglobbing
-			if [catch {lappend normal {*}[glob $cur]}] {
-				lappend normal $cur
+	switch -exact $direction {
+		"incr" {
+			set nt [string map [list "\n" "\n$indentchar"] $text]
+			c "$indentchar$nt"
+		}
+		"decr" {
+			set nt [string map [list "\n " "\n" "\n\t" "\n" ] $text]
+			if {[string index $nt 0] eq " " || [string index $nt 0] eq "\t"} {
+				set nt [string range $nt 1 end]
 			}
-         } else {
-			lappend normal $cur
-         }
-      }
-   }
+			c $nt
+		}
+	}
 
-   upvar $specialVarName specialVar
-   upvar $normalVarName normalVar
-   set specialVar $special
-   set normalVar $normal
+	#puts "Stored mark: $stored_mark"
+	#puts "Stored cursor: $stored_cursor"
 
-   return $i
+	m {*}$saved_status
+	buffer select-mode normal
 }
 
-proc shell_child_code {special normal pipe} {
-   # child code, make redirects and exec
+proc man {args} {
+	bg "+man/$args+" "shell man $args"
+}
 
-   #puts "message from child code"
+proc clear {} {
+	m 1:1 $:$
+	c ""
+}
 
-   if {$pipe ne ""} {
-      # default ouput of this process will be pipe's output side
-      fdclose [lindex $pipe 0]
-      fddup2 [lindex $pipe 1] 1
-      fdclose [lindex $pipe 1]
-   }
+proc forlines {args} {
+	if {[llength $args] == 1} {
+		set pattern {^.*$}
+		set body [lindex $args 0]
+	} elseif {[llength $args] == 2} {
+		set pattern [lindex $args 0]
+		set body [lindex $args 1]
+	} else {
+		error "Wrong number of arguments to forlines [llength $args] expected 1 or 2"
+	}
 
-   for {set i 0} {$i < [llength $special]} {incr i} {
-      shell_perform_redirection [lindex $special $i]
-   }
+	m all
+	s $pattern {
+		m line
+		uplevel 1 $body
+	}
+}
 
-   #puts "Executing $normal"
-   posixexec {*}$normal
+proc ss {args} {
+	buffer eval temp {
+		c [lindex $args 0]
+		m 1:1
+		s {*}[lrange $args 1 end]
+		m all
+		set text [c]
+	}
+	return $text
+}
 
-   posixexit -1
+namespace eval teddy {
+	# options passed to ls to display a directory
+	namespace export ls_options
+	set ls_options {-F -1 --group-directories-first}
+
+	# returns current line number
+	namespace export lineof
+	proc lineof {x} {
+		return [lindex [split $x ":"] 0]
+	}
+
+	# reads a file from disk
+	namespace export slurp
+	proc slurp {path} {
+		set thefile [open $path]
+		fconfigure $thefile -translation binary
+		set r [read $thefile]
+		close $thefile
+		return $r
+	}
+
+	# deletes irrelevant spaces from the end of lines, and empty lines from the end of file
+	namespace export spaceman
+	proc spaceman {} {
+		set saved [m]
+		# delete empty spaces from the end of lines
+		m nil 1:1
+		s {\s+$} c ""
+
+		# delete empty lines from the end of files
+		set last_nonempty_line "nil"
+		s {^.+$} { set last_nonempty_line [m] }
+		if {$last_nonempty_line ne "nil"} {
+			m [lindex $last_nonempty_line 1] $:$
+			c ""
+		}
+
+		m {*}$saved
+	}
+}
+
+#### THEMES ##################################################################
+# Color themes for teddy
+
+proc antique_theme {} {
+	setcfg -global editor_bg_color [rgbcolor "antique white"]
+	setcfg -global border_color [rgbcolor black]
+
+	setcfg -global editor_fg_color [rgbcolor black]
+	setcfg -global posbox_border_color 0
+	setcfg -global posbox_bg_color 15654274
+	setcfg -global posbox_fg_color 0
+
+	setcfg -global lexy_nothing [rgbcolor black]
+	setcfg -global lexy_keyword [rgbcolor "midnight blue"]
+	setcfg -global lexy_comment [rgbcolor "dark green"]
+	setcfg -global lexy_string [rgbcolor "saddle brown"]
+	setcfg -global lexy_id [rgbcolor black]
+	setcfg -global lexy_literal [rgbcolor "saddle brown"]
+	setcfg -global lexy_file [rgbcolor "midnight blue"]
+}
+
+proc zenburn_theme {} {
+	setcfg -global editor_bg_color [rgbcolor 12 12 12]
+	setcfg -global border_color [rgbcolor white]
+	setcfg -global editor_bg_cursorline [rgbcolor 31 31 31]
+
+	setcfg -global editor_fg_color [rgbcolor white]
+
+	setcfg -global posbox_border_color 0
+	setcfg -global posbox_bg_color 15654274
+	setcfg -global posbox_fg_color 0
+
+	setcfg -global lexy_nothing [rgbcolor white]
+	setcfg -global lexy_keyword [rgbcolor 240 223 175]
+	setcfg -global lexy_comment [rgbcolor 127 159 127]
+	setcfg -global lexy_string [rgbcolor 204 147 147]
+	setcfg -global lexy_id [rgbcolor 197 197 183 ]
+	setcfg -global lexy_literal [rgbcolor 220 163 163]
+}
+
+proc solarized_theme {} {
+	set base03    [rgbcolor 0  43  54]
+	set base02    [rgbcolor 7  54  66]
+	set base01    [rgbcolor 88 110 117]
+	set base00    [rgbcolor 101 123 131]
+	set base0     [rgbcolor 131 148 150]
+	set base1     [rgbcolor 147 161 161]
+	set base2     [rgbcolor 238 232 213]
+	set base3 [rgbcolor 253 246 227]
+	set yellow    [rgbcolor 181 137   0]
+	set orange    [rgbcolor 203  75  22]
+	set red       [rgbcolor 220  50  47]
+	set magenta   [rgbcolor 211  54 130]
+	set violet    [rgbcolor 108 113 196]
+	set blue      [rgbcolor 38 139 210]
+	set cyan      [rgbcolor 42 161 152]
+	set green [rgbcolor 133 153   0]
+
+
+	setcfg -global editor_bg_color $base03
+	setcfg -global border_color $base0
+	setcfg -global editor_bg_cursorline $base02
+
+	setcfg -global editor_fg_color $base2
+
+	setcfg -global posbox_border_color 0
+	setcfg -global posbox_bg_color 15654274
+	setcfg -global posbox_fg_color 0
+
+	setcfg -global lexy_nothing $base2
+	setcfg -global lexy_keyword $green
+	setcfg -global lexy_comment $base01
+	setcfg -global lexy_string $cyan
+	setcfg -global lexy_id $base2
+	setcfg -global lexy_literal $cyan
+}
+
+### IMPLEMENTATION OF USER COMMANDS #######################################
+# Implementations of commands useful to the user
+
+proc lexydef {name args} {
+	lexydef-create $name
+	for {set i 0} {$i < [llength $args]} {set i [expr $i + 2]} {
+		set start_state [lindex $args $i]
+		set transitions [lindex $args [expr $i + 1]]
+		for {set j 0} {$j < [llength $transitions]} {set j [expr $j + 2]} {
+			set pattern [lindex $transitions $j]
+			set state_and_token_type [split [lindex $transitions [expr $j + 1]] :]
+
+			if {[llength $state_and_token_type] > 1} {
+				set next_state [lindex $state_and_token_type 0]
+				set type [lindex $state_and_token_type 1]
+			} else {
+				set next_state $start_state
+				set type [lindex $state_and_token_type 0]
+			}
+
+			lexydef-append $name $start_state $pattern $next_state $type
+		}
+	}
 }
 
 proc shell {args} {
@@ -120,7 +233,7 @@ proc shell {args} {
    set i 0
 
    while {$i < [llength $args]} {
-      set i [shell_eat $args $i special normal]
+      set i [teddy_intl::shell_eat $args $i special normal]
 
       set pipe ""
       if {$i < [llength $args]} {
@@ -135,7 +248,7 @@ proc shell {args} {
       }
 
       if {$pid == 0} {
-         shell_child_code $special $normal $pipe
+         teddy_intl::shell_child_code $special $normal $pipe
       }
 
       # parent code, wait and exit
@@ -179,22 +292,6 @@ proc shell {args} {
       # skipping separator
       incr i
    }
-}
-
-proc unknown {args} {
-   if {[string index [lindex $args 0] 0] eq "|"} {
-      lset args 0 [string range [lindex $args 0] 1 end]
-      c [shellsync [c] {*}$args]
-   } else {
-      # normal unknown code
-      set margs shell
-      lappend margs {*}$args
-      bg $margs
-   }
-}
-
-proc backgrounded_unknown {args} {
-   shell {*}$args
 }
 
 proc shellsync {text args} {
@@ -256,84 +353,241 @@ proc shellsync {text args} {
    }
 }
 
-set parenthesis_list { "(" ")" "{" "}" "[" "]" "<" ">" "\"" "\'" }
-
-proc mgph_remove_trailing_nonalnum {text} {
-   global parenthesis_list
-   while {![string is alnum [string index $text end]] && [string index $text end] ni $parenthesis_list} {
-      set text [string range $text 0 end-1]
+proc unknown {args} {
+   if {[string index [lindex $args 0] 0] eq "|"} {
+      lset args 0 [string range [lindex $args 0] 1 end]
+      c [shellsync [c] {*}$args]
+   } else {
+      # normal unknown code
+      set margs shell
+      lappend margs {*}$args
+      bg $margs
    }
-   return $text
 }
 
-proc mgph_trim_parenthesis {text} {
-   global parenthesis_list
-
-   set first_char [string index $text 0]
-   set last_char [string index $text end]
-
-   if {$first_char ni $parenthesis_list || $last_char ni $parenthesis_list} { return $text }
-
-   return [string range $text 1 end-1]
+proc backgrounded_unknown {args} {
+   shell {*}$args
 }
 
-proc bindent {direction indentchar} {
-	set saved_status [m]
+#### INTERNAL COMMANDS #####################################################
+# Commands called internally by teddy (teddy_intl namespace)
 
-	if {[lindex $saved_status 0] == "nil"} {
-		m +0:+0 +0:+0
+namespace eval teddy_intl {
+	namespace export iopen_search
+	proc iopen_search {z} {
+		set k [s -literal -get $z]
+		#puts "Searching <$z> -> <$k>"
+		if {[lindex $k 0] ne "nil"} {
+			m nil [lindex $k 0]
+		}
 	}
 
-	buffer select-mode lines
-
-	set text [c]
-
-	switch -exact $direction {
-		"incr" {
-			set nt [string map [list "\n" "\n$indentchar"] $text]
-			c "$indentchar$nt"
+	namespace export link_open
+	proc link_open {islink text} {
+		if {$islink} {
+			set r [lexy-token 0 $text]
+		} else {
+			set r [list nothing $text "" ""]
 		}
-		"decr" {
-			set nt [string map [list "\n " "\n" "\n\t" "\n" ] $text]
-			if {[string index $nt 0] eq " " || [string index $nt 0] eq "\t"} {
-				set nt [string range $nt 1 end]
+
+		set b [buffer open [lindex $r 1]]
+
+		if {$b eq ""} { return }
+
+		set line [lindex $r 2]
+		set col [lindex $r 3]
+
+		if {$line ne ""} {
+			if {$col eq ""} { set col 1 }
+			buffer eval $b { m nil $line:$col }
+			buffer focus $b
+		}
+	}
+
+	namespace export man_link_open
+	proc man_link_open {islink text} {
+		if {!$islink} { return }
+
+		set r [lexy-token 0 $text]
+		if {[lindex $r 2] eq ""} { return }
+
+		man [lindex $r 2] [lindex $r 1]
+	}
+
+	namespace export tags_search_menu_command
+	proc tags_search_menu_command {text} {
+		set tagout [teddy::tags $text]
+		if {[llength $tagout] > 1} {
+			set b [buffer make +tags/$text]
+			buffer eval $b {
+				foreach x $tagout {
+					c "$x\n"
+				}
 			}
-			c $nt
+		} else {
+			tags_link_open 0 [lindex $tagout 0]
 		}
 	}
 
-	#puts "Stored mark: $stored_mark"
-	#puts "Stored cursor: $stored_cursor"
+	namespace export tags_link_open
+	proc tags_link_open {islink text} {
+		set r [lexy-token tagsearch/0 $text]
 
-	m {*}$saved_status
-	buffer select-mode normal
-}
+		set b [buffer open [lindex $r 1]]
 
-proc man {args} {
-	bg "+man/$args+" "shell man $args"
-}
-
-proc lexydef {name args} {
-	lexydef-create $name
-	for {set i 0} {$i < [llength $args]} {set i [expr $i + 2]} {
-		set start_state [lindex $args $i]
-		set transitions [lindex $args [expr $i + 1]]
-		for {set j 0} {$j < [llength $transitions]} {set j [expr $j + 2]} {
-			set pattern [lindex $transitions $j]
-			set state_and_token_type [split [lindex $transitions [expr $j + 1]] :]
-
-			if {[llength $state_and_token_type] > 1} {
-				set next_state [lindex $state_and_token_type 0]
-				set type [lindex $state_and_token_type 1]
-			} else {
-				set next_state $start_state
-				set type [lindex $state_and_token_type 0]
+		if {[lindex $r 2] ne ""} {
+			buffer eval $b {
+				m nil 1:1
+				m {*}[s -literal [lindex $r 2]]
 			}
-
-			lexydef-append $name $start_state $pattern $next_state $type
 		}
+
+		buffer focus $b
+	}
+
+	namespace export dir
+	proc dir {directory} {
+	 	if {[string index $directory end] != "/"} {
+	 		set directory "$directory/"
+	 	}
+		set b [buffer make $directory]
+		#buffer eval $b { c "CIAO!" }
+		bg $b { shell ls {*}$teddy::ls_options $directory }
+	}
+
+	namespace export loadhistory
+	proc loadhistory {} {
+		if [info exists ::env(XDG_CONFIG_HOME)] {
+			set histf $::env(XDG_CONFIG_HOME)/teddy/teddy_history
+		} else {
+			set histf $::env(HOME)/.config/teddy/teddy_history
+		}
+
+		if {[catch {set f [open $histf RDONLY]} err]} {
+			puts "No history"
+			return
+		}
+
+		while {[gets $f line] >= 0} {
+			set line [split $line "\t"]
+			teddyhistory cmd add [lindex $line 0] [lindex $line 1] [lindex $line 2]
+		}
+		close $f
+	}
+
+	namespace export shell_eat
+	proc shell_eat {args i specialVarName normalVarName} {
+	   set special {}
+	   set normal {}
+
+	   for {} {$i < [llength $args]} {incr i} {
+	      set cur [lindex $args $i]
+
+	      if {$cur eq "&&"} { break }
+	      if {$cur eq "||"} { break }
+	      if {$cur eq "|"} { break }
+
+	      set isspecial [regexp {^([0-9]*)(>|>&|<&|<|>>)(.*)$} $cur -> redirected_descriptor open_direction target]
+
+	      if {$isspecial} {
+	         lappend special [dict create redirected_descriptor $redirected_descriptor open_direction $open_direction target $target]
+	      } elseif {[string first ! $cur] == 0} {
+	      	lappend normal [string range $cur 1 end]
+	      } else {
+	         if {[string first ~ $cur] == 0} {
+	         	global env
+	         	set cur $env(HOME)/[string range $cur 1 end]
+	         }
+
+	         if {[string first * $cur] >= 0} {
+				# Perform autoglobbing
+				if [catch {lappend normal {*}[glob $cur]}] {
+					lappend normal $cur
+				}
+	         } else {
+				lappend normal $cur
+	         }
+	      }
+	   }
+
+	   upvar $specialVarName specialVar
+	   upvar $normalVarName normalVar
+	   set specialVar $special
+	   set normalVar $normal
+
+	   return $i
+	}
+
+	namespace export shell_perform_redirection
+	proc shell_perform_redirection {redirection} {
+	   set redirected_descriptor [dict get $redirection redirected_descriptor]
+	   set open_direction [dict get $redirection open_direction]
+	   set target [dict get $redirection target]
+
+	   switch -exact $open_direction {
+	      ">" {
+	         if {$redirected_descriptor eq ""} {set redirected_descriptor 1}
+	         if {$target eq ""} { error "Output redirect without filename" }
+	         set fd [fdopen -wronly -trunc -creat $target]
+	         fddup2 $fd $redirected_descriptor
+	         fdclose $fd
+	      }
+	      ">&" {
+	         if {$redirected_descriptor eq ""} {set redirected_descriptor 1}
+	         fddup2 $target $redirected_descriptor
+	      }
+	      "<" {
+	         if {$redirected_descriptor eq ""} {set redirected_descriptor 0}
+	         if {$target eq ""} { error "Input redirect without filename" }
+	         set fd [fdopen -rdonly $target]
+	         fddup2 $fd $redirected_descriptor
+	         fdclose $fd
+	      }
+	      "<&" {
+	         if {$redirected_descriptor eq ""} {set redirected_descriptor 0}
+	         fddup2 $target $redirected_descriptor
+	      }
+	      ">>" {
+	         if {$redirected_descriptor eq ""} {set redirected_descriptor 1}
+	         set fd [fdopen -creat -wronly -append $target]
+	         fddup2 $fd $redirected_descriptor
+	         fdclose $fd
+	      }
+	   }
+	}
+
+	namespace export shell_child_code
+	proc shell_child_code {special normal pipe} {
+	   # child code, make redirects and exec
+
+	   #puts "message from child code"
+
+	   if {$pipe ne ""} {
+	      # default ouput of this process will be pipe's output side
+	      fdclose [lindex $pipe 0]
+	      fddup2 [lindex $pipe 1] 1
+	      fdclose [lindex $pipe 1]
+	   }
+
+	   for {set i 0} {$i < [llength $special]} {incr i} {
+	      teddy_intl::shell_perform_redirection [lindex $special $i]
+	   }
+
+	   #puts "Executing $normal"
+	   posixexec {*}$normal
+
+	   posixexit -1
 	}
 }
+
+#### DEFAULT HOOKS ###########################################################
+# Default buffer hooks (empty)
+
+proc buffer_setup_hook {buffer-name} { }
+proc buffer_save_hook {} {}
+
+#### LEXY DEFINITIONS ##########################################################
+# Definitions of lexy state machines to syntax highlight source code
 
 lexydef c 0 {
 		"\\<(?:auto|_Bool|break|case|char|_Complex|const|continue|default|do|double|else|enum|extern|float|for|goto|if|_Imaginary|inline|int|long|register|restrict|return|short|signed|sizeof|static|struct|switch|typedef|union|unsigned|void|volatile|while|int8_t|uint8_t|int16_t|uint16_t|int32_t|uint32_t|int64_t|uint64_t|size_t|time_t|bool)\\>" keyword
@@ -505,259 +759,3 @@ lexydef tagsearch 0 {
 	}
 
 lexyassoc tagsearch {^\+tags}
-
-proc clear {} {
-	m 1:1 $:$
-	c ""
-}
-
-proc buffer_setup_hook {buffer-name} { }
-proc buffer_save_hook {} {}
-
-proc loadhistory {} {
-	if [info exists ::env(XDG_CONFIG_HOME)] {
-		set histf $::env(XDG_CONFIG_HOME)/teddy/teddy_history
-	} else {
-		set histf $::env(HOME)/.config/teddy/teddy_history
-	}
-
-	if {[catch {set f [open $histf RDONLY]} err]} {
-		puts "No history"
-		return
-	}
-
-	while {[gets $f line] >= 0} {
-		set line [split $line "\t"]
-		teddyhistory cmd add [lindex $line 0] [lindex $line 1] [lindex $line 2]
-	}
-	close $f
-}
-
-proc antique_theme {} {
-	setcfg -global editor_bg_color [rgbcolor "antique white"]
-	setcfg -global border_color [rgbcolor black]
-
-	setcfg -global editor_fg_color [rgbcolor black]
-	setcfg -global posbox_border_color 0
-	setcfg -global posbox_bg_color 15654274
-	setcfg -global posbox_fg_color 0
-
-	setcfg -global lexy_nothing [rgbcolor black]
-	setcfg -global lexy_keyword [rgbcolor "midnight blue"]
-	setcfg -global lexy_comment [rgbcolor "dark green"]
-	setcfg -global lexy_string [rgbcolor "saddle brown"]
-	setcfg -global lexy_id [rgbcolor black]
-	setcfg -global lexy_literal [rgbcolor "saddle brown"]
-	setcfg -global lexy_file [rgbcolor "midnight blue"]
-}
-
-proc zenburn_theme {} {
-	setcfg -global editor_bg_color [rgbcolor 12 12 12]
-	setcfg -global border_color [rgbcolor white]
-	setcfg -global editor_bg_cursorline [rgbcolor 31 31 31]
-
-	setcfg -global editor_fg_color [rgbcolor white]
-
-	setcfg -global posbox_border_color 0
-	setcfg -global posbox_bg_color 15654274
-	setcfg -global posbox_fg_color 0
-
-	setcfg -global lexy_nothing [rgbcolor white]
-	setcfg -global lexy_keyword [rgbcolor 240 223 175]
-	setcfg -global lexy_comment [rgbcolor 127 159 127]
-	setcfg -global lexy_string [rgbcolor 204 147 147]
-	setcfg -global lexy_id [rgbcolor 197 197 183 ]
-	setcfg -global lexy_literal [rgbcolor 220 163 163]
-}
-
-proc solarized_theme {} {
-	set base03    [rgbcolor 0  43  54]
-	set base02    [rgbcolor 7  54  66]
-	set base01    [rgbcolor 88 110 117]
-	set base00    [rgbcolor 101 123 131]
-	set base0     [rgbcolor 131 148 150]
-	set base1     [rgbcolor 147 161 161]
-	set base2     [rgbcolor 238 232 213]
-	set base3 [rgbcolor 253 246 227]
-	set yellow    [rgbcolor 181 137   0]
-	set orange    [rgbcolor 203  75  22]
-	set red       [rgbcolor 220  50  47]
-	set magenta   [rgbcolor 211  54 130]
-	set violet    [rgbcolor 108 113 196]
-	set blue      [rgbcolor 38 139 210]
-	set cyan      [rgbcolor 42 161 152]
-	set green [rgbcolor 133 153   0]
-
-
-	setcfg -global editor_bg_color $base03
-	setcfg -global border_color $base0
-	setcfg -global editor_bg_cursorline $base02
-
-	setcfg -global editor_fg_color $base2
-
-	setcfg -global posbox_border_color 0
-	setcfg -global posbox_bg_color 15654274
-	setcfg -global posbox_fg_color 0
-
-	setcfg -global lexy_nothing $base2
-	setcfg -global lexy_keyword $green
-	setcfg -global lexy_comment $base01
-	setcfg -global lexy_string $cyan
-	setcfg -global lexy_id $base2
-	setcfg -global lexy_literal $cyan
-}
-
-namespace eval teddy_intl {
-	namespace export iopen_search
-	proc iopen_search {z} {
-		set k [s -literal -get $z]
-		#puts "Searching <$z> -> <$k>"
-		if {[lindex $k 0] ne "nil"} {
-			m nil [lindex $k 0]
-		}
-	}
-
-	namespace export link_open
-	proc link_open {islink text} {
-		if {$islink} {
-			set r [lexy-token 0 $text]
-		} else {
-			set r [list nothing $text "" ""]
-		}
-
-		set b [buffer open [lindex $r 1]]
-
-		if {$b eq ""} { return }
-
-		set line [lindex $r 2]
-		set col [lindex $r 3]
-
-		if {$line eq ""} { set line 1 }
-		if {$col eq ""} { set col 1 }
-
-		buffer eval $b { m $line:$col }
-
-		buffer focus $b
-	}
-
-	namespace export man_link_open
-	proc man_link_open {islink text} {
-		if {!$islink} { return }
-
-		set r [lexy-token 0 $text]
-		if {[lindex $r 2] eq ""} { return }
-
-		man [lindex $r 2] [lindex $r 1]
-	}
-
-	namespace export tags_search_menu_command
-	proc tags_search_menu_command {text} {
-		set tagout [teddy::tags $text]
-		if {[llength $tagout] > 1} {
-			set b [buffer make +tags/$text]
-			buffer eval $b {
-				foreach x $tagout {
-					c "$x\n"
-				}
-			}
-		} else {
-			tags_link_open 0 [lindex $tagout 0]
-		}
-	}
-
-	namespace export tags_link_open
-	proc tags_link_open {islink text} {
-		set r [lexy-token tagsearch/0 $text]
-
-		set b [buffer open [lindex $r 1]]
-
-		if {[lindex $r 2] ne ""} {
-			buffer eval $b {
-				m nil 1:1
-				m {*}[s -literal [lindex $r 2]]
-			}
-		}
-
-		buffer focus $b
-	}
-
-	namespace export dir
-	proc dir {directory} {
-	 	if {[string index $directory end] != "/"} {
-	 		set directory "$directory/"
-	 	}
-		set b [buffer make $directory]
-		#buffer eval $b { c "CIAO!" }
-		bg $b { shell ls {*}$teddy::ls_options $directory }
-	}
-}
-
-namespace eval teddy {
-	# options passed to ls to display a directory
-	namespace export ls_options
-	set ls_options {-F -1 --group-directories-first}
-
-	# returns current line number
-	namespace export lineof
-	proc lineof {x} {
-		return [lindex [split $x ":"] 0]
-	}
-
-	# reads a file from disk
-	namespace export slurp
-	proc slurp {path} {
-		set thefile [open $path]
-		fconfigure $thefile -translation binary
-		set r [read $thefile]
-		close $thefile
-		return $r
-	}
-
-	# deletes irrelevant spaces from the end of lines, and empty lines from the end of file
-	namespace export spaceman
-	proc spaceman {} {
-		set saved [m]
-		# delete empty spaces from the end of lines
-		m nil 1:1
-		s {\s+$} c ""
-
-		# delete empty lines from the end of files
-		set last_nonempty_line "nil"
-		s {^.+$} { set last_nonempty_line [m] }
-		if {$last_nonempty_line ne "nil"} {
-			m [lindex $last_nonempty_line 1] $:$
-			c ""
-		}
-
-		m {*}$saved
-	}
-}
-
-proc forlines {args} {
-	if {[llength $args] == 1} {
-		set pattern {^.*$}
-		set body [lindex $args 0]
-	} elseif {[llength $args] == 2} {
-		set pattern [lindex $args 0]
-		set body [lindex $args 1]
-	} else {
-		error "Wrong number of arguments to forlines [llength $args] expected 1 or 2"
-	}
-
-	m all
-	s $pattern {
-		m line
-		uplevel 1 $body
-	}
-}
-
-proc ss {args} {
-	buffer eval temp {
-		c [lindex $args 0]
-		m 1:1
-		s {*}[lrange $args 1 end]
-		m all
-		set text [c]
-	}
-	return $text
-}

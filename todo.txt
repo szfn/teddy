@@ -1,24 +1,23 @@
+- BUG: open link action should also center on cursor
+- shell redirections should support a space
+- possibility to specify selection background exactly (instead of difference)
+- dup buffer function
 - non editable bg buffers, send typed text to job stdin
-- dup buffer function?
-
 - set column number for background processes whenever possible
 - tabs
 - guessing indentation (dtrt-indent mode1)
 - auto-equalize indentation on paste
 - macro recording
 - some commands should be displayed on the working directory line (last command, two most used commands)
-- move stuff to a namespace
 - in buffers associated to jobs the cursor should be fixed at the end and inserting text should result in input to the job
 - make lexy a flat table, lexyassoc just gives the starting state but we can move to other states (implement mixed html / javascript mode)
 - multiprocess highlighting
-
 - ability to persist the status of a window
 - extend regular expressions in 's' to be lexically aware
 - cleanup of unused functions (how?)
 - all configuration options in the default configuration file with comments
 - open in a directory view should be relative to the directory
 - directories should be links too
-- possibility to specify selection background exactly (instead of difference)
 
 - document:
  s, c, m, ss, regexp, regsub, new buffer subcommands, tags
