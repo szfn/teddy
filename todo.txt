@@ -1,4 +1,3 @@
-- better shell command, remove pipe command (can be done with 'c' and shell)
 - non editable bg buffers, send typed text to job stdin
 - dup buffer function?
 

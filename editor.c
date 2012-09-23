@@ -145,7 +145,6 @@ void editor_replace_selection(editor_t *editor, const char *new_text) {
 		columns_set_active(columnset, column);
 
 	set_label_text(editor);
-	editor_center_on_cursor(editor);
 	gtk_widget_queue_draw(editor->drar);
 
 	editor->dirty_line = true;
@@ -205,7 +204,9 @@ void editor_complete_move(editor_t *editor, gboolean should_move_origin) {
 	compl_wnd_hide(editor->alt_completer);
 	gtk_widget_queue_draw(editor->drar);
 	editor->cursor_visible = TRUE;
-	if (should_move_origin) editor_center_on_cursor(editor);
+	if (should_move_origin) {
+		editor_center_on_cursor(editor);
+	}
 	lexy_update_for_move(editor->buffer, editor->buffer->cursor.line);
 }
 

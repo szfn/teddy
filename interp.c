@@ -567,9 +567,6 @@ static bool move_command_ex(const char *sin, lpoint_t *p, lpoint_t *ref) {
 	bool rl = buffer_move_point_line(interp_context_buffer(), p, lineflag, lineno);
 	bool rc = buffer_move_point_glyph(interp_context_buffer(), p, colflag, colno);
 
-	if (interp_context_editor() != NULL)
-		editor_complete_move(interp_context_editor(), TRUE);
-
 	free(s);
 
 	Tcl_SetResult(interp, (rl && rc) ? "true" : "false", TCL_VOLATILE);

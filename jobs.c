@@ -28,11 +28,8 @@ void jobs_init(void) {
 
 static void job_destroy(job_t *job) {
 	g_source_remove(job->pipe_from_child_source_id);
-
 	g_source_remove(job->child_source_id);
-
 	g_io_channel_shutdown(job->pipe_from_child, FALSE, NULL);
-
 	g_io_channel_unref(job->pipe_from_child);
 	job->pipe_from_child = NULL;
 
@@ -287,4 +284,3 @@ int write_all(int fd, const char *str) {
 	}
 	return 0;
 }
-

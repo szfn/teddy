@@ -140,6 +140,5 @@ proc buffer_save_hook {} {\n\
 proc grep {args} {\n\
 	unknown grep -n {*}$args\n\
 }\n\
-\n\
 "
 #endif

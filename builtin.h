@@ -187,7 +187,7 @@ proc shell {args} {\n\
 proc unknown {args} {\n\
    if {[string index [lindex $args 0] 0] eq \"|\"} {\n\
       lset args 0 [string range [lindex $args 0] 1 end]\n\
-      | {*}$args\n\
+      c [shellsync [c] {*}$args]\n\
    } else {\n\
       # normal unknown code\n\
       set margs shell\n\
@@ -200,13 +200,11 @@ proc backgrounded_unknown {args} {\n\
    shell {*}$args\n\
 }\n\
 \n\
-proc | {args} {\n\
+proc shellsync {text args} {\n\
    global backgrounded\n\
    if {$backgrounded} {\n\
       error \"shellpipe called on a backgrounded interpreter\"\n\
    }\n\
-\n\
-   set text [c]\n\
 \n\
    set pipe [fdpipe]\n\
    set outpipe [fdpipe]\n\
@@ -254,7 +252,7 @@ proc | {args} {\n\
       close $sub_output\n\
 \n\
       if {[lindex $r 1] == 0} {\n\
-          c $replacement\n\
+          return $replacement\n\
       } else {\n\
           error $error_text\n\
       }\n\
