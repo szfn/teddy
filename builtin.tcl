@@ -722,10 +722,12 @@ namespace eval teddy {
 		s {\s+$} c ""
 
 		# delete empty lines from the end of files
-		m nil 1:1
+		set last_nonempty_line "nil"
 		s {^.+$} { set last_nonempty_line [m] }
-		m [lindex $last_nonempty_line 1] $:$
-		c ""
+		if {$last_nonempty_line ne "nil"} {
+			m [lindex $last_nonempty_line 1] $:$
+			c ""
+		}
 
 		m {*}$saved
 	}
