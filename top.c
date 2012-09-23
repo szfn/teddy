@@ -163,6 +163,7 @@ GtkWidget *top_init(void) {
 	cmdline_editor = new_editor(cmdline_buffer, true);
 
 	config_set(&(cmdline_buffer->config), CFG_AUTOWRAP, "0");
+	config_set(&(cmdline_buffer->config), CFG_AUTOCOMPL_POPUP, "0");
 
 	cmdline_notebook_page = gtk_notebook_append_page(GTK_NOTEBOOK(top_notebook), GTK_WIDGET(cmdline_editor), NULL);
 

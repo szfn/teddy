@@ -151,7 +151,9 @@ void editor_replace_selection(editor_t *editor, const char *new_text) {
 
 	editor->dirty_line = true;
 
-	editor_maybe_show_completions(editor, false);
+	if (config_intval(&(editor->buffer->config), CFG_AUTOCOMPL_POPUP) || COMPL_WND_VISIBLE(editor->completer)) {
+		editor_maybe_show_completions(editor, false);
+	}
 }
 
 static void editor_include_cursor(editor_t *editor) {
@@ -404,10 +406,6 @@ static gboolean key_press_callback(GtkWidget *widget, GdkEventKey *event, editor
 	if (!shift && !ctrl && !alt && !super) {
 		if (COMPL_WND_VISIBLE(editor->completer)) {
 			switch(event->keyval) {
-				case GDK_KEY_Up:
-					COMPL_WND_UP(editor->completer);
-					return TRUE;
-				case GDK_KEY_Down:
 				case GDK_KEY_Tab:
 					if (COMPL_COMMON_SUFFIX(editor->completer) != NULL) {
 						editor_replace_selection(editor, COMPL_COMMON_SUFFIX(editor->completer));
@@ -416,13 +414,10 @@ static gboolean key_press_callback(GtkWidget *widget, GdkEventKey *event, editor
 					}
 					return TRUE;
 				case GDK_KEY_Escape:
-				case GDK_KEY_Left:
 					return FALSE;
 				case GDK_KEY_Return:
-				case GDK_KEY_Right: {
 					editor_complete(editor);
 					return TRUE;
-				}
 			}
 		} else if (editor->single_line) {
 			if (editor->single_line_other_keys(editor, shift, ctrl, alt, super, event->keyval)) {

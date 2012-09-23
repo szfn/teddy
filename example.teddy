@@ -1,52 +1,139 @@
+### FONT CONFIGURATION ###
+
+# Set the font used by default in editors
 setcfg main_font "Arial-11"
+
+# Create a monospace font to be used on some editor (see buffer_setup_hook)
 set monospaced_font "Monospace-11"
+
+# Set the font used on the box displaying cursor position, at the bottom right corner of the editor window
 setcfg posbox_font Arial-8
 
+### COLOR THEME ###
+
+# Run the antique theme (see builtin.tcl for how themes are defined)
 antique_theme
 
+### MISC OPTIONS ###
+
+# When focus_follows_mouse is set to 1 the focus will be moved to the editor under the mouse pointer
 setcfg focus_follows_mouse 1
 
+# When autoindent is set to 1 pressing return will copy the indentation of the current line on the new line
+setcfg autoindent 1
+
+# When spaceman is set to 1 irrelevant spaces at the end of lines are automatically removed
+setcfg spaceman 1
+
+# warp_mouse can be:
+# - no-warp: mouse position is not warped when focus is moved to a different editor
+# - warp-to-top: mouse is warped to the top of the editor getting focus
+# - warp-to-cursor: mouse is warped to the current line of the editor getting focus
+# no-warp is not a recommended option if focus_follows_mouse is set to 1
+setcfg warp_mouse warp-to-cursor
+
+# interactive_search_case_sensitive controls case sensitivity for the interactive search function (activated by 'search' command):
+# 0 makes interactive search case insensitive, 1 makes it case sensitive, 2 (default) makes it case sensitive only when the search text contains upcase letters
+setcfg interactive_search_case_sensitive 2
+
+# When autowrap is set to 1 lines that don't fit in the editor will be wrapped around (this is a soft-wrap, it is not saved)
+# When autowrap is set to 0 an horizontal scrollbar is shown when necessary
+setcfg autowrap 1
+
+# Set the width of a tabulation as number of characters (on variable width fonts the width of a M character will be used)
+setcfg tab_width 4
+
+# When oldarrow is set to 1 the arrow cursor is used for editors
+setcfg oldarrow 0
+
+# When tags_discard_lineno is set to 1 lines of the TAGS file pointing to a specific line are discarded
+setcfg tags_discard_lineno 1
+
+# When autoreload is set to 1 unchanged buffer associated to a file that changed on disk are autoreloaded from disk
+setcfg autoreload 1
+
+# When autocompl_popup is set to 1 the autocompletion window appears automatically
+setcfg autocompl_popup 1
+
+### KEYBINDINGS ###
+
+# Ctrl-c copy to clipboard
 bindkey Ctrl-c {cb put [c]; m nil +0:+0}
+
+# Ctrl-v paste from clipboard
 bindkey Ctrl-v {c [cb get]}
+
+# Ctrl-x cuts from clipboard
 bindkey Ctrl-x {cb put [c]; c ""}
+
+# Ctrl-y pastes from primary selection (this is like the middle mouse button)
 bindkey Ctrl-y {c [cb pget]}
 
+# Ctrl-u undoes last action
 bindkey Ctrl-u undo
 
+# Ctrl-s saves
 bindkey Ctrl-s {buffer save}
 
+# Ctrl-f starts interactive search (also known as "search as you type" or "incremental search")
 bindkey Ctrl-f search
+
+# Ctrl-g starts interactive search with the last thing searched
 bindkey Ctrl-g {search [teddyhistory search 1]}
 
+# Ctrl-a goes to the first non-whitespace character of the line
 bindkey Ctrl-a {m +0:^1}
+
+# Ctrl-e goes to the last character of the line
 bindkey Ctrl-e {m +0:$ }
+
+# Ctrl-left / Ctrl-right moves one word forward/backward
 bindkey Ctrl-Left {m +0:-1w}
 bindkey Ctrl-Right {m +0:+1w}
+
+# Ctrl-backspace deletes word preceding cursor
+bindkey Ctrl-Backspace {m +0:-1w +0:+0; c ""}
+
+# Ctrl-home/Ctrl-end moves to the first/last line
 bindkey Ctrl-Home {m 1:0}
 bindkey Ctrl-End {m $:0}
 
+# Ctrl-l starts interactive file search
 bindkey Ctrl-l iopen
 
-bindkey Ctrl-Backspace {m +0:-1w +0:+0; c ""}
+# Ctrl-k removes current line and saves it to the clipboard, multiple consecutive executions append removed lines to the clipboard
 bindkey Ctrl-k kill_line
 
+# Ctrl-. / Ctrl-, add/remove one tab at the beginning of every line of the selected text
 bindkey Ctrl-, {bindent decr "\t"}
 bindkey Ctrl-. {bindent incr "\t"}
 
-proc grep {args} {
-	unknown grep -n {*}$args
-}
+### BUFFER SETUP HOOK ###
+
+# This procedure gets called every time a new buffer is created, it allows you to do some customization of how buffers are displayed
 
 proc buffer_setup_hook {name} {
 	global monospaced_font
 	if { [string range $name 0 2] == "+bg" } {
+		# For buffers containing the output of external commands we disable autowrapping, …
 		setcfg autowrap 0
+		# …set a tab width of 8, ...
 		setcfg tab_width 8
+		# …and set a monospaced font.
 		setcfg main_font $monospaced_font
 	} elseif { [string range $name 0 3] == "+man" } {
+		# For buffers containing manpages we disable autowrapping and set a monospaced font
 		setcfg autowrap 0
 		setcfg main_font $monospaced_font
 	} else {
-		return { }
+		# Otherwise we accept default
 	}
 }
+
+### OTHER ###
+
+# We override the grep command so that it always shows line numbers of matches, so that we can click on a match and go directly to the matched line on an editor
+proc grep {args} {
+	unknown grep -n {*}$args
+}
+

@@ -36,3 +36,4 @@ cfg_lexy_file 0
 cfg_tags_discard_lineno 1
 
 cfg_autoreload 1
+cfg_autocompl_popup 1

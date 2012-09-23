@@ -1,9 +1,6 @@
-- BUG: music now segfaults
-
-- annotate example.teddy and make sure all options are there
-
+- create savehook, put spaceman there as a tcl script
 - cmdcompl should have only one critbit tree (discard it and remerge with path executables when changing directory)
-- better shell command, remove pipe command (can be done with c and shell)
+- better shell command, remove pipe command (can be done with 'c' and shell)
 - non editable bg buffers, send typed text to job stdin
 - dup buffer function?
 
