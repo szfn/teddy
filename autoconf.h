@@ -25,9 +25,6 @@ setcfg focus_follows_mouse 1\n\
 # When autoindent is set to 1 pressing return will copy the indentation of the current line on the new line\n\
 setcfg autoindent 1\n\
 \n\
-# When spaceman is set to 1 irrelevant spaces at the end of lines are automatically removed\n\
-setcfg spaceman 1\n\
-\n\
 # warp_mouse can be:\n\
 # - no-warp: mouse position is not warped when focus is moved to a different editor\n\
 # - warp-to-top: mouse is warped to the top of the editor getting focus\n\

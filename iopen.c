@@ -406,6 +406,7 @@ void iopen_init(GtkWidget *window) {
 	buffer_set_onchange(iopen_buffer, iopen_buffer_onchange);
 
 	config_set(&(iopen_buffer->config), CFG_AUTOWRAP, "0");
+	config_set(&(iopen_buffer->config), CFG_AUTOCOMPL_POPUP, "0");
 
 	iopen_editor->single_line_escape = &iopen_escape;
 	iopen_editor->single_line_return = &iopen_enter;
@@ -456,7 +457,7 @@ void iopen_init(GtkWidget *window) {
 	gtk_container_add(GTK_CONTAINER(tags_scroll), tags_tree);
 
 	gtk_box_pack_start(GTK_BOX(tags_vbox),  tags_scroll, TRUE, TRUE, 0);
-	
+
 	gtk_container_add(GTK_CONTAINER(results_hbox), tags_vbox);
 	gtk_container_add(GTK_CONTAINER(results_hbox), files_vbox);
 
