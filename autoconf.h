@@ -79,7 +79,7 @@ bindkey Ctrl-s {buffer save}\n\
 bindkey Ctrl-f search\n\
 \n\
 # Ctrl-g starts interactive search with the last thing searched\n\
-bindkey Ctrl-g {search [teddyhistory search 1]}\n\
+bindkey Ctrl-g {search [teddy::history search 1]}\n\
 \n\
 # Ctrl-a goes to the first non-whitespace character of the line\n\
 bindkey Ctrl-a {m +0:^1}\n\

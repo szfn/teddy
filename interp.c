@@ -814,12 +814,12 @@ void interp_init(void) {
 	Tcl_CreateCommand(interp, "undo", &teddy_undo_command, (ClientData)NULL, NULL);
 	Tcl_CreateCommand(interp, "search", &teddy_search_command, (ClientData)NULL, NULL);
 
-	Tcl_CreateCommand(interp, "bg", &teddy_bg_command, (ClientData)NULL, NULL);
+	Tcl_CreateCommand(interp, "teddy::bg", &teddy_bg_command, (ClientData)NULL, NULL);
 	Tcl_CreateCommand(interp, "<", &teddy_sendinput_command, (ClientData)NULL, NULL);
 
 	Tcl_CreateCommand(interp, "rgbcolor", &teddy_rgbcolor_command, (ClientData)NULL, NULL);
 
-	Tcl_CreateCommand(interp, "teddyhistory", &teddy_history_command, (ClientData)NULL, NULL);
+	Tcl_CreateCommand(interp, "teddy::history", &teddy_history_command, (ClientData)NULL, NULL);
 
 	Tcl_CreateCommand(interp, "s", &teddy_research_command, (ClientData)NULL, NULL);
 	Tcl_CreateCommand(interp, "c", &teddy_change_command, (ClientData)NULL, NULL);

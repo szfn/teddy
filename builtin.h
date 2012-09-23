@@ -7,7 +7,7 @@
 proc kill_line {} {\n\
    m +0:1 +1:1\n\
    if {[undo tag] eq \"kill_line\"} {\n\
-   	undo fusenext\n\
+      undo fusenext\n\
    }\n\
    c \"\"\n\
    undo tag kill_line\n\
@@ -47,7 +47,7 @@ proc bindent {direction indentchar} {\n\
 }\n\
 \n\
 proc man {args} {\n\
-	bg \"+man/$args+\" \"shell man $args\"\n\
+	teddy::bg \"+man/$args+\" \"shell man $args\"\n\
 }\n\
 \n\
 proc clear {} {\n\
@@ -328,7 +328,7 @@ proc shellsync {text args} {\n\
       fddup2 [lindex $errpipe 1] 2\n\
       fdclose [lindex $errpipe 1]\n\
 \n\
-      bg -setup\n\
+      teddy::bg -setup\n\
 \n\
       posixexit [shell [lindex $args 0] {*}[lrange $args 1 end]]\n\
    } else {\n\
@@ -364,7 +364,7 @@ proc unknown {args} {\n\
       # normal unknown code\n\
       set margs shell\n\
       lappend margs {*}$args\n\
-      bg $margs\n\
+      teddy::bg $margs\n\
    }\n\
 }\n\
 \n\
@@ -455,7 +455,7 @@ namespace eval teddy_intl {\n\
 	 	}\n\
 		set b [buffer make $directory]\n\
 		#buffer eval $b { c \"CIAO!\" }\n\
-		bg $b { shell ls {*}$teddy::ls_options $directory }\n\
+		teddy::bg $b { shell ls {*}$teddy::ls_options $directory }\n\
 	}\n\
 \n\
 	namespace export loadhistory\n\
@@ -473,7 +473,7 @@ namespace eval teddy_intl {\n\
 \n\
 		while {[gets $f line] >= 0} {\n\
 			set line [split $line \"\\t\"]\n\
-			teddyhistory cmd add [lindex $line 0] [lindex $line 1] [lindex $line 2]\n\
+			teddy::history cmd add [lindex $line 0] [lindex $line 1] [lindex $line 2]\n\
 		}\n\
 		close $f\n\
 	}\n\

@@ -4,7 +4,7 @@
 proc kill_line {} {
    m +0:1 +1:1
    if {[undo tag] eq "kill_line"} {
-   	undo fusenext
+      undo fusenext
    }
    c ""
    undo tag kill_line
@@ -44,7 +44,7 @@ proc bindent {direction indentchar} {
 }
 
 proc man {args} {
-	bg "+man/$args+" "shell man $args"
+	teddy::bg "+man/$args+" "shell man $args"
 }
 
 proc clear {} {
@@ -325,7 +325,7 @@ proc shellsync {text args} {
       fddup2 [lindex $errpipe 1] 2
       fdclose [lindex $errpipe 1]
 
-      bg -setup
+      teddy::bg -setup
 
       posixexit [shell [lindex $args 0] {*}[lrange $args 1 end]]
    } else {
@@ -361,7 +361,7 @@ proc unknown {args} {
       # normal unknown code
       set margs shell
       lappend margs {*}$args
-      bg $margs
+      teddy::bg $margs
    }
 }
 
@@ -452,7 +452,7 @@ namespace eval teddy_intl {
 	 	}
 		set b [buffer make $directory]
 		#buffer eval $b { c "CIAO!" }
-		bg $b { shell ls {*}$teddy::ls_options $directory }
+		teddy::bg $b { shell ls {*}$teddy::ls_options $directory }
 	}
 
 	namespace export loadhistory
@@ -470,7 +470,7 @@ namespace eval teddy_intl {
 
 		while {[gets $f line] >= 0} {
 			set line [split $line "\t"]
-			teddyhistory cmd add [lindex $line 0] [lindex $line 1] [lindex $line 2]
+			teddy::history cmd add [lindex $line 0] [lindex $line 1] [lindex $line 2]
 		}
 		close $f
 	}
