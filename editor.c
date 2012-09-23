@@ -153,7 +153,7 @@ void editor_replace_selection(editor_t *editor, const char *new_text) {
 		editor_maybe_show_completions(editor, editor->completer, false, 2);
 	} else if (compl_wnd_visible(editor->alt_completer)) {
 		editor_maybe_show_completions(editor, editor->alt_completer, false, 0);
-	} else if (config_intval(&(editor->buffer->config), CFG_AUTOCOMPL_POPUP)) {
+	} else if (config_intval(&(editor->buffer->config), CFG_AUTOCOMPL_POPUP) && (strcmp(new_text, "") != 0)) {
 		editor_maybe_show_completions(editor, editor->completer, false, 2);
 	}
 }
