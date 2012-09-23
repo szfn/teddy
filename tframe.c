@@ -91,7 +91,7 @@ static gboolean reshandle_expose_callback(GtkWidget *widget, GdkEventExpose *eve
 }
 
 static gboolean reshandle_map_callback(GtkWidget *widget, GdkEvent *event, tframe_t *tf) {
-	gdk_window_set_cursor(gtk_widget_get_window(widget), gdk_cursor_new(GDK_TOP_LEFT_CORNER));
+	gdk_window_set_cursor(gtk_widget_get_window(widget), cursor_top_left_corner);
 	return FALSE;
 }
 
@@ -272,7 +272,7 @@ static gboolean label_expose_callback(GtkWidget *widget, GdkEventExpose *event, 
 }
 
 static gboolean label_map_callback(GtkWidget *widget, GdkEvent *event, tframe_t *tf) {
-	gdk_window_set_cursor(gtk_widget_get_window(widget), gdk_cursor_new(GDK_FLEUR));
+	gdk_window_set_cursor(gtk_widget_get_window(widget), cursor_fleur);
 	return FALSE;
 }
 

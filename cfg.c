@@ -42,5 +42,19 @@ void config_set(config_t *config, int idx, char *val) {
 
 	config->cfg[idx]->strval = strdup(val);
 	alloc_assert(config->cfg[idx]->strval);
-	config->cfg[idx]->intval = atoi(val);
+	switch(idx) {
+	case CFG_WARP_MOUSE:
+		if (strcmp(val, "no-warp") == 0) {
+			config->cfg[idx]->intval = 0;
+		} else if (strcmp(val, "warp-to-top") == 0) {
+			config->cfg[idx]->intval = 1;
+		} else if (strcmp(val, "warp-to-cursor") == 0) {
+			config->cfg[idx]->intval = 2;
+		} else {
+			config->cfg[idx]->intval = atoi(val);
+		}
+		break;
+	default:
+		config->cfg[idx]->intval = atoi(val);
+	}
 }

@@ -71,23 +71,6 @@ static void dirty_line_update(editor_t *editor) {
 	word_completer_full_update();
 }
 
-void editor_absolute_cursor_position(editor_t *editor, double *x, double *y, double *alty) {
-	buffer_cursor_position(editor->buffer, x, y);
-	*y -= gtk_adjustment_get_value(GTK_ADJUSTMENT(editor->adjustment));
-
-	//printf("x = %g y = %g\n", x, y);
-
-	GtkAllocation allocation;
-	gtk_widget_get_allocation(editor->drar, &allocation);
-	*x += allocation.x; *y += allocation.y;
-
-	gint wpos_x, wpos_y;
-	gdk_window_get_position(gtk_widget_get_window(gtk_widget_get_toplevel(GTK_WIDGET(editor))), &wpos_x, &wpos_y);
-	*x += wpos_x; *y += wpos_y;
-
-	*alty = *y - editor->buffer->line_height;
-}
-
 static bool editor_maybe_show_completions(editor_t *editor, bool autoinsert) {
 	size_t wordcompl_prefix_len;
 	uint16_t *prefix = editor->completer->prefix_from_buffer(editor->completer->this, editor->buffer, &wordcompl_prefix_len);
@@ -639,6 +622,23 @@ static void absolute_position(editor_t *editor, double *x, double *y) {
 	*y += gtk_adjustment_get_value(GTK_ADJUSTMENT(editor->adjustment));
 }
 
+void editor_absolute_cursor_position(editor_t *editor, double *x, double *y, double *alty) {
+	buffer_cursor_position(editor->buffer, x, y);
+	*y -= gtk_adjustment_get_value(GTK_ADJUSTMENT(editor->adjustment));
+
+	//printf("x = %g y = %g\n", x, y);
+
+	GtkAllocation allocation;
+	gtk_widget_get_allocation(editor->drar, &allocation);
+	*x += allocation.x; *y += allocation.y;
+
+	gint wpos_x, wpos_y;
+	gdk_window_get_position(gtk_widget_get_window(gtk_widget_get_toplevel(GTK_WIDGET(editor))), &wpos_x, &wpos_y);
+	*x += wpos_x; *y += wpos_y;
+
+	*alty = *y - editor->buffer->line_height;
+}
+
 static void move_cursor_to_mouse(editor_t *editor, double x, double y) {
 	absolute_position(editor, &x, &y);
 	buffer_move_cursor_to_position(editor->buffer, x, y);
@@ -754,7 +754,7 @@ static gboolean scroll_callback(GtkWidget *widget, GdkEventScroll *event, editor
 }
 
 static void selection_move(editor_t *editor, double x, double y) {
-	move_cursor_to_mouse(editor, x+editor->buffer->em_advance, y+editor->buffer->line_height);
+	move_cursor_to_mouse(editor, x, y);
 	gtk_clipboard_set_with_data(selection_clipboard, &selection_clipboard_target_entry, 1, (GtkClipboardGetFunc)editor_get_primary_selection, NULL, editor);
 	//editor_center_on_cursor(editor);
 	editor_include_cursor(editor);
@@ -764,7 +764,7 @@ static void selection_move(editor_t *editor, double x, double y) {
 static gboolean selection_autoscroll(editor_t *editor) {
 	gint x, y;
 	gtk_widget_get_pointer(editor->drar, &x, &y);
-	selection_move(editor, x, y);
+	selection_move(editor, x+editor->buffer->em_advance, y+editor->buffer->line_height);
 	return TRUE;
 }
 
@@ -801,9 +801,12 @@ static gboolean motion_callback(GtkWidget *widget, GdkEventMotion *event, editor
 		set_primary_selection(editor);
 	} else {
 		if (on_file_link(editor, event->x, event->y, NULL)) {
-			gdk_window_set_cursor(gtk_widget_get_window(editor->drar), gdk_cursor_new(GDK_HAND1));
+			gdk_window_set_cursor(gtk_widget_get_window(editor->drar), cursor_hand);
+		} else if (config_intval(&(editor->buffer->config), CFG_OLDARROW)) {
+			gdk_window_set_cursor(gtk_widget_get_window(editor->drar), cursor_arrow);
 		} else {
-			gdk_window_set_cursor(gtk_widget_get_window(editor->drar), gdk_cursor_new(GDK_XTERM));
+			gdk_window_set_cursor(gtk_widget_get_window(editor->drar), cursor_xterm);
+
 		}
 
 		end_selection_scroll(editor);
@@ -1063,8 +1066,6 @@ static gboolean expose_event_callback(GtkWidget *widget, GdkEventExpose *event, 
 
 	GtkAllocation allocation;
 	gtk_widget_get_allocation(widget, &allocation);
-
-	gdk_window_set_cursor(gtk_widget_get_window(editor->drar), gdk_cursor_new(GDK_XTERM));
 
 	if (editor->research.mode == SM_NONE) {
 		gtk_widget_hide(editor->search_box);
@@ -1546,13 +1547,17 @@ editor_t *new_editor(buffer_t *buffer, bool single_line) {
 void editor_grab_focus(editor_t *editor, bool warp) {
 	//printf("Grabbing focus %p %d %d\n", editor, warp, config_intval(&(editor->buffer->config), CFG_WARP_MOUSE));
 	gtk_widget_grab_focus(editor->drar);
+	editor->cursor_visible = TRUE;
+
 
 	column_t *col;
 	tframe_t *frame;
 	find_editor_for_buffer(editor->buffer, &col, &frame, NULL);
 	if ((col != NULL) && (frame != NULL)) column_expand_frame(col, frame);
 
-	if (config_intval(&(editor->buffer->config), CFG_WARP_MOUSE) && warp) {
+	int warptype = config_intval(&(editor->buffer->config), CFG_WARP_MOUSE);
+
+	if (warptype && warp) {
 		GdkDisplay *display = gdk_display_get_default();
 		GdkScreen *screen = gdk_display_get_default_screen(display);
 		GtkAllocation allocation;
@@ -1561,11 +1566,21 @@ void editor_grab_focus(editor_t *editor, bool warp) {
 		if ((allocation.x < 0) || (allocation.y < 0)) {
 			editor->warp_mouse_after_next_expose = TRUE;
 		} else {
+			gint x = allocation.x, y = allocation.y;
 			gint wpos_x, wpos_y;
 			gdk_window_get_position(gtk_widget_get_window(GTK_WIDGET(columnset)), &wpos_x, &wpos_y);
+			x += wpos_x; y += wpos_y;
+
+			if (warptype > 1) {
+				double cx, cy;
+				buffer_cursor_position(editor->buffer, &cx, &cy);
+				y += cy - gtk_adjustment_get_value(GTK_ADJUSTMENT(editor->adjustment));
+			} else {
+				x += 5; y += 5;
+			}
 
 			//printf("Moving mouse %d+%d %d+%d %d\n", allocation.x, wpos_x, allocation.y, wpos_y, gtk_widget_get_mapped(GTK_WIDGET(editor)));
-			gdk_display_warp_pointer(display, screen, allocation.x+wpos_x+5, allocation.y+wpos_y+5);
+			gdk_display_warp_pointer(display, screen, x, y);
 		}
 	}
 

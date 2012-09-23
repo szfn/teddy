@@ -6,6 +6,8 @@ GtkClipboard *selection_clipboard;
 GtkClipboard *default_clipboard;
 PangoFontDescription *elements_font_description;
 
+GdkCursor *cursor_arrow, *cursor_hand, *cursor_xterm, *cursor_fleur, *cursor_top_left_corner;
+
 columns_t *columnset = NULL;
 
 GHashTable *keybindings;
@@ -45,6 +47,12 @@ void global_init() {
 	compl_as_generic_completer(&the_word_completer, &the_generic_word_completer);
 	compl_init(&the_word_completer);
 	cmdcompl_as_generic_completer(&the_cmd_completer, &the_generic_cmd_completer);
+
+	cursor_arrow = gdk_cursor_new(GDK_ARROW);
+	cursor_xterm = gdk_cursor_new(GDK_XTERM);
+	cursor_hand = gdk_cursor_new(GDK_HAND1);
+	cursor_fleur = gdk_cursor_new(GDK_FLEUR);
+	cursor_top_left_corner = gdk_cursor_new(GDK_TOP_LEFT_CORNER);
 }
 
 void global_free() {

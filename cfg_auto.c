@@ -14,6 +14,7 @@ const char *config_names[] = {
 	"interactive_search_case_sensitive",
 	"autowrap",
 	"tab_width",
+	"oldarrow",
 	"editor_bg_color",
 	"editor_fg_color",
 	"editor_sel_color",
@@ -48,6 +49,7 @@ void config_init_auto_defaults(void) {
 	config_set(&global_config, CFG_INTERACTIVE_SEARCH_CASE_SENSITIVE, "2");
 	config_set(&global_config, CFG_AUTOWRAP, "1");
 	config_set(&global_config, CFG_TAB_WIDTH, "4");
+	config_set(&global_config, CFG_OLDARROW, "0");
 	config_set(&global_config, CFG_EDITOR_BG_COLOR, "16777215");
 	config_set(&global_config, CFG_EDITOR_FG_COLOR, "0");
 	config_set(&global_config, CFG_EDITOR_SEL_COLOR, "16777215");

@@ -1,12 +1,11 @@
-- focus refactoring
-	- focus follows mouse should be sloppy
-	- warp modes should include no-warp, warp-to-top, warp-to-cursor
-	- the two options should be set simultaneously
-- dup buffer function?
+- BUG: music now segfaults
+
+- annotate example.teddy and make sure all options are there
 
 - cmdcompl should have only one critbit tree (discard it and remerge with path executables when changing directory)
 - better shell command, remove pipe command (can be done with c and shell)
 - non editable bg buffers, send typed text to job stdin
+- dup buffer function?
 
 - set column number for background processes whenever possible
 - tabs

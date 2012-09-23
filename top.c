@@ -39,7 +39,29 @@ static void execute_command(editor_t *editor) {
 static void release_command_line(editor_t *editor) {
 	gtk_notebook_set_current_page(GTK_NOTEBOOK(top_notebook), status_notebook_page);
 	if (top_context_editor() != NULL) {
-		editor_grab_focus(top_context_editor(), false);
+		if (config_intval(&global_config, CFG_FOCUS_FOLLOWS_MOUSE)) {
+			int x, y;
+			gtk_widget_get_pointer(GTK_WIDGET(columnset), &x, &y);
+			GList *cols = gtk_container_get_children(GTK_CONTAINER(columnset));
+			for (GList *col = cols; col != NULL; col = col->next) {
+				GList *frames = gtk_container_get_children(GTK_CONTAINER(col->data));
+				for (GList *frame = frames; frame != NULL; frame = frame->next) {
+					GtkAllocation allocation;
+					gtk_widget_get_allocation(frame->data, &allocation);
+
+					if (inside_allocation(x, y, &allocation)) {
+						tframe_t *f = GTK_TFRAME(frame->data);
+						if (GTK_IS_TEDITOR(tframe_content(f))) {
+							editor_grab_focus(GTK_TEDITOR(tframe_content(f)), false);
+						}
+					}
+				}
+				g_list_free(frames);
+			}
+			g_list_free(cols);
+		} else {
+			editor_grab_focus(top_context_editor(), false);
+		}
 	} else {
 		gtk_widget_grab_focus(GTK_WIDGET(columnset));
 	}
@@ -87,7 +109,7 @@ bool cmdline_other_keys(struct _editor_t *editor, bool shift, bool ctrl, bool al
 }
 
 static gboolean tools_label_map_callback(GtkWidget *widget, GdkEvent *event, gpointer data) {
-	gdk_window_set_cursor(gtk_widget_get_window(widget), gdk_cursor_new(GDK_HAND1));
+	gdk_window_set_cursor(gtk_widget_get_window(widget), cursor_hand);
 	return false;
 }
 
