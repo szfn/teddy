@@ -4,7 +4,6 @@ cfg_posbox_font Arial-8
 
 cfg_focus_follows_mouse 1
 cfg_autoindent 1
-cfg_spaceman 1
 cfg_warp_mouse 1
 cfg_interactive_search_case_sensitive 2
 cfg_autowrap 1

@@ -22,9 +22,6 @@ setcfg focus_follows_mouse 1
 # When autoindent is set to 1 pressing return will copy the indentation of the current line on the new line
 setcfg autoindent 1
 
-# When spaceman is set to 1 irrelevant spaces at the end of lines are automatically removed
-setcfg spaceman 1
-
 # warp_mouse can be:
 # - no-warp: mouse position is not warped when focus is moved to a different editor
 # - warp-to-top: mouse is warped to the top of the editor getting focus
@@ -108,10 +105,9 @@ bindkey Ctrl-k kill_line
 bindkey Ctrl-, {bindent decr "\t"}
 bindkey Ctrl-. {bindent incr "\t"}
 
-### BUFFER SETUP HOOK ###
+### BUFFER HOOKS ###
 
 # This procedure gets called every time a new buffer is created, it allows you to do some customization of how buffers are displayed
-
 proc buffer_setup_hook {name} {
 	global monospaced_font
 	if { [string range $name 0 2] == "+bg" } {
@@ -128,6 +124,11 @@ proc buffer_setup_hook {name} {
 	} else {
 		# Otherwise we accept default
 	}
+}
+
+# This command is executed before a buffer is saved
+proc buffer_save_hook {} {
+	teddy::spaceman
 }
 
 ### OTHER ###

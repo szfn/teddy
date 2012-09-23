@@ -513,9 +513,8 @@ proc clear {} {
 	c ""
 }
 
-proc buffer_setup_hook {buffer-name} {
-	return {}
-}
+proc buffer_setup_hook {buffer-name} { }
+proc buffer_save_hook {} {}
 
 proc loadhistory {} {
 	if [info exists ::env(XDG_CONFIG_HOME)] {
@@ -696,15 +695,17 @@ namespace eval teddy_intl {
 }
 
 namespace eval teddy {
+	# options passed to ls to display a directory
 	namespace export ls_options
-
 	set ls_options {-F -1 --group-directories-first}
 
+	# returns current line number
 	namespace export lineof
 	proc lineof {x} {
 		return [lindex [split $x ":"] 0]
 	}
 
+	# reads a file from disk
 	namespace export slurp
 	proc slurp {path} {
 		set thefile [open $path]
@@ -712,6 +713,23 @@ namespace eval teddy {
 		set r [read $thefile]
 		close $thefile
 		return $r
+	}
+
+	# deletes irrelevant spaces from the end of lines, and empty lines from the end of file
+	namespace export spaceman
+	proc spaceman {} {
+		set saved [m]
+		# delete empty spaces from the end of lines
+		m nil 1:1
+		s {\s+$} c ""
+
+		# delete empty lines from the end of files
+		m nil 1:1
+		s {^.+$} { set last_nonempty_line [m] }
+		m [lindex $last_nonempty_line 1] $:$
+		c ""
+
+		m {*}$saved
 	}
 }
 

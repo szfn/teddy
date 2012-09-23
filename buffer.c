@@ -728,26 +728,6 @@ char *buffer_lines_to_text(buffer_t *buffer, lpoint_t *startp, lpoint_t *endp) {
 	return r;
 }
 
-static void buffer_spaceman_on_save(buffer_t *buffer) {
-	if (!config_intval(&(buffer->config), CFG_SPACEMAN)) return;
-
-	if (buffer->cursor.line == NULL) return;
-
-	int count = SPACEMAN_SAVE_RADIUS;
-	for (real_line_t *line = buffer->cursor.line->prev; line != NULL; line = line->prev) {
-		 buffer_line_clean_trailing_spaces(buffer, line);
-		 --count;
-		 if (count == 0) break;
-	}
-
-	count = SPACEMAN_SAVE_RADIUS;
-	for (real_line_t *line = buffer->cursor.line->next; line != NULL; line = line->next) {
-		buffer_line_clean_trailing_spaces(buffer, line);
-		--count;
-		if (count == 0) break;
-	}
-}
-
 void save_to_text_file(buffer_t *buffer) {
 	if (buffer->path[0] == '+') return;
 
@@ -763,7 +743,6 @@ void save_to_text_file(buffer_t *buffer) {
 		return;
 	}
 
-	buffer_spaceman_on_save(buffer);
 	buffer_wordcompl_update(buffer, &(buffer->cbt));
 
 	char *r; {

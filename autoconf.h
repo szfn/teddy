@@ -111,10 +111,9 @@ bindkey Ctrl-k kill_line\n\
 bindkey Ctrl-, {bindent decr \"\\t\"}\n\
 bindkey Ctrl-. {bindent incr \"\\t\"}\n\
 \n\
-### BUFFER SETUP HOOK ###\n\
+### BUFFER HOOKS ###\n\
 \n\
 # This procedure gets called every time a new buffer is created, it allows you to do some customization of how buffers are displayed\n\
-\n\
 proc buffer_setup_hook {name} {\n\
 	global monospaced_font\n\
 	if { [string range $name 0 2] == \"+bg\" } {\n\
@@ -131,6 +130,11 @@ proc buffer_setup_hook {name} {\n\
 	} else {\n\
 		# Otherwise we accept default\n\
 	}\n\
+}\n\
+\n\
+# This command is executed before a buffer is saved\n\
+proc buffer_save_hook {} {\n\
+	teddy::spaceman\n\
 }\n\
 \n\
 ### OTHER ###\n\

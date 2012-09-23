@@ -9,7 +9,6 @@ const char *config_names[] = {
 	"posbox_font",
 	"focus_follows_mouse",
 	"autoindent",
-	"spaceman",
 	"warp_mouse",
 	"interactive_search_case_sensitive",
 	"autowrap",
@@ -45,7 +44,6 @@ void config_init_auto_defaults(void) {
 	config_set(&global_config, CFG_POSBOX_FONT, "Arial-8");
 	config_set(&global_config, CFG_FOCUS_FOLLOWS_MOUSE, "1");
 	config_set(&global_config, CFG_AUTOINDENT, "1");
-	config_set(&global_config, CFG_SPACEMAN, "1");
 	config_set(&global_config, CFG_WARP_MOUSE, "1");
 	config_set(&global_config, CFG_INTERACTIVE_SEARCH_CASE_SENSITIVE, "2");
 	config_set(&global_config, CFG_AUTOWRAP, "1");
