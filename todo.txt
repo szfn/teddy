@@ -1,4 +1,3 @@
-- BUG: open link action should also center on cursor
 - shell redirections should support a space
 - possibility to specify selection background exactly (instead of difference)
 - dup buffer function

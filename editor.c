@@ -703,10 +703,9 @@ static gboolean button_press_callback(GtkWidget *widget, GdkEventButton *event, 
 			char *text = select_file(editor->buffer, &p);
 			const char *cmd = lexy_get_link_fn(editor->buffer);
 			const char *argv[] = { cmd, "1", text };
-
 			interp_eval_command(editor, NULL, 3, argv);
-
 			free(text);
+			editor_center_on_cursor(editor);
 		}
 	} else if (event->button == 2) {
 		move_cursor_to_mouse(editor, event->x, event->y);
