@@ -412,6 +412,8 @@ buffer_t *buffers_find_buffer_from_path(const char *urp) {
 
 static buffer_t *buffers_find_buffer_with_name(const char *name) {
 	for (int i = 0; i < buffers_allocated; ++i) {
+		if (buffers[i] == NULL) continue;
+		if (buffers[i]->path== NULL) continue;
 		if (strcmp(buffers[i]->path, name) == 0) {
 			return buffers[i];
 		}
