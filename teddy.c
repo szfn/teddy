@@ -84,7 +84,7 @@ int main(int argc, char *argv[]) {
 	heuristic_new_frame(columnset, NULL, null_buffer());
 
 	enum go_file_failure_reason gffr;
-	buffer_t *cur_dir_buffer = go_file(".", false, &gffr);
+	buffer_t *cur_dir_buffer = go_file(".", false, false, &gffr);
 	tframe_t *dirframe = heuristic_new_frame(columnset, NULL, cur_dir_buffer);
 
 	tframe_t *frame = NULL;

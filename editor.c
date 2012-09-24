@@ -1556,7 +1556,6 @@ void editor_grab_focus(editor_t *editor, bool warp) {
 	gtk_widget_grab_focus(editor->drar);
 	editor->cursor_visible = TRUE;
 
-
 	column_t *col;
 	tframe_t *frame;
 	find_editor_for_buffer(editor->buffer, &col, &frame, NULL);

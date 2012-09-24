@@ -1,4 +1,3 @@
-- dup buffer function
 - non editable bg buffers, send typed text to job stdin
 - set column number for background processes whenever possible
 - tabs

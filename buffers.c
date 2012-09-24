@@ -145,7 +145,13 @@ int buffers_close(buffer_t *buffer, GtkWidget *window, bool save_critbit) {
 	}
 
 	if (buffer->inotify_wd >= 0) {
-		inotify_rm_watch(inotify_fd, buffer->inotify_wd);
+		int count = 0;
+		for (i = 0; i < buffers_allocated; ++i) {
+			if (buffers[i] == NULL) continue;
+			if (buffers[i]->inotify_wd == buffer->inotify_wd) ++count;
+		}
+		if (count == 0)
+			inotify_rm_watch(inotify_fd, buffer->inotify_wd);
 	}
 
 	buffer_free(buffer, save_critbit);
@@ -153,43 +159,37 @@ int buffers_close(buffer_t *buffer, GtkWidget *window, bool save_critbit) {
 	return 1;
 }
 
-static buffer_t *get_buffer_by_inotify(int wd) {
-	if (wd < 0) return NULL;
+static void maybe_stale_buffer(int wd) {
+	if (wd < 0) return;
 	for (int i = 0; i < buffers_allocated; ++i) {
 		if (buffers[i] == NULL) continue;
-		if (buffers[i]->inotify_wd == wd) return buffers[i];
-	}
-	return NULL;
-}
+		if (buffers[i]->inotify_wd != wd) continue;
+		buffer_t *buffer = buffers[i];
 
-static void maybe_stale_buffer(int wd) {
-	buffer_t *buffer = get_buffer_by_inotify(wd);
+		struct stat buf;
+		if (stat(buffer->path, &buf) < 0) continue;
 
-	if (buffer == NULL) return;
+		//printf("[%d/%d] <%s> %ld %ld %ld\n", wd, i, buffer->path, buf.st_mtime, buffer->mtime, buf.st_size);
 
-	struct stat buf;
-	if (stat(buffer->path, &buf) < 0) return;
+		if (buf.st_mtime < buffer->mtime) continue;
+		if (buf.st_size <= 0) continue;
 
-	//printf("<%s> %ld %ld %ld\n", buffer->path, buf.st_mtime, buffer->mtime, buf.st_size);
+		//printf("Checking for staleness <%s>\n", buffer->path);
 
-	if (buf.st_mtime < buffer->mtime+30) return;
-	if (buf.st_size <= 0) return;
+		if (buffer->path[strlen(buffer->path)-1] == '/') {
+			//printf("Refreshing stale buffer: <%s>\n", buffer->path);
+			buffers_refresh(buffer);
+		} else if (!(buffer->modified) && config_intval(&(buffer->config), CFG_AUTORELOAD)) {
+			buffers_refresh(buffer);
+		} else {
+			buffer->editable = false;
+			buffer->stale = true;
+		}
 
-	//printf("Checking for staleness <%s>\n", buffer->path);
-
-	if (buffer->path[strlen(buffer->path)-1] == '/') {
-		//printf("Refreshing stale buffer: <%s>\n", buffer->path);
-		buffers_refresh(buffer);
-	} else if (!(buffer->modified) && config_intval(&(buffer->config), CFG_AUTORELOAD)) {
-		buffers_refresh(buffer);
-	} else {
-		buffer->editable = false;
-		buffer->stale = true;
-	}
-
-	editor_t *editor;
-	if (find_editor_for_buffer(buffer, NULL, NULL, &editor)) {
-		gtk_widget_queue_draw(GTK_WIDGET(editor));
+		editor_t *editor;
+		if (find_editor_for_buffer(buffer, NULL, NULL, &editor)) {
+			gtk_widget_queue_draw(GTK_WIDGET(editor));
+		}
 	}
 }
 
@@ -451,7 +451,7 @@ int teddy_buffer_command(ClientData client_data, Tcl_Interp *interp, int argc, c
 		HASBUF("buffer open");
 
 		enum go_file_failure_reason gffr;
-		buffer_t *b = go_file(argv[2], false, &gffr);
+		buffer_t *b = go_file(argv[2], false, false, &gffr);
 		if (b != NULL) {
 			tframe_t *frame;
 			find_editor_for_buffer(b, NULL, &frame, NULL);
@@ -475,7 +475,21 @@ int teddy_buffer_command(ClientData client_data, Tcl_Interp *interp, int argc, c
 		editor_t *editor;
 		find_editor_for_buffer(buffer, NULL, NULL, &editor);
 
-		if (editor != NULL) editor_grab_focus(editor, true);
+		if (editor != NULL) {
+			editor_center_on_cursor(editor);
+			editor_grab_focus(editor, true);
+		}
+	} else if (strcmp(argv[1], "dup") == 0) {
+		ARGNUM((argc != 2), "buffer dup");
+		HASBUF("buffer dup");
+
+		if (interp_context_buffer()->path[0] == '+') {
+			// create new buffer, copy text over
+		} else {
+			enum go_file_failure_reason gffr;
+			buffer_t *b = go_file(interp_context_buffer()->path, false, true, &gffr);
+			go_to_buffer(interp_context_editor(), b, false);
+		}
 	} else if (strcmp(argv[1], "select-mode") == 0) {
 		ARGNUM((argc != 3), "buffer select-mode");
 		HASBUF("buffer select-mode");
@@ -638,7 +652,7 @@ void buffers_refresh(buffer_t *buffer) {
 	if (r == 0) return;
 
 	enum go_file_failure_reason gffr;
-	buffer_t *new_buffer = go_file(path, false, &gffr);
+	buffer_t *new_buffer = go_file(path, false, true, &gffr);
 	if (new_buffer != NULL) {
 		buffer_move_point_line(new_buffer, &(new_buffer->cursor), MT_ABS, lineno);
 		buffer_move_point_glyph(new_buffer, &(new_buffer->cursor), MT_ABS, glyph);

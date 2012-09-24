@@ -108,14 +108,20 @@ namespace eval teddy {
 		set saved [m]
 		# delete empty spaces from the end of lines
 		m nil 1:1
-		s {\s+$} c ""
+		s {\s+$} {
+			if {[teddy::lineof [lindex [m] 1]] ne [teddy::lineof [lindex $saved 1]]} {
+				c ""
+			}
+		}
 
 		# delete empty lines from the end of files
 		set last_nonempty_line "nil"
 		s {^.+$} { set last_nonempty_line [m] }
 		if {$last_nonempty_line ne "nil"} {
-			m [lindex $last_nonempty_line 1] $:$
-			c ""
+			m [lindex $last_nonempty_line 1]
+			m +1:0
+			m +0:+0 $:$
+			if {[c] ne ""} { c "" }
 		}
 
 		m {*}$saved
@@ -437,7 +443,9 @@ namespace eval teddy_intl {
 			return
 		}
 
-		set b [buffer open "[teddy_intl::file_directory][lindex $r 1]"]
+		puts "File directory: <[teddy_intl::file_directory]>\n"
+
+		set b [buffer open "[teddy_intl::file_directory]/[lindex $r 1]"]
 
 		if {$b eq ""} { return }
 

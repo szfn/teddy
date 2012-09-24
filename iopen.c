@@ -69,7 +69,7 @@ static void iopen_open(GtkTreeView *tree, GtkTreePath *treepath) {
 	iopen_close();
 
 	enum go_file_failure_reason gffr;
-	buffer_t *buffer = go_file(path, false, &gffr);
+	buffer_t *buffer = go_file(path, false, false, &gffr);
 
 	if (buffer != NULL) {
 		editor_t *editor = go_to_buffer(NULL, buffer, false);

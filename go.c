@@ -17,7 +17,7 @@
 #include "lexy.h"
 #include "top.h"
 
-buffer_t *go_file(const char *filename, bool create, enum go_file_failure_reason *gffr) {
+buffer_t *go_file(const char *filename, bool create, bool skip_search, enum go_file_failure_reason *gffr) {
 	char *p = unrealpath(top_working_directory(), filename);
 	char *urp = realpath(p, NULL);
 	free(p);
@@ -30,8 +30,12 @@ buffer_t *go_file(const char *filename, bool create, enum go_file_failure_reason
 
 	//printf("going file\n");
 
-	buffer_t *buffer = buffers_find_buffer_from_path(urp);
-	if (buffer != NULL) goto go_file_return;
+	buffer_t *buffer;
+
+	if (!skip_search) {
+		buffer = buffers_find_buffer_from_path(urp);
+		if (buffer != NULL) goto go_file_return;
+	}
 
 	//printf("path: <%s>\n", urp);
 
