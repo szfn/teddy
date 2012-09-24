@@ -493,6 +493,10 @@ namespace eval teddy_intl {\n\
 	      set isspecial [regexp {^([0-9]*)(>|>&|<&|<|>>)(.*)$} $cur -> redirected_descriptor open_direction target]\n\
 \n\
 	      if {$isspecial} {\n\
+	         if {$target eq \"\"} {\n\
+	            incr i\n\
+	            set target [lindex $args $i]\n\
+	         }\n\
 	         lappend special [dict create redirected_descriptor $redirected_descriptor open_direction $open_direction target $target]\n\
 	      } elseif {[string first ! $cur] == 0} {\n\
 	      	lappend normal [string range $cur 1 end]\n\

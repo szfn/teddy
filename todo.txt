@@ -1,5 +1,8 @@
-- shell redirections should support a space
+- BUG: why doesn't cd command clean up the command line?
 - possibility to specify selection background exactly (instead of difference)
+- open in a directory view should be relative to the directory
+- directories should be links too
+- rules to recognize links and open them with xdg-open
 - dup buffer function
 - non editable bg buffers, send typed text to job stdin
 - set column number for background processes whenever possible
@@ -15,8 +18,6 @@
 - extend regular expressions in 's' to be lexically aware
 - cleanup of unused functions (how?)
 - all configuration options in the default configuration file with comments
-- open in a directory view should be relative to the directory
-- directories should be links too
 
 - document:
  s, c, m, ss, regexp, regsub, new buffer subcommands, tags
