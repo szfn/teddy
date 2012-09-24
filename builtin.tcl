@@ -141,6 +141,31 @@ proc antique_theme {} {
 	setcfg -global lexy_id [rgbcolor black]
 	setcfg -global lexy_literal [rgbcolor "saddle brown"]
 	setcfg -global lexy_file [rgbcolor "midnight blue"]
+
+	setcfg -global editor_sel_invert 1
+}
+
+proc acme_theme {} {
+	setcfg -global editor_bg_color [rgbcolor 255 255 234]
+	setcfg -global border_color [rgbcolor black]
+	setcfg -global editor_bg_cursorline [rgbcolor 232 232 212]
+
+	setcfg -global editor_fg_color [rgbcolor black]
+
+	setcfg -global posbox_border_color 0
+	setcfg -global posbox_bg_color 15654274
+	setcfg -global posbox_fg_color 0
+
+	setcfg -global lexy_nothing [rgbcolor black]
+	setcfg -global lexy_keyword [rgbcolor "midnight blue"]
+	setcfg -global lexy_comment [rgbcolor "dark green"]
+	setcfg -global lexy_string [rgbcolor "saddle brown"]
+	setcfg -global lexy_id [rgbcolor black]
+	setcfg -global lexy_literal [rgbcolor "saddle brown"]
+	setcfg -global lexy_file [rgbcolor "midnight blue"]
+
+	setcfg -global editor_sel_color [rgbcolor 238 238 158]
+	setcfg -global editor_sel_invert 0
 }
 
 proc zenburn_theme {} {
@@ -160,6 +185,8 @@ proc zenburn_theme {} {
 	setcfg -global lexy_string [rgbcolor 204 147 147]
 	setcfg -global lexy_id [rgbcolor 197 197 183 ]
 	setcfg -global lexy_literal [rgbcolor 220 163 163]
+
+	setcfg -global editor_sel_invert 1
 }
 
 proc solarized_theme {} {
@@ -197,6 +224,8 @@ proc solarized_theme {} {
 	setcfg -global lexy_string $cyan
 	setcfg -global lexy_id $base2
 	setcfg -global lexy_literal $cyan
+
+	setcfg -global editor_sel_invert 1
 }
 
 ### IMPLEMENTATION OF USER COMMANDS #######################################

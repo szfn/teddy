@@ -371,3 +371,11 @@ int null_strcmp(const char *a, const char *b) {
 
 	return strcmp(a, b);
 }
+
+void gtk_widget_modify_bg_all(GtkWidget *w, GdkColor *c) {
+	gtk_widget_modify_bg(w, GTK_STATE_NORMAL, c);
+	gtk_widget_modify_bg(w, GTK_STATE_ACTIVE, c);
+	gtk_widget_modify_bg(w, GTK_STATE_PRELIGHT, c);
+	gtk_widget_modify_bg(w, GTK_STATE_SELECTED, c);
+	gtk_widget_modify_bg(w, GTK_STATE_INSENSITIVE, c);
+}

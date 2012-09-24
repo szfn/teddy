@@ -60,4 +60,6 @@ void alloc_assert(void *p);
 
 int null_strcmp(const char *a, const char *b);
 
+void gtk_widget_modify_bg_all(GtkWidget *w, GdkColor *c);
+
 #endif

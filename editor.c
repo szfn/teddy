@@ -835,7 +835,7 @@ static gboolean motion_callback(GtkWidget *widget, GdkEventMotion *event, editor
 	return TRUE;
 }
 
-static void draw_selection(editor_t *editor, double width, cairo_t *cr) {
+static void draw_selection(editor_t *editor, double width, cairo_t *cr, int sel_invert) {
 	lpoint_t start, end;
 	double selstart_y, selend_y;
 	double selstart_x, selend_x;
@@ -851,14 +851,11 @@ static void draw_selection(editor_t *editor, double width, cairo_t *cr) {
 
 	set_color_cfg(cr, config_intval(&(editor->buffer->config), CFG_EDITOR_SEL_COLOR));
 
+	cairo_set_operator(cr, sel_invert ? CAIRO_OPERATOR_DIFFERENCE : CAIRO_OPERATOR_OVER);
 	if (fabs(selstart_y - selend_y) < 0.001) {
-		cairo_set_operator(cr, CAIRO_OPERATOR_DIFFERENCE);
 		cairo_rectangle(cr, selstart_x, selstart_y-editor->buffer->ascent, selend_x - selstart_x, editor->buffer->ascent + editor->buffer->descent);
 		cairo_fill(cr);
-		cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
 	} else {
-		cairo_set_operator(cr, CAIRO_OPERATOR_DIFFERENCE);
-
 		// start of selection
 		cairo_rectangle(cr, selstart_x, selstart_y-editor->buffer->ascent, width - selstart_x, editor->buffer->ascent + editor->buffer->descent);
 		cairo_fill(cr);
@@ -870,9 +867,8 @@ static void draw_selection(editor_t *editor, double width, cairo_t *cr) {
 		// end of selection
 		cairo_rectangle(cr, 0.0, selend_y-editor->buffer->ascent, selend_x, editor->buffer->ascent + editor->buffer->descent);
 		cairo_fill(cr);
-
-		cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
 	}
+	cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
 
 	set_color_cfg(cr, config_intval(&(editor->buffer->config), CFG_EDITOR_FG_COLOR));
 }
@@ -1096,7 +1092,10 @@ static gboolean expose_event_callback(GtkWidget *widget, GdkEventExpose *event, 
 
 	buffer_typeset_maybe(editor->buffer, allocation.width, editor->single_line, false);
 
+	int sel_invert = config_intval(&(editor->buffer->config), CFG_EDITOR_SEL_INVERT);
+
 	draw_cursorline(cr, editor);
+	if (!sel_invert) draw_selection(editor, allocation.width, cr, sel_invert);
 
 	editor->buffer->rendered_height = 0.0;
 
@@ -1141,7 +1140,7 @@ static gboolean expose_event_callback(GtkWidget *widget, GdkEventExpose *event, 
 
 	g_hash_table_destroy(ht);
 
-	draw_selection(editor, allocation.width, cr);
+	if (sel_invert) draw_selection(editor, allocation.width, cr, sel_invert);
 	draw_parmatch(editor, &allocation, cr);
 
 	if (editor->cursor_visible && (editor->research.mode == SM_NONE)) {

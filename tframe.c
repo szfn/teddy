@@ -71,6 +71,11 @@ static gboolean reshandle_expose_callback(GtkWidget *widget, GdkEventExpose *eve
 
 	gtk_widget_get_allocation(widget, &allocation);
 
+	set_color_cfg(cr, config_intval(&global_config, CFG_TAG_BG_COLOR));
+	//cairo_set_source_rgb(cr, 1.0, 1.0, 1.0);
+	cairo_rectangle(cr, 0, 0, allocation.width, allocation.height);
+	cairo_fill(cr);
+
 	cairo_set_source_rgb(cr, 136.0/256, 136.0/256, 204.0/256);
 
 	cairo_rectangle(cr, 2, 2, allocation.width-4, allocation.height-4);
@@ -415,16 +420,28 @@ tframe_t *tframe_new(const char *title, GtkWidget *content, columns_t *columns) 
 	r->title = strdup((title != NULL) ? title : "");
 	alloc_assert(r->title);
 
+	int color = config_intval(&global_config, CFG_TAG_BG_COLOR);
+	GdkColor c;
+	c.pixel = 0xff;
+	c.red = (uint8_t)(color) / 255.0 * 65535;
+	c.green = (uint8_t)(color >> 8) / 255.0 * 65535;
+	c.blue = (uint8_t)(color >> 16) / 255.0 * 65535;
+
 	r->tag = gtk_hbox_new(FALSE, 0);
 
 	r->drarla = gtk_drawing_area_new();
 	r->resdr = gtk_drawing_area_new();
 	gtk_widget_set_size_request(r->resdr, 14, 14);
 
+
 	GtkWidget *close_box = gtk_event_box_new();
+	gtk_widget_modify_bg_all(close_box, &c);
 	gtk_container_add(GTK_CONTAINER(close_box), gtk_image_new_from_stock(GTK_STOCK_CLOSE, GTK_ICON_SIZE_MENU));
+
 	GtkWidget *magnify_box = gtk_event_box_new();
+	gtk_widget_modify_bg_all(magnify_box, &c);
 	gtk_container_add(GTK_CONTAINER(magnify_box), gtk_image_new_from_stock(GTK_STOCK_GOTO_TOP, GTK_ICON_SIZE_MENU));
+
 	gtk_widget_add_events(close_box, GDK_BUTTON_PRESS_MASK);
 	gtk_widget_add_events(magnify_box, GDK_BUTTON_PRESS_MASK);
 
@@ -453,8 +470,8 @@ tframe_t *tframe_new(const char *title, GtkWidget *content, columns_t *columns) 
 	gtk_box_pack_start(GTK_BOX(r->tag), r->resdr, FALSE, FALSE, 0);
 	gtk_box_pack_start(GTK_BOX(r->tag), r->drarla, TRUE, TRUE, 0);
 
-	gtk_box_pack_end(GTK_BOX(r->tag), close_box, FALSE, TRUE, 2);
-	gtk_box_pack_end(GTK_BOX(r->tag), magnify_box, FALSE, TRUE, 2);
+	gtk_box_pack_end(GTK_BOX(r->tag), close_box, FALSE, TRUE, 0);
+	gtk_box_pack_end(GTK_BOX(r->tag), magnify_box, FALSE, TRUE, 0);
 
 	place_frame_piece(GTK_WIDGET(t), TRUE, 0, 2);
 	place_frame_piece(GTK_WIDGET(t), FALSE, 1, 4);
