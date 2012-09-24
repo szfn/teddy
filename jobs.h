@@ -36,6 +36,8 @@ typedef struct _job_t {
 	int ansiseq_cap;
 
 	char *command;
+
+	int input_start;
 } job_t;
 
 #define MAX_JOBS 128
@@ -45,5 +47,6 @@ job_t jobs[MAX_JOBS];
 void jobs_init(void);
 int jobs_register(pid_t child_pid, int masterfd, struct _buffer_t *buffer, const char *command);
 int write_all(int fd, const char *str);
+void job_send_input(job_t *job);
 
 #endif

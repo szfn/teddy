@@ -210,31 +210,6 @@ void buffer_indent_newline(buffer_t *buffer, char *r) {
 	r[i+1] = '\0';
 }
 
-void buffer_append(buffer_t *buffer, const char *msg, int length, int on_new_line) {
-	char *text;
-
-	buffer_unset_mark(buffer);
-
-	for (; buffer->cursor.line->next != NULL; buffer->cursor.line = buffer->cursor.line->next);
-	buffer->cursor.glyph = buffer->cursor.line->cap;
-	//printf("buffer_append %d %d\n", buffer->cursor.glyph, buffer->cursor.line->cap);
-
-	if (on_new_line) {
-		if (buffer->cursor.glyph != 0) {
-			buffer_replace_selection(buffer, "\n");
-		}
-	}
-
-	text = malloc(sizeof(char) * (length + 1));
-	alloc_assert(text);
-	strncpy(text, msg, length);
-	text[length] = '\0';
-
-	buffer_replace_selection(buffer, text);
-
-	free(text);
-}
-
 bool wordcompl_charset[0x10000];
 
 void buffer_wordcompl_init_charset(void) {

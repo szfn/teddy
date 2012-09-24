@@ -526,6 +526,11 @@ static gboolean key_press_callback(GtkWidget *widget, GdkEventKey *event, editor
 				editor->single_line_return(editor);
 			} else {
 				dirty_line_update(editor);
+
+				bool send_input = (editor->buffer->job != NULL) && (editor->buffer->cursor.line->next == NULL);
+
+				if (send_input) job_send_input(editor->buffer->job);
+
 				char *r = alloca(sizeof(char) * (editor->buffer->cursor.line->cap + 2));
 				if (config_intval(&(editor->buffer->config), CFG_AUTOINDENT)) {
 					buffer_indent_newline(editor->buffer, r);
@@ -534,6 +539,8 @@ static gboolean key_press_callback(GtkWidget *widget, GdkEventKey *event, editor
 					r[1] = '\0';
 				}
 				editor_replace_selection(editor, r);
+
+				if (send_input) editor->buffer->job->input_start = editor->buffer->cursor.glyph;
 			}
 			return TRUE;
 		}

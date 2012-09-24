@@ -20,9 +20,6 @@ bool buffer_move_point_glyph(buffer_t *buffer, lpoint_t *p, enum movement_type_t
 /* writes in r the indent of cursor_line + a newline and the 0 byte */
 void buffer_indent_newline(buffer_t *buffer, char *r);
 
-/* adds text to the end of the buffer */
-void buffer_append(buffer_t *buffer, const char *msg, int length, int on_new_line);
-
 /* basic indentation manipulation functions */
 void buffer_incr_indent(buffer_t *buffer, int count);
 void buffer_decr_indent(buffer_t *buffer, int count);

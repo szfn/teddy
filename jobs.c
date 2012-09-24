@@ -26,6 +26,16 @@ void jobs_init(void) {
 	}
 }
 
+static char *cut_prompt(job_t *job) {
+	buffer_move_point_line(job->buffer, &(job->buffer->cursor), MT_END, 0);
+	buffer_move_point_glyph(job->buffer, &(job->buffer->cursor), MT_END, 0);
+
+	copy_lpoint(&(job->buffer->mark), &(job->buffer->cursor));
+	job->buffer->mark.glyph = job->input_start;
+
+	return buffer_lines_to_text(job->buffer, &(job->buffer->mark), &(job->buffer->cursor));
+}
+
 static void job_destroy(job_t *job) {
 	g_source_remove(job->pipe_from_child_source_id);
 	g_source_remove(job->child_source_id);
@@ -35,6 +45,10 @@ static void job_destroy(job_t *job) {
 
 	if (job->buffer != NULL) {
 		job->buffer->job = NULL;
+
+		char *p = cut_prompt(job);
+		if (p != NULL) free(p);
+		buffer_replace_selection(job->buffer, "");
 
 		job->buffer->cursor.line = job->buffer->real_line;
 		job->buffer->cursor.glyph = 0;
@@ -52,7 +66,30 @@ static void job_destroy(job_t *job) {
 
 static void job_append(job_t *job, const char *msg, int len, int on_new_line) {
 	if (job->buffer == NULL) return;
-	buffer_append(job->buffer, msg, len, on_new_line);
+	buffer_t *buffer = job->buffer;
+
+	//buffer_append(job->buffer, msg, len, on_new_line);
+
+	char *prompt_str = cut_prompt(job);
+
+	if (on_new_line) {
+		if (buffer->cursor.glyph != 0) {
+			buffer_replace_selection(buffer, "\n");
+		}
+	}
+
+	char *text = malloc(sizeof(char) * (len + 1));
+	alloc_assert(text);
+	strncpy(text, msg, len);
+	text[len] = '\0';
+
+	buffer_replace_selection(buffer, text);
+
+	free(text);
+
+	job->input_start = buffer->cursor.glyph;
+
+	if (prompt_str != NULL) buffer_replace_selection(buffer, prompt_str);
 
 	editor_t *editor;
 	find_editor_for_buffer(job->buffer, NULL, NULL, &editor);
@@ -60,6 +97,17 @@ static void job_append(job_t *job, const char *msg, int len, int on_new_line) {
 		editor_center_on_cursor(editor);
 		gtk_widget_queue_draw(GTK_WIDGET(editor));
 	}
+}
+
+void job_send_input(job_t *job) {
+	if (job->buffer == NULL) return;
+	char *input = cut_prompt(job);
+	buffer_unset_mark(job->buffer);
+	if (input == NULL) return;
+
+	write_all(job->masterfd, input);
+	write_all(job->masterfd, "\n");
+	free(input);
 }
 
 static void ansi_append_escape(job_t *job) {
@@ -247,6 +295,7 @@ int jobs_register(pid_t child_pid, int masterfd, buffer_t *buffer, const char *c
 	jobs[i].masterfd = masterfd;
 	jobs[i].buffer = NULL;
 	jobs[i].terminating = false;
+	jobs[i].input_start = 0;
 
 	jobs[i].pipe_from_child = g_io_channel_unix_new(masterfd);
 	g_io_channel_set_encoding(jobs[i].pipe_from_child, NULL, NULL);

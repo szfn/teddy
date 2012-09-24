@@ -407,40 +407,6 @@ static int teddy_rgbcolor_command(ClientData client_data, Tcl_Interp *interp, in
 	}
 }
 
-static int teddy_sendinput_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
-	HASED("<");
-	ARGNUM((argc < 2), "<");
-
-	job_t *job = interp_context_buffer()->job;
-
-	if (job == NULL) {
-		Tcl_AddErrorInfo(interp, "No job associated with this buffer, can not send input");
-		return TCL_ERROR;
-	}
-
-	for (int i = 1; i < argc; ++i) {
-		if (write_all(job->masterfd, argv[i]) < 0) {
-			Tcl_AddErrorInfo(interp, "Error sending input to process");
-			return TCL_ERROR;
-		}
-		buffer_append(interp_context_buffer(), argv[i], strlen(argv[i]), 0);
-		if (i != argc-1) {
-			if (write_all(job->masterfd, " ") < 0) {
-				Tcl_AddErrorInfo(interp, "Error sending input to process");
-				return TCL_ERROR;
-			}
-			buffer_append(interp_context_buffer(), " ", strlen(" "), 0);
-		}
-	}
-	if (write_all(job->masterfd, "\n") < 0) {
-		Tcl_AddErrorInfo(interp, "Error sending input to process");
-		return TCL_ERROR;
-	}
-	buffer_append(interp_context_buffer(), "\n", strlen("\n"), 0);
-
-	return TCL_OK;
-}
-
 static int teddy_change_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
 	HASBUF("change");
 
@@ -815,7 +781,6 @@ void interp_init(void) {
 	Tcl_CreateCommand(interp, "search", &teddy_search_command, (ClientData)NULL, NULL);
 
 	Tcl_CreateCommand(interp, "teddy::bg", &teddy_bg_command, (ClientData)NULL, NULL);
-	Tcl_CreateCommand(interp, "<", &teddy_sendinput_command, (ClientData)NULL, NULL);
 
 	Tcl_CreateCommand(interp, "rgbcolor", &teddy_rgbcolor_command, (ClientData)NULL, NULL);
 
