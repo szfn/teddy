@@ -411,6 +411,19 @@ namespace eval teddy_intl {
 		}
 	}
 
+	# Returns the base directory of pwf or pwd for artificial buffers
+	namespace export file_directory
+	proc file_directory {} {
+		if {[string index [pwf] 0] eq "+"} {
+			return [pwd]
+		} else {
+			set r [pwf]
+			set last_slash [string last / $r]
+			if {$last_slash < 0} { return [pwd] }
+			return [string range $r 0 $last_slash]
+		}
+	}
+
 	namespace export link_open
 	proc link_open {islink text} {
 		if {$islink} {
@@ -419,7 +432,7 @@ namespace eval teddy_intl {
 			set r [list nothing $text "" ""]
 		}
 
-		set b [buffer open [lindex $r 1]]
+		set b [buffer open "[teddy_intl::file_directory][lindex $r 1]"]
 
 		if {$b eq ""} { return }
 
@@ -772,6 +785,7 @@ lexydef filesearch 0 {
 		{\<in (\S+) on line (\d+)} file,1,2
 		{([^:[:space:]()]+):\[(\d+),(\d+)\]} file,1,2,3
 		{\<([^:[:space:]()]+\.[^:[:space:]()]+)\>} file
+		{\<\S+/} file
 		"." nothing
 	}
 
