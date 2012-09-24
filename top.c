@@ -31,6 +31,13 @@ static void execute_command(editor_t *editor) {
 
 	if (top_context_editor() != NULL) gtk_widget_queue_draw(GTK_WIDGET(top_context_editor()));
 
+	// select contents of command line
+	lpoint_t start, end;
+	buffer_get_extremes(editor->buffer, &start, &end);
+	copy_lpoint(&(editor->buffer->mark), &start);
+	copy_lpoint(&(editor->buffer->cursor), &end);
+	gtk_widget_queue_draw(GTK_WIDGET(editor));
+
 	history_add(&command_history, time(NULL), working_directory, command, true);
 
 	free(command);
