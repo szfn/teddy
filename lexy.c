@@ -63,6 +63,7 @@ struct lexy_row {
 	bool enabled;
 	bool jump;
 	regex_t pattern;
+	bool check;
 	uint8_t token_type;
 	uint8_t next_state;
 	uint8_t file_group, lineno_group, colno_group;
@@ -78,7 +79,6 @@ struct lexy_tokenizer {
 	struct lexy_row rows[LEXY_ROW_NUMBER];
 	struct lexy_status_pointer status_pointers[LEXY_STATUS_NUMBER];
 	const char *link_fn;
-	bool verify_file;
 };
 
 struct lexy_association {
@@ -96,7 +96,6 @@ void lexy_init(void) {
 		lexy_tokenizers[i].rows[0].jump = false;
 		lexy_tokenizers[i].status_pointers[0].status_name = NULL;
 		lexy_tokenizers[i].link_fn = "teddy_intl::link_open";
-		lexy_tokenizers[i].verify_file = true;
 	}
 
 	for (int i = 0; i < LEXY_ASSOCIATION_NUMBER; ++i) {
@@ -141,12 +140,10 @@ int lexy_create_command(ClientData client_data, Tcl_Interp *interp, int argc, co
 		lexy_tokenizers[i].tokenizer_name = strdup(name);
 		alloc_assert(lexy_tokenizers[i].tokenizer_name);
 
-		if (argc == 4) {
+		if (argc == 3) {
 			char *t = strdup(argv[2]);
 			alloc_assert(t);
 			lexy_tokenizers[i].link_fn = t;
-
-			lexy_tokenizers[i].verify_file = atoi(argv[3]);
 		}
 		return TCL_OK;
 	}
@@ -175,7 +172,27 @@ static const char *deparse_token_type_name(int r) {
 	}
 }
 
-static int parse_token_type_name(const char *token_type_name, int *file_group, int *lineno_group, int *colno_group) {
+static void parse_file_or_line_token(const char *token_type_name, int *file_group, int *lineno_group, int *colno_group) {
+	char *type_copy = strdup(token_type_name);
+	char *saveptr;
+	char *tok = strtok_r(type_copy, ",", &saveptr);
+	tok = strtok_r(NULL, ",", &saveptr);
+	if (tok != NULL) {
+		*file_group = atoi(tok);
+		tok = strtok_r(NULL, ",", &saveptr);
+		if (tok != NULL) {
+			*lineno_group = atoi(tok);
+			tok = strtok_r(NULL, ",", &saveptr);
+			if (tok != NULL) {
+				*colno_group = atoi(tok);
+			}
+		}
+	}
+	free(type_copy);
+}
+
+static int parse_token_type_name(const char *token_type_name, bool *check, int *file_group, int *lineno_group, int *colno_group) {
+	*check = false;
 	*file_group = 0; *lineno_group = 0; *colno_group = 0;
 
 	if (strcmp(token_type_name, "nothing") == 0) return 0;
@@ -187,22 +204,12 @@ static int parse_token_type_name(const char *token_type_name, int *file_group, i
 	if (strcmp(token_type_name, "literal") == 0) return CFG_LEXY_LITERAL - CFG_LEXY_NOTHING;
 
 	if (strncmp(token_type_name, "file", strlen("file")) == 0) {
-		char *type_copy = strdup(token_type_name);
-		char *saveptr;
-		char *tok = strtok_r(type_copy, ",", &saveptr);
-		tok = strtok_r(NULL, ",", &saveptr);
-		if (tok != NULL) {
-			*file_group = atoi(tok);
-			tok = strtok_r(NULL, ",", &saveptr);
-			if (tok != NULL) {
-				*lineno_group = atoi(tok);
-				tok = strtok_r(NULL, ",", &saveptr);
-				if (tok != NULL) {
-					*colno_group = atoi(tok);
-				}
-			}
-		}
-		free(type_copy);
+		*check = true;
+		parse_file_or_line_token(token_type_name, file_group, lineno_group, colno_group);
+		return CFG_LEXY_FILE - CFG_LEXY_NOTHING;
+	} else if (strncmp(token_type_name, "link", strlen("link")) == 0) {
+		*check = false;
+		parse_file_or_line_token(token_type_name, file_group, lineno_group, colno_group);
 		return CFG_LEXY_FILE - CFG_LEXY_NOTHING;
 	}
 	return -1;
@@ -294,7 +301,8 @@ int lexy_append_command(ClientData client_data, Tcl_Interp *interp, int argc, co
 	}
 
 	int file_group, lineno_group, colno_group;
-	int token_type = parse_token_type_name(token_type_name, &file_group, &lineno_group, &colno_group);
+	bool check;
+	int token_type = parse_token_type_name(token_type_name, &check, &file_group, &lineno_group, &colno_group);
 	if (token_type < 0) {
 		Tcl_AddErrorInfo(interp, "Unknown token type");
 		return TCL_ERROR;
@@ -329,6 +337,7 @@ int lexy_append_command(ClientData client_data, Tcl_Interp *interp, int argc, co
 	new_row->token_type = token_type;
 	tre_regcomp(&(new_row->pattern), fixed_pattern, REG_EXTENDED);
 	new_row->enabled = true;
+	new_row->check = check;
 	new_row->file_group = file_group;
 	new_row->lineno_group = lineno_group;
 	new_row->colno_group = colno_group;
@@ -475,7 +484,7 @@ static struct lexy_tokenizer *tokenizer_from_buffer(buffer_t *buffer) {
 
 static bool check_file_match(struct lexy_tokenizer *tokenizer, struct lexy_row *row, buffer_t *buffer, real_line_t *line, int glyph, int nmatch, regmatch_t *pmatch) {
 	//printf("file_group %d nmatch %d (%d)\n", row->file_group, nmatch, tokenizer->verify_file);
-	if (!tokenizer->verify_file) return true;
+	if (!row->check) return true;
 	if (row->file_group >= nmatch) return false;
 
 	lpoint_t start, end;
@@ -711,4 +720,3 @@ const char *lexy_get_link_fn(buffer_t *buffer) {
 	if (tokenizer == NULL) return "";
 	return tokenizer->link_fn;
 }
-

@@ -432,6 +432,11 @@ namespace eval teddy_intl {
 			set r [list nothing $text "" ""]
 		}
 
+		if {[regexp "https?:" [lindex $r 1]]} {
+			x-www-browser [lindex $r 1]
+			return
+		}
+
 		set b [buffer open "[teddy_intl::file_directory][lindex $r 1]"]
 
 		if {$b eq ""} { return }
@@ -779,6 +784,7 @@ lexydef go 0 {
 lexyassoc go {\.go$}
 
 lexydef filesearch 0 {
+		{https?://\S+} link
 		{([^:[:space:]()]+):(\d+)(?::(\d+))?} file,1,2,3
 		{\<File "(.+?)", line (\d+)} file,1,2
 		{\<at (\S+) line (\d+)} file,1,2
@@ -792,17 +798,17 @@ lexydef filesearch 0 {
 lexyassoc filesearch {^\+bg}
 lexyassoc filesearch {/$}
 
-lexydef-create mansearch teddy_intl::man_link_open 0
+lexydef-create mansearch teddy_intl::man_link_open
 lexydef mansearch 0 {
-		{\<(\S+)\((\d+)\)} file,1,2
+		{\<(\S+)\((\d+)\)} link,1,2
 		"." nothing
 	}
 
 lexyassoc mansearch {^\+man}
 
-lexydef-create tagsearch teddy_intl::tags_link_open 0
+lexydef-create tagsearch teddy_intl::tags_link_open
 lexydef tagsearch 0 {
-		{(\S+)\t/(.+)/$} file,1,2
+		{(\S+)\t/(.+)/$} link,1,2
 	}
 
 lexyassoc tagsearch {^\+tags}

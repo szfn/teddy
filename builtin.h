@@ -435,6 +435,11 @@ namespace eval teddy_intl {\n\
 			set r [list nothing $text \"\" \"\"]\n\
 		}\n\
 \n\
+		if {[regexp \"https?:\" [lindex $r 1]]} {\n\
+			x-www-browser [lindex $r 1]\n\
+			return\n\
+		}\n\
+\n\
 		set b [buffer open \"[teddy_intl::file_directory][lindex $r 1]\"]\n\
 \n\
 		if {$b eq \"\"} { return }\n\
@@ -782,6 +787,7 @@ lexydef go 0 {\n\
 lexyassoc go {\\.go$}\n\
 \n\
 lexydef filesearch 0 {\n\
+		{https?://\\S+} link\n\
 		{([^:[:space:]()]+):(\\d+)(?::(\\d+))?} file,1,2,3\n\
 		{\\<File \"(.+?)\", line (\\d+)} file,1,2\n\
 		{\\<at (\\S+) line (\\d+)} file,1,2\n\
@@ -795,17 +801,17 @@ lexydef filesearch 0 {\n\
 lexyassoc filesearch {^\\+bg}\n\
 lexyassoc filesearch {/$}\n\
 \n\
-lexydef-create mansearch teddy_intl::man_link_open 0\n\
+lexydef-create mansearch teddy_intl::man_link_open\n\
 lexydef mansearch 0 {\n\
-		{\\<(\\S+)\\((\\d+)\\)} file,1,2\n\
+		{\\<(\\S+)\\((\\d+)\\)} link,1,2\n\
 		\".\" nothing\n\
 	}\n\
 \n\
 lexyassoc mansearch {^\\+man}\n\
 \n\
-lexydef-create tagsearch teddy_intl::tags_link_open 0\n\
+lexydef-create tagsearch teddy_intl::tags_link_open\n\
 lexydef tagsearch 0 {\n\
-		{(\\S+)\\t/(.+)/$} file,1,2\n\
+		{(\\S+)\\t/(.+)/$} link,1,2\n\
 	}\n\
 \n\
 lexyassoc tagsearch {^\\+tags}\n\
