@@ -681,6 +681,9 @@ int load_text_file(buffer_t *buffer, const char *filename) {
 		}
 	}
 
+	const char *argv[] = { "buffer_loaded_hook", buffer->path };
+	interp_eval_command(NULL, buffer, 2, argv);
+
 	return 0;
 }
 

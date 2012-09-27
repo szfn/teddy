@@ -126,6 +126,9 @@ proc buffer_setup_hook {name} {
 	}
 }
 
+# This procedure gets called after a new buffer is loaded
+proc buffer_loaded_hook {name} { bindent guess }
+
 # This command is executed before a buffer is saved
 proc buffer_save_hook {} {
 }

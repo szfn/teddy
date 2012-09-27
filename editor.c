@@ -393,6 +393,11 @@ static struct completer *editor_visible_completer(editor_t *editor) {
 	return NULL;
 }
 
+static const char *indentchar(editor_t *editor) {
+	const char *propvalue = g_hash_table_lookup(editor->buffer->props, "indentchar");
+	return (propvalue != NULL) ? propvalue : "\t";
+}
+
 static gboolean key_press_callback(GtkWidget *widget, GdkEventKey *event, editor_t *editor) {
 	char pressed[40] = "";
 	const char *command;
@@ -505,7 +510,7 @@ static gboolean key_press_callback(GtkWidget *widget, GdkEventKey *event, editor
 			struct completer *c = editor_visible_completer(editor);
 			if (c == NULL) c = editor->completer;
 			if (!editor_maybe_show_completions(editor, c, true, 0)) {
-				editor_replace_selection(editor, "\t");
+				editor_replace_selection(editor, indentchar(editor));
 			}
 
 			return TRUE;
@@ -559,7 +564,7 @@ static gboolean key_press_callback(GtkWidget *widget, GdkEventKey *event, editor
 
 	/* Ctrl-Tab for tab insertion */
 	if (!shift && ctrl && !alt && !super && (event->keyval == GDK_KEY_Tab)) {
-		editor_replace_selection(editor, "\t");
+		editor_replace_selection(editor, indentchar(editor));
 		return TRUE;
 	}
 

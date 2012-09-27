@@ -43,45 +43,30 @@ namespace eval bindent {
 		m {*}$saved_mark
 	}
 
-	proc gcd {a b} {
-		while {$b>0} { set b [expr { $a % [set a $b] }] }
-		return $a
-	}
-
 	namespace export guess
 	proc guess {} {
-		set spacedict [dict create]
 		set count 0
-		set tablines
+		set tabs 0
+		set spaces 0
 		forlines {
-			if {[::incr count] > 100} { break }
+			if {[::incr count] > 200} { break }
 			set text [c]
 			if {[string length $text] > 200} { continue }
-			set spaces 0
-			for {set i 0} {$i < [string length $text]} {::incr i} {
-				if {[string index $text $i] == " "} {
+
+			if {[regexp {^(\s+)} $text -> s]} {
+				if {[string first "\t" $s] >= 0} {
+					::incr tabs
+				} elseif {[string length $s] > 1} {
 					::incr spaces
-				} elseif {[string index $text $i] == "\t"} {
-					::incr tablines
-					break
 				}
 			}
-
-			dict incr $spacedict $spaces
 		}
 
-		foreach x [dict keys $spacedict] {
-			puts "space n. $x -> [dict get $x] lines"
+		if {$spaces > $tabs} {
+			buffer propset [buffer current] indentchar "  "
+		} else {
+			buffer propset [buffer current] indentchar "\t"
 		}
-
-#		puts "gcd: $gcd_spaces has_tabs: $has_tabs"
-#
-#		if {$gcd_spaces <= 1} {
-#			# no spaces (gcd_space == 0) or there is no gcd for spaces
-#			return
-#		}
-#
-#		buffer propset [buffer current] indentchar [string repeat " " $gcd_spaces]
 	}
 
 	namespace ensemble create -subcommands {incr decr guess}
@@ -107,11 +92,13 @@ proc forlines {args} {
 		error "Wrong number of arguments to forlines [llength $args] expected 1 or 2"
 	}
 
+	set saved_mark [m]
 	m nil 1:1
 	s $pattern {
 		m line
 		uplevel 1 $body
 	}
+	m {*}$saved_mark
 }
 
 proc ss {args} {
@@ -676,6 +663,7 @@ namespace eval teddy_intl {
 # Default buffer hooks (empty)
 
 proc buffer_setup_hook {buffer-name} { }
+proc buffer_loaded_hook {buffer-name} { }
 
 #### LEXY DEFINITIONS ##########################################################
 # Definitions of lexy state machines to syntax highlight source code

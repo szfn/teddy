@@ -46,44 +46,30 @@ namespace eval bindent {\n\
 		m {*}$saved_mark\n\
 	}\n\
 \n\
-	proc gcd {a b} {\n\
-		while {$b>0} { set b [expr { $a % [set a $b] }] }\n\
-		return $a\n\
-	}\n\
-\n\
 	namespace export guess\n\
 	proc guess {} {\n\
-		set spacedict [dict create]\n\
 		set count 0\n\
+		set tabs 0\n\
+		set spaces 0\n\
 		forlines {\n\
-			if {[::incr count] > 100} { break }\n\
+			if {[::incr count] > 200} { break }\n\
 			set text [c]\n\
 			if {[string length $text] > 200} { continue }\n\
-			set spaces 0\n\
-			for {set i 0} {$i < [string length $text]} {::incr i} {\n\
-				if {[string index $text $i] == \" \"} {\n\
+\n\
+			if {[regexp {^(\\s+)} $text -> s]} {\n\
+				if {[string first \"\\t\" $s] >= 0} {\n\
+					::incr tabs\n\
+				} elseif {[string length $s] > 1} {\n\
 					::incr spaces\n\
-				} elseif {[string index $text $i] == \"\\t\"} {\n\
-					puts \"Found a tab $count, exiting\"\n\
-					return\n\
 				}\n\
 			}\n\
-\n\
-			dict incr $spacedict $spaces\n\
 		}\n\
 \n\
-		foreach x [dict keys $spacedict] {\n\
-			puts \"space n. $x -> [dict get $x] lines\"\n\
+		if {$spaces > $tabs} {\n\
+			buffer propset [buffer current] indentchar \"  \"\n\
+		} else {\n\
+			buffer propset [buffer current] indentchar \"\\t\"\n\
 		}\n\
-\n\
-#		puts \"gcd: $gcd_spaces has_tabs: $has_tabs\"\n\
-#\n\
-#		if {$gcd_spaces <= 1} {\n\
-#			# no spaces (gcd_space == 0) or there is no gcd for spaces\n\
-#			return\n\
-#		}\n\
-#\n\
-#		buffer propset [buffer current] indentchar [string repeat \" \" $gcd_spaces]\n\
 	}\n\
 \n\
 	namespace ensemble create -subcommands {incr decr guess}\n\
@@ -109,11 +95,13 @@ proc forlines {args} {\n\
 		error \"Wrong number of arguments to forlines [llength $args] expected 1 or 2\"\n\
 	}\n\
 \n\
+	set saved_mark [m]\n\
 	m nil 1:1\n\
 	s $pattern {\n\
 		m line\n\
 		uplevel 1 $body\n\
 	}\n\
+	m {*}$saved_mark\n\
 }\n\
 \n\
 proc ss {args} {\n\
@@ -159,17 +147,6 @@ namespace eval teddy {\n\
 				c \"\"\n\
 			}\n\
 		}\n\
-\n\
-		# delete empty lines from the end of files\n\
-		set last_nonempty_line \"nil\"\n\
-		s {^.+$} { set last_nonempty_line [m] }\n\
-		if {$last_nonempty_line ne \"nil\"} {\n\
-			m [lindex $last_nonempty_line 1]\n\
-			m +1:0\n\
-			m +0:+0 $:$\n\
-			if {[c] ne \"\"} { c \"\" }\n\
-		}\n\
-\n\
 		m {*}$saved\n\
 	}\n\
 }\n\
@@ -689,6 +666,7 @@ namespace eval teddy_intl {\n\
 # Default buffer hooks (empty)\n\
 \n\
 proc buffer_setup_hook {buffer-name} { }\n\
+proc buffer_loaded_hook {buffer-name} { }\n\
 \n\
 #### LEXY DEFINITIONS ##########################################################\n\
 # Definitions of lexy state machines to syntax highlight source code\n\
