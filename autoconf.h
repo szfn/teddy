@@ -60,14 +60,14 @@ setcfg autocompl_popup 1\n\
 # Ctrl-c copy to clipboard\n\
 bindkey Ctrl-c {cb put [c]; m nil +0:+0}\n\
 \n\
-# Ctrl-v paste from clipboard\n\
-bindkey Ctrl-v {c [cb get]}\n\
+# Ctrl-v paste from clipboard (bindent pasteq equalizes indentation levels)\n\
+bindkey Ctrl-v {bindent pasteq [cb get]}\n\
 \n\
 # Ctrl-x cuts from clipboard\n\
 bindkey Ctrl-x {cb put [c]; c \"\"}\n\
 \n\
 # Ctrl-y pastes from primary selection (this is like the middle mouse button)\n\
-bindkey Ctrl-y {c [cb pget]}\n\
+bindkey Ctrl-y {bindent pasteq [cb pget]}\n\
 \n\
 # Ctrl-u undoes last action\n\
 bindkey Ctrl-u undo\n\

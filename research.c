@@ -172,6 +172,8 @@ static bool move_regexp_search_forward(struct research_t *research, bool execute
 			// if the cursor is after the last character of the line just move to the next line
 			// this isn't just an optimization
 			// it allows s {^.*$} to work correctly even with empty lines (it would otherwise get stuck on them)
+
+			if (research->line_limit) return false;
 			search_point.line = search_point.line->next;
 			search_point.start_glyph = 0;
 		}

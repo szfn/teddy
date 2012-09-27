@@ -1,4 +1,3 @@
-- auto-equalize indentation on paste
 - ability to persist the status of a window
 - set column number for background processes whenever possible
 - tabs

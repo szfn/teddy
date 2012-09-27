@@ -14,7 +14,6 @@ proc kill_line {} {
 namespace eval bindent {
 	proc get_indentchar {} {
 		set indentchar [buffer propget [buffer current] indentchar]
-
 		if {$indentchar eq "" } {
 			return "\t"
 		} else {
@@ -22,6 +21,7 @@ namespace eval bindent {
 		}
 	}
 
+	# Adds an indentation level
 	namespace export incr
 	proc incr {} {
 		m line
@@ -31,6 +31,7 @@ namespace eval bindent {
 		m {*}$saved_mark
 	}
 
+	# Removes an indentation level
 	namespace export descr
 	proc decr {} {
 		m line
@@ -43,6 +44,7 @@ namespace eval bindent {
 		m {*}$saved_mark
 	}
 
+	# Guesses indentation, saves the guess as the indentchar buffer property
 	namespace export guess
 	proc guess {} {
 		set count 0
@@ -69,7 +71,37 @@ namespace eval bindent {
 		}
 	}
 
-	namespace ensemble create -subcommands {incr decr guess}
+	proc get_current_line_indent {} {
+		set saved_mark [m]
+		m nil +:1
+		m {*}[s -line {^\s+}]
+		set r [c]
+		m {*}$saved_mark
+		return $r
+	}
+
+	# Equalizes indentation for paste
+	namespace export pasteq
+	proc pasteq {text} {
+		set dst_indent [get_current_line_indent]
+		buffer eval temp {
+			c $text
+			m nil 1:1
+			set src_indent [get_current_line_indent]
+			if {$src_indent ne "" || $dst_indent ne ""} {
+				s "^$src_indent" {
+					c $dst_indent
+					m nil +:$
+				}
+			}
+			m all
+			set r [c]
+		}
+		m +:1
+		c $r
+	}
+
+	namespace ensemble create -subcommands {incr decr guess pasteq}
 }
 
 proc man {args} {
