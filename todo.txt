@@ -1,7 +1,16 @@
+- BUG: No history causes crashes
+
+- savehook not needed, just call whatever you need on the save keybinding
 - guessing indentation (dtrt-indent mode1)
+ - if tabs and spaces are mixed on any line (ie there is a tab after the first space of the line) then give up
+ - convert lines to a list of <number-of-tabs, number-of-spaces> pairs
+ - calculate the maximum common divider of number-of-spaces
+ - if it is 1 or 0 give up (intendation is tab based)
+ - calculate max_spaces/MCD_spaces + 1 and convert any tab character to that number of tabs
+ - convert any group of MCD_spaces to a tab
+ - save parameters for reverting
 - auto-equalize indentation on paste
 - ability to persist the status of a window
-
 - set column number for background processes whenever possible
 - tabs
 - macro recording

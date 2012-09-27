@@ -76,6 +76,7 @@ static void release_command_line(editor_t *editor) {
 
 static void history_substitute_with_index(struct history *h, editor_t *editor) {
 	char *r = history_index_get(h);
+	if (r == NULL) return;
 	lpoint_t start, end;
 	buffer_get_extremes(editor->buffer, &start, &end);
 

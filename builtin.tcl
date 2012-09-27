@@ -443,7 +443,7 @@ namespace eval teddy_intl {
 			return
 		}
 
-		puts "File directory: <[teddy_intl::file_directory]>\n"
+		#puts "File directory: <[teddy_intl::file_directory]>\n"
 
 		set b [buffer open "[teddy_intl::file_directory]/[lindex $r 1]"]
 

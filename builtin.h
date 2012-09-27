@@ -446,7 +446,7 @@ namespace eval teddy_intl {\n\
 			return\n\
 		}\n\
 \n\
-		puts \"File directory: <[teddy_intl::file_directory]>\\n\"\n\
+		#puts \"File directory: <[teddy_intl::file_directory]>\\n\"\n\
 \n\
 		set b [buffer open \"[teddy_intl::file_directory]/[lindex $r 1]\"]\n\
 \n\
