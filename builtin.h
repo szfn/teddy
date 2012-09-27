@@ -14,36 +14,79 @@ proc kill_line {} {\n\
    cb put [undo get before]\n\
 }\n\
 \n\
-proc bindent {direction indentchar} {\n\
-	set saved_status [m]\n\
+namespace eval bindent {\n\
+	proc get_indentchar {} {\n\
+		set indentchar [buffer propget [buffer current] indentchar]\n\
 \n\
-	if {[lindex $saved_status 0] == \"nil\"} {\n\
-		m +0:+0 +0:+0\n\
+		if {$indentchar eq \"\" } {\n\
+			return \"\\t\"\n\
+		} else {\n\
+			return $indentchar\n\
+		}\n\
 	}\n\
 \n\
-	buffer select-mode lines\n\
+	namespace export incr\n\
+	proc incr {} {\n\
+		m line\n\
+		set indentchar [get_indentchar]\n\
+		set saved_mark [m]\n\
+		s {^.*$} { c \"$indentchar[c]\" }\n\
+		m {*}$saved_mark\n\
+	}\n\
 \n\
-	set text [c]\n\
-\n\
-	switch -exact $direction {\n\
-		\"incr\" {\n\
-			set nt [string map [list \"\\n\" \"\\n$indentchar\"] $text]\n\
-			c \"$indentchar$nt\"\n\
+	namespace export descr\n\
+	proc decr {} {\n\
+		m line\n\
+		set indentchar [get_indentchar]\n\
+		set saved_mark [m]\n\
+		s \"^$indentchar\" {\n\
+			c \"\"\n\
+			m +:$\n\
 		}\n\
-		\"decr\" {\n\
-			set nt [string map [list \"\\n \" \"\\n\" \"\\n\\t\" \"\\n\" ] $text]\n\
-			if {[string index $nt 0] eq \" \" || [string index $nt 0] eq \"\\t\"} {\n\
-				set nt [string range $nt 1 end]\n\
+		m {*}$saved_mark\n\
+	}\n\
+\n\
+	proc gcd {a b} {\n\
+		while {$b>0} { set b [expr { $a % [set a $b] }] }\n\
+		return $a\n\
+	}\n\
+\n\
+	namespace export guess\n\
+	proc guess {} {\n\
+		set spacedict [dict create]\n\
+		set count 0\n\
+		forlines {\n\
+			if {[::incr count] > 100} { break }\n\
+			set text [c]\n\
+			if {[string length $text] > 200} { continue }\n\
+			set spaces 0\n\
+			for {set i 0} {$i < [string length $text]} {::incr i} {\n\
+				if {[string index $text $i] == \" \"} {\n\
+					::incr spaces\n\
+				} elseif {[string index $text $i] == \"\\t\"} {\n\
+					puts \"Found a tab $count, exiting\"\n\
+					return\n\
+				}\n\
 			}\n\
-			c $nt\n\
+\n\
+			dict incr $spacedict $spaces\n\
 		}\n\
+\n\
+		foreach x [dict keys $spacedict] {\n\
+			puts \"space n. $x -> [dict get $x] lines\"\n\
+		}\n\
+\n\
+#		puts \"gcd: $gcd_spaces has_tabs: $has_tabs\"\n\
+#\n\
+#		if {$gcd_spaces <= 1} {\n\
+#			# no spaces (gcd_space == 0) or there is no gcd for spaces\n\
+#			return\n\
+#		}\n\
+#\n\
+#		buffer propset [buffer current] indentchar [string repeat \" \" $gcd_spaces]\n\
 	}\n\
 \n\
-	#puts \"Stored mark: $stored_mark\"\n\
-	#puts \"Stored cursor: $stored_cursor\"\n\
-\n\
-	m {*}$saved_status\n\
-	buffer select-mode normal\n\
+	namespace ensemble create -subcommands {incr decr guess}\n\
 }\n\
 \n\
 proc man {args} {\n\
@@ -66,7 +109,7 @@ proc forlines {args} {\n\
 		error \"Wrong number of arguments to forlines [llength $args] expected 1 or 2\"\n\
 	}\n\
 \n\
-	m all\n\
+	m nil 1:1\n\
 	s $pattern {\n\
 		m line\n\
 		uplevel 1 $body\n\
@@ -820,7 +863,5 @@ lexydef-create tagsearch teddy_intl::tags_link_open\n\
 lexydef tagsearch 0 {\n\
 		{(\\S+)\\t/(.+)/$} link,1,2\n\
 	}\n\
-\n\
-lexyassoc tagsearch {^\\+tags}\n\
 "
 #endif

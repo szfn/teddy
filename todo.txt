@@ -18,5 +18,3 @@
  s, c, m, ss, regexp, regsub, new buffer subcommands, tags
 
 - BUG: changing font after intialization results in trash (stuff in glyph_info isn't reloaded)
-
-

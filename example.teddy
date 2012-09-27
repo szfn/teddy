@@ -102,8 +102,8 @@ bindkey Ctrl-l iopen
 bindkey Ctrl-k kill_line
 
 # Ctrl-. / Ctrl-, add/remove one tab at the beginning of every line of the selected text
-bindkey Ctrl-, {bindent decr "\t"}
-bindkey Ctrl-. {bindent incr "\t"}
+bindkey Ctrl-, {bindent decr}
+bindkey Ctrl-. {bindent incr}
 
 ### BUFFER HOOKS ###
 
@@ -135,4 +135,3 @@ proc buffer_save_hook {} {
 # We override the grep command so that it always shows line numbers of matches, so that we can click on a match and go directly to the matched line on an editor
 proc grep {args} {
 	unknown grep -n {*}$args
-}

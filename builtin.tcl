@@ -11,36 +11,80 @@ proc kill_line {} {
    cb put [undo get before]
 }
 
-proc bindent {direction indentchar} {
-	set saved_status [m]
+namespace eval bindent {
+	proc get_indentchar {} {
+		set indentchar [buffer propget [buffer current] indentchar]
 
-	if {[lindex $saved_status 0] == "nil"} {
-		m +0:+0 +0:+0
+		if {$indentchar eq "" } {
+			return "\t"
+		} else {
+			return $indentchar
+		}
 	}
 
-	buffer select-mode lines
+	namespace export incr
+	proc incr {} {
+		m line
+		set indentchar [get_indentchar]
+		set saved_mark [m]
+		s {^.*$} { c "$indentchar[c]" }
+		m {*}$saved_mark
+	}
 
-	set text [c]
-
-	switch -exact $direction {
-		"incr" {
-			set nt [string map [list "\n" "\n$indentchar"] $text]
-			c "$indentchar$nt"
+	namespace export descr
+	proc decr {} {
+		m line
+		set indentchar [get_indentchar]
+		set saved_mark [m]
+		s "^$indentchar" {
+			c ""
+			m +:$
 		}
-		"decr" {
-			set nt [string map [list "\n " "\n" "\n\t" "\n" ] $text]
-			if {[string index $nt 0] eq " " || [string index $nt 0] eq "\t"} {
-				set nt [string range $nt 1 end]
+		m {*}$saved_mark
+	}
+
+	proc gcd {a b} {
+		while {$b>0} { set b [expr { $a % [set a $b] }] }
+		return $a
+	}
+
+	namespace export guess
+	proc guess {} {
+		set spacedict [dict create]
+		set count 0
+		set tablines
+		forlines {
+			if {[::incr count] > 100} { break }
+			set text [c]
+			if {[string length $text] > 200} { continue }
+			set spaces 0
+			for {set i 0} {$i < [string length $text]} {::incr i} {
+				if {[string index $text $i] == " "} {
+					::incr spaces
+				} elseif {[string index $text $i] == "\t"} {
+					::incr tablines
+					break
+				}
 			}
-			c $nt
+
+			dict incr $spacedict $spaces
 		}
+
+		foreach x [dict keys $spacedict] {
+			puts "space n. $x -> [dict get $x] lines"
+		}
+
+#		puts "gcd: $gcd_spaces has_tabs: $has_tabs"
+#
+#		if {$gcd_spaces <= 1} {
+#			# no spaces (gcd_space == 0) or there is no gcd for spaces
+#			return
+#		}
+#
+#		buffer propset [buffer current] indentchar [string repeat " " $gcd_spaces]
 	}
 
-	#puts "Stored mark: $stored_mark"
-	#puts "Stored cursor: $stored_cursor"
-
-	m {*}$saved_status
-	buffer select-mode normal
+	namespace ensemble create -subcommands {incr decr guess}
 }
 
 proc man {args} {
@@ -63,7 +107,7 @@ proc forlines {args} {
 		error "Wrong number of arguments to forlines [llength $args] expected 1 or 2"
 	}
 
-	m all
+	m nil 1:1
 	s $pattern {
 		m line
 		uplevel 1 $body
@@ -113,17 +157,6 @@ namespace eval teddy {
 				c ""
 			}
 		}
-
-		# delete empty lines from the end of files
-		set last_nonempty_line "nil"
-		s {^.+$} { set last_nonempty_line [m] }
-		if {$last_nonempty_line ne "nil"} {
-			m [lindex $last_nonempty_line 1]
-			m +1:0
-			m +0:+0 $:$
-			if {[c] ne ""} { c "" }
-		}
-
 		m {*}$saved
 	}
 }
@@ -817,5 +850,3 @@ lexydef-create tagsearch teddy_intl::tags_link_open
 lexydef tagsearch 0 {
 		{(\S+)\t/(.+)/$} link,1,2
 	}
-
-lexyassoc tagsearch {^\+tags}
