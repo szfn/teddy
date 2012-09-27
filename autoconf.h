@@ -72,8 +72,8 @@ bindkey Ctrl-y {c [cb pget]}\n\
 # Ctrl-u undoes last action\n\
 bindkey Ctrl-u undo\n\
 \n\
-# Ctrl-s saves\n\
-bindkey Ctrl-s {buffer save}\n\
+# Ctrl-s saves (calls teddy::spaceman to delete extra spaces at the end of lines)\n\
+bindkey Ctrl-s {teddy::spaceman; buffer save}\n\
 \n\
 # Ctrl-f starts interactive search (also known as \"search as you type\" or \"incremental search\")\n\
 bindkey Ctrl-f search\n\
@@ -131,7 +131,6 @@ proc buffer_setup_hook {name} {\n\
 \n\
 # This command is executed before a buffer is saved\n\
 proc buffer_save_hook {} {\n\
-	teddy::spaceman\n\
 }\n\
 \n\
 ### OTHER ###\n\

@@ -317,7 +317,6 @@ static bool mark_move(editor_t *editor, bool shift) {
 }
 
 void editor_save_action(editor_t *editor) {
-	interp_eval(editor, NULL, "buffer_save_hook", false);
 	save_to_text_file(editor->buffer);
 	set_label_text(editor);
 }

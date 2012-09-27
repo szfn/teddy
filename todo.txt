@@ -1,6 +1,3 @@
-- BUG: No history causes crashes
-
-- savehook not needed, just call whatever you need on the save keybinding
 - guessing indentation (dtrt-indent mode1)
  - if tabs and spaces are mixed on any line (ie there is a tab after the first space of the line) then give up
  - convert lines to a list of <number-of-tabs, number-of-spaces> pairs
@@ -23,4 +20,3 @@
 - BUG: changing font after intialization results in trash (stuff in glyph_info isn't reloaded)
 
 
-https://github.com/chriskempson/tomorrow-theme

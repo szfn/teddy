@@ -643,7 +643,6 @@ namespace eval teddy_intl {
 # Default buffer hooks (empty)
 
 proc buffer_setup_hook {buffer-name} { }
-proc buffer_save_hook {} {}
 
 #### LEXY DEFINITIONS ##########################################################
 # Definitions of lexy state machines to syntax highlight source code
