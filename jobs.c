@@ -30,6 +30,8 @@ static char *cut_prompt(job_t *job) {
 	buffer_move_point_line(job->buffer, &(job->buffer->cursor), MT_END, 0);
 	buffer_move_point_glyph(job->buffer, &(job->buffer->cursor), MT_END, 0);
 
+	if (job->input_start >= job->buffer->cursor.line->cap) return NULL;
+
 	copy_lpoint(&(job->buffer->mark), &(job->buffer->cursor));
 	job->buffer->mark.glyph = job->input_start;
 
@@ -89,7 +91,10 @@ static void job_append(job_t *job, const char *msg, int len, int on_new_line) {
 
 	job->input_start = buffer->cursor.glyph;
 
-	if (prompt_str != NULL) buffer_replace_selection(buffer, prompt_str);
+	if (prompt_str != NULL) {
+		buffer_replace_selection(buffer, prompt_str);
+		free(prompt_str);
+	}
 
 	editor_t *editor;
 	find_editor_for_buffer(job->buffer, NULL, NULL, &editor);
