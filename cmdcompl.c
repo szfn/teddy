@@ -56,11 +56,6 @@ const char **external_commands = NULL;
 int external_commands_cap;
 int external_commands_allocated;
 
-/* TODO inside the recalc function
-
-*/
-
-
 void cmdcompl_init(void) {
 	char *path, *saveptr, *dir;
 
@@ -178,4 +173,12 @@ void cmdcompl_recalc(struct completer *c, const char *prefix) {
 	load_directory_completions(c, absdir, reldir);
 
 	free(reldir);
+}
+
+bool in_external_commands(const char *arg) {
+	for (int i = 0; i < external_commands_cap; ++i) {
+		if (strcmp(arg, external_commands[i]) == 0) return true;
+	}
+
+	return access(arg, F_OK) == 0;
 }

@@ -747,6 +747,16 @@ static int teddy_kill_command(ClientData client_data, Tcl_Interp *interp, int ar
 	return TCL_OK;
 }
 
+static int teddy_inpath_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
+	if (argc != 2) {
+		Tcl_AddErrorInfo(interp, "Wrong number of arguments to teddy_intl::inpath");
+		return TCL_ERROR;
+	}
+
+	Tcl_SetResult(interp, in_external_commands(argv[1]) ? "true" : "false", TCL_VOLATILE);
+	return TCL_OK;
+}
+
 void interp_init(void) {
 	interp = Tcl_CreateInterp();
 	if (interp == NULL) {
@@ -781,6 +791,7 @@ void interp_init(void) {
 	Tcl_CreateCommand(interp, "search", &teddy_search_command, (ClientData)NULL, NULL);
 
 	Tcl_CreateCommand(interp, "teddy::bg", &teddy_bg_command, (ClientData)NULL, NULL);
+	Tcl_CreateCommand(interp, "teddy_intl::inpath", &teddy_inpath_command, (ClientData)NULL, NULL);
 
 	Tcl_CreateCommand(interp, "rgbcolor", &teddy_rgbcolor_command, (ClientData)NULL, NULL);
 

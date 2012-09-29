@@ -449,9 +449,14 @@ proc unknown {args} {\n\
       c [shellsync [c] {*}$args]\n\
    } else {\n\
       # normal unknown code\n\
-      set margs shell\n\
-      lappend margs {*}$args\n\
-      teddy::bg $margs\n\
+\n\
+      if {[teddy_intl::inpath [lindex $args 0]]} {\n\
+	      set margs shell\n\
+	      lappend margs {*}$args\n\
+	      teddy::bg $margs\n\
+	  } else {\n\
+	      error \"Unknown command [lindex $args 0]\"\n\
+	  }\n\
    }\n\
 }\n\
 \n\

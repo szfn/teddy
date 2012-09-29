@@ -266,18 +266,34 @@ void do_regex_noninteractive_search(struct research_t *research) {
 	research_free_temp(research);
 }
 
-void do_regex_noninteractive_replace(struct research_t *research) {
+static bool do_regex_noninteractive_replace(struct research_t *research) {
 	bool execute = false;
 	bool r = true;
+
+	int count = 0;
+	real_line_t *curline = research->buffer->cursor.line;
+
 	do {
 		r = move_regexp_search_forward(research, execute, &(research->buffer->mark), &(research->buffer->cursor));
 		execute = true;
+
+		if (research->buffer->cursor.line == curline) {
+			if (++count > 100) {
+				research->buffer->mark.line = NULL;
+				research->buffer->mark.glyph = 0;
+				research_free_temp(research);
+				return false;
+			}
+		} else {
+			count = 0;
+			curline = research->buffer->cursor.line;
+		}
 	} while (r);
 
 	research->buffer->mark.line = NULL;
 	research->buffer->mark.glyph = 0;
-
 	research_free_temp(research);
+	return true;
 }
 
 void start_regex_interactive(struct research_t *research, const char *regexp) {
@@ -369,7 +385,6 @@ int teddy_research_command(ClientData client_data, Tcl_Interp *interp, int argc,
 
 	if (get) {
 		do_regex_noninteractive_search(&research);
-		return TCL_OK;
 	}
 
 	if (research.cmd != NULL) {
@@ -389,22 +404,29 @@ int teddy_research_command(ClientData client_data, Tcl_Interp *interp, int argc,
 			tempbuf->cursor.glyph = 0;
 
 			research.buffer = tempbuf;
-			do_regex_noninteractive_replace(&research);
+			if (do_regex_noninteractive_replace(&research)) {
+				char *replaced_text = buffer_all_lines_to_text(tempbuf);
+				if (interp_context_editor() != NULL)
+					editor_replace_selection(interp_context_editor(), replaced_text);
+				else
+					buffer_replace_selection(mainbuf, replaced_text);
+				free(replaced_text);
 
-			char *replaced_text = buffer_all_lines_to_text(tempbuf);
-			if (interp_context_editor() != NULL)
-				editor_replace_selection(interp_context_editor(), replaced_text);
-			else
-				buffer_replace_selection(mainbuf, replaced_text);
-			free(replaced_text);
+				buffer_free(tempbuf, false);
+				return TCL_OK;
+			} else {
+				Tcl_AddErrorInfo(interp, "Automatic search and replace seemed stuck on the same line, and it was aborted");
+				buffer_free(tempbuf, false);
+				return TCL_ERROR;
+			}
 
-			buffer_free(tempbuf, false);
-
-			return TCL_OK;
 		}
 
 		if (!interp_toplevel_frame()) {
-			do_regex_noninteractive_replace(&research);
+			if (!do_regex_noninteractive_replace(&research)) {
+				Tcl_AddErrorInfo(interp, "Automatic search and replace seemed stuck on the same line, and it was aborted");
+				return TCL_ERROR;
+			}
 			return TCL_OK;
 		} else {
 			start_regex_interactive(&research, argv[i]);
@@ -422,5 +444,7 @@ int teddy_research_command(ClientData client_data, Tcl_Interp *interp, int argc,
 }
 
 extern void research_continue_replace_to_end(editor_t *editor) {
-	do_regex_noninteractive_replace(&(editor->research));
+	if (!do_regex_noninteractive_replace(&(editor->research))) {
+		quick_message("Search and replace error", "Automatic search and replace seemed stuck on the same line, and it was aborted");
+	}
 }
