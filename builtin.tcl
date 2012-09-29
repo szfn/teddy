@@ -759,7 +759,7 @@ lexydef python 0 {
 
 		{\<[a-zA-Z_][a-zA-Z0-9_]*\>} id
 
-		{(?:r|u|ur|R|U|UR|Ur|uR|b|B|br|Br|bR|BR)?"""} lstringq:string
+		{(?:r|u|ur|R|U|UR|Ur|uR|b|B|br|Br|bR|BR)?"""} lstringqq:string
 		{(?:r|u|ur|R|U|UR|Ur|uR|b|B|br|Br|bR|BR)?'''} lstringq:string
 		{(?:r|u|ur|R|U|UR|Ur|uR|b|B|br|Br|bR|BR)?"} stringqq:string
 		{(?:r|u|ur|R|U|UR|Ur|uR|b|B|br|Br|bR|BR)?'} stringq:string

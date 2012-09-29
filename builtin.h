@@ -762,7 +762,7 @@ lexydef python 0 {\n\
 \n\
 		{\\<[a-zA-Z_][a-zA-Z0-9_]*\\>} id\n\
 \n\
-		{(?:r|u|ur|R|U|UR|Ur|uR|b|B|br|Br|bR|BR)?\"\"\"} lstringq:string\n\
+		{(?:r|u|ur|R|U|UR|Ur|uR|b|B|br|Br|bR|BR)?\"\"\"} lstringqq:string\n\
 		{(?:r|u|ur|R|U|UR|Ur|uR|b|B|br|Br|bR|BR)?'''} lstringq:string\n\
 		{(?:r|u|ur|R|U|UR|Ur|uR|b|B|br|Br|bR|BR)?\"} stringqq:string\n\
 		{(?:r|u|ur|R|U|UR|Ur|uR|b|B|br|Br|bR|BR)?'} stringq:string\n\
