@@ -49,7 +49,6 @@ Associates one tokenizer with a file extension.
 */
 
 #define LEXY_ROW_NUMBER 1024
-#define LEXY_STATUS_NUMBER 0xff
 #define LEXY_STATUS_NAME_SIZE 256
 #define LEXY_TOKENIZER_NUMBER 0xff
 #define LEXY_STATE_BLOCK_SIZE 16
@@ -675,13 +674,13 @@ void lexy_update_starting_at(buffer_t *buffer, real_line_t *start_line, bool qui
 	if (tokenizer == NULL) return;
 
 	int count = 0;
-	int state = 0xff;
+	int state = LEXY_STATUS_NUMBER;
 
 	real_line_t *line;
 	for (line = start_line; line != NULL; line = line->next) {
-		if ((line->lexy_state_start != state) || (line->lexy_state_start == 0xff) || (count < 2)) {
-			if (state == 0xff) {
-				if (line->lexy_state_start == 0xff) line->lexy_state_start = 0;
+		if ((line->lexy_state_start != state) || (line->lexy_state_start == LEXY_STATUS_NUMBER) || (count < 2)) {
+			if (state == LEXY_STATUS_NUMBER) {
+				if (line->lexy_state_start == LEXY_STATUS_NUMBER) line->lexy_state_start = 0;
 				state = line->lexy_state_start;
 			}
 			//printf("\tUpdating line: %p\n", line);

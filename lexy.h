@@ -7,6 +7,8 @@
 
 #include "buffer.h"
 
+#define LEXY_STATUS_NUMBER 0xff
+
 void lexy_init(void);
 void lexy_update_starting_at(buffer_t *buffer, real_line_t *start_line, bool quick_exit);
 void lexy_update_for_move(buffer_t *buffer, real_line_t *possible_start_line);

@@ -513,7 +513,12 @@ namespace eval teddy_intl {
 
 		#puts "File directory: <[teddy_intl::file_directory]>\n"
 
-		set b [buffer open "[teddy_intl::file_directory]/[lindex $r 1]"]
+		set link_text [lindex $r 1]
+		if {[string index $link_text 0] ne "/"} {
+			set link_text "[teddy_intl::file_directory]/$link_text"
+		}
+
+		set b [buffer open $link_text]
 
 		if {$b eq ""} { return }
 

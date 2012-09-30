@@ -1,10 +1,9 @@
 - BUG: avrdude -> crash
-- BUG: absolute path links not working?
-- tabs
-- macro recording
 - make lexy a flat table, lexyassoc just gives the starting state but we can move to other states (implement mixed html / javascript mode)
 - multiprocess highlighting
 - buffers_close, buffers_close_all: don't take a window parameter and open error buffers when can continue with commands to eval to fix the problem
+- tabs
+- macro recording
 
 - document:
  s, c, m, ss, regexp, regsub, new buffer subcommands, tags, new bindent
