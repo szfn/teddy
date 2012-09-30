@@ -82,7 +82,8 @@ static void history_substitute_with_index(struct history *h, editor_t *editor) {
 
 	copy_lpoint(&(editor->buffer->mark), &start);
 	copy_lpoint(&(editor->buffer->cursor), &end);
-	editor_replace_selection(editor, r);
+	buffer_replace_selection(editor->buffer, r);
+	gtk_widget_queue_draw(GTK_WIDGET(editor));
 }
 
 bool cmdline_other_keys(struct _editor_t *editor, bool shift, bool ctrl, bool alt, bool super, guint keyval) {

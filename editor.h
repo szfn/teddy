@@ -68,8 +68,6 @@ void editor_free(editor_t *editor);
 void editor_switch_buffer(editor_t *editor, buffer_t *buffer);
 void editor_center_on_cursor(editor_t *editor);
 
-void editor_replace_selection(editor_t *editor, const char *new_text);
-
 void editor_start_search(editor_t *editor, enum search_mode_t search_mode, const char *initial_search_term);
 void editor_save_action(editor_t *editor);
 void editor_undo_action(editor_t *editor);

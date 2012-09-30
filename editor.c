@@ -71,6 +71,31 @@ static void dirty_line_update(editor_t *editor) {
 	word_completer_full_update();
 }
 
+static bool editor_maybe_show_completions(editor_t *editor, struct completer *completer, bool autoinsert, int min);
+
+static void editor_replace_selection(editor_t *editor, const char *new_text) {
+	buffer_replace_selection(editor->buffer, new_text);
+
+	column_t *column;
+	if (find_editor_for_buffer(editor->buffer, &column, NULL, NULL))
+		columns_set_active(columnset, column);
+
+	set_label_text(editor);
+	gtk_widget_queue_draw(editor->drar);
+
+	editor->dirty_line = true;
+
+	if (compl_wnd_visible(editor->completer)) {
+		editor_maybe_show_completions(editor, editor->completer, false, 2);
+	} else if (compl_wnd_visible(editor->alt_completer)) {
+		editor_maybe_show_completions(editor, editor->alt_completer, false, 0);
+	} else if (config_intval(&(editor->buffer->config), CFG_AUTOCOMPL_POPUP) && (strcmp(new_text, "") != 0)) {
+		editor_maybe_show_completions(editor, editor->completer, false, 2);
+	}
+
+	editor_center_on_cursor(editor);
+}
+
 static bool editor_maybe_show_completions(editor_t *editor, struct completer *completer, bool autoinsert, int min) {
 	size_t wordcompl_prefix_len;
 	uint16_t *prefix = completer->prefix_from_buffer(editor->buffer, &wordcompl_prefix_len);
@@ -134,27 +159,6 @@ void editor_center_on_cursor(editor_t *editor) {
 		if ((translated_x < 0) || (translated_x > allocation.width)) {
 			gtk_adjustment_set_value(GTK_ADJUSTMENT(editor->hadjustment), x - allocation.width / 2);
 		}
-	}
-}
-
-void editor_replace_selection(editor_t *editor, const char *new_text) {
-	buffer_replace_selection(editor->buffer, new_text);
-
-	column_t *column;
-	if (find_editor_for_buffer(editor->buffer, &column, NULL, NULL))
-		columns_set_active(columnset, column);
-
-	set_label_text(editor);
-	gtk_widget_queue_draw(editor->drar);
-
-	editor->dirty_line = true;
-
-	if (compl_wnd_visible(editor->completer)) {
-		editor_maybe_show_completions(editor, editor->completer, false, 2);
-	} else if (compl_wnd_visible(editor->alt_completer)) {
-		editor_maybe_show_completions(editor, editor->alt_completer, false, 0);
-	} else if (config_intval(&(editor->buffer->config), CFG_AUTOCOMPL_POPUP) && (strcmp(new_text, "") != 0)) {
-		editor_maybe_show_completions(editor, editor->completer, false, 2);
 	}
 }
 

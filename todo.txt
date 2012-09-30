@@ -1,5 +1,5 @@
 - BUG: avrdude -> crash
-- BUG: entering text doesn't center on cursor
+- BUG: absolute path links not working?
 - tabs
 - macro recording
 - make lexy a flat table, lexyassoc just gives the starting state but we can move to other states (implement mixed html / javascript mode)

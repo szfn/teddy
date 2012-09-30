@@ -421,11 +421,8 @@ static int teddy_change_command(ClientData client_data, Tcl_Interp *interp, int 
 			return TCL_OK;
 		}
 	case 2:
-		if (interp_context_editor() != NULL) {
-			editor_replace_selection(interp_context_editor(), argv[1]);
-		} else {
-			buffer_replace_selection(interp_context_buffer(), argv[1]);
-		}
+		buffer_replace_selection(interp_context_buffer(), argv[1]);
+		if (interp_context_editor() != NULL) gtk_widget_queue_draw(GTK_WIDGET(interp_context_editor()));
 		return TCL_OK;
 	default:
 		Tcl_AddErrorInfo(interp, "Wrong number of arguments to 'selectlines'");

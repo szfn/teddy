@@ -38,7 +38,8 @@ this expands into:
   ...
  }
 
-In essence tokenizers are defined as state machines, lexydef-create creates a new "empty" tokenizer and gives it a name, lexydef-append adds a transition to the state machine of a tokenizer. The transition consists of an initial state (<lexy state>) a <pattern>, that needs to be matched on the input stream for the transition to happen, a final state (<next lexy state>), that indicates the state the tokenizer should go to when the <pattern> is matched in <lexy state> and finally a <token type> which is the <token type> that the string matched by <pattern> will be marked with when this transition triggers.
+In essence tokenizers are defined as state machines, lexydef-create creates a new "empty" tokenizer and gives it a name, lexydef-append adds a transition to the state machine of a tokenizer.
+The transition consists of an initial state (<lexy state>) a <pattern>, that needs to be matched on the input stream for the transition to happen, a final state (<next lexy state>), that indicates the state the tokenizer should go to when the <pattern> is matched in <lexy state> and finally a <token type> which is the <token type> that the string matched by <pattern> will be marked with when this transition triggers.
 
 Finally the command:
 

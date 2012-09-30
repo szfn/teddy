@@ -300,7 +300,7 @@ static bool do_regex_noninteractive_replace(struct research_t *research) {
 void start_regex_interactive(struct research_t *research, const char *regexp) {
 	if (interp_context_editor() == NULL) {
 		Tcl_AddErrorInfo(interp, "Can not execute interactive 's' without a selection");
-		return TCL_ERROR;
+		return;
 	}
 
 	editor_t *editor = interp_context_editor();
@@ -409,10 +409,9 @@ int teddy_research_command(ClientData client_data, Tcl_Interp *interp, int argc,
 			research.buffer = tempbuf;
 			if (do_regex_noninteractive_replace(&research)) {
 				char *replaced_text = buffer_all_lines_to_text(tempbuf);
+				buffer_replace_selection(mainbuf, replaced_text);
 				if (interp_context_editor() != NULL)
-					editor_replace_selection(interp_context_editor(), replaced_text);
-				else
-					buffer_replace_selection(mainbuf, replaced_text);
+					gtk_widget_queue_draw(GTK_WIDGET(interp_context_editor()));
 				free(replaced_text);
 
 				buffer_free(tempbuf, false);
