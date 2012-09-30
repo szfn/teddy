@@ -2,6 +2,8 @@
 
 #include <unistd.h>
 #include <fcntl.h>
+#include <termios.h>
+#include <sys/ioctl.h>
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -211,6 +213,28 @@ static void job_attach_to_buffer(job_t *job, const char *command, buffer_t *buff
 		asprintf(&msg, "%% %s\n", command);
 		job_append(job, msg, strlen(msg), 0);
 		free(msg);
+	}
+
+	// setting terminal size
+
+	editor_t *editor;
+	find_editor_for_buffer(buffer, NULL, NULL, &editor);
+	if (editor != NULL) {
+		GtkAllocation allocation;
+		gtk_widget_get_allocation(GTK_WIDGET(editor), &allocation);
+		double width = allocation.width;
+
+		struct winsize {
+			unsigned short ws_row;
+			unsigned short ws_col;
+			unsigned short ws_xpixel;
+			unsigned short ws_ypixel;
+		} ws;
+		ws.ws_row = 100;
+		ws.ws_col = (int)(width / (0.75 * buffer->em_advance));
+		if (ws.ws_col > 0) {
+			ioctl(job->masterfd, TIOCSWINSZ, &ws);
+		}
 	}
 }
 

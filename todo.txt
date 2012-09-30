@@ -1,6 +1,5 @@
 - BUG: avrdude -> crash
 - BUG: entering text doesn't center on cursor
-- set column number for background processes whenever possible
 - tabs
 - macro recording
 - make lexy a flat table, lexyassoc just gives the starting state but we can move to other states (implement mixed html / javascript mode)
