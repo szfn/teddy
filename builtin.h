@@ -480,6 +480,7 @@ proc backgrounded_unknown {args} {\n\
 namespace eval teddy_intl {\n\
 	namespace export iopen_search\n\
 	proc iopen_search {z} {\n\
+		if {$z eq \"\"} { return }\n\
 		set k [s -literal -get $z]\n\
 		#puts \"Searching <$z> -> <$k>\"\n\
 		if {[lindex $k 0] ne \"nil\"} {\n\

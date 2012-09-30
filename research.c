@@ -18,6 +18,7 @@ static void research_free_temp(struct research_t *r) {
 		tre_regfree(&(r->regexp));
 		if (r->cmd != NULL) {
 			Tcl_Free(r->cmd);
+			r->cmd = NULL;
 		}
 	}
 }
@@ -299,6 +300,7 @@ static bool do_regex_noninteractive_replace(struct research_t *research) {
 void start_regex_interactive(struct research_t *research, const char *regexp) {
 	if (interp_context_editor() == NULL) {
 		Tcl_AddErrorInfo(interp, "Can not execute interactive 's' without a selection");
+		return TCL_ERROR;
 	}
 
 	editor_t *editor = interp_context_editor();
@@ -385,6 +387,7 @@ int teddy_research_command(ClientData client_data, Tcl_Interp *interp, int argc,
 
 	if (get) {
 		do_regex_noninteractive_search(&research);
+		return TCL_OK;
 	}
 
 	if (research.cmd != NULL) {
