@@ -86,6 +86,16 @@ namespace eval bindent {\n\
 	# Equalizes indentation for paste\n\
 	namespace export pasteq\n\
 	proc pasteq {text} {\n\
+		if {[lindex [m] 0] ne \"nil\"} { c $text; return }\n\
+\n\
+		set cursor [m]\n\
+		m +:1 +:$;\n\
+		if {![regexp {^\\s*$} [c]]} {\n\
+			m {*}$cursor\n\
+			c $text\n\
+			return\n\
+		}\n\
+\n\
 		set dst_indent [get_current_line_indent]\n\
 		buffer eval temp {\n\
 			c $text\n\

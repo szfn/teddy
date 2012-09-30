@@ -1,4 +1,3 @@
-- BUG: Ctrl-v inside a line doesn't work due to pasteq (deletes stuff)
 - BUG: avrdude -> crash
 - BUG: entering text doesn't center on cursor
 - set column number for background processes whenever possible
