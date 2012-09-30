@@ -2,10 +2,14 @@
 
 #include "cfg.h"
 #include "baux.h"
+#include "top.h"
+#include "interp.h"
 
 GtkClipboard *selection_clipboard;
 GtkClipboard *default_clipboard;
 PangoFontDescription *elements_font_description;
+
+char *tied_session;
 
 GdkCursor *cursor_arrow, *cursor_hand, *cursor_xterm, *cursor_fleur, *cursor_top_left_corner;
 
@@ -31,6 +35,7 @@ void global_init() {
 	selection_clipboard = gtk_clipboard_get(GDK_SELECTION_PRIMARY);
 	default_clipboard = gtk_clipboard_get(GDK_SELECTION_CLIPBOARD);
 
+	tied_session = NULL;
 	closed_buffers_critbit.root = NULL;
 
 	elements_font_description = pango_font_description_from_string("tahoma,arial,sans-serif 11");
@@ -378,4 +383,85 @@ void gtk_widget_modify_bg_all(GtkWidget *w, GdkColor *c) {
 	gtk_widget_modify_bg(w, GTK_STATE_PRELIGHT, c);
 	gtk_widget_modify_bg(w, GTK_STATE_SELECTED, c);
 	gtk_widget_modify_bg(w, GTK_STATE_INSENSITIVE, c);
+}
+
+char *session_directory(void) {
+	char *sessiondir;
+	char *xdg_config_home = getenv("XDG_CONFIG_HOME");
+	if (xdg_config_home != NULL) {
+		asprintf(&sessiondir, "%s", xdg_config_home);
+	} else {
+		asprintf(&sessiondir, "%s/.config/teddy", getenv("HOME"));
+	}
+	alloc_assert(sessiondir);
+
+	return sessiondir;
+}
+
+static char *tied_session_file(void) {
+	if (tied_session == NULL) return NULL;
+
+	char *sessionfile;
+	char *xdg_config_home = getenv("XDG_CONFIG_HOME");
+	if (xdg_config_home != NULL) {
+		asprintf(&sessionfile, "%s/%s.session", xdg_config_home, tied_session);
+	} else {
+		asprintf(&sessionfile, "%s/.config/teddy/%s.session", getenv("HOME"), tied_session);
+	}
+	alloc_assert(sessionfile);
+
+	return sessionfile;
+}
+
+void save_tied_session(void) {
+	char *sessionfile = tied_session_file();
+	if (sessionfile == NULL) return;
+
+	FILE *f = fopen(sessionfile, "w");
+	if (f == NULL) {
+		free(tied_session);
+		tied_session = NULL;
+		quick_message("Session error", "Could not create file");
+		free(sessionfile);
+		return;
+	}
+
+	fprintf(f, "# %lld\n", (long long)time(NULL));
+
+	fprintf(f, "buffer closeall\n");
+	fprintf(f, "cd %s\n", top_working_directory());
+	GList *column_list = gtk_container_get_children(GTK_CONTAINER(columnset));
+	for (GList *column_cur = column_list; column_cur != NULL; column_cur = column_cur->next) {
+		fprintf(f, "buffer column-setup %g", column_fraction(GTK_COLUMN(column_cur->data)));
+		GList *frame_list = gtk_container_get_children(GTK_CONTAINER(column_cur->data));
+		for (GList *frame_cur = frame_list; frame_cur != NULL; frame_cur = frame_cur->next) {
+			tframe_t *frame = GTK_TFRAME(frame_cur->data);
+			GtkWidget *cur_content = tframe_content(frame);
+			if (!GTK_IS_TEDITOR(cur_content)) {
+				fprintf(f, " %g +null+", tframe_fraction(frame));
+			} else {
+				editor_t *editor = GTK_TEDITOR(cur_content);
+				fprintf(f, " %g %s", tframe_fraction(frame), editor->buffer->path);
+			}
+		}
+		fprintf(f, "\n");
+		g_list_free(frame_list);
+	}
+	g_list_free(column_list);
+
+	fclose(f);
+}
+
+void load_tied_session(void) {
+	char *sessionfile = tied_session_file();
+	if (sessionfile == NULL) return;
+
+	const char *argv[] = { "teddy_intl::loadsession", sessionfile };
+	if (interp_eval_command(NULL, NULL, 2, argv) == NULL) {
+		quick_message("Session error", "Could not load tied session file");
+		free(tied_session);
+		tied_session = NULL;
+	}
+
+	free(sessionfile);
 }

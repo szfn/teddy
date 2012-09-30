@@ -78,8 +78,8 @@ int main(int argc, char *argv[]) {
 	column_t *col1 = column_new(0);
 	column_t *col2 = column_new(0);
 
-	columns_add_after(columnset, NULL, col1);
-	columns_add_after(columnset, col1, col2);
+	columns_add_after(columnset, NULL, col1, true);
+	columns_add_after(columnset, col1, col2, true);
 
 	heuristic_new_frame(columnset, NULL, null_buffer());
 

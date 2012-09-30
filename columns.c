@@ -161,7 +161,7 @@ void gtk_columns_size_allocate(GtkWidget *widget, GtkAllocation *allocation) {
 	//printf("\n");
 }
 
-void columns_add_after(columns_t *columns, column_t *before_col, column_t *col) {
+void columns_add_after(columns_t *columns, column_t *before_col, column_t *col, bool set_fraction) {
 	gtk_box_pack_start(GTK_BOX(columns), GTK_WIDGET(col), TRUE, TRUE, 1);
 
 	int before_index = -1;
@@ -174,11 +174,13 @@ void columns_add_after(columns_t *columns, column_t *before_col, column_t *col) 
 		}
 		g_list_free(list);
 
-		double f = column_fraction(before_col);
-		column_fraction_set(before_col,  f * 0.6);
-		column_fraction_set(col, f * 0.4);
+		if (set_fraction) {
+			double f = column_fraction(before_col);
+			column_fraction_set(before_col,  f * 0.6);
+			column_fraction_set(col, f * 0.4);
+		}
 	} else {
-		column_fraction_set(col, 10.0);
+		if (set_fraction) column_fraction_set(col, 10.0);
 	}
 
 	gtk_box_reorder_child(GTK_BOX(columns), GTK_WIDGET(col), before_index+1);
@@ -187,9 +189,10 @@ void columns_add_after(columns_t *columns, column_t *before_col, column_t *col) 
 	gtk_widget_queue_draw(GTK_WIDGET(columns));
 }
 
-void columns_append(columns_t *columns, column_t *column) {
+void columns_append(columns_t *columns, column_t *column, bool set_fraction) {
 	GList *list_cols = gtk_container_get_children(GTK_CONTAINER(columns));
-	columns_add_after(columns, g_list_last(list_cols)->data, column);
+	GList *last = g_list_last(list_cols);
+	columns_add_after(columns, (last != NULL) ? last->data : NULL, column, set_fraction);
 	g_list_free(list_cols);
 }
 
@@ -335,7 +338,7 @@ tframe_t *new_in_column(columns_t *columns, column_t *column, buffer_t *buffer) 
 	tframe_t *frame = tframe_new(title, content, columns);
 
 	if (column_frame_number(column) == 0) {
-		column_add_after(column, NULL, frame);
+		column_add_after(column, NULL, frame, true);
 		return frame;
 	}
 
@@ -359,7 +362,7 @@ tframe_t *new_in_column(columns_t *columns, column_t *column, buffer_t *buffer) 
 		}
 	}
 
-	column_add_after(column, GTK_TFRAME(biggest_children->data), frame);
+	column_add_after(column, GTK_TFRAME(biggest_children->data), frame, true);
 
 	g_list_free(list);
 
@@ -382,7 +385,7 @@ tframe_t *heuristic_new_frame(columns_t *columns, tframe_t *spawning_frame, buff
 
 	if (columns_column_number(columns) == 0) {
 		column_t *col = column_new(0);
-		columns_add_after(columns, NULL, col);
+		columns_add_after(columns, NULL, col, true);
 		r = new_in_column(columns, col, buffer);
 		goto heuristic_new_frame_return;
 	}
@@ -410,7 +413,7 @@ tframe_t *heuristic_new_frame(columns_t *columns, tframe_t *spawning_frame, buff
 
 			if (allocation.width > 1000) {
 				column_t *new_col = column_new(0);
-				columns_add_after(columns, col, new_col);
+				columns_add_after(columns, col, new_col, true);
 				r = new_in_column(columns, new_col, buffer);
 				goto heuristic_new_frame_return;
 			}

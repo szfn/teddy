@@ -592,6 +592,46 @@ int teddy_buffer_command(ClientData client_data, Tcl_Interp *interp, int argc, c
 
 		interp_eval(editor, buffer, argv[3], false);
 		if (strcmp(argv[2], "temp") == 0) buffer_free(buffer, false);
+	} else if (strcmp(argv[1], "closeall") == 0) {
+		ARGNUM((argc != 2), "buffer closeall");
+		GtkWidget *toplevel = gtk_widget_get_toplevel(GTK_WIDGET(columnset));
+		buffers_close_all(toplevel);
+		GList *column_list = gtk_container_get_children(GTK_CONTAINER(columnset));
+		for (GList *cur = column_list; cur != NULL; cur = cur->next) {
+			column_close(GTK_COLUMN(cur->data));
+			gtk_container_remove(GTK_CONTAINER(columnset), cur->data);
+		}
+		g_list_free(column_list);
+		top_context_editor_gone();
+	} else if (strcmp(argv[1], "column-setup") == 0) {
+		ARGNUM((argc < 3), "buffer column-setup");
+
+		column_t *column = column_new(0);
+		columns_append(columnset, column, false);
+		column_fraction_set(column, atof(argv[2]));
+
+		for (int i = 3; i < argc; i += 2) {
+			if (i+1 >= argc) {
+				Tcl_AddErrorInfo(interp, "Odd number of arguments to buffer column-setup");
+				return TCL_ERROR;
+			}
+
+			editor_t *editor = new_editor(null_buffer(), false);
+			tframe_t *frame = tframe_new("", GTK_WIDGET(editor), columnset);
+			column_append(column, frame, false);
+			tframe_fraction_set(frame, atof(argv[i]));
+
+			enum go_file_failure_reason gffr;
+			buffer_t *buffer;
+			if (argv[i+1][0] == '+') {
+				buffer = buffers_create_with_name(strdup(argv[i+1]));
+			} else {
+				buffer = go_file(argv[i+1], false, false, &gffr);
+			}
+
+			go_to_buffer(editor, buffer, true);
+		}
+		return TCL_OK;
 	} else {
 		Tcl_AddErrorInfo(interp, "Unknown subcommmand of 'buffer' command");
 		return TCL_ERROR;

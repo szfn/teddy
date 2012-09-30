@@ -1,11 +1,14 @@
-- ability to persist the status of a window
+- BUG: Ctrl-v inside a line doesn't work due to pasteq (deletes stuff)
+- BUG: avrdude -> crash
+- BUG: entering text doesn't center on cursor
 - set column number for background processes whenever possible
 - tabs
 - macro recording
 - make lexy a flat table, lexyassoc just gives the starting state but we can move to other states (implement mixed html / javascript mode)
 - multiprocess highlighting
+- buffers_close, buffers_close_all: don't take a window parameter and open error buffers when can continue with commands to eval to fix the problem
 
 - document:
- s, c, m, ss, regexp, regsub, new buffer subcommands, tags
+ s, c, m, ss, regexp, regsub, new buffer subcommands, tags, new bindent
 
 - BUG: changing font after intialization results in trash (stuff in glyph_info isn't reloaded)

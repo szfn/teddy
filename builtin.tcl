@@ -694,6 +694,47 @@ namespace eval teddy_intl {
 
 	   posixexit -1
 	}
+
+	namespace export loadsession
+	proc loadsession {sessionfile} {
+		eval [teddy::slurp $sessionfile]
+	}
+
+	namespace export savesession_mitem
+	proc savesession_mitem {} {
+		set b [buffer make +sessions+]
+		buffer eval $b {
+			c "Saving the session will let you restore the state of this window after you close it."
+			c "To save this session set the session name in the following line and Eval it:"
+			c "teddy::session tie session-name"
+		}
+	}
+
+	namespace export loadsession_mitem
+	proc loadsession_mitem {} {
+		set b [buffer make +sessions+]
+		buffer eval $b {
+			c "Pick a session to load by evaluating one of this lines:\n\n"
+			set count 0
+			set dir [teddy::session directory none]
+			foreach filename [glob -directory $dir  *] {
+				if {![regexp {\.session$} $filename]} { continue }
+				set sessioname $filename
+
+				set sessioname [regsub {\.session$} $sessioname ""]
+				set sessioname [ string range $sessioname [expr [string length $dir] + 1] end]
+
+				c "teddy::session load $sessioname\n"
+
+				incr count
+			}
+
+			if {$count == 0} { c "No session found\n" }
+
+			m nil 1:1
+		}
+		buffer focus $b
+	}
 }
 
 #### DEFAULT HOOKS ###########################################################

@@ -18,7 +18,8 @@ GType gtk_column_get_type(void) G_GNUC_CONST;
 
 column_t *column_new(gint spacing);
 
-void column_add_after(column_t *column, tframe_t *before_tf, tframe_t *tf);
+void column_add_after(column_t *column, tframe_t *before_tf, tframe_t *tf, bool set_fraction);
+void column_append(column_t *column, tframe_t *tf, bool set_fraction);
 bool column_remove(column_t *column, tframe_t *frame, bool reparenting);
 int column_hide_others(column_t *column, tframe_t *frame);
 

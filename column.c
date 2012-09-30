@@ -153,7 +153,7 @@ void gtk_column_size_allocate(GtkWidget *widget, GtkAllocation *allocation) {
 	}
 }
 
-void column_add_after(column_t *column, tframe_t *before_tf, tframe_t *tf) {
+void column_add_after(column_t *column, tframe_t *before_tf, tframe_t *tf, bool set_fraction) {
 	gtk_box_pack_start(GTK_BOX(column), GTK_WIDGET(tf), TRUE, TRUE, 1);
 
 	int before_index = -1;
@@ -166,16 +166,25 @@ void column_add_after(column_t *column, tframe_t *before_tf, tframe_t *tf) {
 		}
 		g_list_free(list);
 
-		tframe_fraction_set(before_tf, tframe_fraction(before_tf) / 2);
-		tframe_fraction_set(tf, tframe_fraction(before_tf));
+		if (set_fraction) {
+			tframe_fraction_set(before_tf, tframe_fraction(before_tf) / 2);
+			tframe_fraction_set(tf, tframe_fraction(before_tf));
+		}
 	} else {
-		tframe_fraction_set(tf, 10.0);
+		if (set_fraction) tframe_fraction_set(tf, 10.0);
 	}
 
 	gtk_box_reorder_child(GTK_BOX(column), GTK_WIDGET(tf), before_index+1);
 
 	gtk_widget_show_all(GTK_WIDGET(tf));
 	gtk_widget_queue_draw(GTK_WIDGET(column));
+}
+
+void column_append(column_t *column, tframe_t *tf, bool set_fraction) {
+	GList *list_frames = gtk_container_get_children(GTK_CONTAINER(column));
+	GList *last = g_list_last(list_frames);
+	column_add_after(column, (last != NULL) ? last->data : NULL, tf, set_fraction);
+	g_list_free(list_frames);
 }
 
 double column_fraction(column_t *column) {

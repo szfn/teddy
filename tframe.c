@@ -350,7 +350,7 @@ static void tag_drag_behaviour(tframe_t *source, tframe_t *target, double y) {
 
 		g_object_ref(source);
 		columns_column_remove(columnset, source_col, source, true);
-		column_add_after(target_col, target, source);
+		column_add_after(target_col, target, source, true);
 		g_object_unref(source);
 
 		GtkAllocation tallocation;

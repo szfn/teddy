@@ -319,6 +319,7 @@ static bool mark_move(editor_t *editor, bool shift) {
 void editor_save_action(editor_t *editor) {
 	save_to_text_file(editor->buffer);
 	set_label_text(editor);
+	save_tied_session();
 }
 
 void editor_undo_action(editor_t *editor) {

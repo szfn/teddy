@@ -38,6 +38,8 @@ extern struct history command_history;
 extern struct completer the_word_completer;
 extern struct completer the_cmd_completer;
 
+extern char *tied_session;
+
 void global_init();
 
 bool find_editor_for_buffer(buffer_t *buffer, column_t **columnpp, tframe_t **framepp, editor_t **editorpp);
@@ -61,5 +63,9 @@ void alloc_assert(void *p);
 int null_strcmp(const char *a, const char *b);
 
 void gtk_widget_modify_bg_all(GtkWidget *w, GdkColor *c);
+
+void save_tied_session(void);
+void load_tied_session(void);
+char *session_directory(void);
 
 #endif

@@ -697,6 +697,47 @@ namespace eval teddy_intl {\n\
 \n\
 	   posixexit -1\n\
 	}\n\
+\n\
+	namespace export loadsession\n\
+	proc loadsession {sessionfile} {\n\
+		eval [teddy::slurp $sessionfile]\n\
+	}\n\
+\n\
+	namespace export savesession_mitem\n\
+	proc savesession_mitem {} {\n\
+		set b [buffer make +sessions+]\n\
+		buffer eval $b {\n\
+			c \"Saving the session will let you restore the state of this window after you close it.\"\n\
+			c \"To save this session set the session name in the following line and Eval it:\"\n\
+			c \"teddy::session tie session-name\"\n\
+		}\n\
+	}\n\
+\n\
+	namespace export loadsession_mitem\n\
+	proc loadsession_mitem {} {\n\
+		set b [buffer make +sessions+]\n\
+		buffer eval $b {\n\
+			c \"Pick a session to load by evaluating one of this lines:\\n\\n\"\n\
+			set count 0\n\
+			set dir [teddy::session directory none]\n\
+			foreach filename [glob -directory $dir  *] {\n\
+				if {![regexp {\\.session$} $filename]} { continue }\n\
+				set sessioname $filename\n\
+\n\
+				set sessioname [regsub {\\.session$} $sessioname \"\"]\n\
+				set sessioname [ string range $sessioname [expr [string length $dir] + 1] end]\n\
+\n\
+				c \"teddy::session load $sessioname\\n\"\n\
+\n\
+				incr count\n\
+			}\n\
+\n\
+			if {$count == 0} { c \"No session found\\n\" }\n\
+\n\
+			m nil 1:1\n\
+		}\n\
+		buffer focus $b\n\
+	}\n\
 }\n\
 \n\
 #### DEFAULT HOOKS ###########################################################\n\

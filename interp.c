@@ -757,6 +757,35 @@ static int teddy_inpath_command(ClientData client_data, Tcl_Interp *interp, int 
 	return TCL_OK;
 }
 
+static int teddy_session_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
+	if (argc < 3) {
+		Tcl_AddErrorInfo(interp, "Wrong number of arguments to session command");
+		return TCL_ERROR;
+	}
+
+	if (strcmp(argv[1], "tie") == 0) {
+		if (tied_session != NULL) free(tied_session);
+		tied_session = strdup(argv[2]);
+		alloc_assert(tied_session);
+		save_tied_session();
+		return TCL_OK;
+	} else if (strcmp(argv[1], "load") == 0) {
+		if (tied_session != NULL) free(tied_session);
+		tied_session = strdup(argv[2]);
+		alloc_assert(tied_session);
+		load_tied_session();
+		return TCL_OK;
+	} else if (strcmp(argv[1], "directory") == 0) {
+		char *sessiondir = session_directory();
+		Tcl_SetResult(interp, sessiondir, TCL_VOLATILE);
+		free(sessiondir);
+		return TCL_OK;
+	} else {
+		Tcl_AddErrorInfo(interp, "Wrong subcommand to session command");
+		return TCL_ERROR;
+	}
+}
+
 void interp_init(void) {
 	interp = Tcl_CreateInterp();
 	if (interp == NULL) {
@@ -796,6 +825,7 @@ void interp_init(void) {
 	Tcl_CreateCommand(interp, "rgbcolor", &teddy_rgbcolor_command, (ClientData)NULL, NULL);
 
 	Tcl_CreateCommand(interp, "teddy::history", &teddy_history_command, (ClientData)NULL, NULL);
+	Tcl_CreateCommand(interp, "teddy::session", &teddy_session_command, (ClientData)NULL, NULL);
 
 	Tcl_CreateCommand(interp, "s", &teddy_research_command, (ClientData)NULL, NULL);
 	Tcl_CreateCommand(interp, "c", &teddy_change_command, (ClientData)NULL, NULL);

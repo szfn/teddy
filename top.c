@@ -146,7 +146,7 @@ static gboolean tools_label_popup_callback(GtkWidget *widget, GdkEventButton *ev
 
 static void new_column_mitem_callback(GtkMenuItem *menuitem, gpointer data) {
 	column_t *col = column_new(0);
-	columns_add_after(columnset, NULL, col);
+	columns_append(columnset, col, true);
 	heuristic_new_frame(columnset, NULL, null_buffer());
 }
 
@@ -158,6 +158,14 @@ static void close_mitem_callback(GtkMenuItem *menuitem, gpointer data) {
 
 static void iopen_mitem_callback(GtkMenuItem *menuitem, gpointer data) {
 	iopen();
+}
+
+static void save_session_mitem_callback(GtkMenuItem *menuitem, gpointer data) {
+	interp_eval(NULL, NULL, "teddy_intl::savesession_mitem", false);
+}
+
+static void load_session_mitem_callback(GtkMenuItem *menuitem, gpointer data) {
+	interp_eval(NULL, NULL, "teddy_intl::loadsession_mitem", false);
 }
 
 GtkWidget *top_init(void) {
@@ -222,6 +230,16 @@ GtkWidget *top_init(void) {
 
 	gtk_menu_append(tools_menu, gtk_separator_menu_item_new());
 
+	GtkWidget *load_session_mitem = gtk_menu_item_new_with_label("Load session");
+	g_signal_connect(G_OBJECT(load_session_mitem), "activate", G_CALLBACK(load_session_mitem_callback), NULL);
+	gtk_menu_append(tools_menu, load_session_mitem);
+
+	GtkWidget *save_session_mitem = gtk_menu_item_new_with_label("Save session");
+	g_signal_connect(G_OBJECT(save_session_mitem), "activate", G_CALLBACK(save_session_mitem_callback), NULL);
+	gtk_menu_append(tools_menu, save_session_mitem);
+
+	gtk_menu_append(tools_menu, gtk_separator_menu_item_new());
+
 	GtkWidget *close_mitem = gtk_menu_item_new_with_label("Quit");
 	g_signal_connect(G_OBJECT(close_mitem), "activate", G_CALLBACK(close_mitem_callback), NULL);
 	gtk_menu_append(tools_menu, close_mitem);
@@ -249,6 +267,10 @@ void top_start_command_line(editor_t *editor, const char *text) {
 
 editor_t *top_context_editor(void) {
 	return the_top_context_editor;
+}
+
+void top_context_editor_gone(void) {
+	the_top_context_editor = NULL;
 }
 
 char *top_working_directory(void) {

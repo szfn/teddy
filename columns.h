@@ -21,8 +21,8 @@ GType gtk_columns_get_type(void) G_GNUC_CONST;
 
 columns_t *columns_new(void);
 
-void columns_add_after(columns_t *columns, column_t *before_col, column_t *col);
-void columns_append(columns_t *columns, column_t *column);
+void columns_add_after(columns_t *columns, column_t *before_col, column_t *col, bool set_fraction);
+void columns_append(columns_t *columns, column_t *column, bool set_fraction);
 bool columns_remove(columns_t *columns, column_t *column);
 int columns_remove_others(columns_t *columns, column_t *column);
 
