@@ -180,5 +180,11 @@ bool in_external_commands(const char *arg) {
 		if (strcmp(arg, external_commands[i]) == 0) return true;
 	}
 
-	return access(arg, F_OK) == 0;
+	if (access(arg, F_OK) == 0) return true;
+
+	char *urp = unrealpath(top_working_directory(), arg);
+	if (urp == NULL) return false;
+	bool r = (access(urp, F_OK) == 0);
+	free(urp);
+	return r;
 }
