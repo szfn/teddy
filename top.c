@@ -250,6 +250,8 @@ GtkWidget *top_init(void) {
 	/**** END ****/
 	gtk_notebook_set_current_page(GTK_NOTEBOOK(top_notebook), status_notebook_page);
 
+	top_cd(".");
+
 	return top_notebook;
 }
 
@@ -284,9 +286,28 @@ void top_show_status(void) {
 
 void top_cd(const char *newdir) {
 	free(working_directory);
-	chdir(newdir);
+
+	if (newdir[0] == '~') {
+		char *t;
+		asprintf(&t, "%s%s", getenv("HOME"), newdir+1);
+		alloc_assert(t);
+		chdir(t);
+		free(t);
+	} else {
+		chdir(newdir);
+	}
+
 	working_directory = get_current_dir_name();
-	gtk_label_set_text(GTK_LABEL(dir_label), working_directory);
+
+	if (strncmp(working_directory, getenv("HOME"), strlen(getenv("HOME"))) == 0) {
+		char *t;
+		asprintf(&t, "~%s", working_directory+strlen(getenv("HOME")));
+		alloc_assert(t);
+		gtk_label_set_text(GTK_LABEL(dir_label), t);
+		free(t);
+	} else {
+		gtk_label_set_text(GTK_LABEL(dir_label), working_directory);
+	}
 	tags_load(working_directory);
 }
 
