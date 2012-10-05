@@ -21,7 +21,7 @@
 #include "go.h"
 
 static gboolean delete_callback(GtkWidget *widget, GdkEvent *event, gpointer data) {
-	if (buffers_close_all(widget)) return FALSE;
+	if (buffers_close_all()) return FALSE;
 	return TRUE;
 }
 

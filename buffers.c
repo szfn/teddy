@@ -31,101 +31,52 @@ buffer_t *null_buffer(void) {
 	return buffers[0];
 }
 
-#define SAVE_AND_CLOSE_RESPONSE 1
-#define DISCARD_CHANGES_RESPONSE 2
-#define CANCEL_ACTION_RESPONSE 3
-#define KILL_AND_CLOSE_RESPONSE 4
+static buffer_t *buffers_find_buffer_with_name(const char *name) {
+	for (int i = 0; i < buffers_allocated; ++i) {
+		if (buffers[i] == NULL) continue;
+		if (buffers[i]->path== NULL) continue;
+		if (strcmp(buffers[i]->path, name) == 0) {
+			return buffers[i];
+		}
+	}
 
-static int ask_for_closing_and_maybe_terminate(buffer_t *buffer, GtkWidget *window) {
-	if (buffer->path[strlen(buffer->path)-1] == '/') {
+	return NULL;
+}
+
+static void buffer_to_buffer_id(buffer_t *buffer, char *bufferid) {
+	strcpy(bufferid, "@b0");
+	for (int i = 0; i < buffers_allocated; ++i) {
+		if (buffers[i] == buffer) {
+			snprintf(bufferid+2, 15, "%d", i);
+			return;
+		}
+	}
+}
+
+static buffer_t *buffers_make(const char *name) {
+	buffer_t *buffer = buffers_find_buffer_with_name(name);
+	if (buffer == NULL) {
+		buffer = buffers_create_with_name(strdup(name));
+		if (buffer != NULL) {
+			tframe_t *frame;
+			find_editor_for_buffer(interp_context_buffer(), NULL, &frame, NULL);
+			heuristic_new_frame(columnset, frame, buffer);
+		}
+	}
+
+	return buffer;
+}
+
+static void buffer_close_real(buffer_t *buffer, bool save_critbit) {
+	//printf("Removing buffer: <%s>\n", buffer->path);
+
+	if (buffer == null_buffer()) return;
+
+	if (buffer->job != NULL) {
 		kill(buffer->job->child_pid, SIGTERM);
 		buffer->job->terminating = true;
 		buffer->job->buffer = NULL;
-		return 1;
 	}
-
-	GtkWidget *dialog = gtk_dialog_new_with_buttons("Close Buffer", GTK_WINDOW(window), GTK_DIALOG_MODAL|GTK_DIALOG_DESTROY_WITH_PARENT, "Kill and close", KILL_AND_CLOSE_RESPONSE, "Cancel", CANCEL_ACTION_RESPONSE, NULL);
-
-	char *msg;
-	asprintf(&msg, "A process is attached to buffer %s", buffer->path);
-	alloc_assert(msg);
-	GtkWidget *label = gtk_label_new(msg);
-	free(msg);
-
-	gtk_container_add(GTK_CONTAINER(gtk_dialog_get_content_area(GTK_DIALOG(dialog))), label);
-
-	gtk_widget_show_all(dialog);
-	gint result = gtk_dialog_run(GTK_DIALOG(dialog));
-	gtk_widget_destroy(dialog);
-
-	switch (result) {
-	case KILL_AND_CLOSE_RESPONSE:
-		if (buffer->job != NULL) {
-			kill(buffer->job->child_pid, SIGTERM);
-			buffer->job->terminating = true;
-			buffer->job->buffer = NULL;
-		}
-		break;
-	case CANCEL_ACTION_RESPONSE:
-	default: return 0;
-	}
-
-	return 1;
-}
-
-static int ask_for_closing_and_maybe_save(buffer_t *buffer, GtkWidget *window) {
-	if (!(buffer->has_filename) && (buffer->path[0] == '+')) return 1; /* Trash buffer, can be discarded safely */
-
-	GtkWidget *dialog;
-	if (buffer->has_filename) {
-		dialog = gtk_dialog_new_with_buttons("Close Buffer", GTK_WINDOW(window), GTK_DIALOG_MODAL|GTK_DIALOG_DESTROY_WITH_PARENT, "Save and close", SAVE_AND_CLOSE_RESPONSE, "Discard changes", DISCARD_CHANGES_RESPONSE, "Cancel", CANCEL_ACTION_RESPONSE, NULL);
-	} else {
-		dialog = gtk_dialog_new_with_buttons("Close Buffer", GTK_WINDOW(window), GTK_DIALOG_MODAL|GTK_DIALOG_DESTROY_WITH_PARENT, "Discard changes", DISCARD_CHANGES_RESPONSE, "Cancel", CANCEL_ACTION_RESPONSE, NULL);
-	}
-
-	char *msg;
-	asprintf(&msg, "Buffer [%s] is modified", buffer->path);
-	alloc_assert(msg);
-	GtkWidget *label = gtk_label_new(msg);
-	free(msg);
-
-	gtk_container_add(GTK_CONTAINER(gtk_dialog_get_content_area(GTK_DIALOG(dialog))), label);
-
-	//g_signal_connect_swapped(dialog, "response", G_CALLBACK(gtk_widget_destroy), dialog);
-	gtk_widget_show_all(dialog);
-	gint result = gtk_dialog_run(GTK_DIALOG(dialog));
-	gtk_widget_destroy(dialog);
-
-	//printf("Response is: %d (%d %d %d)\n", result, SAVE_AND_CLOSE_RESPONSE, DISCARD_CHANGES_RESPONSE, CANCEL_ACTION_RESPONSE);
-
-	switch(result) {
-	case SAVE_AND_CLOSE_RESPONSE:
-		save_to_text_file(buffer);
-		break;
-	case DISCARD_CHANGES_RESPONSE:
-		//printf("Discarding changes to: [%s]\n", buffer->name);
-		break;
-	case CANCEL_ACTION_RESPONSE: return 0;
-	default: return 0; /* This shouldn't happen */
-	}
-
-	return 1;
-}
-
-int buffers_close(buffer_t *buffer, GtkWidget *window, bool save_critbit) {
-	if (buffers[0] == buffer) return 1;
-
-	if (buffer->modified && (buffer->path[strlen(buffer->path)-1] != '/')) {
-		int r = ask_for_closing_and_maybe_save(buffer, window);
-		if (r == 0) return 0;
-	}
-
-	if (buffer->job != NULL) {
-		int r = ask_for_closing_and_maybe_terminate(buffer, window);
-		if (r == 0) return 0;
-	}
-
-	//printf("Removing buffer: <%s>\n", buffer->path);
 
 	{
 		editor_t *editor;
@@ -155,8 +106,110 @@ int buffers_close(buffer_t *buffer, GtkWidget *window, bool save_critbit) {
 	}
 
 	buffer_free(buffer, save_critbit);
+}
 
-	return 1;
+enum dirty_reason_t {
+	DR_NOT_DIRTY = 0,
+	DR_DIRJOB = 1,
+	DR_JOB = 2,
+	DR_CHANGED = 3,
+
+};
+
+static enum dirty_reason_t buffer_dirty_reason(buffer_t *buffer) {
+	if (buffer->job != NULL) {
+		if (buffer->path[strlen(buffer->path)-1] == '/') {
+			return DR_DIRJOB;
+		} else {
+			return DR_JOB;
+		}
+	}
+
+	if (buffer->modified) {
+		if (buffer->path[0] == '+') return DR_NOT_DIRTY;
+		if (buffer->path[strlen(buffer->path)-1] == '/') return DR_NOT_DIRTY;
+		return DR_CHANGED;
+	}
+
+	return DR_NOT_DIRTY;
+}
+
+static bool buffers_close_set(buffer_t **bufset, int n) {
+	bool anydirty = false;
+	for (int i = 0; i < n; ++i) {
+		if (bufset[i] == NULL) continue;
+
+		enum dirty_reason_t dr = buffer_dirty_reason(bufset[i]);
+
+		if ((dr != DR_NOT_DIRTY) && (dr != DR_DIRJOB)) anydirty = true;
+	}
+
+	if (anydirty) {
+		buffer_t *errbuf = buffers_make("+Errors+");
+		if (errbuf == NULL) return false;
+
+		lpoint_t start, end;
+		buffer_get_extremes(errbuf, &start, &end);
+		copy_lpoint(&(errbuf->mark), &start);
+		copy_lpoint(&(errbuf->cursor), &end);
+		buffer_replace_selection(errbuf, "");
+
+		for (int i = 0; i < n; ++i) {
+			if (bufset[i] == NULL) continue;
+
+			char bufferid[20];
+			buffer_to_buffer_id(bufset[i], bufferid);
+
+			enum dirty_reason_t dr = buffer_dirty_reason(bufset[i]);
+			switch (dr) {
+			case DR_NOT_DIRTY: continue;
+			case DR_DIRJOB: continue;
+			case DR_JOB:
+				buffer_replace_selection(errbuf, "# Buffer ");
+				buffer_replace_selection(errbuf, bufset[i]->path);
+				buffer_replace_selection(errbuf, " has a running job attached.\n# Evaluate the following line to kill attached process\n");
+				buffer_replace_selection(errbuf, "buffer eval ");
+				buffer_replace_selection(errbuf, bufferid);
+				buffer_replace_selection(errbuf, " { kill }\n\n");
+				break;
+			case DR_CHANGED:
+				buffer_replace_selection(errbuf, "# Buffer ");
+				buffer_replace_selection(errbuf, bufset[i]->path);
+				buffer_replace_selection(errbuf, " has unsaved changes.\n# Evaluate the following line to save changes:\n");
+				buffer_replace_selection(errbuf, "buffer eval ");
+				buffer_replace_selection(errbuf, bufferid);
+				buffer_replace_selection(errbuf, " { buffer save }\n# Evaluate the following line to discard changes:\n");
+				buffer_replace_selection(errbuf, "buffer force-close ");
+				buffer_replace_selection(errbuf, bufferid);
+				buffer_replace_selection(errbuf, "\n\n");
+				break;
+			}
+			if (dr == DR_NOT_DIRTY) continue;
+			if (dr == DR_DIRJOB) continue;
+		}
+
+		errbuf->cursor.line = errbuf->real_line;
+		errbuf->cursor.glyph = 0;
+
+		return false;
+	} else {
+		for (int i = 0; i < n; ++i) {
+			if (bufset[i] == NULL) continue;
+			enum dirty_reason_t dr = buffer_dirty_reason(bufset[i]);
+			if (dr == DR_DIRJOB) {
+				kill(bufset[i]->job->child_pid, SIGTERM);
+				bufset[i]->job->terminating = true;
+				bufset[i]->job->buffer = NULL;
+			}
+			buffer_close_real(bufset[i], true);
+		}
+
+		return true;
+	}
+}
+
+bool buffers_close(buffer_t *buffer, bool save_critbit) {
+	return buffers_close_set(&buffer, 1);
 }
 
 static void maybe_stale_buffer(int wd) {
@@ -310,16 +363,8 @@ void buffers_free(void) {
 	}
 }
 
-int buffers_close_all(GtkWidget *window) {
-	for (int i = 0; i < buffers_allocated; ++i) {
-		if (buffers[i] == NULL) continue;
-		if (!buffers_close(buffers[i], window, false)) return 0;
-	}
-	for (int i = 0; i < buffers_allocated; ++i) {
-		if (buffers[i] == NULL) continue;
-		if (buffers[i]->modified) return 0;
-	}
-	return 1;
+bool buffers_close_all(void) {
+	return buffers_close_set(buffers, buffers_allocated);
 }
 
 buffer_t *buffers_create_with_name(char *name) {
@@ -358,16 +403,6 @@ buffer_t *buffers_get_buffer_for_process(void) {
 	}
 
 	return buffer;
-}
-
-static void buffer_to_buffer_id(buffer_t *buffer, char *bufferid) {
-	strcpy(bufferid, "@b0");
-	for (int i = 0; i < buffers_allocated; ++i) {
-		if (buffers[i] == buffer) {
-			snprintf(bufferid+2, 15, "%d", i);
-			return;
-		}
-	}
 }
 
 buffer_t *buffer_id_to_buffer(const char *bufferid) {
@@ -410,16 +445,17 @@ buffer_t *buffers_find_buffer_from_path(const char *urp) {
 	return r;
 }
 
-static buffer_t *buffers_find_buffer_with_name(const char *name) {
-	for (int i = 0; i < buffers_allocated; ++i) {
-		if (buffers[i] == NULL) continue;
-		if (buffers[i]->path== NULL) continue;
-		if (strcmp(buffers[i]->path, name) == 0) {
-			return buffers[i];
-		}
-	}
-
-	return NULL;
+#define SINGLE_ARGUMENT_BUFFER_SUBCOMMAND(name) editor_t *editor; buffer_t *buffer; {\
+	if (argc == 2) { \
+		HASBUF(name); \
+		buffer = interp_context_buffer(); \
+	} else if (argc == 3) { \
+		buffer = buffer_id_to_buffer(argv[2]);\
+		BUFIDCHECK(buffer);\
+	} else {\
+		ARGNUM(false, name);\
+	}\
+	find_editor_for_buffer(buffer, NULL, NULL, &editor);\
 }
 
 int teddy_buffer_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
@@ -428,24 +464,14 @@ int teddy_buffer_command(ClientData client_data, Tcl_Interp *interp, int argc, c
 	if (strcmp(argv[1], "make") == 0) {
 		ARGNUM((argc != 3), "buffer make");
 
-		buffer_t *buffer = buffers_find_buffer_with_name(argv[2]);
-		if (buffer == NULL) {
-			buffer = buffers_create_with_name(strdup(argv[2]));
-			if (buffer != NULL) {
-				tframe_t *frame;
-				find_editor_for_buffer(interp_context_buffer(), NULL, &frame, NULL);
-				heuristic_new_frame(columnset, frame, buffer);
-			}
-		}
+		buffer_t *buffer = buffers_make(argv[2]);
 
 		char bufferid[20];
 		buffer_to_buffer_id(buffer, bufferid);
 		Tcl_SetResult(interp, bufferid, TCL_VOLATILE);
 	} else if (strcmp(argv[1], "save") == 0) {
-		ARGNUM((argc != 2), "buffer save");
-		HASED("buffer");
-
-		editor_save_action(interp_context_editor());
+		SINGLE_ARGUMENT_BUFFER_SUBCOMMAND("buffer save");
+		if (editor != NULL) editor_save_action(editor); else save_to_text_file(buffer);
 	} else if (strcmp(argv[1], "open") == 0) {
 		ARGNUM((argc != 3), "buffer open");
 		HASBUF("buffer open");
@@ -467,50 +493,20 @@ int teddy_buffer_command(ClientData client_data, Tcl_Interp *interp, int argc, c
 			Tcl_SetResult(interp, "", TCL_VOLATILE);
 		}
 	} else if (strcmp(argv[1], "focus") == 0) {
-		ARGNUM((argc != 3), "buffer focus");
-
-		buffer_t *buffer = buffer_id_to_buffer(argv[2]);
-		BUFIDCHECK(buffer);
-
-		editor_t *editor;
-		find_editor_for_buffer(buffer, NULL, NULL, &editor);
-
+		SINGLE_ARGUMENT_BUFFER_SUBCOMMAND("buffer focus");
 		if (editor != NULL) {
 			editor_center_on_cursor(editor);
 			editor_grab_focus(editor, true);
 		}
 	} else if (strcmp(argv[1], "dup") == 0) {
-		ARGNUM((argc != 2), "buffer dup");
-		HASBUF("buffer dup");
-
-		if (interp_context_buffer()->path[0] == '+') {
+		SINGLE_ARGUMENT_BUFFER_SUBCOMMAND("buffer dup");
+		if (buffer->path[0] == '+') {
 			// create new buffer, copy text over
 		} else {
 			enum go_file_failure_reason gffr;
 			buffer_t *b = go_file(interp_context_buffer()->path, false, true, &gffr);
 			go_to_buffer(interp_context_editor(), b, false);
 		}
-	} else if (strcmp(argv[1], "select-mode") == 0) {
-		ARGNUM((argc != 3), "buffer select-mode");
-		HASBUF("buffer select-mode");
-
-		if (strcmp(argv[2], "normal") == 0) {
-			buffer_change_select_type(interp_context_buffer(), BST_NORMAL);
-		} else if (strcmp(argv[2], "words") == 0) {
-			if (interp_context_buffer()->mark.line == NULL) {
-				copy_lpoint(&(interp_context_buffer()->mark), &(interp_context_buffer()->cursor));
-			}
-			buffer_change_select_type(interp_context_buffer(), BST_WORDS);
-		} else if (strcmp(argv[2], "lines") == 0) {
-			if (interp_context_buffer()->mark.line == NULL) {
-				copy_lpoint(&(interp_context_buffer()->mark), &(interp_context_buffer()->cursor));
-			}
-			buffer_change_select_type(interp_context_buffer(), BST_LINES);
-		} else {
-			Tcl_AddErrorInfo(interp, "Bad argument to 'buffer select-mode' command");
-			return TCL_ERROR;
-		}
-		return TCL_OK;
 	} else if (strcmp(argv[1], "current") == 0) {
 		HASBUF("buffer current");
 		char bufferid[20];
@@ -592,17 +588,27 @@ int teddy_buffer_command(ClientData client_data, Tcl_Interp *interp, int argc, c
 
 		interp_eval(editor, buffer, argv[3], false);
 		if (strcmp(argv[2], "temp") == 0) buffer_free(buffer, false);
+	} else if (strcmp(argv[1], "close") == 0) {
+		SINGLE_ARGUMENT_BUFFER_SUBCOMMAND("buffer close");
+		if (buffers_close_set(&buffer, 1))
+			if (buffer == interp_context_buffer())
+				top_context_editor_gone();
+	} else if (strcmp(argv[1], "force-close") == 0) {
+		SINGLE_ARGUMENT_BUFFER_SUBCOMMAND("buffer force-close");
+		buffer_close_real(buffer, true);
+		if (buffer == interp_context_buffer())
+			top_context_editor_gone();
 	} else if (strcmp(argv[1], "closeall") == 0) {
 		ARGNUM((argc != 2), "buffer closeall");
-		GtkWidget *toplevel = gtk_widget_get_toplevel(GTK_WIDGET(columnset));
-		buffers_close_all(toplevel);
-		GList *column_list = gtk_container_get_children(GTK_CONTAINER(columnset));
-		for (GList *cur = column_list; cur != NULL; cur = cur->next) {
-			column_close(GTK_COLUMN(cur->data));
-			gtk_container_remove(GTK_CONTAINER(columnset), cur->data);
+		if (buffers_close_all()) {
+			GList *column_list = gtk_container_get_children(GTK_CONTAINER(columnset));
+			for (GList *cur = column_list; cur != NULL; cur = cur->next) {
+				column_close(GTK_COLUMN(cur->data));
+				gtk_container_remove(GTK_CONTAINER(columnset), cur->data);
+			}
+			g_list_free(column_list);
+			top_context_editor_gone();
 		}
-		g_list_free(column_list);
-		top_context_editor_gone();
 	} else if (strcmp(argv[1], "column-setup") == 0) {
 		ARGNUM((argc < 3), "buffer column-setup");
 
@@ -688,7 +694,7 @@ void buffers_refresh(buffer_t *buffer) {
 		glyph = buffer->cursor.glyph+1;
 	}
 
-	int r = buffers_close(buffer, gtk_widget_get_toplevel(GTK_WIDGET(columnset)), false);
+	int r = buffers_close(buffer, false);
 	if (r == 0) return;
 
 	enum go_file_failure_reason gffr;

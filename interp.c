@@ -664,30 +664,15 @@ static int teddy_kill_command(ClientData client_data, Tcl_Interp *interp, int ar
 
 		if (interp_context_buffer()->job != NULL) {
 			kill(interp_context_buffer()->job->child_pid, SIGTERM);
-		} else {
-			buffers_close(interp_context_buffer(), gtk_widget_get_toplevel(GTK_WIDGET(interp_context_editor())), true);
 		}
 
 		return TCL_OK;
 	} else if (argc == 2) {
-		if (strcmp(argv[1], "process") == 0) {
-			// kill current process with SIGTERM (check that context_editor is defined and associated buffer has a job)
-			HASBUF("kill process");
-			if (interp_context_buffer()->job == NULL) {
-				Tcl_AddErrorInfo(interp, "No active job");
-				return TCL_ERROR;
-			}
-			kill(interp_context_buffer()->job->child_pid, SIGTERM);
-		} else if (strcmp(argv[1], "buffer") == 0) {
-			// close buffer (check that context_editor is defined)
-			HASBUF("kill buffer");
-			buffers_close(interp_context_buffer(), gtk_widget_get_toplevel(GTK_WIDGET(interp_context_editor())), true);
-		} else if (argv[1][0] == '-') {
+		if (argv[1][0] == '-') {
 			// kill current process with specific signal (check that context_editor is defined and associated buffer has a job)
-			HASBUF("kill -");
+			HASBUF("kill -<signal>");
 			if (interp_context_buffer()->job == NULL) {
-				Tcl_AddErrorInfo(interp, "No active job");
-				return TCL_ERROR;
+				return TCL_OK;
 			}
 			int signum = parse_signum(argv[1]+1);
 			if (signum < 0) {
@@ -696,7 +681,6 @@ static int teddy_kill_command(ClientData client_data, Tcl_Interp *interp, int ar
 			}
 			kill(interp_context_buffer()->job->child_pid, signum);
 		} else {
-			// kill specified process with SIGTERM
 			char *endptr = NULL;
 			int target_pid = (int)strtol(argv[1], &endptr, 10);
 			if ((endptr == NULL) || (*endptr != '\0')) {
@@ -708,34 +692,24 @@ static int teddy_kill_command(ClientData client_data, Tcl_Interp *interp, int ar
 
 		return TCL_OK;
 	} else if (argc == 3) {
-		// kill specified process with specified signal or specific buffer
+		// kill specified process with specified signal
 
-		if (strcmp(argv[1], "buffer") == 0) {
-			buffer_t *buffer = buffer_id_to_buffer(argv[2]);
-			if (buffer != NULL) {
-				buffers_close(buffer, gtk_widget_get_toplevel(GTK_WIDGET(interp_context_editor())), true);
-			} else {
-				Tcl_AddErrorInfo(interp, "Couldn't find specified buffer");
-				return TCL_ERROR;
-			}
-		} else {
-			if (argv[1][0] != '-') {
-				Tcl_AddErrorInfo(interp, "Expected a signal specification as first argument for two-argument kill");
-				return TCL_ERROR;
-			}
-			int signum = parse_signum(argv[1]+1);
-			if (signum < 0) {
-				Tcl_AddErrorInfo(interp, "Can not parse signal specification");
-				return TCL_ERROR;
-			}
-			char *endptr = NULL;
-			int target_pid = (int)strtol(argv[2], &endptr, 10);
-			if ((endptr == NULL) || (*endptr != '\0')) {
-				Tcl_AddErrorInfo(interp, "Invalid pid specification");
-				return TCL_ERROR;
-			}
-			kill(target_pid, signum);
+		if (argv[1][0] != '-') {
+			Tcl_AddErrorInfo(interp, "Expected a signal specification as first argument for two-argument kill");
+			return TCL_ERROR;
 		}
+		int signum = parse_signum(argv[1]+1);
+		if (signum < 0) {
+			Tcl_AddErrorInfo(interp, "Can not parse signal specification");
+			return TCL_ERROR;
+		}
+		char *endptr = NULL;
+		int target_pid = (int)strtol(argv[2], &endptr, 10);
+		if ((endptr == NULL) || (*endptr != '\0')) {
+			Tcl_AddErrorInfo(interp, "Invalid pid specification");
+			return TCL_ERROR;
+		}
+		kill(target_pid, signum);
 	} else {
 		Tcl_AddErrorInfo(interp, "Too many arguments to 'kill', consult documentation");
 		return TCL_ERROR;

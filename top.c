@@ -153,7 +153,7 @@ static void new_column_mitem_callback(GtkMenuItem *menuitem, gpointer data) {
 
 static void close_mitem_callback(GtkMenuItem *menuitem, gpointer data) {
 	GtkWidget *toplevel = gtk_widget_get_toplevel(GTK_WIDGET(columnset));
-	if (!buffers_close_all(toplevel)) return;
+	if (!buffers_close_all()) return;
 	gtk_widget_destroy(toplevel);
 }
 

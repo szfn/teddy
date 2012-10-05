@@ -720,8 +720,8 @@ namespace eval teddy_intl {
 	proc savesession_mitem {} {
 		set b [buffer make +sessions+]
 		buffer eval $b {
-			c "Saving the session will let you restore the state of this window after you close it."
-			c "To save this session set the session name in the following line and Eval it:"
+			c "Saving the session will let you restore the state of this window after you close it.\n"
+			c "To save this session set the session name in the following line and Eval it:\n\n"
 			c "teddy::session tie session-name"
 		}
 	}
