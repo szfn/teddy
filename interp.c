@@ -655,67 +655,37 @@ static int parse_signum(const char *sigspec) {
 }
 
 static int teddy_kill_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
-	if (argc == 1) {
-		if (interp_context_editor() == NULL) {
-			/* automatic version of kill doesn't work unless there is an editor to automatically infer what to do from */
-			Tcl_AddErrorInfo(interp, "Short version of 'kill' called without an active editor, provide an editor or more arguments");
-			return TCL_ERROR;
-		}
+	ARGNUM((argc > 3), "kill");
 
-		if (interp_context_buffer()->job != NULL) {
-			kill(interp_context_buffer()->job->child_pid, SIGTERM);
-		}
+	bool pid_specified = false;
+	pid_t pid;
+	int signum = SIGTERM;
 
-		return TCL_OK;
-	} else if (argc == 2) {
-		if (argv[1][0] == '-') {
-			// kill current process with specific signal (check that context_editor is defined and associated buffer has a job)
-			HASBUF("kill -<signal>");
-			if (interp_context_buffer()->job == NULL) {
-				return TCL_OK;
-			}
-			int signum = parse_signum(argv[1]+1);
+	for (int i = 1; i < argc; ++i) {
+		if (argv[i][0] == '-') {
+			int signum = parse_signum(argv[i]+1);
 			if (signum < 0) {
 				Tcl_AddErrorInfo(interp, "Can not parse signal specification");
 				return TCL_ERROR;
 			}
-			if (interp_context_buffer()->job != NULL) {
-				kill(interp_context_buffer()->job->child_pid, signum);
-			}
 		} else {
-			char *endptr = NULL;
-			int target_pid = (int)strtol(argv[1], &endptr, 10);
-			if ((endptr == NULL) || (*endptr != '\0')) {
-				Tcl_AddErrorInfo(interp, "Invalid pid specification");
+			int ipid = atoi(argv[i]);
+			if (ipid < 1) {
+				Tcl_AddErrorInfo(interp, "Can not parse pid number");
 				return TCL_ERROR;
 			}
-			kill(target_pid, SIGTERM);
+			pid_specified = true;
+			pid = ipid;
 		}
-
-		return TCL_OK;
-	} else if (argc == 3) {
-		// kill specified process with specified signal
-
-		if (argv[1][0] != '-') {
-			Tcl_AddErrorInfo(interp, "Expected a signal specification as first argument for two-argument kill");
-			return TCL_ERROR;
-		}
-		int signum = parse_signum(argv[1]+1);
-		if (signum < 0) {
-			Tcl_AddErrorInfo(interp, "Can not parse signal specification");
-			return TCL_ERROR;
-		}
-		char *endptr = NULL;
-		int target_pid = (int)strtol(argv[2], &endptr, 10);
-		if ((endptr == NULL) || (*endptr != '\0')) {
-			Tcl_AddErrorInfo(interp, "Invalid pid specification");
-			return TCL_ERROR;
-		}
-		kill(target_pid, signum);
-	} else {
-		Tcl_AddErrorInfo(interp, "Too many arguments to 'kill', consult documentation");
-		return TCL_ERROR;
 	}
+
+	if (!pid_specified) {
+		if (interp_context_buffer() == NULL) return TCL_OK;
+		if (interp_context_buffer()->job == NULL) return TCL_OK;
+		pid = interp_context_buffer()->job->child_pid;
+	}
+
+	kill(pid, signum);
 
 	return TCL_OK;
 }
