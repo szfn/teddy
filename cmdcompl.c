@@ -75,7 +75,7 @@ void cmdcompl_init(void) {
 		for (den = readdir(dh); den != NULL; den = readdir(dh)) {
 			struct stat den_stat;
 
-			if (den->d_type == DT_REG) {
+			if ((den->d_type == DT_REG) || (den->d_type == DT_LNK)) {
 				char *den_path;
 				asprintf(&den_path, "%s/%s", dir, den->d_name);
 				alloc_assert(den_path);
