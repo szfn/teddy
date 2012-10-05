@@ -679,7 +679,9 @@ static int teddy_kill_command(ClientData client_data, Tcl_Interp *interp, int ar
 				Tcl_AddErrorInfo(interp, "Can not parse signal specification");
 				return TCL_ERROR;
 			}
-			kill(interp_context_buffer()->job->child_pid, signum);
+			if (interp_context_buffer()->job != NULL) {
+				kill(interp_context_buffer()->job->child_pid, signum);
+			}
 		} else {
 			char *endptr = NULL;
 			int target_pid = (int)strtol(argv[1], &endptr, 10);

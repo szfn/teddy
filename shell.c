@@ -171,6 +171,7 @@ int teddy_posixexec_command(ClientData client_data, Tcl_Interp *interp, int argc
 	newargv[argc-1] = NULL;
 
 	if (execvp(newargv[0], newargv) == -1) {
+		perror("posixexec error");
 		Tcl_AddErrorInfo(interp, "Error executing posixexec command");
 		return TCL_ERROR;
 	}

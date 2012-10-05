@@ -392,6 +392,10 @@ proc shell {args} {
 }
 
 proc shellsync {text args} {
+   if {[llength $args] <= 0} {
+      error "shellsync called without arguments"
+   }
+   
    global backgrounded
    if {$backgrounded} {
       error "shellpipe called on a backgrounded interpreter"
