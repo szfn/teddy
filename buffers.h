@@ -31,4 +31,7 @@ void word_completer_full_update(void);
 void buffers_refresh(buffer_t *buffer);
 void buffers_register_tags(const char *tags_file);
 
+extern buffer_t **buffers;
+extern int buffers_allocated;
+
 #endif

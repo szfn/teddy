@@ -65,6 +65,9 @@ static void job_destroy(job_t *job) {
 		}
 	}
 
+	free(job->command);
+	job->command = NULL;	
+
 	job->used = 0;
 }
 
@@ -245,8 +248,6 @@ static void job_create_buffer(job_t *job) {
 	buffer_t *buffer = buffers_get_buffer_for_process();
 	job_attach_to_buffer(job, job->command, buffer);
 	go_to_buffer(NULL, buffer, false);
-	free(job->command);
-	job->command = NULL;
 }
 
 static gboolean jobs_input_watch_function(GIOChannel *source, GIOCondition condition, job_t *job) {
@@ -343,11 +344,11 @@ int jobs_register(pid_t child_pid, int masterfd, buffer_t *buffer, const char *c
 	}
 
 	jobs[i].pipe_from_child_source_id = g_io_add_watch(jobs[i].pipe_from_child, G_IO_IN|G_IO_HUP, (GIOFunc)(jobs_input_watch_function), jobs+i);
+	jobs[i].command = strdup(command);
 
 	if (buffer != NULL) {
 		job_attach_to_buffer(jobs+i, command, buffer);
 	} else {
-		jobs[i].command = strdup(command);
 		g_timeout_add(SHOWANYWAY_TIMO, (GSourceFunc)autoshow_job_buffer, (gpointer)(jobs+i));
 	}
 

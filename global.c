@@ -4,6 +4,7 @@
 #include "baux.h"
 #include "top.h"
 #include "interp.h"
+#include "buffers.h"
 
 GtkClipboard *selection_clipboard;
 GtkClipboard *default_clipboard;
@@ -441,13 +442,20 @@ void save_tied_session(void) {
 				fprintf(f, " %g +null+", tframe_fraction(frame));
 			} else {
 				editor_t *editor = GTK_TEDITOR(cur_content);
-				fprintf(f, " %g %s", tframe_fraction(frame), editor->buffer->path);
+				fprintf(f, " %g {%s}", tframe_fraction(frame), editor->buffer->path);
 			}
 		}
 		fprintf(f, "\n");
 		g_list_free(frame_list);
 	}
 	g_list_free(column_list);
+
+	for (int i = 0; i < buffers_allocated; ++i) {
+		if (buffers[i] == NULL) continue;
+		if (buffers[i]->job == NULL) continue;
+
+		fprintf(f, "teddy::bg [buffer make {%s}] { %s }\n", buffers[i]->path, buffers[i]->job->command);
+	}
 
 	fclose(f);
 }

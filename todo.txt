@@ -1,3 +1,5 @@
+- current directory frame?
+
 - make lexy a flat table, lexyassoc just gives the starting state but we can move to other states (implement mixed html / javascript mode)
 - multiprocess highlighting
 - tabs
