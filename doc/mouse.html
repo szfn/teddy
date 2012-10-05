@@ -18,8 +18,7 @@
 					<li><b>Click and Drag</b> to select text
 					<li><b>Double-click and Drag</b> to select words
 					<li><b>Triple-click and Drag</b> to select lines
-					<li><b>Right click</b> tries to interpret the text around the cursor as a file name and attempts to open. Also understands expressions like "&lt;filename>:&lt;linenumber>", opens &lt;filename> and goes to &lt;linenumber>. If the &lt;filename> is a relative path it is resolved against the working directory of the buffer. If the specified file name can not be found it is used as the argument to <tt>search</tt> command (interactive search).
-					<li><b>Right click on a selected region</b>, same as right click if the selected region spans a single line, if it spans more than one line the region's text is evaluated as tcl.
+					<li><b>Right click</b>: when a selection is active will display a menu of actions that can be executed on the selected text.
 					<li><b>Scroll wheel</b> scrolls the editing area.
 				</ul>
 			</li>
@@ -27,22 +26,26 @@
 				<b>Resize handle</b>
 				<ul>
 					<li><b>Click and Drag</b> resizes the frame/column
-					<li><b>Double click</b> closes all the other frames in the column. If the frame is already the only one in the column, closes all the other columns in the window.
-					<li><b>Right click</b> opens a new frame in the column, or a new frame in another column if there is no space in the current column. Hold shift to force the new frame to appear in a new column.
-					<li><b>Middle click</b> closes the frame. If the frame is the last one in the column, closes the column (unless the column is the only existing column).
 				</ul>
 			</li>
 			<li>
 				<b>Tag</b>
 				<ul>
-					<li><b>Click and Drag to another tag</b> switches the buffers of the origin and target frames. If CTRL is pressed columns are exchanged.
-					<li><b>Click and drag inside another frame</b> splits the destination frame and moves the origin frame there.
-					<li><b>Left click and Drag then Middle click (before releasing the left button)</b> switches the buffers of the origin and target frames, then closes the origin frame.
-					<li><b>Double click</b> closes all the other frames in the column. If the frame is already the only one in the column, closes all the other columns in the window.
-					<li><b>Right click</b> opens a new frame in the column, or a new frame in another column if there is no space in the current column. Hold down CTRL to force the frame to appear in a new column.
-					<li><b>Middle click</b> closes the frame. If the frame is the last one in the column, closes the column (unless the column is the only existing column).
+					<li><b>Click and Drag</b> moves the frame to the new position.
+					<li><b>Double click</b> minimizes all other frames in the column, same as clicking the up arrow button in the tag line.
+					<li><b>Middle click</b> closes the frame. If the frame is the last one in the column, closes the column (unless the column is the only existing column). Same as clicking the close button in the tag line
 				</ul>
 			</li>
 		</ul>
+
+		<h2>Context menu</h2>
+
+		<li>
+			<ul><b>Eval</b> evaluates selection as if it was typed in the command line. Works with either scripts or external commands.
+			<ul><b>Copy text to command line</b>
+			<ul><b>Open selected text</b> treats selected text as a file name and tries to open it
+			<ul><b>Search text</b> starts searching selected text in current file.
+			<ul><b>Search in TAGS</b> if a TAGS file is loaded search selected text as a tag
+		</li>
 	</body>
 </html>

@@ -25,168 +25,69 @@
 	<body>
 		<h1>Teddy &ndash; Commands reference</h1>
 
+		<p>By pressing &lt;Esc&gt; you will enter teddy's command line, text typed here will be executed as when &lt;Enter&gt; is pressed.
+
 		<p>The scripting language of teddy is tcl. Some commands have been disabled, some commands have a different meaning and quite a few commands have been added for buffer manipulation. In addition unknown commands are interpreted "shell like" as external commands, for those commands shell-style auto-globbing is performed and the resulting command line is executed in background.
 
-		<h2>Tcl Commands that are disabled</h2>
-		<tt>after</tt>, <tt>cd</tt>, <tt>tcl_endOfWord</tt>, <tt>tcl_findLibrary</tt>, <tt>tcl_startOfPreviousWord</tt>, <tt>tcl_wordBreakAfter</tt>, <tt>tcl_wordBreakBefore</tt>.
+		<h2>Editing</h2>
 
-		<h2>Tcl commands with a different meaning</h2>
-
-		<h3>exit</h3>
+		<h3>m (move and mark)</h3>
 		<div class="ind">
-			<p><b>Syntax:</b> <tt>exit</tt>
-			<p>Closes frame.
-		</div>
+			<p><b>Syntax:</b> <tt>m <b>[</b> <i>mark-position<i> <b>]</b> <b>[</b> <i>cursor-position</i> <b>]</b> </tt>
+			<p>Selections in teddy are specified by the position of the mark (beginning of the selection) and the cursor (the blinking cursor that typed text is inserted at).
+			<p>By calling <tt>m</tt> without arguments the current position of mark and cursor is returned.
+			<p>When called with a single argument the cursor is moved to the specified position.
+			<p>When called with to arguments both the cursor and the mark are moved as specified.
 
-		<h2>Configuration commands</h2>
+			<h4>Grammar for position specifiers</h4>
+			<p><pre>
+position-specifier ::= <tt>nil</tt> | <i>line-specifier</i><tt>:</tt><i>column-specifier<i>
+line-specifier ::= <i>line-number</i> | <tt>+</tt><i>relative-movement</i> | <tt>-</tt><i>relative-movement</i> | <tt>$</tt>
+column-specifier ::= <i>column-number</i> | <tt>+</tt><i>relative-movement</i> | <tt>-</tt><i>relative-movement</i> | <tt>$</tt> | <tt>^</tt> | <tt>^1</tt>
+			</pre>
 
-		<h3>setcfg</h3>
-		<div class="ind">
-			<p><b>Syntax:</b> <tt>setcfg <i>configuration_variable</i> <i>value</i></tt>
-			<p>Sets a configuration variable. Should be used in the <tt>~/.teddy</tt> configuratoin file.
-			<p>For color configuration options <tt>rgbcolor</tt> function should be used to compute the value.
-			<p>Available configuration options are:
+			<p>Notes:
 			<ul>
-				<li>cfg_main_font (defaults to Arial-11)
-				<li>cfg_main_font_height_reduction (defaults to 0, reduces the height of main font - results may vary)
-				<li>cfg_posbox_font (defaults to Arial-8)
-				<li>cfg_focus_follows_mouse (defaults to 1, set to 0 if you don't want it)
-
-				<li>cfg_default_autoindent (defaults to 1, which means when enter is pressed the intent of the current line is copied to the new line, set to 0 if you don't want this)
-				<li>cfg_default_spaceman (defaults to 1, which means that trailing spaces are removed automatically)
-
-				<li>cfg_warp_mouse (defaults to 1, which means the mouse is moved to the top of an editing area when focus is changed in some ways)
-
-				<li>cfg_interactive_search_case_sensitive (defaults to 2, which is "smart case sensitive", which means that interactive search is case sensitive only when the searched text contains upper case letters, 1 is case sensitive, 0 is case insensitive)
-
-				<li>cfg_editor_bg_color
-				<li>cfg_editor_fg_color
-				<li>cfg_editor_sel_color
-				<li>cfg_posbox_border_color
-				<li>cfg_posbox_bg_color
-				<li>cfg_posbox_fg_color
-				<li>cfg_border_color
-			<ul>
-			<p>Wherever a font is specified either a fontconfig pattern can be inserted or the direct path to the font file, followed by a colon and the desired font point size.
-		</div>
-
-		<h3>bindkey</h3>
-		<div class="ind">
-			<p><b>Syntax:</b> <tt>bindkey <i>key</i> <i>expression</i></tt>
-			<p>Binds <i>key</i> with <i>expression</i>: when <i>key</i> is pressed when the editing area is focused <i>expression</i> is evaluated.
-			<p>For example:
-			<div class="code">bindkey Ctrl-Shift-Space {mark lines}</div>
-			Will execute the command <tt>mark lines</tt> when Ctrl-Shift-Space is pressed.
-			<p>Available modifiers are: Super, Ctrl, Alt and Shift. They should appear in this order.
-			<p>Available keys are: all ASCII characters, Backspace, Tab, Return, Pause, Escape, Delete, Home, Left, Up, Right, Down, PageUp, PageDown, End, Insert, F&lt;number>, Space.
-			<p>Keys that have a default keybinding (including plain printable ASCII characters) can not be bound.
-		</div>
-
-		<h2>Lexy commands</h2>
-
-		Lexy is the module performing syntax highlighting in teddy. The idea is to specify a tokenizer for each programming language and then associate it to files by means of regular expressions. The tokenizer itself is specified as a state machine, with transitions based on matching regular expressions on the stream, marking whatever was matched with one of six token types (nothing, keyword, comment, string id, literal).
-		Teddy's builtins describes tokenizers and associations for C, Java, Python, TCL and Go. To see how other tokenizers can be added see lexy.c.
-		Teddy's rendering will then convert token types into colors. To define which colors should be used the lexycfg command.
-
-		<h3>lexycfg</h3>
-		<div class="ind">
-			<p><b>Syntax:</b> <tt>lexycfg <i>token-type</i> <i>color</i></tt>
-			<p>Where <i>token-type</i> is one of <tt>nothing</tt>, <tt>keyword</tt>, <tt>comment</tt>, <tt>string</tt>, <tt>id</tt>, <tt>literal</tt>.
-		</div>
-
-		<h2>Buffer and editing frames</h2>
-
-		<h3>new</h3>
-		<div class="ind">
-			<p><b>Syntax: </b> <tt>new <b>[</b> row <b>|</b> col <b>]</b></tt>
-			<p>Creates a new editor frame, if row is specified it will be a new row in the current column, if col is specified it will be in a new column.
-		</div>
-
-		<h3>go</h3>
-		<div class="ind">
-			<p><b>Syntax: </b> <tt>go <b>[</b> -ask <b>|</b> -new <b>|</b> -here <b>|</b> -select <b>]</b> <i>file/position specifier</i></tt>
-			<p>Goes to the specified file/position. The mandatory argument can have several forms:
-			<ul>
-				<li>a number, it will move the cursor to that line.
-				<li>the colon character followed by a number, it will move the cursor to that character in the current line, for example <tt>go :1</tt> goes to the first character of the line.
-				<li>the colon can also be followed by <tt>^</tt> (first non-whitespace character of the line) or <tt>$</tt> (last character of the line).
-				<li><tt><i>line number</i>:<i>column specifier</i></tt> will move the cursor to the specified position.
-				<li><tt><i>filename</i></tt> opens the specified file or directory, will ask to create it if it doesn't exist.
-				<li><tt><i>filename</i>:<i>position specifier</i></tt> opens the specified file and moves the cursor to the specified position (composed of a line number and an optional column specifier).
-				<li>if the character alone is passed the command will try to determine its argument from the current position / selection in the buffer, like right clicking would
-			</ul>
-			<p>If the command requests opening an already opened file or directory go will focus the already opened buffer, if the buffer if visible, if the buffer is not visible or if the command requests to open a new buffer a window will be shown to let the user select which editor to use for the buffer, unless the first argument was -here, -current or -new.
-		</div>
-
-		<h3>refresh</h3>
-		<div class="ind">
-			<p><b>Syntax:</b> <tt>refresh</tt>
-			<p>Reloads current buffer.
-		</div>
-
-		<h3>save</h3>
-		<div class="ind">
-			<p><b>Syntax:</b> <tt>save</tt>
-			<p>Saves buffer to disk.
-		</div>
-
-		<h3>bufman</h3>
-		<div class="ind">
-			<p><b>Syntax:</b> <tt>bufman <b>[</b>next-editor<b>]</b></tt>
-			<p>Shows buffer manager. If the argument <tt>next-editor</tt> is passed it will move the focus to the next editor.
-		</div>
-
-		<h3>buffer</h3>
-		<div class="ind">
-			<p>Various buffer manipulation tools:
-			<ul>
-				<li><tt>buffer make <i>name</i></tt> creates a buffer with the given name, returns the buffer id
-				<li><tt>buffer scratch</tt> creates or moves focus to the +scratch+ buffer
-				<li><tt>buffer current</tt> returns the buffer id for the current buffer
-				<li><tt>buffer porpget <i>buffer-id</i> <i>prop-name</i></tt> returns the value of a property for a buffer
-				<li><tt>buffer propset <i>buffer-id</i> <i>prop-name</i> <i>prop-value</i></tt> sets a property for a buffer
-				<li><tt>buffer ls</tt> returns the list of buffers
-				<li><tt>buffer info <i>buffer-id</i></tt> returns informations about a buffer
+			<li><tt>nil</tt> passed as the first argument unsets the mark
+			<li>Relative movements are specified prefixing a number with + or - for both column specifers and line specifiers. Specifying +0 means leaving the current value unchanged. When the mark isn't set the relative movement is relative to the cursor position
+			<li>0 can be omitted for relative movements, <tt>m nil +:+</tt> unsets the mark and leaves the cursor unchanged
+			<li><tt>$</tt> moves to the last line (or last column)
+			<li><tt>^</tt> is the first non-blank character of the line
+			<li><tt>^1</tt> is the first non-blank character of the line or the first column if the cursor/mark is already at the first non-blank character
 			</ul>
 		</div>
 
-		<h3>kill</h3>
+		<h3>c (change)</h3>
 		<div class="ind">
-			<p><b>Syntax:</b> <tt>kill <b>[</b> -<i>signal-specifier</i> <b>]</b> <b>[</b> process <b>|</b> buffer <b>|</b> <i>pid</i> <b>]</b></tt>
-			<p>Kills processes or closes buffers. Some notes on invocations:
+			<p><b>Syntax:</b> <tt>c <b>[</b> <i>text</i> <b>]</b></tt>
+			<p>When given an argument and a selection is active, the selection is replaced with the <i>text</i> argument. When given an argument and no selection is active the <i>text</i> is just inserted. If no argument is given the current selection's text is returned, if the selection is not active returns the empty string.
+		</div>
+
+		<h3>s (search and replace)</h3>
+		<div class="ind">
+			<p><b>Syntax:</b> <tt>s <b>[</b> <i>options</i> <b>]</b> <i>regexp</i> <b>[</b> <i>code</i> <b>]</b>
+
+			<p>Search for a <i>regexp</i> in the file. If <i>code</i> is specified executes it for every match.
+			<p>When executed on the command line search and execution of <i>code</i> is performed interactively, unless there's an active selection.
+
+			<p>Available options:
 			<ul>
-				<li><tt>kill -<i>signal specifier</i></tt> sends the specified signal to the process associated with the current buffer
-				<li><tt>kill process</tt> acts like <tt>kill -TERM</tt>
-				<li><tt>kill buffer</tt> closes the current buffer
-				<li><tt>kill</tt> without arguments acts like <tt>kill process</tt> if there is a process associated with the current buffer or <tt>kill buffer</tt> otherwise
-				<li>signal specifiers are either symbolic (like TERM, HUP, KILL, &amp;c) or numerical
+			<li><tt>-get</tt> returns the first match instead of starting an interactive search
+			<li><tt>-line</tt> limits search to the current line instead of the entire file
+			<li><tt>-literal</tt> search for a literal string instead of a regular expression
+			<li><tt>-nocase</tt> enables case insensitive matching
+			<lI><tt>-right-assoc</tt> makes regexp search right-associative
+			<li><tt>-ungreedy</tt> makes regexp operators not greedy by default
 			</ul>
-		</div>
 
-		<h2>Selections and clipboard</h2>
+			<h4>Examples</h4>
 
-		<h3>mark</h3>
-		<div class="ind">
-			<p><b>Syntax:</b> <tt>mark <b>[</b> get <b>|</b> start <b>|</b> stop <b>|</b> words <b>|</b> lines <b>]</b></tt>
-			<p><ul>
-				<li><tt>mark</tt> without arguments toggle mark mode
-				<li><tt>mark get</tt> returns position of mark
-				<li><tt>mark start</tt> sets mark at cursor unless the mark is already set
-				<li><tt>mark stop</tt> unsets mark
-				<li><tt>mark words</tt> sets mark at cursor unless the mark is already set and switches to marking words mode (like double click + drag)
-				<li><tt>mark lines</tt> sets mark at cursor unless the mark is already set and seitches to marking lines mode (like triple click + drag)
-			</ul>
-		</div>
-
-		<h3>cursor</h3>
-		<div class="ind">
-			<p><b>Syntax:</b> <tt>cursor</tt>
-			<p>Returns the current position of the cursor
+			Replacing all occourences of <tt>foo</tt> with <tt>bar</tt> can be done with <tt>s foo { c bar }</tt> as a shorthand the syntax <tt>s foo c bar</tt> is also allowed. More examples can be found in <tt>oneliners.txt</tt>.
 		</div>
 
 		<h3>cb</h3>
 		<div class="ind">
-			<p><b>Syntax:</b> <tt>cb <b>[</b>  <b>|</b> cut <b>|</b> get <b>|</b> pget <b>|</b> put <i>text</i> <b>|</b> pput <i>text</i> <b>]</b></tt>
+			<p><b>Syntax:</b> <tt>cb <b>[</b>  get <b>|</b> pget <b>|</b> put <i>text</i> <b>|</b> pput <i>text</i> <b>]</b></tt>
 			<p><ul>
 				<li><tt>cb get</tt>: returns contents of X11 default clipboard
 				<li><tt>cb pget</tt>: returns contents of X11 selection clipboard
@@ -194,10 +95,11 @@
 				<li><tt>cb pput</tt>: copies text argument to X11 selection clipboard
 			</ul>
 
-			<p>Use this command in combination with "c" to implement the standard clipboard manipulation commands:
-			<p><ul><li>Copy is: <tt>cb put [c]; mark stop</tt>
-			<li>Cut is: <tt>cb put [c]; c ""</tt>
-			<li>Paste is: <tt>c [cb get]</tt>
+			<p>Use this command in combination with "c" and "m" to implement the standard clipboard manipulation commands:
+			<p><ul>
+				<li>Copy is: <tt>cb put [c]; m nil +:+</tt>
+				<li>Cut is: <tt>cb put [c]; c ""</tt>
+				<li>Paste is: <tt>c [cb get]</tt>
 			</ul>
 		</div>
 
@@ -211,58 +113,73 @@
 			<p>Most of this is used to implement the kill_line builtin, see builtin.tcl for details.
 		</div>
 
-		<h2>Motion</h2>
+		<h2>External commands</h2>
 
-		<h3>move</h3>
+		<h3>cd</h3>
 		<div class="ind">
-			<p><b>Syntax:</b> <tt>move <b>(</b>prev<b>|</b>next<b>)</b> <b>(</b>char<b>|</b>wnwa<b>|</b>line<b>)</b></tt>
-			<p>Moves by one character, one word (actually wnwa is word-non-word-alternation) or one line.
-			<p>Will return true if moving was possible
+			<p><b>Syntax:</b> <tt>cd <i>directory</i></tt>
+			<p>Changes the current directory in which external commands are executed
 		</div>
 
-		<h3>gohome</h3>
+		<h3>Executing external commands</h3>
 		<div class="ind">
-			<p><b>Syntax:</b> <tt>gohome</tt>
-			<p>Goes to the first non-whitespace character of the line, or to the first column if the cursor is already at the first non-whitespace character of the line. This is the action that Home key is bound by default.
-		</div>
+			<p>Simply specify an external command as you would at any other shell command name: input and output of external commands can be redirected in a similar way than in bash and commands can be piped one into another using <tt>|</tt>.
+			<p>External commands are executed automatically in background.
 
-		<h2>Editing</h2>
+			<h4>Examples:</h4>
 
-		<h3>s (search and replace)</h3>
-		<div class="ind">
-			<p><b>Syntax:</b> <tt>s <b>[</b> <i>options<i> <b>]</b> <i>regexp</i> <b>[</b> <i>substitution</i> <b>]</b> </tt>
-
-			<p>The s command has two modes: interactive and non-interactive. In interactive mode it will cycle through all the matches and, if <i>substitution</i> is passed, ask the user if the match should be replaced.
-			<p>Interactive mode is the default, non-interactive mode is enabled when a selection is active or some options are passed. If a selection is active substitutions inside the selection area are made automatically.
-			<p>Options of <tt>s</tt> are:
-
-			<p><ul>
-			<li><tt>-0</tt> moves the cursor to the beginning of the first match, returns true if one is found (non-interactive, no substitution).
-			<li><tt>-$</tt> moves the cursor to the end of the first match, returns true if one is found (non-interactive, no substitution).
-			<li><tt>-sel</tt> selects the first match, returns true if one is found (non-interactive, no substitution).
-			<li><tt>-line</tt> limits search to the current line instead of the entire file (both interactive and non-interactive).
+			<ul>
+			<li><tt>make</tt> executes make in background.
+			<li><tt>perl ascript.pl > /dev/null</tt> executes a perl script in background, redirects output to <tt>/dev/null</tt>
+			<li><tt>sort somefile | uniq > output.txt</tt> sorts a file, removes duplicate lines and directs the output to <tt>output.txt</tt>
+			<li><tt>python anotherscript.py [c]</tt> Executes a python script passing the selected text as the first argument
 			</ul>
 		</div>
 
-		<h3>c (change)</h3>
+		<h3>shellsync</h3>
 		<div class="ind">
-			<p><b>Syntax:</b> <tt>c <b>[</b> <i>text</i> <b>]</b></tt>
-			<p>When given an argument and a selection is active, the selection is replaced with the <i>text</i> argument. When given an argument and no selection is active the <i>text</i> is just inserted. If no argument is given the current selection's text is returned, if the selection is not active returns the empty string.
+			<p><b>Syntax: </b> <tt>shellsync <i>input-text</i> <i>external-command-syntax<i></tt>
+			<p>Prepending an external command with <tt>shellsync</tt> executes the command synchronously, and returns the output text of the command.
+
+			<h4>Example:</h4>
+			<p><tt>c [shellsync {} date]</tt> inserts the current time in the buffer.
+		</div>
+
+		<h3>Pipes</h3>
+		<div class="ind">
+			<p>Prepending an external command with the pipe character is equivalent to: <tt>c [shellsync <i>external-command</i> [c]]</tt>.
+		</div>
+
+		<h2>Buffer and editing frames</h2>
+
+		<h3>buffer</h3>
+		<div class="ind">
+			<p>Various buffer manipulation tools:
+			<ul>
+				<li><tt>buffer open <i>path</i></tt> opens a new buffer with the specified path
+				<li><tt>buffer make <i>name</i></tt> creates a buffer with the given name, returns the buffer id
+				<li><tt>buffer save <b>[</b> <i>buffer-id</i> <b>]</b></tt> saves specified buffer (or the current buffer)
+				<li><tt>buffer current</tt> returns the buffer id for the current buffer
+				<li><tt>buffer focus <b>[</b> <i>buffer-id</i> <b>]</b></tt> moves focus to the specified buffer.
+				<li><tt>buffer dup  <b>[</b> <i>buffer-id</i> <b>]</b></tt> makes a duplicate of the specified buffer.
+				<li><tt>buffer porpget <i>buffer-id</i> <i>prop-name</i></tt> returns the value of a property for a buffer
+				<li><tt>buffer propset <i>buffer-id</i> <i>prop-name</i> <i>prop-value</i></tt> sets a property for a buffer
+				<li><tt>buffer ls</tt> returns the list of buffers
+				<li><tt>buffer eval <b>(</b> <i>buffer-id</i> <b>| temp )</b> <i>code</i></tt> evaluates <i>code</i> on the specified buffer, Specifying <i>temp</i> instead of a buffer id will create a temporary buffer, evaluate <i>code</i> in it and destroy it.
+				<li><tt>buffer close <b>[</b> <i>buffer-id</i> <b>]</b></tt> closes buffer
+				<li><tt>buffer force-close <b>[</b> <i>buffer-id</i> <b>]</b></tt> closes buffer, discards changes and kills associated processes
+				<li><tt>buffer closeall</tt> closes all buffers and columns, do not use this command
+				<li><tt>buffer column-setup</tt> internal command
+			</ul>
+		</div>
+
+		<h3>kill</h3>
+		<div class="ind">
+			<p><b>Syntax:</b> <tt>kill <b>[</b> -<i>signal-specifier</i> <b>]</b> <b>[</b> <i>pid</i> <b>]</b></tt>
+			<p>Kills processes. When no <i>pid</i> is specified the job associated to the current buffer is implied. When no <i>signal-specifier</i> is specified <tt>SIGTERM</tt> is implied.
 		</div>
 
 		<h2>Utilities</h2>
-
-		<h3>load</h3>
-		<div class="ind">
-			<p><b>Syntax:</b> <tt>load <i>file</i></tt>
-			<p>Evaluates an externally loaded tcl file.
-		</div>
-
-		<h3>rgbcolor</h3>
-		<div class="ind">
-			<p><b>Syntax:</b> <tt>rgbcolor <b>[</b> <i>color-name</i> <b>|</b> <i>red</i> <i>green</i> <i>blue</i> <b>]</b></tt>
-			<p>Returns the specified color. Understands X11 standard color names. Values for red, green and blue are expressed on a scale from 0 to 255.
-		</div>
 
 		<h3>pwf</h3>
 		<div class="ind">
@@ -273,95 +190,37 @@
 		<h3>pwd</h3>
 		<div class="ind">
 			<p><b>Syntax:</b> <tt>pwd</tt>
-			<p>Returns the workding directory of the current buffer.
+			<p>Returns the workding directory.
 		</div>
 
-		<h2>Command line</h2>
+		<h2>Configuration commands</h2>
 
-		<h3>search</h3>
+		<h3>setcfg</h3>
 		<div class="ind">
-			<p><b>Syntax:</b> <tt>search</tt>
-			<p>Starts incremental search.
+			<p><b>Syntax:</b> <tt>setcfg <i>configuration_variable</i> <i>value</i></tt>
+			<p>Read the default configuration file created in <tt>$HOME/.config/teddy/rc</tt> for a list of all the available configuration variables and what they do.
 		</div>
 
-		<h3>focuscmd</h3>
+		<h3>bindkey</h3>
 		<div class="ind">
-			<p><b>Syntax:</b> <tt>focuscmd</tt>
-			<p>Focus the command line. This command should be bound to a keyboard shortcut to replicate the Escape key functionality.
+			<p><b>Syntax:</b> <tt>bindkey <i>key</i> <i>expression</i></tt>
+			<p>Binds <i>key</i> with <i>expression</i>: when <i>key</i> is pressed when the editing area is focused <i>expression</i> is evaluated.
+			<p>Available modifiers are: Super, Ctrl, Alt and Shift. They should appear in this order.
+			<p>Available keys are: all ASCII characters, Backspace, Tab, Return, Pause, Escape, Delete, Home, Left, Up, Right, Down, PageUp, PageDown, End, Insert, F&lt;number>, Space.
+			<p>Keys that have a default keybinding (including plain printable ASCII characters) can not be bound.
 		</div>
 
-		<h3>teddyhistory</h3>
-		<div class="ind">
-			<p><b>Syntax:</b> <tt>teddyhistory <b>[</b> cmd <b>|</b> search <b>]</b> <i>item number</i></tt>
-			<p>Returns an history's item. The first argument selects "cmd" history or "search" history, the second argument specifies the history's item's number, for example:
-			<div class="code">teddyhistory cmd 0</div>
-			returns the last executed command, and:
-			<div class="code">teddyhistory search 0</div>
-			Returns the last thing searched incrementally.
-		</div>
+		<h2>Lexy commands</h2>
 
-		<h3>interactarg</h3>
-		<div class="ind">
-			<p><b>Syntax:</b> <tt>interactarg <i>command</i></tt>
-			<p>Puts the prompt into argument mode for <i>command</i>.
-		</div>
+		Lexy is the module performing syntax highlighting in teddy. The idea is to specify a tokenizer for each programming language and then associate it to files by means of regular expressions. The tokenizer itself is specified as a state machine, with transitions based on matching regular expressions on the stream, marking whatever was matched with one of six token types (nothing, keyword, comment, string id, literal).
+		Teddy's builtins describes tokenizers and associations for C, Java, Python, TCL and Go. To see how other tokenizers can be added see lexy.c.
 
-		<h2>Background buffers</h2>
+		<h2>Tcl Commands that are disabled</h2>
+		<tt>after</tt>, <tt>tcl_endOfWord</tt>, <tt>tcl_findLibrary</tt>, <tt>tcl_startOfPreviousWord</tt>, <tt>tcl_wordBreakAfter</tt>, <tt>tcl_wordBreakBefore</tt>, <tt>exit</tt>
 
-		<h3>bg</h3>
-		<div class="ind">
-			<p><b>Syntax:</b> <tt>bg <b>[</b> <i>buffer-name</i> <b>]</b> <i>expression</i></tt>
-			<p>Evaluates <i>expression</i> in background. When called from the command line it also select and shows an inactive +bg+ buffer (or creates a new one) to show stdin and stdout of <i>expression</i>.
-			<p>When two arguments are used then a new buffer is always created with the first argument as the name (only available on the command line).
-		</div>
 
-		<h3>&lt;</h3>
-		<div class="ind">
-			<p><b>Syntax:</b> <tt>&lt <i>text</i></tt>
-			<p>Sends text to stdin of the buffer's process.
-		</div>
+		<h2>Other</h2>
 
-		<h3>shell</h3>
-		<div class="ind">
-			<p><b>Syntax:</b> <tt>shell <i>pipe expression</i></tt>
-			<p>Executes external commands creating pipelines and performing stdin/stdout/stderr redirections. Supported:
-			<ul>
-				<li><tt><b>[</b><i>descriptor</i><b>]</b>><i>file</i></tt> redirects <i>descriptor</i> to <i>file</i>. If no file descriptor is specified, 0 is used (stdout).
-				<li><tt><b>[</b><i>source</i><b>]</b>>&amp;<i>target</i></tt> redirects <i>source</i> file descriptor to <i>destination</i> file descriptor. If no file descriptor is specified 0 is used (stdout).
-				<li><tt><b>[</b><i>descriptor</i><b>]</b>&lt;<i>file</i></tt> redirects <i>descriptor</i>'s input to <i>file</i>. If no file descriptor is specified, 1 is used (stdin).
-				<li><tt><b>[</b><i>source</i><b>]</b>&lt;&amp;<i>target</i></tt> redirects <i>source</i> file descriptor input to <i>destination</i> file descriptor. If no file descriptor is specified, 1 is used (stdin).
-				<li><tt><b>[</b><i>descriptor</i><b>]</b>>><i>file</i></tt> redirects <i>descriptor</i> to append to <i>file</i>. If no descriptor is specified, 0 is used (stdout).
-			</ul>
-
-			<p>In addition:
-			<ul>
-			<li>shell-like glob expansion is performed (i.e. <tt>*.c</tt> is expanded to all the files ending in .c, and <tt>blah?</tt> is expanded to all files starting with blah and having one other character at the end.
-			<li>An initial '~' is expanded into the contents of the HOME environment variable.
-			<li>If an argument begins with '!' autoglobbing and ~ expansion are disabled and the initial '!' is removed
-			</ul>
-		</div>
-
-		<h2>How unknown commands are interpreted</h2>
-		<p>When running on the command line <tt>unknown</tt> function is defined as:
-
-		<div class="code">
-		<pre>
-		proc unknown {args} {
-			set margs shell
-			lappend margs {*}$args
-			bg $margs
-		}
-		</pre>
-		</div>
-
-		However when already running in background <tt>unknown</tt> is changed to:
-
-		<div class="code">
-		<pre>
-		proc unknown {args} {
-			shell {*}$args
-		}
-		</pre>
-		</div>
+		Other builting commands are implemented, see <tt>builtin.tcl</tt>.
 	</body>
 </html>
