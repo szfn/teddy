@@ -395,7 +395,7 @@ proc shellsync {text args} {
    if {[llength $args] <= 0} {
       error "shellsync called without arguments"
    }
-   
+
    global backgrounded
    if {$backgrounded} {
       error "shellpipe called on a backgrounded interpreter"
@@ -710,9 +710,9 @@ namespace eval teddy_intl {
 	   }
 
 	   #puts "Executing $normal"
-	   posixexec {*}$normal
-
-	   posixexit -1
+	   if {[catch [posixexec {*}$normal]]} {
+		   posixexit -1
+	   }
 	}
 
 	namespace export loadsession
