@@ -1,4 +1,3 @@
-- bugfix: arrow down in iopen window when tags not present should focus files
 - bugfix show '.' in tag for current directory
 
 - current directory frame?
