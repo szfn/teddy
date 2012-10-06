@@ -591,6 +591,7 @@ static gboolean key_press_callback(GtkWidget *widget, GdkEventKey *event, editor
 
 	if (command != NULL) {
 		interp_eval(editor, NULL, command, false);
+		set_label_text(editor);
 		goto key_press_return_true;
 	}
 
