@@ -171,7 +171,7 @@ static int teddy_undo_command(ClientData client_data, Tcl_Interp *interp, int ar
 	HASED("undo");
 
 	if (argc == 1) {
-		editor_undo_action(interp_context_editor());
+		editor_undo_action(interp_context_editor(), false);
 		return TCL_OK;
 	} else if (argc == 2) {
 		if (strcmp(argv[1], "tag") == 0) {
@@ -183,6 +183,8 @@ static int teddy_undo_command(ClientData client_data, Tcl_Interp *interp, int ar
 			}
 		} else if (strcmp(argv[1], "fusenext") == 0) {
 			interp_context_buffer()->undo.please_fuse = true;
+		} else if (strcmp(argv[1], "redo") == 0) {
+			editor_undo_action(interp_context_editor(), true);
 		} else {
 			Tcl_AddErrorInfo(interp, "Wrong arguments to 'undo', usage; undo [tag [tagname] | fusenext | get <before|after>]");
 			return TCL_ERROR;

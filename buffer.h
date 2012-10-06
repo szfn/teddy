@@ -148,7 +148,7 @@ void buffer_replace_selection(buffer_t *buffer, const char *new_text);
 void buffer_replace_region(buffer_t *buffer, const char *new_text, lpoint_t *start, lpoint_t *end);
 
 // undo
-void buffer_undo(buffer_t *buffer);
+void buffer_undo(buffer_t *buffer, bool redo);
 
 // returns current selection
 void buffer_get_selection(buffer_t *buffer, lpoint_t *start, lpoint_t *end);

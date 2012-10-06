@@ -324,8 +324,8 @@ void editor_save_action(editor_t *editor) {
 	save_tied_session();
 }
 
-void editor_undo_action(editor_t *editor) {
-	buffer_undo(editor->buffer);
+void editor_undo_action(editor_t *editor, bool redo) {
+	buffer_undo(editor->buffer, redo);
 
 	column_t *column;
 	if (find_editor_for_buffer(editor->buffer, &column, NULL, NULL))

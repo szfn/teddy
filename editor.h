@@ -70,7 +70,7 @@ void editor_center_on_cursor(editor_t *editor);
 
 void editor_start_search(editor_t *editor, enum search_mode_t search_mode, const char *initial_search_term);
 void editor_save_action(editor_t *editor);
-void editor_undo_action(editor_t *editor);
+void editor_undo_action(editor_t *editor, bool redo);
 
 void editor_complete_move(editor_t *editor, gboolean should_move_origin);
 

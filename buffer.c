@@ -511,7 +511,7 @@ void buffer_thaw_selection(buffer_t *buffer, selection_t *selection, lpoint_t *s
 	end->glyph = selection->end.glyph;
 }
 
-void buffer_undo(buffer_t *buffer) {
+void buffer_undo(buffer_t *buffer, bool redo) {
 	lpoint_t start_point, end_point;
 	real_line_t *typeset_start_line, *pre_start_line = NULL;
 	undo_node_t *undo_node;
@@ -519,7 +519,7 @@ void buffer_undo(buffer_t *buffer) {
 	if (!(buffer->editable)) return;
 	if (buffer->job != NULL) return;
 
-	undo_node = undo_pop(&(buffer->undo));
+	undo_node = redo ? undo_redo_pop(&(buffer->undo)) : undo_pop(&(buffer->undo));
 
 	if (undo_node == NULL) return;
 
@@ -527,7 +527,11 @@ void buffer_undo(buffer_t *buffer) {
 
 	buffer_unset_mark(buffer);
 
-	buffer_thaw_selection(buffer, &(undo_node->after_selection), &start_point, &end_point);
+	if (!redo) {
+		buffer_thaw_selection(buffer, &(undo_node->after_selection), &start_point, &end_point);
+	} else {
+		buffer_thaw_selection(buffer, &(undo_node->before_selection), &start_point, &end_point);
+	}
 
 	buffer_remove_selection(buffer, &start_point, &end_point);
 
@@ -538,11 +542,13 @@ void buffer_undo(buffer_t *buffer) {
 		pre_start_line = typeset_start_line->prev;
 	}
 
-	buffer_insert_multiline_text(buffer, &(buffer->cursor), undo_node->before_selection.text);
+	if (!redo) {
+		buffer_insert_multiline_text(buffer, &(buffer->cursor), undo_node->before_selection.text);
+	} else {
+		buffer_insert_multiline_text(buffer, &(buffer->cursor), undo_node->after_selection.text);
+	}
 
 	buffer_typeset_from(buffer, typeset_start_line);
-
-	undo_node_free(undo_node);
 
 	if (pre_start_line == NULL) {
 		lexy_update_starting_at(buffer, buffer->real_line, true);

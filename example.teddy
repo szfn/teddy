@@ -68,6 +68,7 @@ bindkey Ctrl-y {bindent pasteq [cb pget]}
 
 # Ctrl-u undoes last action
 bindkey Ctrl-u undo
+bindkey Ctrl-U {undo redo}
 
 # Ctrl-s saves (calls teddy::spaceman to delete extra spaces at the end of lines)
 bindkey Ctrl-s {teddy::spaceman; buffer save}
