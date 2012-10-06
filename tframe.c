@@ -298,7 +298,7 @@ static gboolean label_button_press_callback(GtkWidget *widget, GdkEventButton *e
 	}
 
 	if ((event->type == GDK_BUTTON_PRESS) && (event->button == 2)) {
-		columns_column_remove(columnset, col, frame, false);
+		columns_column_remove(columnset, col, frame, false, true);
 		return TRUE;
 	}
 
@@ -343,7 +343,14 @@ static void tag_drag_behaviour(tframe_t *source, tframe_t *target, double y) {
 		// we dragged into a null buffer, take it over
 		editor_switch_buffer(GTK_TEDITOR(source->content), null_buffer());
 		editor_switch_buffer(GTK_TEDITOR(target->content), sbuf);
-		columns_column_remove(columnset, source_col, source, false);
+
+		// this extra three lines are only needed when dragging the sole frame of a column into a null buffer
+		// they insure that the source frame is correctly refreshed
+		tframe_set_title(source, null_buffer()->path);
+		tframe_set_modified(source, false);
+		gtk_widget_queue_draw(GTK_WIDGET(source));
+
+		columns_column_remove(columnset, source_col, source, false, false);
 	} else {
 		// actually moving source somewhere else
 
@@ -351,7 +358,7 @@ static void tag_drag_behaviour(tframe_t *source, tframe_t *target, double y) {
 		if (!columns_find_frame(columnset, target, NULL, &target_col, NULL, NULL, NULL)) return;
 
 		g_object_ref(source);
-		columns_column_remove(columnset, source_col, source, true);
+		column_remove(source_col, source, true, false);
 		column_add_after(target_col, target, source, true);
 		g_object_unref(source);
 
@@ -362,6 +369,12 @@ static void tag_drag_behaviour(tframe_t *source, tframe_t *target, double y) {
 		double new_source_size = tallocation.height - new_target_size;
 
 		column_resize_frame_pair(target_col, target, new_target_size, source, new_source_size);
+
+		if (column_frame_number(source_col) <= 0) {
+			editor_t *nulleditor = new_editor(null_buffer(), false);
+			tframe_t *nullframe = tframe_new(null_buffer()->path, GTK_WIDGET(nulleditor), columnset);
+			column_add_after(source_col, NULL, nullframe, true);
+		}
 	}
 }
 
@@ -393,7 +406,7 @@ static gboolean label_button_release_callback(GtkWidget *widget, GdkEventButton 
 static gboolean close_box_button_press_callback(GtkWidget *widget, GdkEventButton *event, tframe_t *tf) {
 	column_t *col;
 	if (!columns_find_frame(tf->columns, tf, NULL, &col, NULL, NULL, NULL)) return FALSE;
-	columns_column_remove(columnset, col, tf, false);
+	columns_column_remove(columnset, col, tf, false, true);
 	return TRUE;
 }
 
@@ -509,9 +522,11 @@ GtkWidget *tframe_content(tframe_t *frame) {
 	return frame->content;
 }
 
-bool tframe_close(tframe_t *tframe) {
+bool tframe_close(tframe_t *tframe, bool resist) {
 	if (GTK_IS_TEDITOR(tframe->content)) {
-		return buffers_close(GTK_TEDITOR(tframe->content)->buffer, true);
+		bool was_null_buffer = GTK_TEDITOR(tframe->content)->buffer == null_buffer();
+		bool r = buffers_close(GTK_TEDITOR(tframe->content)->buffer, true);
+		if (resist) return was_null_buffer; else return r;
 	} else {
 		return false;
 	}

@@ -20,7 +20,7 @@ column_t *column_new(gint spacing);
 
 void column_add_after(column_t *column, tframe_t *before_tf, tframe_t *tf, bool set_fraction);
 void column_append(column_t *column, tframe_t *tf, bool set_fraction);
-bool column_remove(column_t *column, tframe_t *frame, bool reparenting);
+bool column_remove(column_t *column, tframe_t *frame, bool reparenting, bool resist);
 int column_hide_others(column_t *column, tframe_t *frame);
 
 double column_fraction(column_t *column);

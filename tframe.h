@@ -26,6 +26,6 @@ void tframe_fraction_set(tframe_t *tframe, double fraction);
 
 GtkWidget *tframe_content(tframe_t *tframe);
 
-bool tframe_close(tframe_t *tframe);
+bool tframe_close(tframe_t *tframe, bool resist);
 
 #endif

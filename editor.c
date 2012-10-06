@@ -227,7 +227,7 @@ void editor_switch_buffer(editor_t *editor, buffer_t *buffer) {
 	}
 
 	editor->center_on_cursor_after_next_expose = TRUE;
-	gtk_widget_queue_draw(editor->drar);
+	gtk_widget_queue_draw(GTK_WIDGET(editor));
 }
 
 static const char *keyevent_to_string(guint keyval) {

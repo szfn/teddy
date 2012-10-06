@@ -232,11 +232,11 @@ int column_frame_number(column_t *column) {
 	return g_list_length(GTK_BOX(column)->children);
 }
 
-bool column_remove(column_t *column, tframe_t *frame, bool reparenting) {
+bool column_remove(column_t *column, tframe_t *frame, bool reparenting, bool resist) {
 	tframe_t *before_tf, *after_tf;
 
 	if (!reparenting)
-		if (!tframe_close(frame)) return false;
+		if (!tframe_close(frame, resist)) return false;
 
 	if (column_find_frame(column, frame, &before_tf, &after_tf)) {
 		if (before_tf != NULL) {
@@ -298,8 +298,8 @@ bool column_close(column_t *column) {
 	int c = 0;
 	GList *list = gtk_container_get_children(GTK_CONTAINER(column));
 	for (GList *cur = list; cur != NULL; cur = cur->next) {
-		if (tframe_close(GTK_TFRAME(cur->data))) {
-			column_remove(column, GTK_TFRAME(cur->data), false);
+		if (tframe_close(GTK_TFRAME(cur->data), false)) {
+			column_remove(column, GTK_TFRAME(cur->data), false, false);
 			++c;
 		}
 	}

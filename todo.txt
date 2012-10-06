@@ -1,4 +1,3 @@
-- tag_drag_behaviour shouldn't ever close columns
 - redo
 
 - make lexy a flat table, lexyassoc just gives the starting state but we can move to other states (implement mixed html / javascript mode)
