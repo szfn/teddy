@@ -44,6 +44,13 @@ int main(int argc, char *argv[]) {
 
 	read_conf();
 
+	cmdcompl_init();
+	compl_init(&the_cmd_completer);
+	the_cmd_completer.prefix_from_buffer = &buffer_cmdcompl_word_at_cursor;
+	the_cmd_completer.recalc = &cmdcompl_recalc;
+	the_cmd_completer.tmpdata = strdup("");
+	alloc_assert(the_cmd_completer.tmpdata);	
+
 	jobs_init();
 	buffers_init();
 

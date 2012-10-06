@@ -1,3 +1,5 @@
+- cd command should open new current directory
+
 - make lexy a flat table, lexyassoc just gives the starting state but we can move to other states (implement mixed html / javascript mode)
 - multiprocess highlighting
 - tabs

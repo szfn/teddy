@@ -47,12 +47,6 @@ void global_init() {
 
 	keybindings = g_hash_table_new(g_str_hash, streq);
 
-	cmdcompl_init();
-	compl_init(&the_cmd_completer);
-	the_cmd_completer.prefix_from_buffer = &buffer_cmdcompl_word_at_cursor;
-	the_cmd_completer.recalc = &cmdcompl_recalc;
-	the_cmd_completer.tmpdata = strdup("");
-	alloc_assert(the_cmd_completer.tmpdata);
 	compl_init(&the_word_completer);
 
 	cursor_arrow = gdk_cursor_new(GDK_ARROW);
