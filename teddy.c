@@ -13,12 +13,10 @@
 #include "cfg.h"
 #include "research.h"
 #include "lexy.h"
-#include "baux.h"
 #include "foundry.h"
 #include "iopen.h"
 #include "top.h"
 #include "tags.h"
-#include "go.h"
 
 static gboolean delete_callback(GtkWidget *widget, GdkEvent *event, gpointer data) {
 	if (buffers_close_all()) return FALSE;

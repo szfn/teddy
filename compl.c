@@ -1,6 +1,5 @@
 #include "compl.h"
 
-#include "baux.h"
 #include "global.h"
 
 static gboolean compl_wnd_expose_callback(GtkWidget *widget, GdkEventExpose *event, struct completer *c) {

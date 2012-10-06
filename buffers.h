@@ -34,4 +34,12 @@ void buffers_register_tags(const char *tags_file);
 extern buffer_t **buffers;
 extern int buffers_allocated;
 
+enum go_file_failure_reason {
+	GFFR_OTHER = 0,
+	GFFR_BINARYFILE,
+};
+
+editor_t *go_to_buffer(editor_t *editor, buffer_t *buffer, bool take_over);
+buffer_t *go_file(const char *filename, bool create, bool skip_search, enum go_file_failure_reason *gffr);
+
 #endif

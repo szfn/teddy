@@ -12,8 +12,6 @@
 #include "interp.h"
 #include "columns.h"
 #include "column.h"
-#include "baux.h"
-#include "go.h"
 #include "cfg.h"
 #include "lexy.h"
 #include "foundry.h"

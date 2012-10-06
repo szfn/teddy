@@ -1,7 +1,6 @@
 #include "global.h"
 
 #include "cfg.h"
-#include "baux.h"
 #include "top.h"
 #include "interp.h"
 #include "buffers.h"

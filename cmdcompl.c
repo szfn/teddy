@@ -1,6 +1,5 @@
 #include "cmdcompl.h"
 
-#include "baux.h"
 #include "global.h"
 #include "top.h"
 

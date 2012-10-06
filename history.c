@@ -5,7 +5,6 @@
 
 #include "global.h"
 #include "interp.h"
-#include "baux.h"
 
 void history_init(struct history *h) {
 	compl_init(&(h->c));

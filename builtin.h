@@ -535,8 +535,8 @@ namespace eval teddy_intl {\n\
 		if {$line ne \"\"} {\n\
 			if {$col eq \"\"} { set col 1 }\n\
 			buffer eval $b { m nil $line:$col }\n\
-			buffer focus $b\n\
 		}\n\
+		buffer focus $b\n\
 	}\n\
 \n\
 	namespace export man_link_open\n\

@@ -11,7 +11,6 @@
 #include "global.h"
 #include "treint.h"
 #include "lexy.h"
-#include "baux.h"
 
 static void research_free_temp(struct research_t *r) {
 	if (r->mode == SM_REGEXP) {

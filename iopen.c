@@ -8,14 +8,13 @@
 #include <gdk/gdkkeysyms.h>
 
 #include "editor.h"
-#include "baux.h"
 #include "top.h"
 #include "global.h"
 #include "buffer.h"
 #include "tags.h"
-#include "go.h"
 #include "research.h"
 #include "interp.h"
+#include "buffers.h"
 
 #define IOPEN_RECURSOR_DEPTH_LIMIT 128
 #define IOPEN_MAX_SENT_RESULTS 128

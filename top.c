@@ -7,7 +7,6 @@
 #include "interp.h"
 #include "history.h"
 #include "global.h"
-#include "baux.h"
 #include "tags.h"
 #include "buffers.h"
 #include "iopen.h"

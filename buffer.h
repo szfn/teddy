@@ -102,6 +102,15 @@ typedef struct _buffer_t {
 	critbit0_tree cbt;
 } buffer_t;
 
+enum movement_type_t {
+	MT_ABS = 0, // move to absolute line/column
+	MT_REL, // relative move
+	MT_END, // move to end
+	MT_START, // move to first non-whitespace character (buffer_move_point_glyph only)
+	MT_HOME, // toggle between first column and first non-whitespace character (buffer_move_point_glyph only)
+	MT_RELW, // word based relative move (buffer_move_point_glyph only)
+};
+
 buffer_t *buffer_create(void);
 void buffer_free(buffer_t *buffer, bool save_critbit);
 
@@ -167,5 +176,26 @@ void buffer_thaw_selection(buffer_t *buffer, selection_t *selection, lpoint_t *s
 void buffer_config_changed(buffer_t *buffer);
 
 void buffer_set_onchange(buffer_t *buffer, void (*fn)(buffer_t *buffer));
+
+bool buffer_move_point_line(buffer_t *buffer, lpoint_t *p, enum movement_type_t type, int arg);
+bool buffer_move_point_glyph(buffer_t *buffer, lpoint_t *p, enum movement_type_t type, int arg);
+
+/* writes in r the indent of cursor_line + a newline and the 0 byte */
+void buffer_indent_newline(buffer_t *buffer, char *r);
+
+/* internal word autocompletion functions */
+void buffer_wordcompl_init_charset(void);
+uint16_t *buffer_wordcompl_word_at_cursor(buffer_t *buffer, size_t *prefix_len);
+void buffer_wordcompl_update(buffer_t *buffer, critbit0_tree *cbt);
+uint16_t *buffer_cmdcompl_word_at_cursor(buffer_t *buffer, size_t *prefix_len);
+uint16_t *buffer_historycompl_word_at_cursor(buffer_t *buffer, size_t *prefix_len);
+
+// removes all text from a buffer
+void buffer_aux_clear(buffer_t *buffer);
+
+void buffer_get_extremes(buffer_t *buffer, lpoint_t *start, lpoint_t *end);
+char *buffer_all_lines_to_text(buffer_t *buffer);
+void buffer_select_all(buffer_t *buffer);
+void buffer_wordcompl_update_line(real_line_t *line, critbit0_tree *c);
 
 #endif

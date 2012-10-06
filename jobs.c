@@ -9,14 +9,12 @@
 #include <stdlib.h>
 
 #include "buffer.h"
-#include "baux.h"
 #include "editor.h"
 #include "columns.h"
 #include "lexy.h"
 #include "top.h"
 #include "global.h"
 #include "buffers.h"
-#include "go.h"
 
 #define JOBS_READ_BUFFER_SIZE 2048
 #define SHOWANYWAY_TIMO 500
@@ -26,6 +24,16 @@ void jobs_init(void) {
 	for (i = 0; i < MAX_JOBS; ++i) {
 		jobs[i].used = 0;
 	}
+}
+
+
+static int write_all(int fd, const char *str) {
+	while (*str != '\0') {
+		int r = write(fd, str, strlen(str));
+		if (r < 0) return -1;
+		str += r;
+	}
+	return 0;
 }
 
 static char *cut_prompt(job_t *job) {
@@ -66,7 +74,7 @@ static void job_destroy(job_t *job) {
 	}
 
 	free(job->command);
-	job->command = NULL;	
+	job->command = NULL;
 
 	job->used = 0;
 }
@@ -353,13 +361,4 @@ int jobs_register(pid_t child_pid, int masterfd, buffer_t *buffer, const char *c
 	}
 
 	return 1;
-}
-
-int write_all(int fd, const char *str) {
-	while (*str != '\0') {
-		int r = write(fd, str, strlen(str));
-		if (r < 0) return -1;
-		str += r;
-	}
-	return 0;
 }
