@@ -247,13 +247,15 @@ static gboolean label_expose_callback(GtkWidget *widget, GdkEventExpose *event, 
 	cairo_text_extents_t titlext, ellipsext;
 	cairo_text_extents(cr, ellipsis, &ellipsext);
 
-	char *title;
+	const char *title;
 	if (strstr(tf->title, top_working_directory()) == tf->title) {
 		title = tf->title + strlen(top_working_directory());
 		if (title[0] == '/') title++;
 	} else {
 		title = tf->title;
 	}
+
+	if (title[0] == '\0') title = ".";
 
 	do {
 		cairo_text_extents(cr, title+start, &titlext);
