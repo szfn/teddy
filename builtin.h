@@ -586,8 +586,9 @@ namespace eval teddy_intl {\n\
 	 		set directory \"$directory/\"\n\
 	 	}\n\
 		set b [buffer make $directory]\n\
-		#buffer eval $b { c \"CIAO!\" }\n\
-		teddy::bg $b { shell ls {*}$teddy::ls_options $directory }\n\
+		buffer eval $b {\n\
+			c [shellsync \"\" ls {*}$teddy::ls_options $directory ]\n\
+		}\n\
 	}\n\
 \n\
 	namespace export loadhistory\n\
