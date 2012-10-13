@@ -62,6 +62,13 @@ static buffer_t *buffers_make(const char *name) {
 		}
 	}
 
+	if (strncmp(name, "+bg/", 4) == 0) {
+		int n = atoi(name+4);
+		if (n >= process_buffers_counter) {
+			process_buffers_counter = n+1;
+		}
+	}
+
 	return buffer;
 }
 
