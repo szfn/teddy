@@ -148,6 +148,8 @@ static void ansi_append_escape(job_t *job) {
 		} else if (job->ansiseq[1] == '1') {
 			job->buffer->default_color = CFG_LEXY_STRING - CFG_LEXY_NOTHING;
 		}
+	} else if (command_char == 'H') {
+		//do nothing
 	} else {
 		job_append(job, "<esc>", strlen("<esc>"), 0);
 	}

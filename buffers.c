@@ -458,15 +458,23 @@ buffer_t *buffers_find_buffer_from_path(const char *urp) {
 
 int teddy_buffer_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
 	ARGNUM((argc < 2), "buffer");
+	char bufferid[20];
 
 	if (strcmp(argv[1], "make") == 0) {
 		ARGNUM((argc != 3), "buffer make");
 
 		buffer_t *buffer = buffers_make(argv[2]);
 
-		char bufferid[20];
 		buffer_to_buffer_id(buffer, bufferid);
 		Tcl_SetResult(interp, bufferid, TCL_VOLATILE);
+	} else if (strcmp(argv[1], "find") == 0) {
+		ARGNUM((argc != 3), "buffer find");
+		buffer_t *buffer = buffers_find_buffer_with_name(argv[2]);
+		buffer_to_buffer_id(buffer, bufferid);
+		Tcl_SetResult(interp, bufferid, TCL_VOLATILE);
+	} else if (strcmp(argv[1], "coc") == 0) {
+		SINGLE_ARGUMENT_BUFFER_SUBCOMMAND("buffer coc");
+		if (editor != NULL) editor_center_on_cursor(editor);
 	} else if (strcmp(argv[1], "save") == 0) {
 		SINGLE_ARGUMENT_BUFFER_SUBCOMMAND("buffer save");
 		if (editor != NULL) editor_save_action(editor); else save_to_text_file(buffer);
@@ -484,7 +492,6 @@ int teddy_buffer_command(ClientData client_data, Tcl_Interp *interp, int argc, c
 				heuristic_new_frame(columnset, frame, b);
 			}
 
-			char bufferid[20];
 			buffer_to_buffer_id(b, bufferid);
 			Tcl_SetResult(interp, bufferid, TCL_VOLATILE);
 		} else {
@@ -507,7 +514,6 @@ int teddy_buffer_command(ClientData client_data, Tcl_Interp *interp, int argc, c
 		}
 	} else if (strcmp(argv[1], "current") == 0) {
 		HASBUF("buffer current");
-		char bufferid[20];
 		buffer_to_buffer_id(interp_context_buffer(), bufferid);
 		Tcl_SetResult(interp, bufferid, TCL_VOLATILE);
 	} else if (strcmp(argv[1], "propget") == 0) {
@@ -542,7 +548,6 @@ int teddy_buffer_command(ClientData client_data, Tcl_Interp *interp, int argc, c
 		int cap = 0;
 		for (int i = 0; i < buffers_allocated; ++i) {
 			if (buffers[i] != NULL) {
-				char bufferid[20];
 				snprintf(bufferid, 15, "@b%d", i);
 				retval[cap] = Tcl_NewStringObj(bufferid, strlen(bufferid));
 				Tcl_IncrRefCount(retval[cap]);

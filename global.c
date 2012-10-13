@@ -450,6 +450,20 @@ void save_tied_session(void) {
 		fprintf(f, "teddy::bg [buffer make {%s}] { %s }\n", buffers[i]->path, buffers[i]->job->command);
 	}
 
+	for (int i = 0; i < buffers_allocated; ++i) {
+		if (buffers[i] == NULL) continue;
+		fprintf(f, "set b [buffer find {%s}]\n", buffers[i]->path);
+		fprintf(f, "buffer eval $b { m ");
+		if (buffers[i]->mark.line != NULL) {
+			fprintf(f, "%d:%d ", buffers[i]->mark.line->lineno, buffers[i]->mark.glyph);
+		} else {
+			fprintf(f, "nil ");
+		}
+		fprintf(f, "%d:%d", buffers[i]->cursor.line->lineno, buffers[i]->cursor.glyph);
+		fprintf(f, " }\n");
+		fprintf(f, "buffer coc $b\n");
+	}
+
 	fclose(f);
 }
 

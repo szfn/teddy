@@ -1,5 +1,5 @@
 - possibility to restore a session directly from command line
-- Save cursor position on tied sessions
+- EDITOR and VISUAL setting (needs some IPC implementation)
 - make lexy a flat table, lexyassoc just gives the starting state but we can move to other states (implement mixed html / javascript mode)
 - multiprocess highlighting
 - tabs
