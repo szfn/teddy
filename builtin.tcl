@@ -747,6 +747,20 @@ namespace eval teddy_intl {
 
 				c "teddy::session load $sessioname\n"
 
+				set sessioninfo [teddy::slurp $filename]
+
+				if {![regexp -lineanchor {^cd (.*?)$} $sessioninfo -> sessiondir]} {
+					set sessiondir "???"
+				}
+
+				if {![regexp {^# (\d+)} $sessioninfo -> sessionts]} {
+					set sessionts "0"
+				}
+
+				set sessiondate [shellsync "" date -d "@$sessionts" +%Y-%m-%d]
+
+				c "# in $sessiondir last access: $sessiondate\n"
+
 				incr count
 			}
 

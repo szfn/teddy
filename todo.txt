@@ -1,7 +1,6 @@
 - Save cursor position on tied sessions
 - set EDITOR, VISUAL to something reasonable in the default configuration (test perldoc perlfunc)
 - possibility to restore a session directly from command line
-- show session information on session load "menu"
 
 - make lexy a flat table, lexyassoc just gives the starting state but we can move to other states (implement mixed html / javascript mode)
 - multiprocess highlighting
