@@ -1,4 +1,3 @@
-- BUG: rounding to nearest integer for underline position and thickness
 - Save cursor position on tied sessions
 - Remove backup copy while saving
 - set EDITOR, VISUAL to something reasonable in the default configuration (test perldoc perlfunc)

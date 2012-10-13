@@ -1,5 +1,6 @@
 #include "foundry.h"
 
+#include <math.h>
 #include <cairo-ft.h>
 #include <glib.h>
 
@@ -230,8 +231,8 @@ void fontset_underline_info(teddy_fontset_t *fontset, int fontidx, double *under
 
 	//printf("underline position %d thickness %d y_scale %ld\n", (*f)->underline_position, (*f)->underline_thickness, (*f)->size->metrics.y_scale);
 
-	*underline_thickness = ((*f)->underline_thickness * y_scale) / 64;
-	*underline_position = ((*f)->underline_position * y_scale) / 64;
+	*underline_thickness = floor(((*f)->underline_thickness * y_scale) / 64);
+	*underline_position = floor(((*f)->underline_position * y_scale) / 64);
 }
 
 double fontset_x_advance(teddy_fontset_t *fontset, int fontidx, FT_UInt glyph) {
