@@ -52,7 +52,7 @@ static void gtk_teditor_class_init(editor_class *class) {
 static void gtk_teditor_init(editor_t *editor) {
 }
 
-static void set_label_text(editor_t *editor) {
+void set_label_text(editor_t *editor) {
 	tframe_t *frame;
 	find_editor_for_buffer(editor->buffer, NULL, &frame, NULL);
 

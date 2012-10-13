@@ -63,6 +63,8 @@ typedef struct _editor_class {
 
 GType gtk_teditor_get_type(void) G_GNUC_CONST;
 
+void set_label_text(editor_t *editor);
+
 editor_t *new_editor(buffer_t *buffer, bool single_line);
 void editor_free(editor_t *editor);
 void editor_switch_buffer(editor_t *editor, buffer_t *buffer);

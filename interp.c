@@ -47,6 +47,24 @@ static int teddy_cd_command(ClientData client_data, Tcl_Interp *interp, int argc
 
 	top_cd(argv[1]);
 
+	const char *open_cmd_argv[] = { "buffer", "open", "." };
+	teddy_buffer_command(client_data, interp, 3, open_cmd_argv);
+
+	GList *column_list = gtk_container_get_children(GTK_CONTAINER(columnset));
+	for (GList *column_cur = column_list; column_cur != NULL; column_cur = column_cur->next) {
+		GList *frame_list = gtk_container_get_children(GTK_CONTAINER(column_cur->data));
+		for (GList *frame_cur = frame_list; frame_cur != NULL; frame_cur = frame_cur->next) {
+			tframe_t *frame = GTK_TFRAME(frame_cur->data);
+			GtkWidget *cur_content = tframe_content(frame);
+			if (GTK_IS_TEDITOR(cur_content)) {
+				set_label_text(GTK_TEDITOR(cur_content));
+				gtk_widget_queue_draw(GTK_WIDGET(frame));
+			}
+		}
+		g_list_free(frame_list);
+	}
+	g_list_free(column_list);
+
 	return TCL_OK;
 }
 
