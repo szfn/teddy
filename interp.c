@@ -323,7 +323,7 @@ static void configure_for_bg_execution(Tcl_Interp *interp) {
 	interp_context_editor_set(NULL);
 
 	setenv("TERM", "ansi", 1);
-	setenv("PAGER", "", 1);
+	setenv("PAGER", "cat", 1);
 	setenv("SHELL", "teddy", 1);
 
 	Tcl_SetVar(interp, "backgrounded", "1", TCL_GLOBAL_ONLY);
