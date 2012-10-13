@@ -745,15 +745,10 @@ char *buffer_lines_to_text(buffer_t *buffer, lpoint_t *startp, lpoint_t *endp) {
 void save_to_text_file(buffer_t *buffer) {
 	if (buffer->path[0] == '+') return;
 
-	char *cmd;
-	asprintf(&cmd, "cp -f %s %s~", buffer->path, buffer->path);
-	system(cmd);
-	free(cmd);
-
 	FILE *file = fopen(buffer->path, "w");
 
 	if (!file) {
-		perror("Couldn't write to file");
+		quick_message("Error writing file", "Couldn't open file for write");
 		return;
 	}
 
@@ -773,8 +768,7 @@ void save_to_text_file(buffer_t *buffer) {
 	while (towrite > 0) {
 		size_t written = fwrite(r+write_start, sizeof(char), towrite, file);
 		if (written == 0) {
-			//TODO: show message here and don't exit
-			perror("Error writing to file");
+			quick_message("Error writing file", "Error writing file to disk");
 			return;
 		}
 		towrite -= written;
@@ -782,16 +776,11 @@ void save_to_text_file(buffer_t *buffer) {
 	}
 
 	if (fclose(file) != 0) {
-		//TODO: show message here and don't exit
-		perror("Couldn't write to file");
+		quick_message("Error writing file", "Error writing file to disk");
 		return;
 	}
 
 	free(r);
-
-	asprintf(&cmd, "%s~", buffer->path);
-	unlink(cmd); // we ignore the return value, too bad if we couldn't delete it
-	free(cmd);
 
 	buffer->modified = 0;
 	buffer->mtime = time(NULL)+10;
