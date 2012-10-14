@@ -445,13 +445,21 @@ void save_tied_session(void) {
 
 	for (int i = 0; i < buffers_allocated; ++i) {
 		if (buffers[i] == NULL) continue;
-		if (buffers[i]->job == NULL) continue;
 
-		fprintf(f, "teddy::bg [buffer make {%s}] { %s }\n", buffers[i]->path, buffers[i]->job->command);
-	}
+		if (buffers[i]->job !=NULL) {
+			fprintf(f, "teddy::bg [buffer make {%s}] {%s}\n", buffers[i]->path, buffers[i]->job->command);
+		} else if (buffers[i]->path[0] == '+') {
+			fprintf(f, "buffer eval [buffer find {%s}] { ", buffers[i]->path);
+			char *text = buffer_all_lines_to_text(buffers[i]);
+			alloc_assert(text);
+			const char *cargv[] = { "c", text };
+			char *c = Tcl_Merge(2, cargv);
+			free(text);
+			fprintf(f, "%s", c);
+			Tcl_Free(c);
+			fprintf(f, " }\n");
+		}
 
-	for (int i = 0; i < buffers_allocated; ++i) {
-		if (buffers[i] == NULL) continue;
 		fprintf(f, "set b [buffer find {%s}]\n", buffers[i]->path);
 		fprintf(f, "buffer eval $b { m ");
 		if (buffers[i]->mark.line != NULL) {
@@ -459,7 +467,7 @@ void save_tied_session(void) {
 		} else {
 			fprintf(f, "nil ");
 		}
-		fprintf(f, "%d:%d", buffers[i]->cursor.line->lineno, buffers[i]->cursor.glyph);
+		fprintf(f, "%d:%d", buffers[i]->cursor.line->lineno+1, buffers[i]->cursor.glyph+1);
 		fprintf(f, " }\n");
 		fprintf(f, "buffer coc $b\n");
 	}

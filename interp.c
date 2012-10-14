@@ -747,7 +747,7 @@ static int teddy_session_command(ClientData client_data, Tcl_Interp *interp, int
 	}
 }
 
-int teddy_fdopen_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
+static int teddy_fdopen_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
 	int i, intr;
 	int flags = 0;
 	Tcl_Obj *r;
@@ -819,7 +819,7 @@ int teddy_fdopen_command(ClientData client_data, Tcl_Interp *interp, int argc, c
 	return TCL_OK;
 }
 
-int teddy_fdclose_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
+static int teddy_fdclose_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
 	Tcl_Obj *r;
 	int intr;
 
@@ -836,7 +836,7 @@ int teddy_fdclose_command(ClientData client_data, Tcl_Interp *interp, int argc, 
 	return TCL_OK;
 }
 
-int teddy_fddup2_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
+static int teddy_fddup2_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
 	Tcl_Obj *r;
 	int intr;
 
@@ -853,7 +853,7 @@ int teddy_fddup2_command(ClientData client_data, Tcl_Interp *interp, int argc, c
 	return TCL_OK;
 }
 
-int teddy_fdpipe_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
+static int teddy_fdpipe_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
 	int pipefd[2];
 	int ret;
 	Tcl_Obj *pipeobj[2], *retlist;
@@ -881,7 +881,7 @@ int teddy_fdpipe_command(ClientData client_data, Tcl_Interp *interp, int argc, c
 	return TCL_OK;
 }
 
-int teddy_posixfork_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
+static int teddy_posixfork_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
 	ARGNUM((argc != 1), "posixfork");
 
 	int intr = fork();
@@ -896,7 +896,7 @@ int teddy_posixfork_command(ClientData client_data, Tcl_Interp *interp, int argc
 	return TCL_OK;
 }
 
-int teddy_posixexec_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
+static int teddy_posixexec_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
 	// first argument passed to this command is the name of this command (i.e. the string "posixexec") this needs to be discarded before calling execvp and a NULL needs to be appended to argv as a terminator
 
 	char ** newargv = malloc(sizeof(char *) * argc);
@@ -915,7 +915,7 @@ int teddy_posixexec_command(ClientData client_data, Tcl_Interp *interp, int argc
 	return TCL_OK;
 }
 
-int teddy_posixwaitpid_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
+static int teddy_posixwaitpid_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
 	int i;
 	int status, options = 0;
 	pid_t r;
@@ -971,13 +971,13 @@ int teddy_posixwaitpid_command(ClientData client_data, Tcl_Interp *interp, int a
 	return TCL_OK;
 }
 
-int teddy_posixexit_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
+static int teddy_posixexit_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
 	ARGNUM((argc != 2), "posixexit");
 	exit(atoi(argv[1]));
 	return TCL_OK;
 }
 
-int teddy_fd2channel_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
+static int teddy_fd2channel_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
 	ARGNUM((argc != 3), "fd2channel");
 
 	int fd = atoi(argv[1]);

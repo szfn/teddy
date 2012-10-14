@@ -34,11 +34,11 @@ void undo_free(undo_t *undo) {
 	}
 }
 
+#ifdef UNDO_DEBUGGING
 static void debug_print_selection(selection_t *selection) {
 	printf("   %d:%d,%d:%d [[%s]]\n", selection->start.lineno, selection->start.glyph, selection->end.lineno, selection->end.glyph, selection->text);
 }
 
-#ifdef UNDO_DEBUGGING
 static void debug_print_undo(undo_node_t *node) __attribute__ ((unused));
 static void debug_print_undo(undo_node_t *node) {
 	if (node == NULL) {
