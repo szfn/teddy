@@ -163,15 +163,9 @@ char *buffer_lines_to_text(buffer_t *buffer, lpoint_t *start, lpoint_t *end);
 void buffer_typeset_maybe(buffer_t *buffer, double width, bool single_line, bool force);
 
 // functions to get screen coordinates of things (yes, I have no idea anymore what the hell they do or are used for)
-void buffer_cursor_position(buffer_t *buffer, double *x, double *y);
 void line_get_glyph_coordinates(buffer_t *buffer, lpoint_t *point, double *x, double *y);
 void buffer_point_from_position(buffer_t *buffer, double x, double y, lpoint_t *p);
 void buffer_move_cursor_to_position(buffer_t *buffer, double x, double y);
-
-// removes trailing spaces from line unless line is exclusively made out of spaces
-void buffer_line_clean_trailing_spaces(buffer_t *buffer, real_line_t *line);
-
-void buffer_thaw_selection(buffer_t *buffer, selection_t *selection, lpoint_t *start, lpoint_t *end);
 
 void buffer_config_changed(buffer_t *buffer);
 
@@ -197,5 +191,6 @@ void buffer_get_extremes(buffer_t *buffer, lpoint_t *start, lpoint_t *end);
 char *buffer_all_lines_to_text(buffer_t *buffer);
 void buffer_select_all(buffer_t *buffer);
 void buffer_wordcompl_update_line(real_line_t *line, critbit0_tree *c);
+char *buffer_get_selection_text(buffer_t *buffer);
 
 #endif

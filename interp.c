@@ -433,11 +433,9 @@ static int teddy_change_command(ClientData client_data, Tcl_Interp *interp, int 
 	switch (argc) {
 	case 1:
 		{
-			lpoint_t start, end;
-			buffer_get_selection(interp_context_buffer(), &start, &end);
-			char *text = buffer_lines_to_text(interp_context_buffer(), &start, &end);
-			Tcl_SetResult(interp, text, TCL_VOLATILE);
-			free(text);
+			char *text = buffer_get_selection_text(interp_context_buffer());
+			Tcl_SetResult(interp, (text != NULL ? text : ""), TCL_VOLATILE);
+			if (text != NULL) free(text);
 			return TCL_OK;
 		}
 	case 2:

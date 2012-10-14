@@ -138,7 +138,7 @@ void editor_center_on_cursor(editor_t *editor) {
 	GtkAllocation allocation;
 
 	gtk_widget_get_allocation(editor->drar, &allocation);
-	buffer_cursor_position(editor->buffer, &x, &y);
+	line_get_glyph_coordinates(editor->buffer, &(editor->buffer->cursor), &x, &y);
 
 	double translated_y = y - gtk_adjustment_get_value(GTK_ADJUSTMENT(editor->adjustment));
 	double translated_x = x - gtk_adjustment_get_value(GTK_ADJUSTMENT(editor->hadjustment));
@@ -166,7 +166,7 @@ static void editor_include_cursor(editor_t *editor) {
 	GtkAllocation allocation;
 
 	gtk_widget_get_allocation(editor->drar, &allocation);
-	buffer_cursor_position(editor->buffer, &x, &y);
+	line_get_glyph_coordinates(editor->buffer, &(editor->buffer->cursor), &x, &y);
 	translated_y = y - gtk_adjustment_get_value(GTK_ADJUSTMENT(editor->adjustment));
 
 	if ((translated_y - editor->buffer->line_height) < 0) {
@@ -186,19 +186,11 @@ static void editor_include_cursor(editor_t *editor) {
 }
 
 static void editor_get_primary_selection(GtkClipboard *clipboard, GtkSelectionData *selection_data, guint info, editor_t *editor) {
-	lpoint_t start, end;
-	char *r = NULL;
-
-	buffer_get_selection(editor->buffer, &start, &end);
-
-	if (start.line == NULL) return;
-	if (end.line == NULL) return;
-
-	r  = buffer_lines_to_text(editor->buffer, &start, &end);
-
-	gtk_selection_data_set_text(selection_data, r, -1);
-
-	free(r);
+	char *r = buffer_get_selection_text(editor->buffer);
+	if (r != NULL) {
+		gtk_selection_data_set_text(selection_data, r, -1);
+		free(r);
+	}
 }
 
 void editor_complete_move(editor_t *editor, gboolean should_move_origin) {
@@ -282,21 +274,9 @@ static void set_primary_selection(editor_t *editor) {
 }
 
 static void freeze_primary_selection(editor_t *editor) {
-	if (editor->buffer->mark.line == NULL) return;
-
-	lpoint_t start, end;
-	char *r = NULL;
-
-	buffer_get_selection(editor->buffer, &start, &end);
-
-	if (start.line == NULL) return;
-	if (end.line == NULL) return;
-
-	r  = buffer_lines_to_text(editor->buffer, &start, &end);
-
-	if (strcmp(r, "") != 0)
-		gtk_clipboard_set_text(selection_clipboard, r, -1);
-
+	char *r = buffer_get_selection_text(editor->buffer);
+	if (r == NULL) return;
+	if (strcmp(r, "") != 0) gtk_clipboard_set_text(selection_clipboard, r, -1);
 	free(r);
 }
 
@@ -520,10 +500,7 @@ static gboolean key_press_callback(GtkWidget *widget, GdkEventKey *event, editor
 		}
 
 		case GDK_KEY_Menu: {
-			lpoint_t start, end;
-			buffer_get_selection(editor->buffer, &start, &end);
-
-			if (((start.line != NULL) && (end.line != NULL)) || ((editor->buffer->cursor.glyph < editor->buffer->cursor.line->cap) && (editor->buffer->cursor.line->glyph_info[editor->buffer->cursor.glyph].color == (CFG_LEXY_FILE - CFG_LEXY_NOTHING))))
+			if ((editor->buffer->mark.line != NULL) || ((editor->buffer->cursor.glyph < editor->buffer->cursor.line->cap) && (editor->buffer->cursor.line->glyph_info[editor->buffer->cursor.glyph].color == (CFG_LEXY_FILE - CFG_LEXY_NOTHING))))
 				gtk_menu_popup(GTK_MENU(editor->context_menu), NULL, NULL, (GtkMenuPositionFunc)menu_position_function, editor, 0, event->time);
 			return TRUE;
 		}
@@ -655,7 +632,7 @@ static void absolute_position(editor_t *editor, double *x, double *y) {
 }
 
 void editor_absolute_cursor_position(editor_t *editor, double *x, double *y, double *alty) {
-	buffer_cursor_position(editor->buffer, x, y);
+	line_get_glyph_coordinates(editor->buffer, &(editor->buffer->cursor), x, y);
 	*y -= gtk_adjustment_get_value(GTK_ADJUSTMENT(editor->adjustment));
 
 	//printf("x = %g y = %g\n", x, y);
@@ -733,9 +710,7 @@ static gboolean button_press_callback(GtkWidget *widget, GdkEventButton *event, 
 			g_free(text);
 		}
 	} else if (event->button == 3) {
-		lpoint_t start, end;
-		buffer_get_selection(editor->buffer, &start, &end);
-		if ((start.line != NULL) && (end.line != NULL))
+		if (editor->buffer->mark.line != NULL)
 			gtk_menu_popup(GTK_MENU(editor->context_menu), NULL, NULL, NULL, NULL, event->button, event->time);
 	}
 
@@ -1062,7 +1037,7 @@ static void draw_cursorline(cairo_t *cr, editor_t *editor) {
 	gtk_widget_get_allocation(editor->drar, &allocation);
 
 	double cursor_x, cursor_y;
-	buffer_cursor_position(editor->buffer, &cursor_x, &cursor_y);
+	line_get_glyph_coordinates(editor->buffer, &(editor->buffer->cursor), &cursor_x, &cursor_y);
 
 	set_color_cfg(cr, config_intval(&(editor->buffer->config), CFG_EDITOR_BG_CURSORLINE));
 	cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
@@ -1163,7 +1138,7 @@ static gboolean expose_event_callback(GtkWidget *widget, GdkEventExpose *event, 
 
 		set_color_cfg(cr, config_intval(&(editor->buffer->config), CFG_EDITOR_FG_COLOR));
 
-		buffer_cursor_position(editor->buffer, &cursor_x, &cursor_y);
+		line_get_glyph_coordinates(editor->buffer, &(editor->buffer->cursor), &cursor_x, &cursor_y);
 
 		cairo_rectangle(cr, cursor_x, cursor_y-editor->buffer->ascent, 2, editor->buffer->ascent+editor->buffer->descent);
 		cairo_fill(cr);
@@ -1347,12 +1322,10 @@ static void reload_stale_callback(GtkButton *btn, editor_t *editor) {
 }
 
 static char *get_selection_or_file_link(editor_t *editor, bool *islink) {
-	lpoint_t start, end;
-	buffer_get_selection(editor->buffer, &start, &end);
-
 	*islink = false;
 
-	if ((start.line != NULL) && (end.line != NULL)) return buffer_lines_to_text(editor->buffer, &start, &end);
+	char *r = buffer_get_selection_text(editor->buffer);
+	if (r != NULL) return r;
 
 	if ((editor->buffer->cursor.glyph < editor->buffer->cursor.line->cap) && (editor->buffer->cursor.line->glyph_info[editor->buffer->cursor.glyph].color == (CFG_LEXY_FILE - CFG_LEXY_NOTHING))) {
 		char *r = select_file(editor->buffer, &(editor->buffer->cursor));
@@ -1594,7 +1567,7 @@ void editor_grab_focus(editor_t *editor, bool warp) {
 
 			if (warptype > 1) {
 				double cx, cy;
-				buffer_cursor_position(editor->buffer, &cx, &cy);
+				line_get_glyph_coordinates(editor->buffer, &(editor->buffer->cursor), &cx, &cy);
 				y += cy - gtk_adjustment_get_value(GTK_ADJUSTMENT(editor->adjustment));
 				x += 5;
 			} else {

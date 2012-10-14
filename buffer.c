@@ -503,7 +503,7 @@ static real_line_t *buffer_search_line(buffer_t *buffer, int lineno) {
 	return real_line;
 }
 
-void buffer_thaw_selection(buffer_t *buffer, selection_t *selection, lpoint_t *start, lpoint_t *end) {
+static void buffer_thaw_selection(buffer_t *buffer, selection_t *selection, lpoint_t *start, lpoint_t *end) {
 	start->line = buffer_search_line(buffer, selection->start.lineno);
 	start->glyph = selection->start.glyph;
 
@@ -595,11 +595,6 @@ int load_dir(buffer_t *buffer, const char *dirname) {
 
 	buffer_setup_hook(buffer);
 
-	/*rd(dir, buffer);
-
-	closedir(dir);*/
-
-	//buffer->editable = false;
 	buffer->modified = false;
 
 	return 0;
@@ -808,10 +803,6 @@ void line_get_glyph_coordinates(buffer_t *buffer, lpoint_t *point, double *x, do
 	}
 }
 
-void buffer_cursor_position(buffer_t *buffer, double *x, double *y) {
-	line_get_glyph_coordinates(buffer, &(buffer->cursor), x, y);
-}
-
 void buffer_point_from_position(buffer_t *buffer, double x, double y, lpoint_t *p) {
 	real_line_t *line, *prev = NULL;
 	int i, glyph = 0;
@@ -857,9 +848,7 @@ void buffer_point_from_position(buffer_t *buffer, double x, double y, lpoint_t *
 void buffer_move_cursor_to_position(buffer_t *buffer, double x, double y) {
 	lpoint_t p;
 	buffer_point_from_position(buffer, x, y, &p);
-
 	copy_lpoint(&(buffer->cursor), &p);
-
 	buffer_extend_selection_by_select_type(buffer);
 }
 
@@ -1019,40 +1008,6 @@ void buffer_typeset_maybe(buffer_t *buffer, double width, bool single_line, bool
 	for (line = buffer->real_line; line != NULL; line = line->next) {
 		buffer_line_adjust_glyphs(buffer, line, y);
 		y += line->y_increment;
-	}
-}
-
-void buffer_line_clean_trailing_spaces(buffer_t *buffer, real_line_t *line) {
-	int i;
-	for (i = line->cap; i > 0; --i) {
-		uint32_t code_before_cap = line->glyph_info[i-1].code;
-		if ((code_before_cap != 0x20) && (code_before_cap != 0x09)) {
-			break;
-		}
-	}
-
-	if (i == line->cap) return;
-	//if (i == 0) return;
-
-	lpoint_t savedmark, savedcursor;
-
-	copy_lpoint(&savedmark, &(buffer->mark));
-	copy_lpoint(&savedcursor, &(buffer->cursor));
-
-	buffer->mark.line = line; buffer->mark.glyph = i;
-	buffer->cursor.line = line; buffer->cursor.glyph = line->cap;
-
-	buffer_replace_selection(buffer, "");
-
-	copy_lpoint(&(buffer->mark), &savedmark);
-	copy_lpoint(&(buffer->cursor), &savedcursor);
-
-	if (buffer->mark.line == line) {
-		if (buffer->mark.glyph > line->cap) buffer->mark.glyph = line->cap;
-	}
-
-	if (buffer->cursor.line == line) {
-		if (buffer->cursor.glyph > line->cap) buffer->cursor.glyph = line->cap;
 	}
 }
 
@@ -1426,15 +1381,6 @@ void buffer_wordcompl_update(buffer_t *buffer, critbit0_tree *cbt) {
 	word_completer_full_update();
 }
 
-void buffer_aux_clear(buffer_t *buffer) {
-	if (buffer->real_line == NULL) return;
-	buffer->mark.line = buffer->real_line;
-	buffer->mark.glyph = 0;
-	for (buffer->cursor.line = buffer->real_line; buffer->cursor.line->next != NULL; buffer->cursor.line = buffer->cursor.line->next);
-	buffer->cursor.glyph = buffer->cursor.line->cap;
-	buffer_replace_selection(buffer, "");
-}
-
 void buffer_get_extremes(buffer_t *buffer, lpoint_t *start, lpoint_t *end) {
 	start->line = buffer->real_line;
 	start->glyph = 0;
@@ -1443,23 +1389,26 @@ void buffer_get_extremes(buffer_t *buffer, lpoint_t *start, lpoint_t *end) {
 	end->glyph = end->line->cap;
 }
 
+void buffer_aux_clear(buffer_t *buffer) {
+	buffer_get_extremes(buffer, &(buffer->mark), &(buffer->cursor));
+	buffer_replace_selection(buffer, "");
+}
+
 void buffer_select_all(buffer_t *buffer) {
+	buffer_get_extremes(buffer, &(buffer->mark), &(buffer->cursor));
+}
+
+char *buffer_get_selection_text(buffer_t *buffer) {
 	lpoint_t start, end;
-	buffer_get_extremes(buffer, &start, &end);
-	copy_lpoint(&(buffer->mark), &start);
-	copy_lpoint(&(buffer->cursor), &end);
+	buffer_get_selection(buffer, &start, &end);
+	if (start.line == NULL) return NULL;
+	if (end.line == NULL) return NULL;
+	return buffer_lines_to_text(buffer, &start, &end);
 }
 
 char *buffer_all_lines_to_text(buffer_t *buffer) {
-	lpoint_t start, end, savedcursor;
+	lpoint_t start, end;
 	buffer_get_extremes(buffer, &start, &end);
-
-	copy_lpoint(&savedcursor, &(buffer->cursor));
-	copy_lpoint(&(buffer->mark), &start);
-	copy_lpoint(&(buffer->cursor), &end);
-	char *buffer_text = buffer_lines_to_text(buffer, &start, &end);
-	buffer->mark.line = NULL;
-	copy_lpoint(&(buffer->cursor), &savedcursor);
-
-	return buffer_text;
+	return buffer_lines_to_text(buffer, &start, &end);
 }
+
