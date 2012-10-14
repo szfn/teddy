@@ -1,8 +1,6 @@
-- possibility to restore a session directly from command line
 - EDITOR and VISUAL setting (needs some IPC implementation)
 - make lexy a flat table, lexyassoc just gives the starting state but we can move to other states (implement mixed html / javascript mode)
 - multiprocess highlighting
 - tabs
 - macro recording
-
 - BUG: changing font after intialization results in trash (stuff in glyph_info isn't reloaded)

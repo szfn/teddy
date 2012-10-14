@@ -23,63 +23,7 @@ static gboolean delete_callback(GtkWidget *widget, GdkEvent *event, gpointer dat
 	return TRUE;
 }
 
-int main(int argc, char *argv[]) {
-	GtkWidget *window;
-
-	gtk_init(&argc, &argv);
-
-	foundry_init();
-
-	history_init(&command_history);
-	history_init(&search_history);
-
-	global_init();
-	config_init_auto_defaults();
-	init_colors();
-
-	buffer_wordcompl_init_charset();
-
-	lexy_init();
-	interp_init();
-
-	read_conf();
-
-	cmdcompl_init();
-	compl_init(&the_cmd_completer);
-	the_cmd_completer.prefix_from_buffer = &buffer_cmdcompl_word_at_cursor;
-	the_cmd_completer.recalc = &cmdcompl_recalc;
-	the_cmd_completer.tmpdata = strdup("");
-	alloc_assert(the_cmd_completer.tmpdata);	
-
-	jobs_init();
-	buffers_init();
-
-	{
-		const char *loadhistory[] = { "teddy_intl::loadhistory" };
-		interp_eval_command(NULL, NULL, 1, loadhistory);
-	}
-
-	window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
-
-	gtk_window_set_title(GTK_WINDOW(window), GIT_COMPILATION_DATE);
-	gtk_window_set_default_size(GTK_WINDOW(window), 1024, 680);
-
-	g_signal_connect(G_OBJECT(window), "delete-event", G_CALLBACK(delete_callback), NULL);
-	g_signal_connect_swapped(G_OBJECT(window), "destroy", G_CALLBACK(gtk_main_quit), NULL);
-
-	columnset = columns_new();
-	iopen_init(window);
-
-	tags_init();
-	GtkWidget *top = top_init();
-
-	GtkWidget *vbox = gtk_vbox_new(FALSE, 0);
-
-	gtk_box_pack_start(GTK_BOX(vbox), top, FALSE, FALSE, 0);
-	gtk_box_pack_start(GTK_BOX(vbox), GTK_WIDGET(columnset), TRUE, TRUE, 0);
-
-	gtk_container_add(GTK_CONTAINER(window), vbox);
-
+static void setup_initial_columns(int argc, char *argv[]) {
 	column_t *col1 = column_new(0);
 	column_t *col2 = column_new(0);
 
@@ -114,6 +58,75 @@ int main(int argc, char *argv[]) {
 				editor_grab_focus(GTK_TEDITOR(w), false);
 			}
 		}
+	}
+}
+
+static void setup_loading_session(const char *session_name) {
+	const char *sessioncmd[] = { "teddy::session", "load", session_name };
+	interp_eval_command(NULL, NULL, 3, sessioncmd);
+}
+
+int main(int argc, char *argv[]) {
+	GtkWidget *window;
+
+	gtk_init(&argc, &argv);
+
+	foundry_init();
+
+	history_init(&command_history);
+	history_init(&search_history);
+
+	global_init();
+	config_init_auto_defaults();
+	init_colors();
+
+	buffer_wordcompl_init_charset();
+
+	lexy_init();
+	interp_init();
+
+	read_conf();
+
+	cmdcompl_init();
+	compl_init(&the_cmd_completer);
+	the_cmd_completer.prefix_from_buffer = &buffer_cmdcompl_word_at_cursor;
+	the_cmd_completer.recalc = &cmdcompl_recalc;
+	the_cmd_completer.tmpdata = strdup("");
+	alloc_assert(the_cmd_completer.tmpdata);
+
+	jobs_init();
+	buffers_init();
+
+	{
+		const char *loadhistory[] = { "teddy_intl::loadhistory" };
+		interp_eval_command(NULL, NULL, 1, loadhistory);
+	}
+
+	window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
+
+	gtk_window_set_title(GTK_WINDOW(window), GIT_COMPILATION_DATE);
+	gtk_window_set_default_size(GTK_WINDOW(window), 1024, 680);
+
+	g_signal_connect(G_OBJECT(window), "delete-event", G_CALLBACK(delete_callback), NULL);
+	g_signal_connect_swapped(G_OBJECT(window), "destroy", G_CALLBACK(gtk_main_quit), NULL);
+
+	columnset = columns_new();
+	iopen_init(window);
+
+	tags_init();
+	GtkWidget *top = top_init();
+
+	GtkWidget *vbox = gtk_vbox_new(FALSE, 0);
+
+	gtk_box_pack_start(GTK_BOX(vbox), top, FALSE, FALSE, 0);
+	gtk_box_pack_start(GTK_BOX(vbox), GTK_WIDGET(columnset), TRUE, TRUE, 0);
+
+	gtk_container_add(GTK_CONTAINER(window), vbox);
+
+	if ((argc == 2) && (argv[1][0] == '@')) {
+		setup_loading_session(argv[1]+1);
+	} else {
+		setup_initial_columns(argc, argv);
 	}
 
 	gtk_widget_show_all(window);
