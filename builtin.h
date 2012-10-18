@@ -312,13 +312,16 @@ proc lexydef {name args} {\n\
 \n\
 			if {[llength $state_and_token_type] > 1} {\n\
 				set next_state [lindex $state_and_token_type 0]\n\
+				if {[llength [split $next_state /]] <= 1} {\n\
+					set next_state \"$name/$next_state\"\n\
+				}\n\
 				set type [lindex $state_and_token_type 1]\n\
 			} else {\n\
-				set next_state $start_state\n\
+				set next_state \"$name/$start_state\"\n\
 				set type [lindex $state_and_token_type 0]\n\
 			}\n\
 \n\
-			lexydef-append \"$name/$start_state\" $pattern \"$name/$next_state\" $type\n\
+			lexydef-append \"$name/$start_state\" $pattern $next_state $type\n\
 		}\n\
 	}\n\
 }\n\
@@ -952,5 +955,67 @@ lexyassoc mansearch/0 {^\\+man} teddy_intl::man_link_open\n\
 lexydef tagsearch 0 {\n\
 		{(\\S+)\\t/(.+)/$} link,1,2\n\
 	}\n\
+\n\
+lexydef js 0 {\n\
+		{</script>} html/0:keyword\n\
+		{\\<(?:break|const|continue|delete|do|while|export|for|in|function|if|else|instanceOf|label|let|new|return|switch|this|throw|try|catch|typeof|var|void|while|with|yield)\\>} keyword\n\
+		\"-?(?:0x)[0-9a-fA-F]*\" literal\n\
+		\"-?[0-9][0-9]*(?:\\\\.[0-9]+)?(?:e-[0-9]+?)?\" literal\n\
+		\"null|true|false\" literal\n\
+\n\
+		\"[a-zA-Z_][a-zA-Z0-9_]*\" id\n\
+\n\
+		\"//.*$\" comment\n\
+		\"/\\\\*\" comment:comment\n\
+\n\
+		\"\\\"\" stringqq:string\n\
+		\"\\'\" stringq:string\n\
+\n\
+		\".\" nothing\n\
+	} comment {\n\
+		\"\\\\*/\" 0:comment\n\
+		\".\" comment\n\
+	} stringq {\n\
+		{\\\\.} string\n\
+		{'} 0:string\n\
+		{.} string\n\
+	} stringqq {\n\
+		{\\\\.} string\n\
+		\"\\\"\" 0:string\n\
+		{.} string\n\
+	}\n\
+\n\
+lexydef html 0 {\n\
+		{&.*?;} literal\n\
+		{<!--} comment:comment\n\
+		{<} html-tag-start:keyword\n\
+		{>} keyword\n\
+		\".\" nothing\n\
+	} html-tag-start {\n\
+		{script} html-tag-waiting-for-script:keyword\n\
+		{[a-zA-Z]+} html-tag:keyword\n\
+		\".\" nothing\n\
+	} html-tag {\n\
+		{'} stringq:string\n\
+		{\"} stringqq:string\n\
+		{>} 0:nothing\n\
+		\".\" nothing\n\
+	} html-tag-waiting-for-script {\n\
+		{>} js/0:nothing\n\
+		\".\" nothing\n\
+	} stringqq {\n\
+		{\\\\.} string\n\
+		{\"} html-tag:string\n\
+		{.} string\n\
+	} stringq {\n\
+		{\\\\.} string\n\
+		{'} html-tag:string\n\
+		{.} string\n\
+	} comment {\n\
+		{-->} 0:comment\n\
+		\".\" comment\n\
+	}\n\
+\n\
+lexyassoc html/0 {\\.html$}\n\
 "
 #endif

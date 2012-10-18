@@ -309,13 +309,16 @@ proc lexydef {name args} {
 
 			if {[llength $state_and_token_type] > 1} {
 				set next_state [lindex $state_and_token_type 0]
+				if {[llength [split $next_state /]] <= 1} {
+					set next_state "$name/$next_state"
+				}
 				set type [lindex $state_and_token_type 1]
 			} else {
-				set next_state $start_state
+				set next_state "$name/$start_state"
 				set type [lindex $state_and_token_type 0]
 			}
 
-			lexydef-append "$name/$start_state" $pattern "$name/$next_state" $type
+			lexydef-append "$name/$start_state" $pattern $next_state $type
 		}
 	}
 }
@@ -949,3 +952,65 @@ lexyassoc mansearch/0 {^\+man} teddy_intl::man_link_open
 lexydef tagsearch 0 {
 		{(\S+)\t/(.+)/$} link,1,2
 	}
+
+lexydef js 0 {
+		{</script>} html/0:keyword
+		{\<(?:break|const|continue|delete|do|while|export|for|in|function|if|else|instanceOf|label|let|new|return|switch|this|throw|try|catch|typeof|var|void|while|with|yield)\>} keyword
+		"-?(?:0x)[0-9a-fA-F]*" literal
+		"-?[0-9][0-9]*(?:\\.[0-9]+)?(?:e-[0-9]+?)?" literal
+		"null|true|false" literal
+
+		"[a-zA-Z_][a-zA-Z0-9_]*" id
+
+		"//.*$" comment
+		"/\\*" comment:comment
+
+		"\"" stringqq:string
+		"\'" stringq:string
+
+		"." nothing
+	} comment {
+		"\\*/" 0:comment
+		"." comment
+	} stringq {
+		{\\.} string
+		{'} 0:string
+		{.} string
+	} stringqq {
+		{\\.} string
+		"\"" 0:string
+		{.} string
+	}
+
+lexydef html 0 {
+		{&.*?;} literal
+		{<!--} comment:comment
+		{<} html-tag-start:keyword
+		{>} keyword
+		"." nothing
+	} html-tag-start {
+		{script} html-tag-waiting-for-script:keyword
+		{[a-zA-Z]+} html-tag:keyword
+		"." nothing
+	} html-tag {
+		{'} stringq:string
+		{"} stringqq:string
+		{>} 0:nothing
+		"." nothing
+	} html-tag-waiting-for-script {
+		{>} js/0:nothing
+		"." nothing
+	} stringqq {
+		{\\.} string
+		{"} html-tag:string
+		{.} string
+	} stringq {
+		{\\.} string
+		{'} html-tag:string
+		{.} string
+	} comment {
+		{-->} 0:comment
+		"." comment
+	}
+
+lexyassoc html/0 {\.html$}
