@@ -7,7 +7,7 @@
 
 #include "buffer.h"
 
-#define LEXY_STATUS_NUMBER 0xff
+#define LEXY_ROWS 0xffff
 
 void lexy_init(void);
 void lexy_update_starting_at(buffer_t *buffer, real_line_t *start_line, bool quick_exit);

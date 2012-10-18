@@ -34,7 +34,7 @@ typedef struct _real_line_t {
 	double start_y;
 	double end_y;
 	double y_increment;
-	uint8_t lexy_state_start, lexy_state_end;
+	uint16_t lexy_state_start, lexy_state_end;
 	struct _real_line_t *prev;
 	struct _real_line_t *next;
 } real_line_t;
