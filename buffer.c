@@ -995,6 +995,7 @@ void buffer_get_selection(buffer_t *buffer, lpoint_t *start, lpoint_t *end) {
 }
 
 void buffer_typeset_maybe(buffer_t *buffer, double width, bool single_line, bool force) {
+	if (buffer == NULL) return;
 	real_line_t *line;
 	double y = single_line ? buffer->ascent : buffer->line_height + (buffer->ex_height / 2);
 
