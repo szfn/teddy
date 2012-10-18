@@ -189,7 +189,7 @@ static real_line_t *new_real_line(int lineno) {
 	line->lineno = lineno;
 	line->y_increment = 0.0;
 	line->start_y = 0.0;
-	line->lexy_state_start = line->lexy_state_end = LEXY_STATUS_NUMBER;
+	line->lexy_state_start = line->lexy_state_end = LEXY_ROWS;
 	return line;
 }
 

@@ -303,7 +303,6 @@ proc solarized_theme {} {\n\
 # Implementations of commands useful to the user\n\
 \n\
 proc lexydef {name args} {\n\
-	lexydef-create $name\n\
 	for {set i 0} {$i < [llength $args]} {set i [expr $i + 2]} {\n\
 		set start_state [lindex $args $i]\n\
 		set transitions [lindex $args [expr $i + 1]]\n\
@@ -319,7 +318,7 @@ proc lexydef {name args} {\n\
 				set type [lindex $state_and_token_type 0]\n\
 			}\n\
 \n\
-			lexydef-append $name $start_state $pattern $next_state $type\n\
+			lexydef-append \"$name/$start_state\" $pattern \"$name/$next_state\" $type\n\
 		}\n\
 	}\n\
 }\n\
@@ -508,7 +507,7 @@ namespace eval teddy_intl {\n\
 	namespace export link_open\n\
 	proc link_open {islink text} {\n\
 		if {$islink} {\n\
-			set r [lexy-token 0 $text]\n\
+			set r [lexy-token . $text]\n\
 		} else {\n\
 			set r [list nothing $text \"\" \"\"]\n\
 		}\n\
@@ -543,7 +542,7 @@ namespace eval teddy_intl {\n\
 	proc man_link_open {islink text} {\n\
 		if {!$islink} { return }\n\
 \n\
-		set r [lexy-token 0 $text]\n\
+		set r [lexy-token . $text]\n\
 		if {[lindex $r 2] eq \"\"} { return }\n\
 \n\
 		man [lindex $r 2] [lindex $r 1]\n\
@@ -813,8 +812,8 @@ lexydef c 0 {\n\
 		\".\" string\n\
 	}\n\
 \n\
-lexyassoc c {\\.c$}\n\
-lexyassoc c {\\.h$}\n\
+lexyassoc c/0 {\\.c$}\n\
+lexyassoc c/0 {\\.h$}\n\
 \n\
 lexydef tcl 0 {\n\
 		{\\<(?:after|error|lappend|platform|tcl_findLibrary|append|eval|lassign|platform::shell|tcl_startOfNextWord|apply|exec|lindex|proc|tcl_startOfPreviousWord|array|exit|linsert|puts|tcl_wordBreakAfter|auto_execok|expr	list|pwd|tcl_wordBreakBefore|auto_import|fblocked|llength|re_syntax|tcltest|auto_load|fconfigure|load|read|tclvars|auto_mkindex|fcopy|lrange|refchan|tell|auto_mkindex_old|file|lrepeat|regexp|time|auto_qualify|fileevent|lreplace|registry|tm|auto_reset|filename|lreverse|regsub|trace|bgerror|flush|lsearch|rename|unknown|binary|for|lset|return|unload|break|foreach|lsort||unset|catch|format|mathfunc|scan|update|cd|gets|mathop|seek|uplevel|chan|glob|memory|set|upvar|clock|global|msgcat|socket|variable|close|history|namespace|source|vwait|concat|http|open|split|while|continue|if|else|package|string|dde|incr|parray|subst|dict|info|pid|switch|encoding|interp|pkg::create|eof|join|pkg_mkIndex|tcl_endOfWord)\\>} keyword\n\
@@ -833,7 +832,7 @@ lexydef tcl 0 {\n\
 		\".\" string\n\
 	}\n\
 \n\
-lexyassoc tcl {\\.tcl$}\n\
+lexyassoc tcl/0 {\\.tcl$}\n\
 \n\
 lexydef python 0 {\n\
 		{\\<(?:and|del|from|not|while|as|elif|global|or|with|assert|else|if|pass|yield|break|except|import|print|class|exec|in|raise|continue|finally|is|return|def|for|lambda|try)\\>} keyword\n\
@@ -870,7 +869,7 @@ lexydef python 0 {\n\
 		{.} string\n\
 	}\n\
 \n\
-lexyassoc python {\\.py$}\n\
+lexyassoc python/0 {\\.py$}\n\
 \n\
 lexydef java 0 {\n\
 		{\\<(?:abstract|continue|for|new|switch|assert|default|goto|package|synchronized|boolean|do|if|private|this|break|double|implements|protected|throw|byte|else|import|public|throws|case|enum|instanceof|return|transient|catch|extends|int|short|try|char|final|interface|static|void|class|finally|long|strictfp|volatile|const|float|native|super|while)\\>} keyword\n\
@@ -898,7 +897,7 @@ lexydef java 0 {\n\
 		\".\" string\n\
 	}\n\
 \n\
-lexyassoc java {\\.java$}\n\
+lexyassoc java/0 {\\.java$}\n\
 \n\
 lexydef go 0 {\n\
 		{\\<(?:break|default|func|interface|select|case|defer|go|map|struct|chan|else|goto|package|switch|const|fallthrough|if|range|type|continue|for|import|return|var)\\>} keyword\n\
@@ -926,7 +925,7 @@ lexydef go 0 {\n\
 		\".\" string\n\
 	}\n\
 \n\
-lexyassoc go {\\.go$}\n\
+lexyassoc go/0 {\\.go$}\n\
 \n\
 lexydef filesearch 0 {\n\
 		{https?://\\S+} link\n\
@@ -940,18 +939,16 @@ lexydef filesearch 0 {\n\
 		\".\" nothing\n\
 	}\n\
 \n\
-lexyassoc filesearch {^\\+bg}\n\
-lexyassoc filesearch {/$}\n\
+lexyassoc filesearch/0 {^\\+bg}\n\
+lexyassoc filesearch/0 {/$}\n\
 \n\
-lexydef-create mansearch teddy_intl::man_link_open\n\
 lexydef mansearch 0 {\n\
 		{\\<(\\S+)\\((\\d+)\\)} link,1,2\n\
 		\".\" nothing\n\
 	}\n\
 \n\
-lexyassoc mansearch {^\\+man}\n\
+lexyassoc mansearch/0 {^\\+man} teddy_intl::man_link_open\n\
 \n\
-lexydef-create tagsearch teddy_intl::tags_link_open\n\
 lexydef tagsearch 0 {\n\
 		{(\\S+)\\t/(.+)/$} link,1,2\n\
 	}\n\
