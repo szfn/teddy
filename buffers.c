@@ -43,6 +43,7 @@ static buffer_t *buffers_find_buffer_with_name(const char *name) {
 
 static void buffer_to_buffer_id(buffer_t *buffer, char *bufferid) {
 	strcpy(bufferid, "@b0");
+	if (buffer == NULL) return;
 	for (int i = 0; i < buffers_allocated; ++i) {
 		if (buffers[i] == buffer) {
 			snprintf(bufferid+2, 15, "%d", i);
@@ -645,7 +646,7 @@ int teddy_buffer_command(ClientData client_data, Tcl_Interp *interp, int argc, c
 				buffer = go_file(argv[i+1], false, false, &gffr);
 			}
 
-			go_to_buffer(editor, buffer, true);
+			if (buffer != NULL) go_to_buffer(editor, buffer, true);
 		}
 		return TCL_OK;
 	} else {
