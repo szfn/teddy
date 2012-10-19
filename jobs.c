@@ -149,7 +149,8 @@ static void ansi_append_escape(job_t *job) {
 			job->buffer->default_color = CFG_LEXY_STRING - CFG_LEXY_NOTHING;
 		}
 	} else if (command_char == 'H') {
-		//do nothing
+		buffer_move_point_line(buffer, &(buffer->cursor), MT_ABS, 1);
+		buffer_move_point_glyph(buffer, &(buffer->cursor), MT_ABS, 1);
 	} else {
 		job_append(job, "<esc>", strlen("<esc>"), 0);
 	}
