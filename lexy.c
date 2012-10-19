@@ -390,7 +390,13 @@ static void lexy_update_one_token(buffer_t *buffer, real_line_t *line, int *glyp
 static void lexy_update_line(buffer_t *buffer, real_line_t *line, int *state) {
 	line->lexy_state_start = *state;
 	for (int glyph = 0; glyph < line->cap; ) {
+		int prev_glyph = glyph;
+		//printf("Update one token %d %d\n", line->lineno, glyph);
 		lexy_update_one_token(buffer, line, &glyph, state);
+		if (prev_glyph == glyph) {
+			line->glyph_info[glyph].color = 0;
+			++glyph;
+		}
 	}
 	line->lexy_state_end = *state;
 }
