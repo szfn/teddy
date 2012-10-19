@@ -197,22 +197,6 @@ bool inside_allocation(double x, double y, GtkAllocation *allocation) {
 		&& (y <= allocation->y + allocation->height);
 }
 
-char *string_utf16_to_utf8(uint16_t *origin, size_t origin_len) {
-	int allocated = origin_len + 1, cap = 0;
-
-	char *r = malloc(sizeof(char) * allocated);
-	alloc_assert(r);
-
-
-	for (int i = 0; i < origin_len; ++i) {
-		utf32_to_utf8(origin[i], &r, &cap, &allocated);
-	}
-
-	utf32_to_utf8(0, &r, &cap, &allocated);
-
-	return r;
-}
-
 static char first_byte_result_to_mask[] = { 0xff, 0x3f, 0x1f, 0x0f, 0x00, 0x00, 0x00, 0x00, 0x00 };
 
 static uint8_t utf8_first_byte_processing(uint8_t ch) {

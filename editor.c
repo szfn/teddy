@@ -95,16 +95,14 @@ static void editor_replace_selection(editor_t *editor, const char *new_text) {
 }
 
 static bool editor_maybe_show_completions(editor_t *editor, struct completer *completer, bool autoinsert, int min) {
-	size_t wordcompl_prefix_len;
-	uint16_t *prefix = completer->prefix_from_buffer(editor->buffer, &wordcompl_prefix_len);
+	char *prefix = completer->prefix_from_buffer(editor->buffer);
 
-	if (wordcompl_prefix_len <= min) {
+	if ((prefix == NULL) || (strlen(prefix) <= min)) {
 		compl_wnd_hide(completer);
 		return false;
 	}
 
-	char *utf8prefix = string_utf16_to_utf8(prefix, wordcompl_prefix_len);
-	char *completion = compl_complete(completer, utf8prefix);
+	char *completion = compl_complete(completer, prefix);
 
 	if (completion != NULL) {
 		bool empty_completion = strcmp(completion, "") == 0;
@@ -114,10 +112,10 @@ static bool editor_maybe_show_completions(editor_t *editor, struct completer *co
 		editor_absolute_cursor_position(editor, &x, &y, &alty);
 
 		if (empty_completion || !autoinsert) {
-			compl_wnd_show(completer, utf8prefix, x, y, alty, gtk_widget_get_toplevel(GTK_WIDGET(editor)), false, false);
+			compl_wnd_show(completer, prefix, x, y, alty, gtk_widget_get_toplevel(GTK_WIDGET(editor)), false, false);
 		} else {
 			char *new_prefix;
-			asprintf(&new_prefix, "%s%s", utf8prefix, completion);
+			asprintf(&new_prefix, "%s%s", prefix, completion);
 			alloc_assert(new_prefix);
 			compl_wnd_show(completer, new_prefix, x, y, alty, gtk_widget_get_toplevel(GTK_WIDGET(editor)), false, false);
 			free(new_prefix);
@@ -128,7 +126,6 @@ static bool editor_maybe_show_completions(editor_t *editor, struct completer *co
 	}
 
 	free(prefix);
-	free(utf8prefix);
 
 	return true;
 }

@@ -1,3 +1,4 @@
+- unify compl and cmdcompl?
 - EDITOR and VISUAL setting (needs some IPC implementation)
 - multiprocess highlighting
 - tabs

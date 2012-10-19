@@ -1263,59 +1263,47 @@ void buffer_wordcompl_init_charset(void) {
 	}
 }
 
-static uint16_t *buffer_to_utf16(buffer_t *buffer, int start, size_t len) {
-	uint16_t *prefix = malloc(sizeof(uint16_t) * len);
-	alloc_assert(prefix);
-
-	for (int i = 0; i < len; ++i) prefix[i] = buffer->cursor.line->glyph_info[start+i].code;
-
-	return prefix;
-}
-
-uint16_t *buffer_wordcompl_word_at_cursor(buffer_t *buffer, size_t *prefix_len) {
-	*prefix_len = 0;
-
+char *buffer_wordcompl_word_at_cursor(buffer_t *buffer) {
 	if (buffer->cursor.line == NULL) return NULL;
 
-	int start;
-	for (start = buffer->cursor.glyph-1; start >= 0; --start) {
-		uint32_t code = buffer->cursor.line->glyph_info[start].code;
+	lpoint_t start;
+	copy_lpoint(&start, &(buffer->cursor));
+
+	for (start.glyph = buffer->cursor.glyph-1; start.glyph >= 0; --(start.glyph)) {
+		uint32_t code = buffer->cursor.line->glyph_info[start.glyph].code;
 		if ((code >= 0x10000) || (!wordcompl_charset[code])) { break; }
 	}
 
-	++start;
+	++(start.glyph);
 
-	if (start ==  buffer->cursor.glyph) return NULL;
+	if (start.glyph ==  buffer->cursor.glyph) return NULL;
 
-	*prefix_len = buffer->cursor.glyph - start;
-
-	return buffer_to_utf16(buffer, start, *prefix_len);
+	return buffer_lines_to_text(buffer, &start, &(buffer->cursor));
 }
 
-uint16_t *buffer_cmdcompl_word_at_cursor(buffer_t *buffer, size_t *prefix_len) {
-	*prefix_len = 0;
-
+char *buffer_cmdcompl_word_at_cursor(buffer_t *buffer) {
 	if (buffer->cursor.line == NULL) return NULL;
 
-	int start;
-	for (start = buffer->cursor.glyph-1; start >= 0; --start) {
-		uint32_t code = buffer->cursor.line->glyph_info[start].code;
+	lpoint_t start;
+	copy_lpoint(&start, &(buffer->cursor));
+
+	for (start.glyph = buffer->cursor.glyph-1; start.glyph >= 0; --(start.glyph)) {
+		uint32_t code = buffer->cursor.line->glyph_info[start.glyph].code;
 		if ((code >= 0x10000) || code == 0x20 || code == 0x09) break;
 	}
 
-	++start;
+	++(start.glyph);
 
-	*prefix_len = buffer->cursor.glyph - start;
-	return buffer_to_utf16(buffer, start, *prefix_len);
+	return buffer_lines_to_text(buffer, &start, &(buffer->cursor));
 }
 
-uint16_t *buffer_historycompl_word_at_cursor(buffer_t *buffer, size_t *prefix_len) {
-	*prefix_len = 0;
-
+char *buffer_historycompl_word_at_cursor(buffer_t *buffer) {
 	if (buffer->cursor.line == NULL) return NULL;
 
-	*prefix_len = buffer->cursor.line->cap;
-	return buffer_to_utf16(buffer, 0, *prefix_len);
+	lpoint_t start;
+	copy_lpoint(&start, &(buffer->cursor));
+	start.glyph = 0;
+	return buffer_lines_to_text(buffer, &start, &(buffer->cursor));
 }
 
 static void buffer_wordcompl_update_word(real_line_t *line, int start, int end, critbit0_tree *c) {

@@ -12,7 +12,7 @@
 struct completer;
 
 typedef void recalc_fn(struct completer *c, const char *prefix);
-typedef uint16_t *prefix_from_buffer_fn(buffer_t *buffer, size_t *lenout);
+typedef char *prefix_from_buffer_fn(buffer_t *buffer);	
 
 struct completer {
 	critbit0_tree cbt;
