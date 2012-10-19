@@ -220,7 +220,7 @@ GtkWidget *top_init(void) {
 
 	tools_menu = gtk_menu_new();
 
-	GtkWidget *iopen_mitem = gtk_menu_item_new_with_label("Search file");
+	GtkWidget *iopen_mitem = gtk_menu_item_new_with_label("Fuzzy search file");
 	g_signal_connect(G_OBJECT(iopen_mitem), "activate", G_CALLBACK(iopen_mitem_callback), NULL);
 	gtk_menu_append(tools_menu, iopen_mitem);
 
