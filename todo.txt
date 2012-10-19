@@ -2,5 +2,4 @@
 - multiprocess highlighting
 - tabs
 - macro recording
-- BUG: commands that last less than 500ms still generate output (why?)
 - BUG: changing font after intialization results in trash (stuff in glyph_info isn't reloaded)

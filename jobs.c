@@ -270,7 +270,10 @@ static gboolean jobs_input_watch_function(GIOChannel *source, GIOCondition condi
 	buf[bytes_read] = '\0';
 
 	if (r != G_IO_STATUS_EOF) {
-		job_create_buffer(job);
+		if ((r != G_IO_STATUS_ERROR) || !(condition & G_IO_HUP)) {
+			//printf("job_create_buffer from jobs_input_watch %d %d\n", r, G_IO_STATUS_NORMAL);
+			job_create_buffer(job);
+		}
 	}
 
 	if (!job->ratelimit_silenced) {
@@ -319,6 +322,8 @@ static gboolean jobs_input_watch_function(GIOChannel *source, GIOCondition condi
 }
 
 static gboolean autoshow_job_buffer(job_t *job) {
+	if (job->pipe_from_child == NULL) return FALSE;
+	printf("Autoshow\n");
 	job_create_buffer(job);
 	return FALSE;
 }
