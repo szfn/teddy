@@ -589,6 +589,7 @@ namespace eval teddy_intl {\n\
 	 	}\n\
 		set b [buffer make $directory]\n\
 		buffer eval $b {\n\
+			m all\n\
 			c [shellsync \"\" ls {*}$teddy::ls_options $directory ]\n\
 			m nil 1:1\n\
 		}\n\

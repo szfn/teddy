@@ -586,6 +586,7 @@ namespace eval teddy_intl {
 	 	}
 		set b [buffer make $directory]
 		buffer eval $b {
+			m all
 			c [shellsync "" ls {*}$teddy::ls_options $directory ]
 			m nil 1:1
 		}
