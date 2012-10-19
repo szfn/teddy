@@ -106,6 +106,9 @@ bindkey Ctrl-k kill_line
 bindkey Ctrl-, {bindent decr}
 bindkey Ctrl-. {bindent incr}
 
+# Ctrl-Delete kills attached process (if any)
+bindkey Ctrl-Delete kill
+
 ### BUFFER HOOKS ###
 
 # This procedure gets called every time a new buffer is created, it allows you to do some customization of how buffers are displayed

@@ -1,4 +1,3 @@
-- default keybinding to kill a bg buffer
 - EDITOR and VISUAL setting (needs some IPC implementation)
 - multiprocess highlighting
 - tabs
