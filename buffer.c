@@ -575,11 +575,6 @@ void load_empty(buffer_t *buffer) {
 }
 
 int load_dir(buffer_t *buffer, const char *dirname) {
-	/*DIR *dir = opendir(dirname);
-	if (dir == NULL) {
-		return -1;
-	}*/
-
 	buffer->cursor.line = buffer->real_line = new_real_line(0);
 	buffer->cursor.glyph = 0;
 

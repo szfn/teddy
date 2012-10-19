@@ -4,5 +4,4 @@
 - tabs
 - macro recording
 - BUG: commands that last less than 500ms still generate output (why?)
-- BUG: opening a directory twice opens a second empty directory frame and outputs the content of the directory to the first frame twice
 - BUG: changing font after intialization results in trash (stuff in glyph_info isn't reloaded)

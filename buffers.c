@@ -439,9 +439,14 @@ buffer_t *buffers_find_buffer_from_path(const char *urp) {
 
 	for (i = 0; i < buffers_allocated; ++i) {
 		if (buffers[i] == NULL) continue;
-		if (!(buffers[i]->has_filename)) continue;
 		if (buffers[i]->path == NULL) continue;
 		if (strcmp(buffers[i]->path, rp) == 0) {
+			r = buffers[i];
+			break;
+		}
+		//check if buffers[i]->path is like rp plus a slash at the end
+		//printf("Check <%s> <%s> %d %d %d\n", rp, buffers[i]->path, strncmp(buffers[i]->path, rp, strlen(rp)) == 0, strlen(rp) == strlen(buffers[i]->path), buffers[i]->path[strlen(buffers[i]->path)-1] == '/');
+		if ((strncmp(buffers[i]->path, rp, strlen(rp)) == 0) && (strlen(rp) == strlen(buffers[i]->path) - 1) && (buffers[i]->path[strlen(buffers[i]->path)-1] == '/')) {
 			r = buffers[i];
 			break;
 		}
