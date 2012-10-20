@@ -7,7 +7,6 @@
 #include "buffer.h"
 #include "history.h"
 #include "compl.h"
-#include "cmdcompl.h"
 
 #include <gtk/gtk.h>
 #include <ft2build.h>
@@ -36,7 +35,6 @@ extern struct history search_history;
 extern struct history command_history;
 
 extern struct completer the_word_completer;
-extern struct completer the_cmd_completer;
 
 extern char *tied_session;
 
@@ -44,7 +42,7 @@ void global_init();
 
 bool find_editor_for_buffer(buffer_t *buffer, column_t **columnpp, tframe_t **framepp, editor_t **editorpp);
 
-char *unrealpath(char *absolute_path, const char *relative_path);
+char *unrealpath(const char *relative_path, bool empty_too);
 gboolean streq(gconstpointer a, gconstpointer b);
 
 void set_color_cfg(cairo_t *cr, int color);

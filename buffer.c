@@ -1250,15 +1250,37 @@ void buffer_indent_newline(buffer_t *buffer, char *r) {
 }
 
 bool wordcompl_charset[0x10000];
+bool wordcompl_red_charset[0x10000];
 
 void buffer_wordcompl_init_charset(void) {
 	for (uint32_t i = 0; i < 0x10000; ++i) {
 		if (u_isalnum(i)) {
 			wordcompl_charset[i] = true;
+			wordcompl_red_charset[i] = true;
 		} else if (i == 0x5f) { // underscore
 			wordcompl_charset[i] = true;
+			wordcompl_red_charset[i] = true;
+		} else if (i == '.') {
+			wordcompl_charset[i] = true;
+			wordcompl_red_charset[i] = true;
+		} else if (i == '-') {
+			wordcompl_charset[i] = true;
+			wordcompl_red_charset[i] = false;
+		} else if (i == '+') {
+			wordcompl_charset[i] = true;
+			wordcompl_red_charset[i] = false;
+		} else if (i == '/') {
+			wordcompl_charset[i] = true;
+			wordcompl_red_charset[i] = false;
+		} else if (i == ',') {
+			wordcompl_charset[i] = true;
+			wordcompl_red_charset[i] = false;
+		} else if (i == '~') {
+			wordcompl_charset[i] = true;
+			wordcompl_red_charset[i] = false;
 		} else {
 			wordcompl_charset[i] = false;
+			wordcompl_red_charset[i] = false;			
 		}
 	}
 }
@@ -1277,22 +1299,6 @@ char *buffer_wordcompl_word_at_cursor(buffer_t *buffer) {
 	++(start.glyph);
 
 	if (start.glyph ==  buffer->cursor.glyph) return NULL;
-
-	return buffer_lines_to_text(buffer, &start, &(buffer->cursor));
-}
-
-char *buffer_cmdcompl_word_at_cursor(buffer_t *buffer) {
-	if (buffer->cursor.line == NULL) return NULL;
-
-	lpoint_t start;
-	copy_lpoint(&start, &(buffer->cursor));
-
-	for (start.glyph = buffer->cursor.glyph-1; start.glyph >= 0; --(start.glyph)) {
-		uint32_t code = buffer->cursor.line->glyph_info[start.glyph].code;
-		if ((code >= 0x10000) || code == 0x20 || code == 0x09) break;
-	}
-
-	++(start.glyph);
 
 	return buffer_lines_to_text(buffer, &start, &(buffer->cursor));
 }
@@ -1328,9 +1334,9 @@ void buffer_wordcompl_update_line(real_line_t *line, critbit0_tree *c) {
 	for (int i = 0; i < line->cap; ++i) {
 		if (start < 0) {
 			if (line->glyph_info[i].code > 0x10000) continue;
-			if (wordcompl_charset[line->glyph_info[i].code]) start = i;
+			if (wordcompl_red_charset[line->glyph_info[i].code]) start = i;
 		} else {
-			if ((line->glyph_info[i].code >= 0x10000) || !wordcompl_charset[line->glyph_info[i].code]) {
+			if ((line->glyph_info[i].code >= 0x10000) || !wordcompl_red_charset[line->glyph_info[i].code]) {
 				buffer_wordcompl_update_word(line, start, i, c);
 				start = -1;
 			}

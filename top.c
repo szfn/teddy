@@ -104,7 +104,7 @@ bool cmdline_other_keys(struct _editor_t *editor, bool shift, bool ctrl, bool al
 
 			char *buffer_text = buffer_all_lines_to_text(editor->buffer);
 
-			compl_wnd_hide(&the_cmd_completer);
+			compl_wnd_hide(&the_word_completer);
 			compl_wnd_show(&(command_history.c), buffer_text, x, y, alty, gtk_widget_get_toplevel(GTK_WIDGET(editor)), true, true);
 
 			free(buffer_text);
@@ -188,7 +188,6 @@ GtkWidget *top_init(void) {
 	cmdline_editor->single_line_escape = &release_command_line;
 	cmdline_editor->single_line_return = &execute_command;
 	cmdline_editor->single_line_other_keys = &cmdline_other_keys;
-	cmdline_editor->completer = &the_cmd_completer;
 	cmdline_editor->alt_completer = &(command_history.c);
 
 	working_directory = get_current_dir_name();

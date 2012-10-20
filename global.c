@@ -21,7 +21,6 @@ struct history search_history;
 struct history command_history;
 
 struct completer the_word_completer;
-struct completer the_cmd_completer;
 
 critbit0_tree closed_buffers_critbit;
 
@@ -60,43 +59,34 @@ void global_free() {
 	FcFini();
 }
 
-char *unrealpath(char *absolute_path, const char *relative_path) {
-	if (strlen(relative_path) == 0) goto return_relative_path;
-	if (relative_path[0] == '/') goto return_relative_path;
+char *unrealpath(const char *relative_path, bool empty_too) {
+	if (!empty_too) {
+		if (strlen(relative_path) == 0) return strdup(relative_path);
+	}
+	if (relative_path[0] == '/') return realpath(relative_path, NULL);
 
 	if (relative_path[0] == '~') {
 		const char *home = getenv("HOME");
 		char *r;
-		if (home == NULL) goto return_relative_path;
+		if (home == NULL) return realpath(relative_path, NULL);
 
 		asprintf(&r, "%s/%s", home, relative_path+1);
 		alloc_assert(r);
+		char *rr = realpath(r, NULL);
+		free(r);
 
-		return r;
+		return rr;
 	} else {
-		if (absolute_path == NULL) {
-			char *cwd = get_current_dir_name();
-			alloc_assert(cwd);
-			char *r;
-			asprintf(&r, "%s/%s", cwd, relative_path);
-			alloc_assert(r);
-			free(cwd);
-			return r;
-		} else {
-			char *r;
-			asprintf(&r, "%s/%s", absolute_path, relative_path);
-			alloc_assert(r);
-			return r;
-		}
+
+		char *r;
+		asprintf(&r, "%s/%s", top_working_directory(), relative_path);
+		alloc_assert(r);
+		char *rr = realpath(r, NULL);
+		free(r);
+		return rr;
 	}
 
 	return NULL;
-
-	return_relative_path: {
-		char *r = strdup(relative_path);
-		alloc_assert(r);
-		return r;
-	}
 }
 
 void set_color_cfg(cairo_t *cr, int color) {

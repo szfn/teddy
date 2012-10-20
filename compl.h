@@ -11,8 +11,8 @@
 
 struct completer;
 
-typedef void recalc_fn(struct completer *c, const char *prefix);
-typedef char *prefix_from_buffer_fn(buffer_t *buffer);	
+typedef const char *recalc_fn(struct completer *c, const char *prefix);
+typedef char *prefix_from_buffer_fn(buffer_t *buffer);
 
 struct completer {
 	critbit0_tree cbt;
@@ -46,5 +46,9 @@ int compl_wnd_size(struct completer *c);
 void compl_wnd_hide(struct completer *c);
 bool compl_wnd_visible(struct completer *c);
 void compl_free(struct completer *c);
+
+void cmdcompl_init(void);
+const char *cmdcompl_recalc(struct completer *c, const char *prefix);
+bool in_external_commands(const char *arg);
 
 #endif

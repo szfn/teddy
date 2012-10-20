@@ -1,4 +1,5 @@
-- unify compl and cmdcompl?
+- BUG: configure link color for solarized
+- BUG: H ansi escape doesn't recenter editor
 - EDITOR and VISUAL setting (needs some IPC implementation)
 - multiprocess highlighting
 - tabs

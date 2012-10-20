@@ -88,11 +88,9 @@ int main(int argc, char *argv[]) {
 	read_conf();
 
 	cmdcompl_init();
-	compl_init(&the_cmd_completer);
-	the_cmd_completer.prefix_from_buffer = &buffer_cmdcompl_word_at_cursor;
-	the_cmd_completer.recalc = &cmdcompl_recalc;
-	the_cmd_completer.tmpdata = strdup("");
-	alloc_assert(the_cmd_completer.tmpdata);
+	the_word_completer.recalc = &cmdcompl_recalc;
+	the_word_completer.tmpdata = strdup("");
+	alloc_assert(the_word_completer.tmpdata);
 
 	jobs_init();
 	buffers_init();
@@ -136,7 +134,6 @@ int main(int argc, char *argv[]) {
 	buffers_free();
 	interp_free();
 	compl_free(&the_word_completer);
-	compl_free(&the_cmd_completer);
 	foundry_free();
 
 	history_free(&search_history);

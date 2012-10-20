@@ -662,27 +662,6 @@ int teddy_buffer_command(ClientData client_data, Tcl_Interp *interp, int argc, c
 	return TCL_OK;
 }
 
-static int refill_word_completer(const char *entry, void *p) {
-	//printf("\t<%s>\n", entry);
-	compl_add(&the_word_completer, entry);
-	return 1;
-}
-
-void word_completer_full_update(void) {
-	critbit0_clear(&(the_word_completer.cbt));
-
-	//printf("Filling main word completer:\n");
-
-	for (int i = 0; i < buffers_allocated; ++i) {
-		if (buffers[i] == NULL) continue;
-
-		critbit0_allprefixed(&(buffers[i]->cbt), "", refill_word_completer, NULL);
-	}
-
-	critbit0_allprefixed(&closed_buffers_critbit, "", refill_word_completer, NULL);
-	critbit0_allprefixed(&tags_file_critbit, "", refill_word_completer, NULL);
-}
-
 void buffers_refresh(buffer_t *buffer) {
 	editor_t *editor;
 	find_editor_for_buffer(buffer, NULL, NULL, &editor);
@@ -732,9 +711,8 @@ void buffers_register_tags(const char *tags_file) {
 }
 
 buffer_t *go_file(const char *filename, bool create, bool skip_search, enum go_file_failure_reason *gffr) {
-	char *p = unrealpath(top_working_directory(), filename);
-	char *urp = realpath(p, NULL);
-	free(p);
+	char *urp = unrealpath(filename, false);
+	alloc_assert(urp);
 
 	*gffr = GFFR_OTHER;
 

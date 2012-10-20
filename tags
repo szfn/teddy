@@ -10,12 +10,12 @@ ANSI_SEQ_MAX_LEN	jobs.h	14;"	d
 ARGNUM	interp.h	28;"	d
 AUTOCONF_TEDDY	autoconf.h	4;"	d
 AUTOSCROLL_TIMO	editor.h	11;"	d
-AUTOWRAP_INDICATOR_WIDTH	editor.c	945;"	d	file:
+AUTOWRAP_INDICATOR_WIDTH	editor.c	942;"	d	file:
 App	test/App.java	/^public class App $/;"	c
 BST_LINES	buffer.h	/^enum select_type { BST_NORMAL = 0, BST_WORDS, BST_LINES };$/;"	e	enum:select_type
 BST_NORMAL	buffer.h	/^enum select_type { BST_NORMAL = 0, BST_WORDS, BST_LINES };$/;"	e	enum:select_type
 BST_WORDS	buffer.h	/^enum select_type { BST_NORMAL = 0, BST_WORDS, BST_LINES };$/;"	e	enum:select_type
-BUFIDCHECK	buffers.c	423;"	d	file:
+BUFIDCHECK	buffers.c	424;"	d	file:
 BUF_SIZE	tags.c	41;"	d	file:
 BUILTIN_TCL_CODE	builtin.h	4;"	d
 CFG_AUTOCOMPL_POPUP	cfg_auto.h	37;"	d
@@ -54,7 +54,7 @@ CFLAGS	Makefile	/^CFLAGS=`pkg-config --cflags gtk+-2.0` -Wall -D_FORTIFY_SOURCE=
 CLOSING_PARENTHESIS	parmatch.c	/^const char *CLOSING_PARENTHESIS = ")]}>";$/;"	v
 COLUMN_MINIMUM_WIDTH	column.c	5;"	d	file:
 CONFIG_NUM	cfg_auto.h	4;"	d
-CONTINUATION_STATE	lexy.c	/^const char *CONTINUATION_STATE = "continuation-state";$/;"	v
+CONTINUATION_STATUS	lexy.c	/^const char *CONTINUATION_STATUS = "continuation-state";$/;"	v
 CRITBIT_H_	critbit.h	2;"	d
 DR_CHANGED	buffers.c	/^	DR_CHANGED = 3,$/;"	e	enum:dirty_reason_t	file:
 DR_DIRJOB	buffers.c	/^	DR_DIRJOB = 1,$/;"	e	enum:dirty_reason_t	file:
@@ -87,19 +87,17 @@ GTK_TYPE_TFRAME	tframe.h	8;"	d
 HASBUF	interp.h	42;"	d
 HASED	interp.h	35;"	d
 HISTORY_SIZE	history.h	9;"	d
-INOTIFY_BUF_LEN	buffers.c	256;"	d	file:
-INOTIFY_EVENT_SIZE	buffers.c	255;"	d	file:
+INOTIFY_BUF_LEN	buffers.c	257;"	d	file:
+INOTIFY_EVENT_SIZE	buffers.c	256;"	d	file:
 IOPEN_MAX_SENT_RESULTS	iopen.c	20;"	d	file:
 IOPEN_RECURSOR_DEPTH_LIMIT	iopen.c	19;"	d	file:
 JOBS_READ_BUFFER_SIZE	jobs.c	19;"	d	file:
-LEXY_ASSOCIATION_NUMBER	lexy.c	55;"	d	file:
-LEXY_LINE_LENGTH_LIMIT	lexy.c	56;"	d	file:
-LEXY_LOAD_HOOK_MAX_COUNT	lexy.c	58;"	d	file:
-LEXY_ROW_NUMBER	lexy.c	51;"	d	file:
-LEXY_STATE_BLOCK_SIZE	lexy.c	54;"	d	file:
-LEXY_STATUS_NAME_SIZE	lexy.c	52;"	d	file:
-LEXY_STATUS_NUMBER	lexy.h	10;"	d
-LEXY_TOKENIZER_NUMBER	lexy.c	53;"	d	file:
+LEXY_ASSOCIATION_NUMBER	lexy.c	45;"	d	file:
+LEXY_LINE_LENGTH_LIMIT	lexy.c	48;"	d	file:
+LEXY_LOAD_HOOK_MAX_COUNT	lexy.c	50;"	d	file:
+LEXY_ROWS	lexy.h	10;"	d
+LEXY_STATUS_BLOCK_SIZE	lexy.c	46;"	d	file:
+LEXY_STATUS_NUMBER	lexy.c	47;"	d	file:
 LIBS	Makefile	/^LIBS=`pkg-config --libs gtk+-2.0` -ltcl8.5 -lfontconfig -licuuc -lutil -ltre -lm$/;"	m
 LINES_TO_CHECK_FOR_PARMATCH	parmatch.c	14;"	d	file:
 LOCKED_COMMAND_LINE_SIZE	editor.h	10;"	d
@@ -119,19 +117,19 @@ MT_HOME	buffer.h	/^	MT_HOME, \/\/ toggle between first column and first non-whit
 MT_REL	buffer.h	/^	MT_REL, \/\/ relative move$/;"	e	enum:movement_type_t
 MT_RELW	buffer.h	/^	MT_RELW, \/\/ word based relative move (buffer_move_point_glyph only)$/;"	e	enum:movement_type_t
 MT_START	buffer.h	/^	MT_START, \/\/ move to first non-whitespace character (buffer_move_point_glyph only)$/;"	e	enum:movement_type_t
-NMATCH	lexy.c	520;"	d	file:
-NMATCH	lexy.c	630;"	d	file:
+NMATCH	lexy.c	361;"	d	file:
+NMATCH	lexy.c	514;"	d	file:
 OBJS	Makefile	/^OBJS := obj\/teddy.o obj\/buffer.o obj\/editor.o obj\/buffers.o obj\/columns.o obj\/column.o obj\/interp.o obj\/global.o obj\/undo.o  obj\/history.o obj\/jobs.o obj\/colors.o obj\/point.o obj\/cfg_auto.o obj\/cfg.o obj\/research.o obj\/parmatch.o obj\/compl.o obj\/lexy.o obj\/treint.o obj\/critbit.o obj\/cmdcompl.o obj\/tframe.o obj\/foundry.o obj\/top.o obj\/iopen.o obj\/tags.o$/;"	m
 OPENING_PARENTHESIS	parmatch.c	/^const char *OPENING_PARENTHESIS = "([{<";$/;"	v
 OS	research.c	92;"	d	file:
 OVECTOR_SIZE	research.c	184;"	d	file:
 RATELIMIT_BUCKET_DURATION_SECS	jobs.h	11;"	d
 RATELIMIT_MAX_BYTES	jobs.h	12;"	d
-REGERROR_BUF_SIZE	lexy.c	318;"	d	file:
+REGERROR_BUF_SIZE	lexy.c	283;"	d	file:
 REGERROR_BUF_SIZE	research.c	356;"	d	file:
-REGEXEC_NMATCH	lexy.c	472;"	d	file:
+REGEXEC_NMATCH	lexy.c	415;"	d	file:
 SHOWANYWAY_TIMO	jobs.c	20;"	d	file:
-SINGLE_ARGUMENT_BUFFER_SUBCOMMAND	buffers.c	453;"	d	file:
+SINGLE_ARGUMENT_BUFFER_SUBCOMMAND	buffers.c	459;"	d	file:
 SM_LITERAL	research.h	/^	SM_LITERAL = 1,$/;"	e	enum:search_mode_t
 SM_NONE	research.h	/^	SM_NONE = 0,$/;"	e	enum:search_mode_t
 SM_REGEXP	research.h	/^	SM_REGEXP = 2$/;"	e	enum:search_mode_t
@@ -210,6 +208,7 @@ ansiseq_cap	jobs.h	/^	int ansiseq_cap;$/;"	m	struct:_job_t
 antique_theme	builtin.tcl	/^proc antique_theme {} {$/;"	p
 ascent	buffer.h	/^	double ascent, descent;$/;"	m	struct:_buffer_t
 assert_result	selftest.tcl	/^proc assert_result {target_file} {$/;"	p
+association_for_buffer	lexy.c	/^static struct lexy_association *association_for_buffer(buffer_t *buffer) {$/;"	f	file:
 augmented_lpoint_t	treint.h	/^struct augmented_lpoint_t {$/;"	s
 autoshow_job_buffer	jobs.c	/^static gboolean autoshow_job_buffer(job_t *job) {$/;"	f	file:
 backgrounded_unknown	builtin.tcl	/^proc backgrounded_unknown {args} {$/;"	p
@@ -230,7 +229,7 @@ buffer_aux_wnwa_next_ex	buffer.c	/^static bool buffer_aux_wnwa_next_ex(lpoint_t 
 buffer_aux_wnwa_prev_ex	buffer.c	/^static bool buffer_aux_wnwa_prev_ex(lpoint_t *point) {$/;"	f	file:
 buffer_change_select_type	buffer.c	/^void buffer_change_select_type(buffer_t *buffer, enum select_type select_type) {$/;"	f
 buffer_close_real	buffers.c	/^static void buffer_close_real(buffer_t *buffer, bool save_critbit) {$/;"	f	file:
-buffer_cmdcompl_word_at_cursor	buffer.c	/^uint16_t *buffer_cmdcompl_word_at_cursor(buffer_t *buffer, size_t *prefix_len) {$/;"	f
+buffer_cmdcompl_word_at_cursor	buffer.c	/^char *buffer_cmdcompl_word_at_cursor(buffer_t *buffer) {$/;"	f
 buffer_config_changed	buffer.c	/^void buffer_config_changed(buffer_t *buffer) {$/;"	f
 buffer_copy_line	buffer.c	/^static real_line_t *buffer_copy_line(buffer_t *buffer, real_line_t *real_line, int start, int size) {$/;"	f	file:
 buffer_create	buffer.c	/^buffer_t *buffer_create(void) {$/;"	f
@@ -241,7 +240,7 @@ buffer_get_extremes	buffer.c	/^void buffer_get_extremes(buffer_t *buffer, lpoint
 buffer_get_selection	buffer.c	/^void buffer_get_selection(buffer_t *buffer, lpoint_t *start, lpoint_t *end) {$/;"	f
 buffer_get_selection_pointers	buffer.c	/^void buffer_get_selection_pointers(buffer_t *buffer, lpoint_t **start, lpoint_t **end) {$/;"	f
 buffer_get_selection_text	buffer.c	/^char *buffer_get_selection_text(buffer_t *buffer) {$/;"	f
-buffer_historycompl_word_at_cursor	buffer.c	/^uint16_t *buffer_historycompl_word_at_cursor(buffer_t *buffer, size_t *prefix_len) {$/;"	f
+buffer_historycompl_word_at_cursor	buffer.c	/^char *buffer_historycompl_word_at_cursor(buffer_t *buffer) {$/;"	f
 buffer_id_to_buffer	buffers.c	/^buffer_t *buffer_id_to_buffer(const char *bufferid) {$/;"	f
 buffer_indent_newline	buffer.c	/^void buffer_indent_newline(buffer_t *buffer, char *r) {$/;"	f
 buffer_init_font_extents	buffer.c	/^static void buffer_init_font_extents(buffer_t *buffer) {$/;"	f	file:
@@ -271,7 +270,6 @@ buffer_split_line	buffer.c	/^static void buffer_split_line(buffer_t *buffer, lpo
 buffer_t	buffer.h	/^} buffer_t;$/;"	t	typeref:struct:_buffer_t
 buffer_thaw_selection	buffer.c	/^static void buffer_thaw_selection(buffer_t *buffer, selection_t *selection, lpoint_t *start, lpoint_t *end) {$/;"	f	file:
 buffer_to_buffer_id	buffers.c	/^static void buffer_to_buffer_id(buffer_t *buffer, char *bufferid) {$/;"	f	file:
-buffer_to_utf16	buffer.c	/^static uint16_t *buffer_to_utf16(buffer_t *buffer, int start, size_t len) {$/;"	f	file:
 buffer_typeset_from	buffer.c	/^static void buffer_typeset_from(buffer_t *buffer, real_line_t *start_line) {$/;"	f	file:
 buffer_typeset_maybe	buffer.c	/^void buffer_typeset_maybe(buffer_t *buffer, double width, bool single_line, bool force) {$/;"	f
 buffer_undo	buffer.c	/^void buffer_undo(buffer_t *buffer, bool redo) {$/;"	f
@@ -281,7 +279,7 @@ buffer_wordcompl_init_charset	buffer.c	/^void buffer_wordcompl_init_charset(void
 buffer_wordcompl_update	buffer.c	/^void buffer_wordcompl_update(buffer_t *buffer, critbit0_tree *cbt) {$/;"	f
 buffer_wordcompl_update_line	buffer.c	/^void buffer_wordcompl_update_line(real_line_t *line, critbit0_tree *c) {$/;"	f
 buffer_wordcompl_update_word	buffer.c	/^static void buffer_wordcompl_update_word(real_line_t *line, int start, int end, critbit0_tree *c) {$/;"	f	file:
-buffer_wordcompl_word_at_cursor	buffer.c	/^uint16_t *buffer_wordcompl_word_at_cursor(buffer_t *buffer, size_t *prefix_len) {$/;"	f
+buffer_wordcompl_word_at_cursor	buffer.c	/^char *buffer_wordcompl_word_at_cursor(buffer_t *buffer) {$/;"	f
 buffers	buffers.c	/^buffer_t **buffers;$/;"	v
 buffers_add	buffers.c	/^void buffers_add(buffer_t *b) {$/;"	f
 buffers_allocated	buffers.c	/^int buffers_allocated;$/;"	v
@@ -312,7 +310,7 @@ center_on_cursor_after_next_expose	editor.h	/^	gboolean center_on_cursor_after_n
 cfg	cfg.h	/^	config_item_t *cfg[CONFIG_NUM];$/;"	m	struct:_config_t
 chareverse_test	selftest.tcl	/^proc chareverse_test {} {$/;"	p
 check	lexy.c	/^	bool check;$/;"	m	struct:lexy_row	file:
-check_file_match	lexy.c	/^static bool check_file_match(struct lexy_tokenizer *tokenizer, struct lexy_row *row, buffer_t *buffer, real_line_t *line, int glyph, int nmatch, regmatch_t *pmatch) {$/;"	f	file:
+check_file_match	lexy.c	/^static bool check_file_match(struct lexy_row *row, buffer_t *buffer, real_line_t *line, int glyph, int nmatch, regmatch_t *pmatch) {$/;"	f	file:
 child	critbit.c	/^void*child[2];$/;"	m	struct:__anon1	file:
 child_pid	jobs.h	/^	pid_t child_pid;$/;"	m	struct:_job_t
 child_source_id	jobs.h	/^	guint child_source_id;$/;"	m	struct:_job_t
@@ -403,7 +401,7 @@ copy_lpoint	point.c	/^void copy_lpoint(lpoint_t *dst, lpoint_t *src) {$/;"	f
 copy_to_cmdline_callback	editor.c	/^static void copy_to_cmdline_callback(GtkMenuItem *menuitem, editor_t *editor) {$/;"	f	file:
 count	foundry.c	/^	int count;$/;"	m	struct:_teddy_fontset_t	file:
 create_header	builtin-create.pl	/^sub create_header {$/;"	s
-create_new_state	lexy.c	/^static int create_new_state(struct lexy_tokenizer *tokenizer, const char *state_name) {$/;"	f	file:
+create_new_status	lexy.c	/^static int create_new_status(const char *name) {$/;"	f	file:
 critbit0_allprefixed	critbit.c	/^critbit0_allprefixed(critbit0_tree*t,const char*prefix,$/;"	f
 critbit0_clear	critbit.c	/^void critbit0_clear(critbit0_tree*t)$/;"	f
 critbit0_common_suffix_for_prefix	critbit.addenda.c	/^char *critbit0_common_suffix_for_prefix(critbit0_tree *t, const char *u) {$/;"	f
@@ -504,8 +502,7 @@ filex_end	editor.c	/^		double filey, filex_start, filex_end;$/;"	m	struct:growab
 filex_start	editor.c	/^		double filey, filex_start, filex_end;$/;"	m	struct:growable_glyph_array::underline_info_t	file:
 filey	editor.c	/^		double filey, filex_start, filex_end;$/;"	m	struct:growable_glyph_array::underline_info_t	file:
 find_editor_for_buffer	global.c	/^bool find_editor_for_buffer(buffer_t *buffer, column_t **columnpp, tframe_t **framepp, editor_t **editorpp) {$/;"	f
-find_state	lexy.c	/^static int find_state(struct lexy_tokenizer *tokenizer, const char *status_name) {$/;"	f	file:
-find_tokenizer	lexy.c	/^static struct lexy_tokenizer *find_tokenizer(const char *tokenizer_name) {$/;"	f	file:
+find_status	lexy.c	/^static int find_status(const char *name) {$/;"	f	file:
 first_byte_result_to_mask	global.c	/^static char first_byte_result_to_mask[] = { 0xff, 0x3f, 0x1f, 0x0f, 0x00, 0x00, 0x00, 0x00, 0x00 };$/;"	v	file:
 focus_can_follow_mouse	global.c	/^int focus_can_follow_mouse = 1;$/;"	v
 font_ctm	foundry.c	/^	cairo_matrix_t font_size_matrix, font_ctm;$/;"	m	struct:_teddy_font_t	file:
@@ -596,7 +593,6 @@ in_external_commands	cmdcompl.c	/^bool in_external_commands(const char *arg) {$/
 incr	builtin.tcl	/^	proc incr {} {$/;"	p
 indentchar	editor.c	/^static const char *indentchar(editor_t *editor) {$/;"	f	file:
 index	history.h	/^	int index;$/;"	m	struct:history
-index	lexy.c	/^	size_t index;$/;"	m	struct:lexy_status_pointer	file:
 init_colors	colors.c	/^void init_colors(void) {$/;"	f
 inotify_channel	buffers.c	/^GIOChannel *inotify_channel;$/;"	v
 inotify_channel_source_id	buffers.c	/^guint inotify_channel_source_id;$/;"	v
@@ -673,23 +669,21 @@ lexy_association	lexy.c	/^struct lexy_association {$/;"	s	file:
 lexy_associations	lexy.c	/^struct lexy_association lexy_associations[LEXY_ASSOCIATION_NUMBER];$/;"	v	typeref:struct:lexy_association
 lexy_colors	lexy.c	/^int lexy_colors[0xff];$/;"	v
 lexy_create_command	lexy.c	/^int lexy_create_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {$/;"	f
-lexy_dump_buffer	lexy.c	/^static void lexy_dump_buffer(buffer_t *buffer) {$/;"	f	file:
 lexy_dump_command	lexy.c	/^int lexy_dump_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {$/;"	f
-lexy_dump_table	lexy.c	/^static void lexy_dump_table(void) {$/;"	f	file:
 lexy_get_link_fn	lexy.c	/^const char *lexy_get_link_fn(buffer_t *buffer) {$/;"	f
 lexy_init	lexy.c	/^void lexy_init(void) {$/;"	f
 lexy_last_update_line	buffer.h	/^	real_line_t *lexy_last_update_line;$/;"	m	struct:_buffer_t
-lexy_parse_token	lexy.c	/^static int lexy_parse_token(struct lexy_tokenizer *tokenizer, int state, const char *text, char **file, char **line, char **col) {$/;"	f	file:
+lexy_parse_token	lexy.c	/^static int lexy_parse_token( int state, const char *text, char **file, char **line, char **col) {$/;"	f	file:
 lexy_row	lexy.c	/^struct lexy_row {$/;"	s	file:
-lexy_state_end	buffer.h	/^	uint8_t lexy_state_start, lexy_state_end;$/;"	m	struct:_real_line_t
-lexy_state_start	buffer.h	/^	uint8_t lexy_state_start, lexy_state_end;$/;"	m	struct:_real_line_t
+lexy_rows	lexy.c	/^struct lexy_row lexy_rows[LEXY_ROWS];$/;"	v	typeref:struct:lexy_row
+lexy_state_end	buffer.h	/^	uint16_t lexy_state_start, lexy_state_end;$/;"	m	struct:_real_line_t
+lexy_state_start	buffer.h	/^	uint16_t lexy_state_start, lexy_state_end;$/;"	m	struct:_real_line_t
 lexy_status_pointer	lexy.c	/^struct lexy_status_pointer {$/;"	s	file:
+lexy_status_pointers	lexy.c	/^struct lexy_status_pointer lexy_status_pointers[LEXY_STATUS_NUMBER];$/;"	v	typeref:struct:lexy_status_pointer
 lexy_token_command	lexy.c	/^int lexy_token_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {$/;"	f
-lexy_tokenizer	lexy.c	/^struct lexy_tokenizer {$/;"	s	file:
-lexy_tokenizers	lexy.c	/^struct lexy_tokenizer lexy_tokenizers[LEXY_TOKENIZER_NUMBER];$/;"	v	typeref:struct:lexy_tokenizer
 lexy_update_for_move	lexy.c	/^void lexy_update_for_move(buffer_t *buffer, real_line_t *start_line) {$/;"	f
-lexy_update_line	lexy.c	/^static void lexy_update_line(buffer_t *buffer, real_line_t *line, struct lexy_tokenizer *tokenizer, int *state) {$/;"	f	file:
-lexy_update_one_token	lexy.c	/^static void lexy_update_one_token(buffer_t *buffer, real_line_t *line, int *glyph, struct lexy_tokenizer *tokenizer, int *state) {$/;"	f	file:
+lexy_update_line	lexy.c	/^static void lexy_update_line(buffer_t *buffer, real_line_t *line, int *state) {$/;"	f	file:
+lexy_update_one_token	lexy.c	/^static void lexy_update_one_token(buffer_t *buffer, real_line_t *line, int *glyph, int *status) {$/;"	f	file:
 lexy_update_starting_at	lexy.c	/^void lexy_update_starting_at(buffer_t *buffer, real_line_t *start_line, bool quick_exit) {$/;"	f
 lexydef	builtin.tcl	/^proc lexydef {name args} {$/;"	p
 library	foundry.c	/^FT_Library library;$/;"	v
@@ -705,7 +699,7 @@ lineno	point.h	/^	int lineno;$/;"	m	struct:_point_t
 lineno	tags.h	/^	int lineno;$/;"	m	struct:tag_entry
 lineno_group	lexy.c	/^	uint8_t file_group, lineno_group, colno_group;$/;"	m	struct:lexy_row	file:
 lineof	builtin.tcl	/^	proc lineof {x} {$/;"	p
-link_fn	lexy.c	/^	const char *link_fn;$/;"	m	struct:lexy_tokenizer	file:
+link_fn	lexy.c	/^	const char *link_fn;$/;"	m	struct:lexy_association	file:
 link_open	builtin.tcl	/^	proc link_open {islink text} {$/;"	p
 list	compl.h	/^	GtkListStore *list;$/;"	m	struct:completer
 list_internal_commands	cmdcompl.c	/^const char *list_internal_commands[] = {$/;"	v
@@ -754,14 +748,15 @@ moving	tframe.c	/^	bool moving;$/;"	m	struct:_tframe_t	file:
 mtime	buffer.h	/^	time_t mtime;$/;"	m	struct:_buffer_t
 my_glyph_info_t	buffer.h	/^} my_glyph_info_t;$/;"	t	typeref:struct:_my_glyph_info_t
 n	editor.c	/^	int n;$/;"	m	struct:growable_glyph_array	file:
+name	lexy.c	/^	char *name;$/;"	m	struct:lexy_status_pointer	file:
 new_column_mitem_callback	top.c	/^static void new_column_mitem_callback(GtkMenuItem *menuitem, gpointer data) {$/;"	f	file:
 new_editor	editor.c	/^editor_t *new_editor(buffer_t *buffer, bool single_line) {$/;"	f
 new_in_column	columns.c	/^tframe_t *new_in_column(columns_t *columns, column_t *column, buffer_t *buffer) {$/;"	f
 new_real_line	buffer.c	/^static real_line_t *new_real_line(int lineno) {$/;"	f	file:
-new_row_for_state	lexy.c	/^static struct lexy_row *new_row_for_state(struct lexy_tokenizer *tokenizer, int state) {$/;"	f	file:
+new_row_for_state	lexy.c	/^static struct lexy_row *new_row_for_state(int state) {$/;"	f	file:
 next	buffer.h	/^	struct _real_line_t *next;$/;"	m	struct:_real_line_t	typeref:struct:_real_line_t::_real_line_t
 next	undo.h	/^	struct _undo_node_t *next;$/;"	m	struct:_undo_node_t	typeref:struct:_undo_node_t::_undo_node_t
-next_state	lexy.c	/^	uint8_t next_state;$/;"	m	struct:lexy_row	file:
+next_status	lexy.c	/^	uint16_t next_status;$/;"	m	struct:lexy_row	file:
 next_will_wrap_around	research.h	/^	bool next_will_wrap_around;$/;"	m	struct:research_t
 null_buffer	buffers.c	/^buffer_t *null_buffer(void) {$/;"	f
 null_strcmp	global.c	/^int null_strcmp(const char *a, const char *b) {$/;"	f
@@ -801,7 +796,7 @@ point_t	point.h	/^} point_t;$/;"	t	typeref:struct:_point_t
 point_to_char_to_find	parmatch.c	/^static uint32_t point_to_char_to_find(lpoint_t *point, const char *tomatch, const char *tofind) {$/;"	f	file:
 points_equal	point.c	/^bool points_equal(point_t *a, point_t *b) {$/;"	f
 prefix_from_buffer	compl.h	/^	prefix_from_buffer_fn *prefix_from_buffer;$/;"	m	struct:completer
-prefix_from_buffer_fn	compl.h	/^typedef uint16_t *prefix_from_buffer_fn(buffer_t *buffer, size_t *lenout);$/;"	t
+prefix_from_buffer_fn	compl.h	/^typedef char *prefix_from_buffer_fn(buffer_t *buffer);	$/;"	t
 prefix_len	compl.h	/^	size_t prefix_len;$/;"	m	struct:completer
 prev	buffer.h	/^	struct _real_line_t *prev;$/;"	m	struct:_real_line_t	typeref:struct:_real_line_t::_real_line_t
 prev	undo.h	/^	struct _undo_node_t *prev;$/;"	m	struct:_undo_node_t	typeref:struct:_undo_node_t::_undo_node_t
@@ -841,7 +836,6 @@ reverse_test	selftest.tcl	/^proc reverse_test {} {$/;"	p
 right_margin	buffer.h	/^	double right_margin;$/;"	m	struct:_buffer_t
 root	critbit.c	/^void*root;$/;"	m	struct:__anon2	file:
 root	critbit.h	/^  void *root;$/;"	m	struct:__anon3
-rows	lexy.c	/^	struct lexy_row rows[LEXY_ROW_NUMBER];$/;"	m	struct:lexy_tokenizer	typeref:struct:lexy_tokenizer::lexy_row	file:
 s	builtin-create.pl	/^		s:":\\\\":g;$/;"	l
 s	builtin-create.pl	/^		s:\\\\:\\\\\\\\:g;$/;"	l
 save_session_mitem_callback	top.c	/^static void save_session_mitem_callback(GtkMenuItem *menuitem, gpointer data) {$/;"	f	file:
@@ -914,12 +908,12 @@ start	undo.h	/^	point_t start;$/;"	m	struct:_selection_t
 start_glyph	treint.h	/^	int start_glyph;$/;"	m	struct:augmented_lpoint_t
 start_regex_interactive	research.c	/^void start_regex_interactive(struct research_t *research, const char *regexp) {$/;"	f
 start_selection_scroll	editor.c	/^static void start_selection_scroll(editor_t *editor) {$/;"	f	file:
+start_status_for_buffer	lexy.c	/^static int start_status_for_buffer(buffer_t *buffer) {$/;"	f	file:
+start_status_index	lexy.c	/^	int start_status_index;$/;"	m	struct:lexy_association	file:
+start_status_index	lexy.c	/^	int start_status_index;$/;"	m	struct:lexy_status_pointer	file:
 start_y	buffer.h	/^	double start_y;$/;"	m	struct:_real_line_t
-status_name	lexy.c	/^	char *status_name;$/;"	m	struct:lexy_status_pointer	file:
 status_notebook_page	top.c	/^guint cmdline_notebook_page, status_notebook_page;$/;"	v
-status_pointers	lexy.c	/^	struct lexy_status_pointer status_pointers[LEXY_STATUS_NUMBER];$/;"	m	struct:lexy_tokenizer	typeref:struct:lexy_tokenizer::lexy_status_pointer	file:
 streq	global.c	/^gboolean streq(gconstpointer a, gconstpointer b) {$/;"	f
-string_utf16_to_utf8	global.c	/^char *string_utf16_to_utf8(uint16_t *origin, size_t origin_len) {$/;"	f
 strnulleq	history.c	/^static bool strnulleq(const char *a, const char *b) {$/;"	f	file:
 strval	cfg.h	/^	char *strval;$/;"	m	struct:_config_item_t
 tab_mode	buffer.h	/^enum tab_mode {$/;"	g
@@ -1014,9 +1008,6 @@ tmpdata	compl.h	/^	void *tmpdata;$/;"	m	struct:completer
 to_closed_buffers_critbit	buffer.c	/^static int to_closed_buffers_critbit(const char *entry, void *p) {$/;"	f	file:
 todos_test	selftest.tcl	/^proc todos_test {} {$/;"	p
 token_type	lexy.c	/^	uint8_t token_type;$/;"	m	struct:lexy_row	file:
-tokenizer	lexy.c	/^	struct lexy_tokenizer *tokenizer;$/;"	m	struct:lexy_association	typeref:struct:lexy_association::lexy_tokenizer	file:
-tokenizer_from_buffer	lexy.c	/^static struct lexy_tokenizer *tokenizer_from_buffer(buffer_t *buffer) {$/;"	f	file:
-tokenizer_name	lexy.c	/^	char *tokenizer_name;$/;"	m	struct:lexy_tokenizer	file:
 tools_label_map_callback	top.c	/^static gboolean tools_label_map_callback(GtkWidget *widget, GdkEvent *event, gpointer data) {$/;"	f	file:
 tools_label_popup_callback	top.c	/^static gboolean tools_label_popup_callback(GtkWidget *widget, GdkEventButton *event, gpointer data) {$/;"	f	file:
 tools_menu	top.c	/^GtkWidget *tools_menu;$/;"	v
