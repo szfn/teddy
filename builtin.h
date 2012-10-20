@@ -256,6 +256,7 @@ proc zenburn_theme {} {\n\
 	setcfg -global lexy_string [rgbcolor 204 147 147]\n\
 	setcfg -global lexy_id [rgbcolor 197 197 183 ]\n\
 	setcfg -global lexy_literal [rgbcolor 220 163 163]\n\
+	setcfg -global lexy_file [rgbcolor cyan]\n\
 \n\
 	setcfg -global editor_sel_invert 1\n\
 }\n\
@@ -295,6 +296,7 @@ proc solarized_theme {} {\n\
 	setcfg -global lexy_string $cyan\n\
 	setcfg -global lexy_id $base2\n\
 	setcfg -global lexy_literal $cyan\n\
+	setcfg -global lexy_file [rgbcolor cyan]	\n\
 \n\
 	setcfg -global editor_sel_invert 1\n\
 }\n\

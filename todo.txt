@@ -1,7 +1,7 @@
-- BUG: configure link color for solarized
 - BUG: H ansi escape doesn't recenter editor
+- BUG: changing font after intialization results in trash (stuff in glyph_info isn't reloaded)
 - EDITOR and VISUAL setting (needs some IPC implementation)
 - multiprocess highlighting
 - tabs
 - macro recording
-- BUG: changing font after intialization results in trash (stuff in glyph_info isn't reloaded)
+
