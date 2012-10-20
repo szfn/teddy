@@ -151,6 +151,9 @@ static void ansi_append_escape(job_t *job) {
 	} else if (command_char == 'H') {
 		buffer_move_point_line(buffer, &(buffer->cursor), MT_ABS, 1);
 		buffer_move_point_glyph(buffer, &(buffer->cursor), MT_ABS, 1);
+		editor_t *editor;
+		find_editor_for_buffer(buffer, NULL, NULL, &editor);
+		if (editor != NULL) editor_center_on_cursor(editor);
 	} else {
 		job_append(job, "<esc>", strlen("<esc>"), 0);
 	}
