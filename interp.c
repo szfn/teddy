@@ -133,7 +133,10 @@ static int teddy_setcfg_command(ClientData client_data, Tcl_Interp *interp, int 
 
 	config_set(config, i, (char *)value);
 
-	if (interp_context_buffer() != NULL) buffer_config_changed(interp_context_buffer());
+	for (int i = 0; i < buffers_allocated; ++i) {
+		if (buffers[i] == NULL) continue;
+		buffer_config_changed(buffers[i]);
+	}
 
 	if (columnset != NULL)
 		gtk_widget_queue_draw(GTK_WIDGET(columnset));

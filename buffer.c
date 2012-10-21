@@ -235,6 +235,30 @@ static void buffer_split_line(buffer_t *buffer, lpoint_t *point) {
 	buffer_real_line_insert(buffer, point->line, copied_segment);
 }
 
+static void buffer_reload_glyph_info(buffer_t *buffer) {
+	teddy_fontset_t *font = foundry_lookup(config_strval(&(buffer->config), CFG_MAIN_FONT), true);
+	for (real_line_t *line = buffer->real_line; line != NULL; line = line->next) {
+		FT_UInt previous = 0;
+		uint8_t previous_fontidx = 0;
+
+		for (int i = 0; i < line->cap; ++i) {
+			uint8_t fontidx = fontset_fontidx(font, line->glyph_info[i].code);
+			line->glyph_info[i].glyph_index = fontset_glyph_index(font, fontidx, (line->glyph_info[i].code != 0x09) ? line->glyph_info[i].code : 0x20);
+			line->glyph_info[i].kerning_correction = (previous_fontidx == fontidx) ? fontset_get_kerning(font, fontidx, previous, line->glyph_info[i].glyph_index) : 0.0;
+
+			previous = line->glyph_info[i].glyph_index;
+			previous_fontidx = line->glyph_info[i].fontidx = fontidx;
+
+			line->glyph_info[i].x = 0.0;
+			line->glyph_info[i].y = 0.0;
+
+			line->glyph_info[i].x_advance = fontset_x_advance(font, fontidx, line->glyph_info[i].glyph_index);
+		}
+	}
+
+	foundry_release(font);
+}
+
 static int buffer_line_insert_utf8_text(buffer_t *buffer, real_line_t *line, const char *text, int len, int insertion_point, int *valid_chars, int *invalid_chars) {
 	FT_UInt previous = 0;
 	uint8_t previous_fontidx = 0;
@@ -274,10 +298,6 @@ static int buffer_line_insert_utf8_text(buffer_t *buffer, real_line_t *line, con
 		previous_fontidx = line->glyph_info[dst].fontidx = fontidx;
 		line->glyph_info[dst].x = 0.0;
 		line->glyph_info[dst].y = 0.0;
-
-		/*if (code == 0x09) {
-			extents.x_advance *= buffer->tab_width;
-		}*/
 
 		line->glyph_info[dst].x_advance = fontset_x_advance(font, fontidx, glyph_index);
 		if (dst == line->cap) {
@@ -1040,6 +1060,7 @@ void buffer_extend_selection_by_select_type(buffer_t *buffer) {
 }
 
 void buffer_config_changed(buffer_t *buffer) {
+	buffer_reload_glyph_info(buffer);
 	buffer_init_font_extents(buffer);
 	buffer_typeset_maybe(buffer, 0.0, false, true);
 }
@@ -1280,7 +1301,7 @@ void buffer_wordcompl_init_charset(void) {
 			wordcompl_red_charset[i] = false;
 		} else {
 			wordcompl_charset[i] = false;
-			wordcompl_red_charset[i] = false;			
+			wordcompl_red_charset[i] = false;
 		}
 	}
 }

@@ -1,4 +1,4 @@
-- BUG: changing font after intialization results in trash (stuff in glyph_info isn't reloaded)
+- current directory display should use the same control as the tag
 - EDITOR and VISUAL setting (needs some IPC implementation)
 - multiprocess highlighting
 - tabs
