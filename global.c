@@ -61,9 +61,17 @@ void global_free() {
 
 char *unrealpath(const char *relative_path, bool empty_too) {
 	if (!empty_too) {
-		if (strlen(relative_path) == 0) return strdup(relative_path);
+		if (strlen(relative_path) == 0) {
+			char *r = strdup(relative_path);
+			alloc_assert(r);
+			return r;
+		}
 	}
-	if (relative_path[0] == '/') return realpath(relative_path, NULL);
+	if (relative_path[0] == '/') {
+		char *r = realpath(relative_path, NULL);
+		alloc_assert(r);
+		return r;
+	}
 
 	if (relative_path[0] == '~') {
 		const char *home = getenv("HOME");

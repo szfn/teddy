@@ -420,11 +420,10 @@ static void load_word_completions(struct completer *c) {
 static bool cmdcompl_recalc_with(struct completer *c, char *reldir) {
 	bool ret = true;
 	char *absdir = unrealpath(reldir, true);
-	alloc_assert(absdir);
 
 	//printf("Recalculating with <%s> -> <%s>\n", reldir, absdir);
-
-	DIR *dh = opendir(absdir);
+	
+	DIR *dh = (absdir != NULL) ? opendir(absdir) : NULL;
 	if (dh == NULL) {
 		if (strcmp(reldir, "") != 0) {
 			free(reldir);
@@ -434,7 +433,6 @@ static bool cmdcompl_recalc_with(struct completer *c, char *reldir) {
 
 		free(absdir);
 		absdir = unrealpath(reldir, true);
-		alloc_assert(absdir);
 
 		if (absdir != NULL) dh = opendir(absdir);
 		ret = false;
@@ -515,9 +513,8 @@ bool in_external_commands(const char *arg) {
 
 void word_completer_full_update(void) {
 	char *absdir = unrealpath(the_word_completer.tmpdata, true);
-	alloc_assert(absdir);
 
-	DIR *dh = opendir(absdir);
+	DIR *dh = (absdir != NULL) ? opendir(absdir) : NULL;
 	critbit0_clear(&(the_word_completer.cbt));
 
 	load_command_completions(&the_word_completer);
