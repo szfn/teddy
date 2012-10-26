@@ -326,7 +326,7 @@ static gboolean jobs_input_watch_function(GIOChannel *source, GIOCondition condi
 
 static gboolean autoshow_job_buffer(job_t *job) {
 	if (job->pipe_from_child == NULL) return FALSE;
-	printf("Autoshow\n");
+	//printf("Autoshow\n");
 	job_create_buffer(job);
 	return FALSE;
 }
