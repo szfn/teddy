@@ -7,7 +7,6 @@
 
 GtkClipboard *selection_clipboard;
 GtkClipboard *default_clipboard;
-PangoFontDescription *elements_font_description;
 
 char *tied_session;
 
@@ -37,16 +36,12 @@ void global_init() {
 	tied_session = NULL;
 	closed_buffers_critbit.root = NULL;
 
-	elements_font_description = pango_font_description_from_string("tahoma,arial,sans-serif 11");
-
 	if (!FcInit()) {
 		printf("Error initializing font config library\n");
 		exit(EXIT_FAILURE);
 	}
 
 	keybindings = g_hash_table_new(g_str_hash, streq);
-
-	compl_init(&the_word_completer);
 
 	cursor_arrow = gdk_cursor_new(GDK_ARROW);
 	cursor_xterm = gdk_cursor_new(GDK_XTERM);
@@ -353,12 +348,47 @@ int null_strcmp(const char *a, const char *b) {
 	return strcmp(a, b);
 }
 
+void gtk_widget_like_editor(config_t *config, GtkWidget *w) {
+	GdkColor fg, bg, bg_selected;
+	set_gdk_color_cfg(config, CFG_EDITOR_BG_COLOR, &bg);
+	set_gdk_color_cfg(config, CFG_EDITOR_BG_CURSORLINE, &bg_selected);
+	set_gdk_color_cfg(config, CFG_EDITOR_FG_COLOR, &fg);
+
+	gtk_widget_modify_base(w, GTK_STATE_NORMAL, &bg);
+	gtk_widget_modify_base(w, GTK_STATE_ACTIVE, &bg_selected);
+	gtk_widget_modify_base(w, GTK_STATE_PRELIGHT, &bg_selected);
+	gtk_widget_modify_base(w, GTK_STATE_SELECTED, &bg_selected);
+	gtk_widget_modify_base(w, GTK_STATE_INSENSITIVE, &bg);
+
+	gtk_widget_modify_text(w, GTK_STATE_NORMAL, &fg);
+	gtk_widget_modify_text(w, GTK_STATE_ACTIVE, &fg);
+	gtk_widget_modify_text(w, GTK_STATE_PRELIGHT, &fg);
+	gtk_widget_modify_text(w, GTK_STATE_SELECTED, &fg);
+	gtk_widget_modify_text(w, GTK_STATE_INSENSITIVE, &fg);
+}
+
+void gtk_widget_modify_base_all(GtkWidget *w, GdkColor *c) {
+	gtk_widget_modify_base(w, GTK_STATE_NORMAL, c);
+	gtk_widget_modify_base(w, GTK_STATE_ACTIVE, c);
+	gtk_widget_modify_base(w, GTK_STATE_PRELIGHT, c);
+	gtk_widget_modify_base(w, GTK_STATE_SELECTED, c);
+	gtk_widget_modify_base(w, GTK_STATE_INSENSITIVE, c);
+}
+
 void gtk_widget_modify_bg_all(GtkWidget *w, GdkColor *c) {
 	gtk_widget_modify_bg(w, GTK_STATE_NORMAL, c);
 	gtk_widget_modify_bg(w, GTK_STATE_ACTIVE, c);
 	gtk_widget_modify_bg(w, GTK_STATE_PRELIGHT, c);
 	gtk_widget_modify_bg(w, GTK_STATE_SELECTED, c);
 	gtk_widget_modify_bg(w, GTK_STATE_INSENSITIVE, c);
+}
+
+void gtk_widget_modify_fg_all(GtkWidget *w, GdkColor *c) {
+	gtk_widget_modify_fg(w, GTK_STATE_NORMAL, c);
+	gtk_widget_modify_fg(w, GTK_STATE_ACTIVE, c);
+	gtk_widget_modify_fg(w, GTK_STATE_PRELIGHT, c);
+	gtk_widget_modify_fg(w, GTK_STATE_SELECTED, c);
+	gtk_widget_modify_fg(w, GTK_STATE_INSENSITIVE, c);
 }
 
 char *session_directory(void) {
@@ -469,4 +499,12 @@ void load_tied_session(void) {
 	}
 
 	free(sessionfile);
+}
+
+void set_gdk_color_cfg(config_t *config, int name, GdkColor *c) {
+	int color = config_intval(config, name);
+	c->pixel = 0xff;
+	c->red = (uint8_t)(color) / 255.0 * 65535;
+	c->green = (uint8_t)(color >> 8) / 255.0 * 65535;
+	c->blue = (uint8_t)(color >> 16) / 255.0 * 65535;
 }

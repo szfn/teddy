@@ -14,7 +14,6 @@
 
 #include <unicode/uchar.h>
 
-
 static gboolean compl_wnd_expose_callback(GtkWidget *widget, GdkEventExpose *event, struct completer *c) {
 	GtkAllocation allocation;
 
@@ -58,9 +57,17 @@ void compl_init(struct completer *c) {
 	c->recalc = NULL;
 	c->tmpdata = NULL;
 
-	gtk_tree_view_insert_column_with_attributes(GTK_TREE_VIEW(c->tree), -1, "Completion", gtk_cell_renderer_text_new(), "text", 0, NULL);
+	GtkCellRenderer *crt = gtk_cell_renderer_text_new();
+
+	GdkColor fg;
+	set_gdk_color_cfg(&global_config, CFG_EDITOR_FG_COLOR, &fg);
+	g_object_set(crt, "foreground-gdk", &fg, NULL);
+
+	gtk_tree_view_insert_column_with_attributes(GTK_TREE_VIEW(c->tree), -1, "Completion", crt, "text", 0, NULL);
 	gtk_tree_view_set_model(GTK_TREE_VIEW(c->tree), GTK_TREE_MODEL(c->list));
 	gtk_tree_view_set_headers_visible(GTK_TREE_VIEW(c->tree), FALSE);
+
+	gtk_widget_like_editor(&global_config, c->tree);
 
 	c->window = gtk_window_new(GTK_WINDOW_POPUP);
 
@@ -422,7 +429,7 @@ static bool cmdcompl_recalc_with(struct completer *c, char *reldir) {
 	char *absdir = unrealpath(reldir, true);
 
 	//printf("Recalculating with <%s> -> <%s>\n", reldir, absdir);
-	
+
 	DIR *dh = (absdir != NULL) ? opendir(absdir) : NULL;
 	if (dh == NULL) {
 		if (strcmp(reldir, "") != 0) {

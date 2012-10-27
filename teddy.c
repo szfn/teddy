@@ -73,8 +73,6 @@ int main(int argc, char *argv[]) {
 
 	foundry_init();
 
-	history_init(&command_history);
-	history_init(&search_history);
 
 	global_init();
 	config_init_auto_defaults();
@@ -86,6 +84,11 @@ int main(int argc, char *argv[]) {
 	interp_init();
 
 	read_conf();
+	
+	history_init(&command_history);
+	history_init(&search_history);
+
+	compl_init(&the_word_completer);
 
 	cmdcompl_init();
 	the_word_completer.recalc = &cmdcompl_recalc;

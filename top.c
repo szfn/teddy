@@ -195,17 +195,33 @@ GtkWidget *top_init(void) {
 
 	/**** STATUS ****/
 
+	GdkColor bg, fg;
+	set_gdk_color_cfg(&global_config, CFG_TAG_BG_COLOR, &bg);
+	set_gdk_color_cfg(&global_config, CFG_TAG_FG_COLOR, &fg);
+
 	GtkWidget *box = gtk_hbox_new(false, 0);
 
 	dir_label = gtk_label_new(working_directory);
+
+	gtk_label_set_justify(GTK_LABEL(dir_label), GTK_JUSTIFY_LEFT);
+
+	GtkWidget *dir_label_box = gtk_event_box_new();
+	gtk_container_add(GTK_CONTAINER(dir_label_box), dir_label);
+	gtk_widget_modify_bg_all(dir_label_box, &bg);
+	gtk_widget_modify_fg_all(dir_label_box, &fg);
 
 	GtkWidget *events = gtk_event_box_new();
 
 	GtkWidget *tools_label = gtk_label_new("");
 	gtk_label_set_markup(GTK_LABEL(tools_label), "<u>Tools</u>");
 
-	gtk_box_pack_start(GTK_BOX(box), dir_label, FALSE, FALSE, 0);
-	gtk_container_add(GTK_CONTAINER(events), tools_label);
+	GtkWidget *tools_label_box = gtk_event_box_new();
+	gtk_container_add(GTK_CONTAINER(tools_label_box), tools_label);
+	gtk_widget_modify_bg_all(tools_label_box, &bg);
+	gtk_widget_modify_fg_all(tools_label_box, &fg);
+
+	gtk_box_pack_start(GTK_BOX(box), dir_label_box, TRUE, TRUE, 0);
+	gtk_container_add(GTK_CONTAINER(events), tools_label_box);
 	gtk_box_pack_end(GTK_BOX(box), events, FALSE, TRUE, 0);
 
 	gtk_widget_add_events(events, GDK_STRUCTURE_MASK);

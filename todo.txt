@@ -1,11 +1,11 @@
-- current directory display should use the same control as the tag
-- style autocompletions window, bold matched text
 - better iopen window
 	- only one results list, sort by shortest result first
 	- bold matched text
 	- bigger font for main line of output
 	- use color theme
 	- better spacing
+- BUG: editor line slightly too small when the line height reduction is specified
+- bold matched text in autocompletions window
 - EDITOR and VISUAL setting (needs some IPC implementation)
 - multiprocess highlighting
 - tabs

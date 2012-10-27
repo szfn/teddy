@@ -435,19 +435,14 @@ tframe_t *tframe_new(const char *title, GtkWidget *content, columns_t *columns) 
 	r->title = strdup((title != NULL) ? title : "");
 	alloc_assert(r->title);
 
-	int color = config_intval(&global_config, CFG_TAG_BG_COLOR);
 	GdkColor c;
-	c.pixel = 0xff;
-	c.red = (uint8_t)(color) / 255.0 * 65535;
-	c.green = (uint8_t)(color >> 8) / 255.0 * 65535;
-	c.blue = (uint8_t)(color >> 16) / 255.0 * 65535;
+	set_gdk_color_cfg(&global_config, CFG_TAG_BG_COLOR, &c);
 
 	r->tag = gtk_hbox_new(FALSE, 0);
 
 	r->drarla = gtk_drawing_area_new();
 	r->resdr = gtk_drawing_area_new();
 	gtk_widget_set_size_request(r->resdr, 14, 14);
-
 
 	GtkWidget *close_box = gtk_event_box_new();
 	gtk_widget_modify_bg_all(close_box, &c);
