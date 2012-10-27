@@ -1502,7 +1502,7 @@ editor_t *new_editor(buffer_t *buffer, bool single_line) {
 	g_signal_connect(G_OBJECT(r->drarhscroll), "value_changed", G_CALLBACK(hscrolled_callback), (gpointer)r);
 
 	if (r->single_line) {
-		gtk_widget_set_size_request(r->drar, 1, r->buffer->line_height);
+		gtk_widget_set_size_request(r->drar, 1, r->buffer->line_height + config_intval(&(buffer->config), CFG_MAIN_FONT_HEIGHT_REDUCTION));
 	}
 
 	g_signal_connect(G_OBJECT(r->search_entry), "key-press-event", G_CALLBACK(search_key_press_callback), r);

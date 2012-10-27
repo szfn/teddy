@@ -60,7 +60,7 @@ DR_CHANGED	buffers.c	/^	DR_CHANGED = 3,$/;"	e	enum:dirty_reason_t	file:
 DR_DIRJOB	buffers.c	/^	DR_DIRJOB = 1,$/;"	e	enum:dirty_reason_t	file:
 DR_JOB	buffers.c	/^	DR_JOB = 2,$/;"	e	enum:dirty_reason_t	file:
 DR_NOT_DIRTY	buffers.c	/^	DR_NOT_DIRTY = 0,$/;"	e	enum:dirty_reason_t	file:
-FDOPEN_ERROR	interp.c	806;"	d	file:
+FDOPEN_ERROR	interp.c	809;"	d	file:
 GFFR_BINARYFILE	buffers.h	/^	GFFR_BINARYFILE,$/;"	e	enum:go_file_failure_reason
 GFFR_OTHER	buffers.h	/^	GFFR_OTHER = 0,$/;"	e	enum:go_file_failure_reason
 GIT_COMPILATION_DATE	git.date.h	1;"	d
@@ -104,13 +104,13 @@ LOCKED_COMMAND_LINE_SIZE	editor.h	10;"	d
 LPOINTG	point.h	19;"	d
 LPOINTGI	point.h	18;"	d
 MAX_JOBS	jobs.h	43;"	d
-MAX_LINES_HEIGHT_REQUEST	global.h	29;"	d
+MAX_LINES_HEIGHT_REQUEST	global.h	26;"	d
 MINIMUM_WORDCOMPL_WORD_LEN	buffer.c	20;"	d	file:
-MIN_EM_COLUMN_SIZE_ATTEMPTED	global.h	31;"	d
-MIN_LINES_HEIGHT_REQUEST	global.h	30;"	d
-MOVE_CURSOR	interp.c	594;"	d	file:
-MOVE_MARK	interp.c	588;"	d	file:
-MOVE_MARK_CURSOR	interp.c	600;"	d	file:
+MIN_EM_COLUMN_SIZE_ATTEMPTED	global.h	28;"	d
+MIN_LINES_HEIGHT_REQUEST	global.h	27;"	d
+MOVE_CURSOR	interp.c	597;"	d	file:
+MOVE_MARK	interp.c	591;"	d	file:
+MOVE_MARK_CURSOR	interp.c	603;"	d	file:
 MT_ABS	buffer.h	/^	MT_ABS = 0, \/\/ move to absolute line\/column$/;"	e	enum:movement_type_t
 MT_END	buffer.h	/^	MT_END, \/\/ move to end$/;"	e	enum:movement_type_t
 MT_HOME	buffer.h	/^	MT_HOME, \/\/ toggle between first column and first non-whitespace character (buffer_move_point_glyph only)$/;"	e	enum:movement_type_t
@@ -119,7 +119,7 @@ MT_RELW	buffer.h	/^	MT_RELW, \/\/ word based relative move (buffer_move_point_gl
 MT_START	buffer.h	/^	MT_START, \/\/ move to first non-whitespace character (buffer_move_point_glyph only)$/;"	e	enum:movement_type_t
 NMATCH	lexy.c	361;"	d	file:
 NMATCH	lexy.c	514;"	d	file:
-OBJS	Makefile	/^OBJS := obj\/teddy.o obj\/buffer.o obj\/editor.o obj\/buffers.o obj\/columns.o obj\/column.o obj\/interp.o obj\/global.o obj\/undo.o  obj\/history.o obj\/jobs.o obj\/colors.o obj\/point.o obj\/cfg_auto.o obj\/cfg.o obj\/research.o obj\/parmatch.o obj\/compl.o obj\/lexy.o obj\/treint.o obj\/critbit.o obj\/cmdcompl.o obj\/tframe.o obj\/foundry.o obj\/top.o obj\/iopen.o obj\/tags.o$/;"	m
+OBJS	Makefile	/^OBJS := obj\/teddy.o obj\/buffer.o obj\/editor.o obj\/buffers.o obj\/columns.o obj\/column.o obj\/interp.o obj\/global.o obj\/undo.o  obj\/history.o obj\/jobs.o obj\/colors.o obj\/point.o obj\/cfg_auto.o obj\/cfg.o obj\/research.o obj\/parmatch.o obj\/compl.o obj\/lexy.o obj\/treint.o obj\/critbit.o obj\/tframe.o obj\/foundry.o obj\/top.o obj\/iopen.o obj\/tags.o$/;"	m
 OPENING_PARENTHESIS	parmatch.c	/^const char *OPENING_PARENTHESIS = "([{<";$/;"	v
 OS	research.c	92;"	d	file:
 OVECTOR_SIZE	research.c	184;"	d	file:
@@ -144,7 +144,6 @@ __BUFFER_H__	buffer.h	2;"	d
 __BUILTIN_TCL__	builtin.h	2;"	d
 __CFG_AUTO__	cfg_auto.h	2;"	d
 __CFG_H__	cfg.h	2;"	d
-__CMDCOMPL__	cmdcompl.h	2;"	d
 __COLORS_H__	colors.h	2;"	d
 __COLUMNS_H__	columns.h	2;"	d
 __COLUMN_H__	column.h	2;"	d
@@ -229,7 +228,6 @@ buffer_aux_wnwa_next_ex	buffer.c	/^static bool buffer_aux_wnwa_next_ex(lpoint_t 
 buffer_aux_wnwa_prev_ex	buffer.c	/^static bool buffer_aux_wnwa_prev_ex(lpoint_t *point) {$/;"	f	file:
 buffer_change_select_type	buffer.c	/^void buffer_change_select_type(buffer_t *buffer, enum select_type select_type) {$/;"	f
 buffer_close_real	buffers.c	/^static void buffer_close_real(buffer_t *buffer, bool save_critbit) {$/;"	f	file:
-buffer_cmdcompl_word_at_cursor	buffer.c	/^char *buffer_cmdcompl_word_at_cursor(buffer_t *buffer) {$/;"	f
 buffer_config_changed	buffer.c	/^void buffer_config_changed(buffer_t *buffer) {$/;"	f
 buffer_copy_line	buffer.c	/^static real_line_t *buffer_copy_line(buffer_t *buffer, real_line_t *real_line, int start, int size) {$/;"	f	file:
 buffer_create	buffer.c	/^buffer_t *buffer_create(void) {$/;"	f
@@ -256,6 +254,7 @@ buffer_move_point_glyph	buffer.c	/^bool buffer_move_point_glyph(buffer_t *buffer
 buffer_move_point_line	buffer.c	/^bool buffer_move_point_line(buffer_t *buffer, lpoint_t *p, enum movement_type_t type, int arg) {$/;"	f
 buffer_point_from_position	buffer.c	/^void buffer_point_from_position(buffer_t *buffer, double x, double y, lpoint_t *p) {$/;"	f
 buffer_real_line_insert	buffer.c	/^static void buffer_real_line_insert(buffer_t *buffer, real_line_t *insertion_line, real_line_t* real_line) {$/;"	f	file:
+buffer_reload_glyph_info	buffer.c	/^static void buffer_reload_glyph_info(buffer_t *buffer) {$/;"	f	file:
 buffer_remove_selection	buffer.c	/^static void buffer_remove_selection(buffer_t *buffer, lpoint_t *start, lpoint_t *end) {$/;"	f	file:
 buffer_replace_region	buffer.c	/^void buffer_replace_region(buffer_t *buffer, const char *new_text, lpoint_t *start, lpoint_t *end) {$/;"	f
 buffer_replace_selection	buffer.c	/^void buffer_replace_selection(buffer_t *buffer, const char *new_text) {$/;"	f
@@ -320,9 +319,9 @@ close_box_button_press_callback	tframe.c	/^static gboolean close_box_button_pres
 close_mitem_callback	top.c	/^static void close_mitem_callback(GtkMenuItem *menuitem, gpointer data) {$/;"	f	file:
 closed_buffers_critbit	global.c	/^critbit0_tree closed_buffers_critbit;$/;"	v
 cmd	research.h	/^	char *cmd;$/;"	m	struct:research_t
-cmdcompl_find_rightmost_slash	cmdcompl.c	/^static int cmdcompl_find_rightmost_slash(const char *text) {$/;"	f	file:
-cmdcompl_init	cmdcompl.c	/^void cmdcompl_init(void) {$/;"	f
-cmdcompl_recalc	cmdcompl.c	/^void cmdcompl_recalc(struct completer *c, const char *prefix) {$/;"	f
+cmdcompl_init	compl.c	/^void cmdcompl_init(void) {$/;"	f
+cmdcompl_recalc	compl.c	/^const char *cmdcompl_recalc(struct completer *c, const char *prefix) {$/;"	f
+cmdcompl_recalc_with	compl.c	/^static bool cmdcompl_recalc_with(struct completer *c, char *reldir) {$/;"	f	file:
 cmdline_buffer	top.c	/^buffer_t *cmdline_buffer;$/;"	v
 cmdline_editor	top.c	/^editor_t *cmdline_editor;$/;"	v
 cmdline_notebook_page	top.c	/^guint cmdline_notebook_page, status_notebook_page;$/;"	v
@@ -472,7 +471,6 @@ editor_switch_buffer	editor.c	/^void editor_switch_buffer(editor_t *editor, buff
 editor_t	editor.h	/^} editor_t;$/;"	t	typeref:struct:_editor_t
 editor_undo_action	editor.c	/^void editor_undo_action(editor_t *editor, bool redo) {$/;"	f
 editor_visible_completer	editor.c	/^static struct completer *editor_visible_completer(editor_t *editor) {$/;"	f	file:
-elements_font_description	global.c	/^PangoFontDescription *elements_font_description;$/;"	v
 em_advance	buffer.h	/^	double em_advance;$/;"	m	struct:_buffer_t
 enabled	lexy.c	/^	bool enabled;$/;"	m	struct:lexy_row	file:
 end	undo.h	/^	point_t end;$/;"	m	struct:_selection_t
@@ -487,9 +485,9 @@ execute_search_button	editor.h	/^	GtkWidget *prev_search_button, *execute_search
 expose_event_callback	editor.c	/^static gboolean expose_event_callback(GtkWidget *widget, GdkEventExpose *event, editor_t *editor) {$/;"	f	file:
 expose_frame	global.c	/^static gboolean expose_frame(GtkWidget *widget, GdkEventExpose *event, editor_t *editor) {$/;"	f	file:
 extension	lexy.c	/^	char *extension;$/;"	m	struct:lexy_association	file:
-external_commands	cmdcompl.c	/^const char **external_commands = NULL;$/;"	v
-external_commands_allocated	cmdcompl.c	/^int external_commands_allocated;$/;"	v
-external_commands_cap	cmdcompl.c	/^int external_commands_cap;$/;"	v
+external_commands	compl.c	/^const char **external_commands = NULL;$/;"	v
+external_commands_allocated	compl.c	/^int external_commands_allocated;$/;"	v
+external_commands_cap	compl.c	/^int external_commands_cap;$/;"	v
 face	foundry.c	/^	FT_Face face;$/;"	m	struct:_teddy_font_t	file:
 fake	undo.h	/^	bool fake;$/;"	m	struct:_undo_node_t
 file_directory	builtin.tcl	/^	proc file_directory {} {$/;"	p
@@ -569,7 +567,10 @@ gtk_teditor_init	editor.c	/^static void gtk_teditor_init(editor_t *editor) {$/;"
 gtk_tframe_class_init	tframe.c	/^static void gtk_tframe_class_init(tframe_class *class) {$/;"	f	file:
 gtk_tframe_get_type	tframe.c	/^GType gtk_tframe_get_type(void) {$/;"	f
 gtk_tframe_init	tframe.c	/^static void gtk_tframe_init(tframe_t *tframe) {$/;"	f	file:
+gtk_widget_like_editor	global.c	/^void gtk_widget_like_editor(config_t *config, GtkWidget *w) {$/;"	f
+gtk_widget_modify_base_all	global.c	/^void gtk_widget_modify_base_all(GtkWidget *w, GdkColor *c) {$/;"	f
 gtk_widget_modify_bg_all	global.c	/^void gtk_widget_modify_bg_all(GtkWidget *w, GdkColor *c) {$/;"	f
+gtk_widget_modify_fg_all	global.c	/^void gtk_widget_modify_fg_all(GtkWidget *w, GdkColor *c) {$/;"	f
 guess	builtin.tcl	/^	proc guess {} {$/;"	p
 hadjustment	editor.h	/^	GtkObject *adjustment, *hadjustment;$/;"	m	struct:_editor_t
 has_filename	buffer.h	/^	int has_filename;$/;"	m	struct:_buffer_t
@@ -589,7 +590,7 @@ history_item_free	history.c	/^static void history_item_free(struct history_item 
 history_substitute_with_index	top.c	/^static void history_substitute_with_index(struct history *h, editor_t *editor) {$/;"	f	file:
 hscrolled_callback	editor.c	/^static gboolean hscrolled_callback(GtkAdjustment *adj, editor_t *editor) {$/;"	f	file:
 ignore_next_entry_keyrelease	editor.h	/^	gboolean ignore_next_entry_keyrelease;$/;"	m	struct:_editor_t
-in_external_commands	cmdcompl.c	/^bool in_external_commands(const char *arg) {$/;"	f
+in_external_commands	compl.c	/^bool in_external_commands(const char *arg) {$/;"	f
 incr	builtin.tcl	/^	proc incr {} {$/;"	p
 indentchar	editor.c	/^static const char *indentchar(editor_t *editor) {$/;"	f	file:
 index	history.h	/^	int index;$/;"	m	struct:history
@@ -702,13 +703,15 @@ lineof	builtin.tcl	/^	proc lineof {x} {$/;"	p
 link_fn	lexy.c	/^	const char *link_fn;$/;"	m	struct:lexy_association	file:
 link_open	builtin.tcl	/^	proc link_open {islink text} {$/;"	p
 list	compl.h	/^	GtkListStore *list;$/;"	m	struct:completer
-list_internal_commands	cmdcompl.c	/^const char *list_internal_commands[] = {$/;"	v
+list_internal_commands	compl.c	/^const char *list_internal_commands[] = {$/;"	v
+load_command_completions	compl.c	/^static void load_command_completions(struct completer *c) {$/;"	f	file:
 load_dir	buffer.c	/^int load_dir(buffer_t *buffer, const char *dirname) {$/;"	f
-load_directory_completions	cmdcompl.c	/^static void load_directory_completions(struct completer *c, const char *absdir, const char *reldir) {$/;"	f	file:
+load_directory_completions	compl.c	/^static void load_directory_completions(struct completer *c, DIR *dh, const char *reldir) {$/;"	f	file:
 load_empty	buffer.c	/^void load_empty(buffer_t *buffer) {$/;"	f
 load_session_mitem_callback	top.c	/^static void load_session_mitem_callback(GtkMenuItem *menuitem, gpointer data) {$/;"	f	file:
 load_text_file	buffer.c	/^int load_text_file(buffer_t *buffer, const char *filename) {$/;"	f
 load_tied_session	global.c	/^void load_tied_session(void) {$/;"	f
+load_word_completions	compl.c	/^static void load_word_completions(struct completer *c) {$/;"	f	file:
 loadhistory	builtin.tcl	/^	proc loadhistory {} {$/;"	p
 loadsession	builtin.tcl	/^	proc loadsession {sessionfile} {$/;"	p
 loadsession_mitem	builtin.tcl	/^	proc loadsession_mitem {} {$/;"	p
@@ -796,7 +799,7 @@ point_t	point.h	/^} point_t;$/;"	t	typeref:struct:_point_t
 point_to_char_to_find	parmatch.c	/^static uint32_t point_to_char_to_find(lpoint_t *point, const char *tomatch, const char *tofind) {$/;"	f	file:
 points_equal	point.c	/^bool points_equal(point_t *a, point_t *b) {$/;"	f
 prefix_from_buffer	compl.h	/^	prefix_from_buffer_fn *prefix_from_buffer;$/;"	m	struct:completer
-prefix_from_buffer_fn	compl.h	/^typedef char *prefix_from_buffer_fn(buffer_t *buffer);	$/;"	t
+prefix_from_buffer_fn	compl.h	/^typedef char *prefix_from_buffer_fn(buffer_t *buffer);$/;"	t
 prefix_len	compl.h	/^	size_t prefix_len;$/;"	m	struct:completer
 prev	buffer.h	/^	struct _real_line_t *prev;$/;"	m	struct:_real_line_t	typeref:struct:_real_line_t::_real_line_t
 prev	undo.h	/^	struct _undo_node_t *prev;$/;"	m	struct:_undo_node_t	typeref:struct:_undo_node_t::_undo_node_t
@@ -812,8 +815,8 @@ read_conf	interp.c	/^void read_conf(void) {$/;"	f
 real_line	buffer.h	/^	real_line_t *real_line;$/;"	m	struct:_buffer_t
 real_line_t	buffer.h	/^} real_line_t;$/;"	t	typeref:struct:_real_line_t
 recalc	compl.h	/^	recalc_fn *recalc;$/;"	m	struct:completer
-recalc_fn	compl.h	/^typedef void recalc_fn(struct completer *c, const char *prefix);$/;"	t
-refill_word_completer	buffers.c	/^static int refill_word_completer(const char *entry, void *p) {$/;"	f	file:
+recalc_fn	compl.h	/^typedef const char *recalc_fn(struct completer *c, const char *prefix);$/;"	t
+refill_word_completer	compl.c	/^static int refill_word_completer(const char *entry, void *p) {$/;"	f	file:
 regexp	research.h	/^	regex_t regexp;$/;"	m	struct:research_t
 regmatch_to_lpoints	research.c	/^static bool regmatch_to_lpoints(struct augmented_lpoint_t *search_point, regmatch_t *m, lpoint_t *s, lpoint_t *e) {$/;"	f	file:
 release_command_line	top.c	/^static void release_command_line(editor_t *editor) {$/;"	f	file:
@@ -880,6 +883,7 @@ selections_cat	undo.c	/^static void selections_cat(selection_t *dst, selection_t
 selftest_init	selftest.tcl	/^proc selftest_init {} {$/;"	p
 session_directory	global.c	/^char *session_directory(void) {$/;"	f
 set_color_cfg	global.c	/^void set_color_cfg(cairo_t *cr, int color) {$/;"	f
+set_gdk_color_cfg	global.c	/^void set_gdk_color_cfg(config_t *config, int name, GdkColor *c) {$/;"	f
 set_label_text	editor.c	/^void set_label_text(editor_t *editor) {$/;"	f
 set_primary_selection	editor.c	/^static void set_primary_selection(editor_t *editor) {$/;"	f	file:
 setup_initial_columns	teddy.c	/^static void setup_initial_columns(int argc, char *argv[]) {$/;"	f	file:
@@ -994,7 +998,6 @@ tframe_set_modified	tframe.c	/^void tframe_set_modified(tframe_t *tframe, bool m
 tframe_set_title	tframe.c	/^void tframe_set_title(tframe_t *tframe, const char *title) {$/;"	f
 tframe_t	tframe.c	/^} tframe_t;$/;"	t	typeref:struct:_tframe_t	file:
 tframe_t	tframe.h	/^typedef struct _tframe_t tframe_t;$/;"	t	typeref:struct:_tframe_t
-the_cmd_completer	global.c	/^struct completer the_cmd_completer;$/;"	v	typeref:struct:completer
 the_context_buffer	interp.c	/^buffer_t *the_context_buffer = NULL;$/;"	v
 the_context_editor	interp.c	/^editor_t *the_context_editor = NULL;$/;"	v
 the_top_context_editor	top.c	/^editor_t *the_top_context_editor;$/;"	v
@@ -1030,6 +1033,7 @@ tre_point_bridge_get_next_char	treint.c	/^static int tre_point_bridge_get_next_c
 tre_point_bridge_rewind	treint.c	/^static void tre_point_bridge_rewind(size_t pos, void *context) {$/;"	f	file:
 tree	compl.h	/^	GtkWidget *tree;$/;"	m	struct:completer
 trim	colors-compile.pl	/^sub trim {$/;"	s
+trim_prefix	compl.c	/^static const char *trim_prefix(const char *prefix) {$/;"	f	file:
 u_isalnum_or_underscore	buffer.c	/^static UBool u_isalnum_or_underscore(uint32_t code) {$/;"	f	file:
 uchar_match_case_insensitive	research.c	/^static bool uchar_match_case_insensitive(uint32_t a, uint32_t b) {$/;"	f	file:
 uchar_match_case_sensitive	research.c	/^static bool uchar_match_case_sensitive(uint32_t a, uint32_t b) {$/;"	f	file:
@@ -1054,7 +1058,7 @@ undo_push	undo.c	/^void undo_push(undo_t *undo, undo_node_t *new_node) {$/;"	f
 undo_redo_pop	undo.c	/^undo_node_t *undo_redo_pop(undo_t *undo) {$/;"	f
 undo_t	undo.h	/^} undo_t;$/;"	t	typeref:struct:_undo_t
 unknown	builtin.tcl	/^proc unknown {args} {$/;"	p
-unrealpath	global.c	/^char *unrealpath(char *absolute_path, const char *relative_path) {$/;"	f
+unrealpath	global.c	/^char *unrealpath(const char *relative_path, bool empty_too) {$/;"	f
 unsaved	history.h	/^	int unsaved;$/;"	m	struct:history
 used	jobs.h	/^	int used;$/;"	m	struct:_job_t
 utf32_to_utf8	global.c	/^void utf32_to_utf8(uint32_t code, char **r, int *cap, int *allocated) {$/;"	f
@@ -1067,8 +1071,9 @@ waitall	interp.c	/^static void waitall(void) {$/;"	f	file:
 warp_mouse_after_next_expose	editor.h	/^	gboolean warp_mouse_after_next_expose;$/;"	m	struct:_editor_t
 wd	history.h	/^	char *wd;$/;"	m	struct:history_item
 window	compl.h	/^	GtkWidget *window;$/;"	m	struct:completer
-word_completer_full_update	buffers.c	/^void word_completer_full_update(void) {$/;"	f
+word_completer_full_update	compl.c	/^void word_completer_full_update(void) {$/;"	f
 wordcompl_charset	buffer.c	/^bool wordcompl_charset[0x10000];$/;"	v
+wordcompl_red_charset	buffer.c	/^bool wordcompl_red_charset[0x10000];$/;"	v
 working_directory	top.c	/^char *working_directory;$/;"	v
 write_all	jobs.c	/^static int write_all(int fd, const char *str) {$/;"	f	file:
 x	buffer.h	/^	double x;$/;"	m	struct:_my_glyph_info_t
