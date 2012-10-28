@@ -1,6 +1,9 @@
 - m command: no colon on an argument implies :1 for mark and :$ for cursor, or :1 if only the cursor is specified
-- bold matched text in autocompletions window
-- bold matched text in iopen window
+
+- BUG: minimized frames sometimes get stuck
+- columns should resist changing size (ie the box should be dragged a bit more before they start resizing)
+
+- bold matched text in autocompletions window and iopen window
 - EDITOR and VISUAL setting (needs some IPC implementation)
 - multiprocess highlighting
 - tabs
