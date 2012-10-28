@@ -61,7 +61,7 @@ void compl_init(struct completer *c) {
 
 	GdkColor fg;
 	set_gdk_color_cfg(&global_config, CFG_EDITOR_FG_COLOR, &fg);
-	g_object_set(crt, "foreground-gdk", &fg, NULL);
+	g_object_set(crt, "foreground-gdk", &fg, "foreground-set", TRUE, NULL);
 
 	gtk_tree_view_insert_column_with_attributes(GTK_TREE_VIEW(c->tree), -1, "Completion", crt, "text", 0, NULL);
 	gtk_tree_view_set_model(GTK_TREE_VIEW(c->tree), GTK_TREE_MODEL(c->list));

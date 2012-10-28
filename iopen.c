@@ -24,13 +24,11 @@ GtkWidget *parent_window;
 GtkWidget *iopen_window;
 buffer_t *iopen_buffer;
 editor_t *iopen_editor;
-GtkWidget *files_vbox, *tags_vbox;
 
-GtkListStore *files_list, *tags_list;
-GtkWidget *files_tree, *tags_tree, *selected_tree;
+GtkListStore *results_list;
+GtkWidget *results_tree;
 
 struct iopen_result {
-	GtkListStore *target;
 	char *show;
 	char *path;
 	char *search;
@@ -96,13 +94,11 @@ static void iopen_open(GtkTreeView *tree, GtkTreePath *treepath) {
 }
 
 static void iopen_enter(editor_t *editor) {
-	if (selected_tree == NULL) return;
-
 	GtkTreePath *path;
-	gtk_tree_view_get_cursor(GTK_TREE_VIEW(selected_tree), &path, NULL);
+	gtk_tree_view_get_cursor(GTK_TREE_VIEW(results_tree), &path, NULL);
 
 	if (path != NULL) {
-		iopen_open(GTK_TREE_VIEW(selected_tree), path);
+		iopen_open(GTK_TREE_VIEW(results_tree), path);
 		gtk_tree_path_free(path);
 	}
 }
@@ -115,39 +111,26 @@ static bool iopen_other_keys(editor_t *editor, bool shift, bool ctrl, bool alt, 
 	if (!shift && !ctrl && !alt && !super) {
 		GtkTreePath *path;
 
-		if (selected_tree == NULL) selected_tree = gtk_widget_get_visible(tags_tree) ? tags_tree : files_tree;
-
 		switch (keyval) {
 		case GDK_KEY_Up:
-			gtk_tree_view_get_cursor(GTK_TREE_VIEW(selected_tree), &path, NULL);
+			gtk_tree_view_get_cursor(GTK_TREE_VIEW(results_tree), &path, NULL);
 			if (path == NULL) {
 				path = gtk_tree_path_new_first();
 			} else {
 				gtk_tree_path_prev(path);
 			}
-			gtk_tree_view_set_cursor(GTK_TREE_VIEW(selected_tree), path, NULL, FALSE);
+			gtk_tree_view_set_cursor(GTK_TREE_VIEW(results_tree), path, NULL, FALSE);
 			gtk_tree_path_free(path);
 			return true;
 		case GDK_KEY_Down:
-			gtk_tree_view_get_cursor(GTK_TREE_VIEW(selected_tree), &path, NULL);
+			gtk_tree_view_get_cursor(GTK_TREE_VIEW(results_tree), &path, NULL);
 			if (path == NULL) {
 				path = gtk_tree_path_new_first();
 			} else {
 				gtk_tree_path_next(path);
 			}
-			gtk_tree_view_set_cursor(GTK_TREE_VIEW(selected_tree), path, NULL, FALSE);
+			gtk_tree_view_set_cursor(GTK_TREE_VIEW(results_tree), path, NULL, FALSE);
 			gtk_tree_path_free(path);
-			return true;
-		case GDK_KEY_Left:
-		case GDK_KEY_Right:
-			if (gtk_widget_get_visible(tags_tree)) {
-				GtkTreeSelection *sel = gtk_tree_view_get_selection(GTK_TREE_VIEW(selected_tree));
-				gtk_tree_selection_unselect_all(sel);
-				selected_tree = (selected_tree == files_tree) ? tags_tree : files_tree;
-				path = gtk_tree_path_new_first();
-				gtk_tree_view_set_cursor(GTK_TREE_VIEW(selected_tree), path, NULL, FALSE);
-				gtk_tree_path_free(path);
-			}
 			return true;
 		}
 	}
@@ -156,7 +139,7 @@ static bool iopen_other_keys(editor_t *editor, bool shift, bool ctrl, bool alt, 
 
 static void iopen_result_free(struct iopen_result *r) {
 	free(r->path);
-	free(r->show);
+	g_free(r->show);
 	if (r->search != NULL) free(r->search);
 	free(r);
 }
@@ -165,11 +148,11 @@ static gboolean iopen_add_result(struct iopen_result *r) {
 	bool should_add = true;
 	GtkTreeIter mah;
 
-	if (gtk_tree_model_get_iter_first(GTK_TREE_MODEL(r->target), &mah)) {
+	if (gtk_tree_model_get_iter_first(GTK_TREE_MODEL(results_list), &mah)) {
 		do {
 			GValue path_value = { 0 }, show_value = { 0 };
-			gtk_tree_model_get_value(GTK_TREE_MODEL(r->target), &mah, 1, &path_value);
-			gtk_tree_model_get_value(GTK_TREE_MODEL(r->target), &mah, 0, &show_value);
+			gtk_tree_model_get_value(GTK_TREE_MODEL(results_list), &mah, 1, &path_value);
+			gtk_tree_model_get_value(GTK_TREE_MODEL(results_list), &mah, 0, &show_value);
 			const char *path = g_value_get_string(&path_value);
 			const char *show = g_value_get_string(&show_value);
 
@@ -177,12 +160,12 @@ static gboolean iopen_add_result(struct iopen_result *r) {
 
 			g_value_unset(&path_value);
 			g_value_unset(&show_value);
-		} while (should_add && gtk_tree_model_iter_next(GTK_TREE_MODEL(r->target), &mah));
+		} while (should_add && gtk_tree_model_iter_next(GTK_TREE_MODEL(results_list), &mah));
 	}
 
 	if (should_add) {
-		gtk_list_store_append(r->target, &mah);
-		gtk_list_store_set(r->target, &mah, 0, r->show, 1, r->path, 2, (r->search != NULL) ? r->search : "", 3, r->rank, -1);
+		gtk_list_store_append(results_list, &mah);
+		gtk_list_store_set(results_list, &mah, 0, r->show, 1, r->path, 2, (r->search != NULL) ? r->search : "", 3, r->rank, -1);
 	}
 
 	iopen_result_free(r);
@@ -197,9 +180,8 @@ static void iopen_buffer_onchange(buffer_t *buffer) {
 	alloc_assert(text2);
 	g_async_queue_push(file_recursor_requests, text);
 	g_async_queue_push(tags_requests, text2);
-	gtk_list_store_clear(files_list);
-	gtk_list_store_clear(tags_list);
-	gtk_widget_queue_draw(files_tree);
+	gtk_list_store_clear(results_list);
+	gtk_widget_queue_draw(results_tree);
 }
 
 static gpointer iopen_recursor_thread(gpointer data) {
@@ -273,7 +255,6 @@ static gpointer iopen_recursor_thread(gpointer data) {
 			char *match_start = strcasestr(cf->cur->d_name, request);
 			if (match_start != NULL) {
 				struct iopen_result *r = malloc(sizeof(struct iopen_result));
-				r->target = files_list;
 				int len = 0;
 				for (int i = 0; i < top; ++i) {
 					len += strlen(tovisit[i].cur->d_name) + 1;
@@ -288,7 +269,7 @@ static gpointer iopen_recursor_thread(gpointer data) {
 				}
 				if (cf->cur->d_type == DT_DIR) strcat(r->path, "/");
 
-				r->show = strdup(r->path);
+				r->show = g_markup_printf_escaped("<big><b>%s%s</b></big>\n%s", cf->cur->d_name, (cf->cur->d_type == DT_DIR) ? "/" : "", r->path);
 				alloc_assert(r->show);
 
 				r->search = NULL;
@@ -360,8 +341,7 @@ static gpointer iopen_tags_thread(gpointer data) {
 		char *match_start = strcasestr(tag_entries[idx].tag, request);
 		if (match_start != NULL) {
 			struct iopen_result *r = malloc(sizeof(struct iopen_result));
-			r->target = tags_list;
-			asprintf(&(r->show), "%s\n%s", tag_entries[idx].tag, tag_entries[idx].path);
+			r->show = g_markup_printf_escaped("<big><b>%s</b></big>\n%s", tag_entries[idx].tag, tag_entries[idx].path);
 			alloc_assert(r->show);
 			r->path = strdup(tag_entries[idx].path);
 			alloc_assert(r->path);
@@ -371,7 +351,7 @@ static gpointer iopen_tags_thread(gpointer data) {
 			} else {
 				r->search = NULL;
 			}
-			r->rank = (match_start - tag_entries[idx].tag) * 10 + strlen(tag_entries[idx].tag);
+			r->rank = 1000 + (match_start - tag_entries[idx].tag) * 10 + strlen(tag_entries[idx].tag);
 			g_idle_add((GSourceFunc)iopen_add_result, r);
 
 			//printf("\t<%s>\n", tag_entries[idx].tag);
@@ -414,54 +394,30 @@ void iopen_init(GtkWidget *window) {
 
 	gtk_box_pack_start(GTK_BOX(main_vbox), GTK_WIDGET(iopen_editor), FALSE, FALSE, 0);
 
-	GtkWidget *results_hbox = gtk_hbox_new(true, 10);
+	results_list = gtk_list_store_new(4, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_DOUBLE);
+	gtk_tree_sortable_set_sort_column_id(GTK_TREE_SORTABLE(results_list), 3, GTK_SORT_ASCENDING);
+	results_tree = gtk_tree_view_new();
 
-	files_vbox = gtk_vbox_new(false, 10);
+	GtkCellRenderer *crt = gtk_cell_renderer_text_new();
 
-	GtkWidget *files_label = gtk_label_new("Files:");
-	gtk_box_pack_start(GTK_BOX(files_vbox), files_label, FALSE, FALSE, 0);
+	GdkColor fg;
+	set_gdk_color_cfg(&global_config, CFG_EDITOR_FG_COLOR, &fg);
+	g_object_set(crt, "foreground-gdk", &fg, "foreground-set", TRUE, NULL);
 
-	files_list = gtk_list_store_new(4, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_DOUBLE);
-	gtk_tree_sortable_set_sort_column_id(GTK_TREE_SORTABLE(files_list), 3, GTK_SORT_ASCENDING);
-	files_tree = gtk_tree_view_new();
+	gtk_widget_like_editor(&global_config, results_tree);
 
-	gtk_tree_view_insert_column_with_attributes(GTK_TREE_VIEW(files_tree), -1, "Path", gtk_cell_renderer_text_new(), "text", 0, NULL);
-	gtk_tree_view_set_model(GTK_TREE_VIEW(files_tree), GTK_TREE_MODEL(files_list));
-	gtk_tree_view_set_headers_visible(GTK_TREE_VIEW(files_tree), FALSE);
-	gtk_tree_view_set_search_column(GTK_TREE_VIEW(files_tree), 1);
+	gtk_tree_view_insert_column_with_attributes(GTK_TREE_VIEW(results_tree), -1, "Show", crt, "markup", 0, NULL);
+	gtk_tree_view_set_model(GTK_TREE_VIEW(results_tree), GTK_TREE_MODEL(results_list));
+	gtk_tree_view_set_headers_visible(GTK_TREE_VIEW(results_tree), FALSE);
+	gtk_tree_view_set_search_column(GTK_TREE_VIEW(results_tree), 1);
 
-	g_signal_connect(G_OBJECT(files_tree), "row-activated", G_CALLBACK(result_activated_callback), NULL);
+	g_signal_connect(G_OBJECT(results_tree), "row-activated", G_CALLBACK(result_activated_callback), NULL);
 
-	GtkWidget *files_scroll = gtk_scrolled_window_new(NULL, NULL);
-	gtk_container_add(GTK_CONTAINER(files_scroll), files_tree);
+	GtkWidget *results_scroll = gtk_scrolled_window_new(NULL, NULL);
+	gtk_container_add(GTK_CONTAINER(results_scroll), results_tree);
 
-	gtk_box_pack_start(GTK_BOX(files_vbox), files_scroll, TRUE, TRUE, 0);
-
-	tags_vbox = gtk_vbox_new(false, 10);
-
-	GtkWidget *tags_label = gtk_label_new("Tags:");
-	gtk_box_pack_start(GTK_BOX(tags_vbox), tags_label, FALSE, FALSE, 0);
-
-	tags_list = gtk_list_store_new(4, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_DOUBLE);
-	gtk_tree_sortable_set_sort_column_id(GTK_TREE_SORTABLE(tags_list), 3, GTK_SORT_ASCENDING);
-	tags_tree = gtk_tree_view_new();
-
-	gtk_tree_view_insert_column_with_attributes(GTK_TREE_VIEW(tags_tree), -1, "Path", gtk_cell_renderer_text_new(), "text", 0, NULL);
-	gtk_tree_view_set_model(GTK_TREE_VIEW(tags_tree), GTK_TREE_MODEL(tags_list));
-	gtk_tree_view_set_headers_visible(GTK_TREE_VIEW(tags_tree), FALSE);
-	gtk_tree_view_set_search_column(GTK_TREE_VIEW(tags_tree), 1);
-
-	g_signal_connect(G_OBJECT(tags_tree), "row-activated", G_CALLBACK(result_activated_callback), NULL);
-
-	GtkWidget *tags_scroll = gtk_scrolled_window_new(NULL, NULL);
-	gtk_container_add(GTK_CONTAINER(tags_scroll), tags_tree);
-
-	gtk_box_pack_start(GTK_BOX(tags_vbox),  tags_scroll, TRUE, TRUE, 0);
-
-	gtk_container_add(GTK_CONTAINER(results_hbox), tags_vbox);
-	gtk_container_add(GTK_CONTAINER(results_hbox), files_vbox);
-
-	gtk_box_pack_start(GTK_BOX(main_vbox), results_hbox, TRUE, TRUE, 0);
+	gtk_box_pack_start(GTK_BOX(main_vbox), frame_piece(TRUE), FALSE, FALSE, 0);
+	gtk_box_pack_start(GTK_BOX(main_vbox),  results_scroll, TRUE, TRUE, 0);
 
 	iopen_window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
 	gtk_window_set_decorated(GTK_WINDOW(iopen_window), TRUE);
@@ -482,10 +438,7 @@ void iopen(void) {
 	gtk_window_set_transient_for(GTK_WINDOW(iopen_window), GTK_WINDOW(parent_window));
 	gtk_window_set_modal(GTK_WINDOW(iopen_window), TRUE);
 
-	gtk_list_store_clear(files_list);
-	gtk_list_store_clear(tags_list);
-
-	selected_tree = NULL;
+	gtk_list_store_clear(results_list);
 
 	buffer_aux_clear(iopen_buffer);
 	iopen_buffer->cursor.line = iopen_buffer->real_line;
@@ -503,6 +456,5 @@ void iopen(void) {
 	if (text != NULL) g_free(text);
 
 	gtk_widget_show_all(iopen_window);
-	gtk_widget_set_visible(tags_vbox, top_has_tags());
 	editor_grab_focus(iopen_editor, false);
 }
