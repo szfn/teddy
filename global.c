@@ -360,19 +360,17 @@ void gtk_widget_like_editor(config_t *config, GtkWidget *w) {
 	gtk_widget_modify_base(w, GTK_STATE_SELECTED, &bg_selected);
 	gtk_widget_modify_base(w, GTK_STATE_INSENSITIVE, &bg);
 
+	gtk_widget_modify_bg(w, GTK_STATE_NORMAL, &bg);
+	gtk_widget_modify_bg(w, GTK_STATE_ACTIVE, &bg_selected);
+	gtk_widget_modify_bg(w, GTK_STATE_PRELIGHT, &bg_selected);
+	gtk_widget_modify_bg(w, GTK_STATE_SELECTED, &bg_selected);
+	gtk_widget_modify_bg(w, GTK_STATE_INSENSITIVE, &bg);
+
 	gtk_widget_modify_text(w, GTK_STATE_NORMAL, &fg);
 	gtk_widget_modify_text(w, GTK_STATE_ACTIVE, &fg);
 	gtk_widget_modify_text(w, GTK_STATE_PRELIGHT, &fg);
 	gtk_widget_modify_text(w, GTK_STATE_SELECTED, &fg);
 	gtk_widget_modify_text(w, GTK_STATE_INSENSITIVE, &fg);
-}
-
-void gtk_widget_modify_base_all(GtkWidget *w, GdkColor *c) {
-	gtk_widget_modify_base(w, GTK_STATE_NORMAL, c);
-	gtk_widget_modify_base(w, GTK_STATE_ACTIVE, c);
-	gtk_widget_modify_base(w, GTK_STATE_PRELIGHT, c);
-	gtk_widget_modify_base(w, GTK_STATE_SELECTED, c);
-	gtk_widget_modify_base(w, GTK_STATE_INSENSITIVE, c);
 }
 
 void gtk_widget_modify_bg_all(GtkWidget *w, GdkColor *c) {
@@ -381,14 +379,6 @@ void gtk_widget_modify_bg_all(GtkWidget *w, GdkColor *c) {
 	gtk_widget_modify_bg(w, GTK_STATE_PRELIGHT, c);
 	gtk_widget_modify_bg(w, GTK_STATE_SELECTED, c);
 	gtk_widget_modify_bg(w, GTK_STATE_INSENSITIVE, c);
-}
-
-void gtk_widget_modify_fg_all(GtkWidget *w, GdkColor *c) {
-	gtk_widget_modify_fg(w, GTK_STATE_NORMAL, c);
-	gtk_widget_modify_fg(w, GTK_STATE_ACTIVE, c);
-	gtk_widget_modify_fg(w, GTK_STATE_PRELIGHT, c);
-	gtk_widget_modify_fg(w, GTK_STATE_SELECTED, c);
-	gtk_widget_modify_fg(w, GTK_STATE_INSENSITIVE, c);
 }
 
 char *session_directory(void) {

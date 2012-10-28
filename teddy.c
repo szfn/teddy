@@ -2,7 +2,6 @@
 #include <stdlib.h>
 #include <fontconfig/fontconfig.h>
 
-#include "git.date.h"
 #include "global.h"
 #include "undo.h"
 #include "buffers.h"
@@ -84,7 +83,7 @@ int main(int argc, char *argv[]) {
 	interp_init();
 
 	read_conf();
-	
+
 	history_init(&command_history);
 	history_init(&search_history);
 
@@ -105,7 +104,6 @@ int main(int argc, char *argv[]) {
 
 	window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
 
-	gtk_window_set_title(GTK_WINDOW(window), GIT_COMPILATION_DATE);
 	gtk_window_set_default_size(GTK_WINDOW(window), 1024, 680);
 
 	g_signal_connect(G_OBJECT(window), "delete-event", G_CALLBACK(delete_callback), NULL);
@@ -115,7 +113,7 @@ int main(int argc, char *argv[]) {
 	iopen_init(window);
 
 	tags_init();
-	GtkWidget *top = top_init();
+	GtkWidget *top = top_init(window);
 
 	GtkWidget *vbox = gtk_vbox_new(FALSE, 0);
 

@@ -44,7 +44,6 @@ char *unrealpath(const char *relative_path, bool empty_too);
 gboolean streq(gconstpointer a, gconstpointer b);
 
 void set_color_cfg(cairo_t *cr, int color);
-void set_gdk_color_cfg(config_t *config, int name, GdkColor *c);
 GtkWidget *frame_piece(gboolean horizontal);
 void place_frame_piece(GtkWidget *table, gboolean horizontal, int positoin, int length);
 bool inside_allocation(double x, double y, GtkAllocation *allocation);
@@ -58,9 +57,8 @@ void alloc_assert(void *p);
 
 int null_strcmp(const char *a, const char *b);
 
+void set_gdk_color_cfg(config_t *config, int name, GdkColor *c);
 void gtk_widget_modify_bg_all(GtkWidget *w, GdkColor *c);
-void gtk_widget_modify_fg_all(GtkWidget *w, GdkColor *c);
-void gtk_widget_modify_base_all(GtkWidget *w, GdkColor *c);
 void gtk_widget_like_editor(config_t *config, GtkWidget *w);
 
 void save_tied_session(void);

@@ -1,4 +1,4 @@
-- change window title to contain current directory
+- m command: no colon on an argument implies :1 for mark and :$ for cursor, or :1 if only the cursor is specified
 - bold matched text in autocompletions window
 - bold matched text in iopen window
 - EDITOR and VISUAL setting (needs some IPC implementation)

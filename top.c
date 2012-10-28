@@ -10,13 +10,13 @@
 #include "tags.h"
 #include "buffers.h"
 #include "iopen.h"
+#include "git.date.h"
 
-GtkWidget *top_notebook;
+GtkWidget *top_window;
 buffer_t *cmdline_buffer;
 editor_t *cmdline_editor;
 editor_t *the_top_context_editor;
 
-GtkWidget *dir_label;
 GtkWidget *tools_menu;
 
 char *working_directory;
@@ -43,7 +43,6 @@ static void execute_command(editor_t *editor) {
 }
 
 static void release_command_line(editor_t *editor) {
-	gtk_notebook_set_current_page(GTK_NOTEBOOK(top_notebook), status_notebook_page);
 	if (top_context_editor() != NULL) {
 		if (config_intval(&global_config, CFG_FOCUS_FOLLOWS_MOUSE)) {
 			int x, y;
@@ -129,7 +128,7 @@ static void tools_menu_position_function(GtkMenu *menu, gint *x, gint *y, gboole
 	gtk_widget_get_allocation(GTK_WIDGET(menu), &menu_allocation);
 
 	gint wpos_x, wpos_y;
-	gdk_window_get_position(gtk_widget_get_window(gtk_widget_get_toplevel(widget)), &wpos_x, &wpos_y);
+	gdk_window_get_position(gtk_widget_get_window(top_window), &wpos_x, &wpos_y);
 
 	*x = wpos_x + allocation.x + allocation.width - menu_allocation.width;
 	*y = wpos_y + allocation.y + allocation.height;
@@ -151,9 +150,8 @@ static void new_column_mitem_callback(GtkMenuItem *menuitem, gpointer data) {
 }
 
 static void close_mitem_callback(GtkMenuItem *menuitem, gpointer data) {
-	GtkWidget *toplevel = gtk_widget_get_toplevel(GTK_WIDGET(columnset));
 	if (!buffers_close_all()) return;
-	gtk_widget_destroy(toplevel);
+	gtk_widget_destroy(top_window);
 }
 
 static void iopen_mitem_callback(GtkMenuItem *menuitem, gpointer data) {
@@ -168,9 +166,8 @@ static void load_session_mitem_callback(GtkMenuItem *menuitem, gpointer data) {
 	interp_eval(NULL, NULL, "teddy_intl::loadsession_mitem", false);
 }
 
-GtkWidget *top_init(void) {
-	top_notebook = gtk_notebook_new();
-	gtk_notebook_set_show_tabs(GTK_NOTEBOOK(top_notebook), FALSE);
+GtkWidget *top_init(GtkWidget *window) {
+	top_window = window;
 
 	/**** COMMAND LINE ****/
 
@@ -180,8 +177,6 @@ GtkWidget *top_init(void) {
 
 	config_set(&(cmdline_buffer->config), CFG_AUTOWRAP, "0");
 	config_set(&(cmdline_buffer->config), CFG_AUTOCOMPL_POPUP, "0");
-
-	cmdline_notebook_page = gtk_notebook_append_page(GTK_NOTEBOOK(top_notebook), GTK_WIDGET(cmdline_editor), NULL);
 
 	the_top_context_editor = NULL;
 
@@ -193,43 +188,20 @@ GtkWidget *top_init(void) {
 	working_directory = get_current_dir_name();
 	tags_load(working_directory);
 
-	/**** STATUS ****/
+	GtkWidget *top_box = gtk_hbox_new(false, 0);
 
-	GdkColor bg, fg;
-	set_gdk_color_cfg(&global_config, CFG_TAG_BG_COLOR, &bg);
-	set_gdk_color_cfg(&global_config, CFG_TAG_FG_COLOR, &fg);
+	GtkWidget *tools_box = gtk_event_box_new();
+	gtk_container_add(GTK_CONTAINER(tools_box), gtk_image_new_from_stock(GTK_STOCK_EXECUTE, GTK_ICON_SIZE_MENU));
+	gtk_widget_like_editor(&global_config, tools_box);
 
-	GtkWidget *box = gtk_hbox_new(false, 0);
+	gtk_box_pack_start(GTK_BOX(top_box), tools_box, FALSE, TRUE, 5);
+	gtk_box_pack_start(GTK_BOX(top_box), GTK_WIDGET(cmdline_editor), TRUE, TRUE, 0);
 
-	dir_label = gtk_label_new(working_directory);
+	gtk_widget_add_events(tools_box, GDK_STRUCTURE_MASK);
 
-	gtk_label_set_justify(GTK_LABEL(dir_label), GTK_JUSTIFY_LEFT);
+	g_signal_connect(G_OBJECT(tools_box), "map_event", G_CALLBACK(tools_label_map_callback), NULL);
+	g_signal_connect(G_OBJECT(tools_box), "button_press_event", G_CALLBACK(tools_label_popup_callback), NULL);
 
-	GtkWidget *dir_label_box = gtk_event_box_new();
-	gtk_container_add(GTK_CONTAINER(dir_label_box), dir_label);
-	gtk_widget_modify_bg_all(dir_label_box, &bg);
-	gtk_widget_modify_fg_all(dir_label_box, &fg);
-
-	GtkWidget *events = gtk_event_box_new();
-
-	GtkWidget *tools_label = gtk_label_new("");
-	gtk_label_set_markup(GTK_LABEL(tools_label), "<u>Tools</u>");
-
-	GtkWidget *tools_label_box = gtk_event_box_new();
-	gtk_container_add(GTK_CONTAINER(tools_label_box), tools_label);
-	gtk_widget_modify_bg_all(tools_label_box, &bg);
-	gtk_widget_modify_fg_all(tools_label_box, &fg);
-
-	gtk_box_pack_start(GTK_BOX(box), dir_label_box, TRUE, TRUE, 0);
-	gtk_container_add(GTK_CONTAINER(events), tools_label_box);
-	gtk_box_pack_end(GTK_BOX(box), events, FALSE, TRUE, 0);
-
-	gtk_widget_add_events(events, GDK_STRUCTURE_MASK);
-
-	g_signal_connect(G_OBJECT(events), "map_event", G_CALLBACK(tools_label_map_callback), NULL);
-	g_signal_connect(G_OBJECT(events), "button_press_event", G_CALLBACK(tools_label_popup_callback), NULL);
-
-	status_notebook_page = gtk_notebook_append_page(GTK_NOTEBOOK(top_notebook), box, NULL);
 
 	/**** TOOLS MENU ****/
 
@@ -262,15 +234,16 @@ GtkWidget *top_init(void) {
 	gtk_widget_show_all(tools_menu);
 
 	/**** END ****/
-	gtk_notebook_set_current_page(GTK_NOTEBOOK(top_notebook), status_notebook_page);
-
 	top_cd(".");
 
-	return top_notebook;
+	GtkWidget *boxcoloring = gtk_event_box_new();
+	gtk_widget_like_editor(&global_config, boxcoloring);
+	gtk_container_add(GTK_CONTAINER(boxcoloring), top_box);
+
+	return boxcoloring;
 }
 
 void top_start_command_line(editor_t *editor, const char *text) {
-	gtk_notebook_set_current_page(GTK_NOTEBOOK(top_notebook), cmdline_notebook_page);
 	the_top_context_editor = editor;
 	buffer_select_all(cmdline_editor->buffer);
 	if (text != NULL) {
@@ -294,10 +267,6 @@ char *top_working_directory(void) {
 	return working_directory;
 }
 
-void top_show_status(void) {
-	gtk_notebook_set_current_page(GTK_NOTEBOOK(top_notebook), status_notebook_page);
-}
-
 void top_cd(const char *newdir) {
 	free(working_directory);
 
@@ -313,15 +282,15 @@ void top_cd(const char *newdir) {
 
 	working_directory = get_current_dir_name();
 
+	char *t;
 	if (strncmp(working_directory, getenv("HOME"), strlen(getenv("HOME"))) == 0) {
-		char *t;
-		asprintf(&t, "~%s", working_directory+strlen(getenv("HOME")));
-		alloc_assert(t);
-		gtk_label_set_text(GTK_LABEL(dir_label), t);
-		free(t);
+		asprintf(&t, "%s – ~%s", GIT_COMPILATION_DATE, working_directory+strlen(getenv("HOME")));
 	} else {
-		gtk_label_set_text(GTK_LABEL(dir_label), working_directory);
+		asprintf(&t, "%s – %s", GIT_COMPILATION_DATE, working_directory);
 	}
+	alloc_assert(t);
+	gtk_window_set_title(GTK_WINDOW(top_window), t);
+	free(t);
 	tags_load(working_directory);
 }
 

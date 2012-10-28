@@ -1220,9 +1220,6 @@ static gboolean hscrolled_callback(GtkAdjustment *adj, editor_t *editor) {
 static gboolean editor_focusin_callback(GtkWidget *widget, GdkEventFocus *event, editor_t *editor) {
 	editor->cursor_visible = 1;
 	gtk_widget_queue_draw(editor->drar);
-	if (!editor->single_line) {
-		top_show_status();
-	}
 	if (editor->research.mode != SM_NONE) {
 		gtk_widget_grab_focus(editor->search_entry);
 	}
