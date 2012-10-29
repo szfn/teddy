@@ -7,6 +7,7 @@
 #include "top.h"
 #include "cfg.h"
 
+#include <math.h>
 
 GdkPixbuf *maximize_pixbuf = NULL, *close_pixbuf = NULL;
 
@@ -130,8 +131,8 @@ typedef struct _tframe_t {
 
 	double origin_x, origin_y;
 	bool moving;
+	bool column_resize_resistence_overcome;
 	struct _column_t *motion_col, *motion_prev_col;
-	struct _tframe_t *motion_prev_tf, *motion_cur_tf;
 } tframe_t;
 
 typedef struct _tframe_class {
@@ -209,18 +210,15 @@ static gboolean reshandle_map_callback(GtkWidget *widget, GdkEvent *event, tfram
 static gboolean reshandle_button_press_callback(GtkWidget *widget, GdkEventButton *event, tframe_t *tf) {
 	if ((event->type == GDK_BUTTON_PRESS) && (event->button == 1)) {
 		column_t *col, *prev_col;
-		tframe_t *prev_tf;
 
-		if (!columns_find_frame(tf->columns, tf, &prev_col, &col, NULL, &prev_tf, NULL)) return TRUE;
-
+		if (!columns_find_frame(tf->columns, tf, &prev_col, &col, NULL, NULL, NULL)) return TRUE;
 		tf->origin_x = event->x;
 		tf->origin_y = event->y;
 		tf->moving = true;
+		tf->column_resize_resistence_overcome = false;
 
 		tf->motion_col = col;
 		tf->motion_prev_col = prev_col;
-		tf->motion_prev_tf = prev_tf;
-		tf->motion_cur_tf = tf;
 
 		return TRUE;
 	} else {
@@ -232,57 +230,86 @@ static gboolean reshandle_button_press_callback(GtkWidget *widget, GdkEventButto
 	return FALSE;
 }
 
+static void find_motion_frames(tframe_t *tf, tframe_t **prev, tframe_t **cur, bool increasing_prev) {
+	if (tf->motion_col == NULL) return;
+
+	GList *list = gtk_container_get_children(GTK_CONTAINER(tf->motion_col));
+	bool before = true;
+	for (GList *it = list; it != NULL; it = it->next) {
+		if (!GTK_IS_TFRAME(it->data)) continue;
+		tframe_t *itf = GTK_TFRAME(it->data);
+
+		if (itf == tf) {
+			before = false;
+		}
+
+		if (before) {
+			if (increasing_prev) {
+				*prev = itf;
+			} else { // increasing_cur
+				if (tframe_fraction(itf) > 0.0001) {
+					*prev = itf;
+				}
+			}
+		} else {
+			if (increasing_prev) {
+				if (tframe_fraction(itf) > 0.0001) {
+					*cur = itf;
+					break;
+				}
+			} else {	// increasing_cur
+				*cur = itf;
+				break;
+			}
+		}
+	}
+	g_list_free(list);
+}
+
 static gboolean reshandle_motion_callback(GtkWidget *widget, GdkEventMotion *event, tframe_t *tf) {
 	if (!tf->moving) return TRUE;
 
 	double changey = event->y - tf->origin_y;
 	double changex = event->x - tf->origin_x;
 
-	if (tf->motion_prev_tf != NULL) {
+	if (tf->motion_col != NULL) {
 		GtkAllocation allocation;
 		gtk_widget_get_allocation(GTK_WIDGET(tf->motion_col), &allocation);
 		double change_fraction = changey / allocation.height * 10.0;
 
-		for(;;) {
-			if (tf->motion_cur_tf == NULL) break;
-			if (tf->motion_prev_tf == NULL) break;
+		for (;;) {
+			tframe_t *prevtf = NULL, *curtf = NULL;
+			find_motion_frames(tf, &prevtf, &curtf, change_fraction > 0);
+			if (prevtf == NULL) break;
+			if (curtf == NULL) break;
 
-			tframe_fraction_set(tf->motion_cur_tf, tframe_fraction(tf->motion_cur_tf) - change_fraction);
-			tframe_fraction_set(tf->motion_prev_tf, tframe_fraction(tf->motion_prev_tf) + change_fraction);
+			tframe_fraction_set(curtf, tframe_fraction(curtf) - change_fraction);
+			tframe_fraction_set(prevtf, tframe_fraction(prevtf) + change_fraction);
 
-			if (tframe_fraction(tf->motion_cur_tf) < 0) {
-				change_fraction = -tframe_fraction(tf->motion_cur_tf);
-
-				tframe_fraction_set(tf->motion_prev_tf, tframe_fraction(tf->motion_prev_tf) + tframe_fraction(tf));
-				tframe_fraction_set(tf, 0.0);
-
-				tframe_t *next;
-				column_find_frame(tf->motion_col, tf->motion_cur_tf, NULL, &next);
-				tf->motion_cur_tf = next;
-
-				continue;
-			} else if (tframe_fraction(tf->motion_prev_tf) < 0) {
-				change_fraction = tframe_fraction(tf->motion_prev_tf);
-
-				tframe_fraction_set(tf, tframe_fraction(tf) + tframe_fraction(tf->motion_prev_tf));
-				tframe_fraction_set(tf->motion_prev_tf, 0.0);
-
-				tframe_t *prev;
-				column_find_frame(tf->motion_col, tf->motion_prev_tf, &prev, NULL);
-				tf->motion_prev_tf = prev;
-
-				continue;
+			if (tframe_fraction(curtf) < 0) {
+				change_fraction = -tframe_fraction(curtf);
+				tframe_fraction_set(prevtf, tframe_fraction(prevtf) + tframe_fraction(curtf));
+				tframe_fraction_set(curtf, 0.0);
+			} else if (tframe_fraction(prevtf) < 0) {
+				change_fraction = tframe_fraction(prevtf);
+				tframe_fraction_set(tf, tframe_fraction(curtf) + tframe_fraction(prevtf));
+				tframe_fraction_set(prevtf, 0.0);
+			} else {
+				break;
 			}
-
-			break;
 		}
 
 		gtk_column_size_allocate(GTK_WIDGET(tf->motion_col), &(GTK_WIDGET(tf->motion_col)->allocation));
 	}
 
-	if (tf->motion_prev_col != NULL) {
-		GtkAllocation allocation;
+	if (!tf->column_resize_resistence_overcome) {
+		if ((fabs(changex) > 28) && (tf->motion_prev_col != NULL)) {
+			tf->column_resize_resistence_overcome = true;
+		}
+	}
 
+	if (tf->column_resize_resistence_overcome) {
+		GtkAllocation allocation;
 		gtk_widget_get_allocation(GTK_WIDGET(tf->columns), &allocation);
 		double change_fraction = changex / allocation.width * 10.0;
 
