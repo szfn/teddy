@@ -494,7 +494,7 @@ static gboolean label_button_release_callback(GtkWidget *widget, GdkEventButton 
 	}
 
 	GtkAllocation allocation;
-	gtk_widget_get_allocation(widget, &allocation);
+	gtk_widget_get_allocation(gtk_widget_get_parent(tf->tag), &allocation);
 
 	double x = event->x + allocation.x;
 	double y = event->y + allocation.y;
@@ -600,6 +600,7 @@ tframe_t *tframe_new(const char *title, GtkWidget *content, columns_t *columns) 
 	gtk_widget_modify_bg_all(colorbox, &c);
 
 	gtk_table_attach(t, colorbox, 0, 1, 1, 2, GTK_EXPAND|GTK_FILL, 0, 0, 0);
+//	gtk_table_attach(t, r->tag, 0, 1, 1, 2, GTK_EXPAND|GTK_FILL, 0, 0, 0);
 
 	place_frame_piece(GTK_WIDGET(t), TRUE, 2, 1);
 

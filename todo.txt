@@ -1,3 +1,5 @@
+- BUG: dragging tag doesn't work anymore
+
 - m command: no colon on an argument implies :1 for mark and :$ for cursor, or :1 if only the cursor is specified
 
 - BUG: minimized frames sometimes get stuck
