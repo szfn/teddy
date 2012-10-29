@@ -109,6 +109,7 @@ static void release_command_line(editor_t *editor) {
 					if (inside_allocation(x, y, &allocation)) {
 						tframe_t *f = GTK_TFRAME(frame->data);
 						if (GTK_IS_TEDITOR(tframe_content(f))) {
+							editor_complete_move(GTK_TEDITOR(tframe_content(f)), true);
 							editor_grab_focus(GTK_TEDITOR(tframe_content(f)), false);
 						}
 					}
@@ -117,6 +118,7 @@ static void release_command_line(editor_t *editor) {
 			}
 			g_list_free(cols);
 		} else {
+			editor_complete_move(top_context_editor(), true);
 			editor_grab_focus(top_context_editor(), false);
 		}
 	} else {

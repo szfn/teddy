@@ -451,7 +451,7 @@ static int teddy_change_command(ClientData client_data, Tcl_Interp *interp, int 
 	}
 }
 
-static bool move_command_ex(const char *sin, lpoint_t *p, lpoint_t *ref) {
+static bool move_command_ex(const char *sin, lpoint_t *p, lpoint_t *ref, enum movement_type_t default_glyph_motion) {
 	if (strcmp(sin, "nil") == 0) {
 		if (ref == NULL) {
 			Tcl_AddErrorInfo(interp, "Attempted to null cursor in 'm' command");
@@ -469,10 +469,10 @@ static bool move_command_ex(const char *sin, lpoint_t *p, lpoint_t *ref) {
 	char *saveptr;
 	char *first = strtok_r(s, ":", &saveptr);
 	char *second = strtok_r(NULL, ":", &saveptr);
-	char *expectfailure = strtok_r(NULL, ":", &saveptr);
+	char *expectfailure = (second != NULL) ? strtok_r(NULL, ":", &saveptr) : NULL;
 
-	if ((first == NULL) || (second == NULL) || (expectfailure != NULL))
-		goto move_command_ex_bad_argument;
+	if (first == NULL) goto move_command_ex_bad_argument;
+	if (expectfailure != NULL) goto move_command_ex_bad_argument;
 
 	enum movement_type_t lineflag = MT_ABS, colflag = MT_ABS;
 	int lineno = 0, colno = 0;
@@ -501,7 +501,10 @@ static bool move_command_ex(const char *sin, lpoint_t *p, lpoint_t *ref) {
 		if (!forward) lineno = -lineno;
 	}
 
-	if (strcmp(second, "$") == 0) {
+	if (second == NULL) {
+		colflag = default_glyph_motion;
+		colno = 0;
+	} else if (strcmp(second, "$") == 0) {
 		colflag = MT_END;
 	} else if (strcmp(second, "^") == 0) {
 		colflag = MT_START;
@@ -588,21 +591,21 @@ static void sort_mark_cursor(buffer_t *buffer) {
 }
 
 static int teddy_move_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
-#define MOVE_MARK(argument) { \
-	if (!move_command_ex(argument, &(interp_context_buffer()->mark), &(interp_context_buffer()->cursor))) { \
+#define MOVE_MARK(argument, d) { \
+	if (!move_command_ex(argument, &(interp_context_buffer()->mark), &(interp_context_buffer()->cursor), d)) { \
 		return TCL_ERROR; \
 	} \
 }
 
-#define MOVE_CURSOR(argument) {\
-	if (!move_command_ex(argument, &(interp_context_buffer()->cursor), NULL)) { \
+#define MOVE_CURSOR(argument, d) {\
+	if (!move_command_ex(argument, &(interp_context_buffer()->cursor), NULL, d)) { \
 		return TCL_ERROR; \
 	} \
 }
 
 #define MOVE_MARK_CURSOR(mark_argument, cursor_argument) {\
-	MOVE_MARK(mark_argument);\
-	MOVE_CURSOR(cursor_argument);\
+	MOVE_MARK(mark_argument, MT_START);\
+	MOVE_CURSOR(cursor_argument, MT_END);\
 	copy_lpoint(&(interp_context_buffer()->savedmark), &(interp_context_buffer()->mark));\
 }
 
@@ -621,8 +624,8 @@ static int teddy_move_command(ClientData client_data, Tcl_Interp *interp, int ar
 			sort_mark_cursor(interp_context_buffer());
 			MOVE_MARK_CURSOR("+0:1", "+0:$");
 		} else {
-			// not a shortcut, actuall movement command to execute
-			MOVE_CURSOR(argv[1]);
+			// not a shortcut, actually movement command to execute
+			MOVE_CURSOR(argv[1], MT_START);
 		}
 		break;
 	case 3:
