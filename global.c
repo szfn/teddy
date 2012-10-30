@@ -263,7 +263,7 @@ void utf8_remove_truncated_characters_at_end(char *text) {
 
 void alloc_assert(void *p) {
 	if (!p) {
-		//perror("Out of memoryz");
+		perror("Out of memory");
 		exit(EXIT_FAILURE);
 	}
 }
