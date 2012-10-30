@@ -64,9 +64,11 @@ void set_label_text(editor_t *editor) {
 }
 
 static void dirty_line_update(editor_t *editor) {
-	editor->dirty_line = false;
-	buffer_wordcompl_update_line(editor->buffer->cursor.line, &(editor->buffer->cbt));
-	word_completer_full_update();
+	if (editor->dirty_line) {
+		editor->dirty_line = false;
+		buffer_wordcompl_update_line(editor->buffer->cursor.line, &(editor->buffer->cbt));
+		word_completer_full_update();
+	}
 }
 
 static bool editor_maybe_show_completions(editor_t *editor, struct completer *completer, bool autoinsert, int min);

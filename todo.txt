@@ -1,3 +1,4 @@
+- simplify code to get absolute position in editor (only one function)
 - bold matched text in autocompletions window and iopen window
 - EDITOR and VISUAL setting (needs some IPC implementation)
 - multiprocess highlighting

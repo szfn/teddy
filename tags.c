@@ -65,6 +65,7 @@ void tags_load(char *wd) {
 		if (buf[strlen(buf)-1] == '\n') buf[strlen(buf)-1] = '\0';
 		if (strcmp(buf, "") == 0) continue;
 		if (buf[0] == '!') continue;
+		if (strlen(buf) > 512) continue;
 
 		char *toks;
 		char *tag = strtok_r(buf, "\t", &toks);

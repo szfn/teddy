@@ -384,6 +384,7 @@ void cmdcompl_init(void) {
 }
 
 static void load_directory_completions(struct completer *c, DIR *dh, const char *reldir) {
+	//printf("load_directory_completions\n");
 	if (dh == NULL) return;
 	struct dirent *den;
 	for (den = readdir(dh); den != NULL; den = readdir(dh)) {
@@ -391,7 +392,6 @@ static void load_directory_completions(struct completer *c, DIR *dh, const char 
 			char *relname;
 			asprintf(&relname, "%s%s%s%s", reldir, (reldir[0] != '\0') ? "/" : "", den->d_name, (den->d_type == DT_DIR) ? "/" : "");
 			alloc_assert(relname);
-			//printf("\tAdding <%s>\n", relname);
 			critbit0_insert(&(c->cbt), relname);
 			free(relname);
 		}
@@ -404,6 +404,7 @@ static int refill_word_completer(const char *entry, void *p) {
 }
 
 static void load_command_completions(struct completer *c) {
+	//printf("load_command_completions\n");
 	for (int i = 0; i < sizeof(list_internal_commands) / sizeof(const char *); ++i) {
 		compl_add(c, list_internal_commands[i]);
 	}
@@ -414,6 +415,7 @@ static void load_command_completions(struct completer *c) {
 }
 
 static void load_word_completions(struct completer *c) {
+	//printf("load_word_completions\n");
 	for (int i = 0; i < buffers_allocated; ++i) {
 		if (buffers[i] == NULL) continue;
 
