@@ -153,7 +153,7 @@ bool cmdline_other_keys(struct _editor_t *editor, bool shift, bool ctrl, bool al
 	} else if (!shift && ctrl && !alt && !super) {
 		if (keyval == GDK_KEY_r) {
 			double x, y, alty;
-			editor_absolute_cursor_position(editor, &x, &y, &alty);
+			editor_cursor_position(editor, &x, &y, &alty);
 
 			char *buffer_text = buffer_all_lines_to_text(editor->buffer);
 

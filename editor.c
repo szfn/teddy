@@ -96,6 +96,32 @@ static void editor_replace_selection(editor_t *editor, const char *new_text) {
 	editor_center_on_cursor(editor);
 }
 
+static void absolute_position(editor_t *editor, double *x, double *y) {
+	GtkAllocation allocation;
+	gtk_widget_get_allocation(editor->drar, &allocation);
+
+	*x += gtk_adjustment_get_value(GTK_ADJUSTMENT(editor->hadjustment));
+	*y += gtk_adjustment_get_value(GTK_ADJUSTMENT(editor->adjustment));
+}
+
+void editor_cursor_position(editor_t *editor, double *x, double *y, double *alty) {
+	line_get_glyph_coordinates(editor->buffer, &(editor->buffer->cursor), x, y);
+	*y -= gtk_adjustment_get_value(GTK_ADJUSTMENT(editor->adjustment));
+	*x -= gtk_adjustment_get_value(GTK_ADJUSTMENT(editor->hadjustment));
+
+	//printf("x = %g y = %g\n", x, y);
+
+	GtkAllocation allocation;
+	gtk_widget_get_allocation(editor->drar, &allocation);
+	*x += allocation.x; *y += allocation.y;
+
+	gint wpos_x, wpos_y;
+	gdk_window_get_position(gtk_widget_get_window(gtk_widget_get_toplevel(GTK_WIDGET(editor))), &wpos_x, &wpos_y);
+	*x += wpos_x; *y += wpos_y;
+
+	*alty = *y - editor->buffer->line_height;
+}
+
 static bool editor_maybe_show_completions(editor_t *editor, struct completer *completer, bool autoinsert, int min) {
 	char *prefix = completer->prefix_from_buffer(editor->buffer);
 
@@ -111,7 +137,7 @@ static bool editor_maybe_show_completions(editor_t *editor, struct completer *co
 
 		if (autoinsert && !empty_completion) editor_replace_selection(editor, completion);
 		double x, y, alty;
-		editor_absolute_cursor_position(editor, &x, &y, &alty);
+		editor_cursor_position(editor, &x, &y, &alty);
 
 		if (empty_completion || !autoinsert) {
 			compl_wnd_show(completer, prefix, x, y, alty, gtk_widget_get_toplevel(GTK_WIDGET(editor)), false, false);
@@ -349,7 +375,7 @@ static void menu_position_function(GtkMenu *menu, gint *x, gint *y, gboolean *pu
 	*push_in = TRUE;
 
 	double dx, dy, alty;
-	editor_absolute_cursor_position(editor, &dx, &dy, &alty);
+	editor_cursor_position(editor, &dx, &dy, &alty);
 	*x = (int)dx;
 	*y = (int)dy;
 }
@@ -620,31 +646,6 @@ static gboolean key_release_callback(GtkWidget *widget, GdkEventKey *event, edit
 	}
 
 	return FALSE;
-}
-
-static void absolute_position(editor_t *editor, double *x, double *y) {
-	GtkAllocation allocation;
-	gtk_widget_get_allocation(editor->drar, &allocation);
-
-	*x += gtk_adjustment_get_value(GTK_ADJUSTMENT(editor->hadjustment));
-	*y += gtk_adjustment_get_value(GTK_ADJUSTMENT(editor->adjustment));
-}
-
-void editor_absolute_cursor_position(editor_t *editor, double *x, double *y, double *alty) {
-	line_get_glyph_coordinates(editor->buffer, &(editor->buffer->cursor), x, y);
-	*y -= gtk_adjustment_get_value(GTK_ADJUSTMENT(editor->adjustment));
-
-	//printf("x = %g y = %g\n", x, y);
-
-	GtkAllocation allocation;
-	gtk_widget_get_allocation(editor->drar, &allocation);
-	*x += allocation.x; *y += allocation.y;
-
-	gint wpos_x, wpos_y;
-	gdk_window_get_position(gtk_widget_get_window(gtk_widget_get_toplevel(GTK_WIDGET(editor))), &wpos_x, &wpos_y);
-	*x += wpos_x; *y += wpos_y;
-
-	*alty = *y - editor->buffer->line_height;
 }
 
 static void move_cursor_to_mouse(editor_t *editor, double x, double y) {
