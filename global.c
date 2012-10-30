@@ -64,7 +64,7 @@ char *unrealpath(const char *relative_path, bool empty_too) {
 	}
 	if (relative_path[0] == '/') {
 		char *r = realpath(relative_path, NULL);
-		alloc_assert(r);
+		//alloc_assert(r);
 		return r;
 	}
 
@@ -263,7 +263,7 @@ void utf8_remove_truncated_characters_at_end(char *text) {
 
 void alloc_assert(void *p) {
 	if (!p) {
-		perror("Out of memory");
+		//perror("Out of memoryz");
 		exit(EXIT_FAILURE);
 	}
 }

@@ -712,7 +712,6 @@ void buffers_register_tags(const char *tags_file) {
 
 buffer_t *go_file(const char *filename, bool create, bool skip_search, enum go_file_failure_reason *gffr) {
 	char *urp = unrealpath(filename, false);
-	alloc_assert(urp);
 
 	*gffr = GFFR_OTHER;
 
