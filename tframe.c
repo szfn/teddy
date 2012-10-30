@@ -133,6 +133,7 @@ typedef struct _tframe_t {
 	bool moving;
 	bool column_resize_resistence_overcome;
 	struct _column_t *motion_col, *motion_prev_col;
+	GList *motion_frame_list;
 } tframe_t;
 
 typedef struct _tframe_class {
@@ -220,6 +221,9 @@ static gboolean reshandle_button_press_callback(GtkWidget *widget, GdkEventButto
 		tf->motion_col = col;
 		tf->motion_prev_col = prev_col;
 
+		if (tf->motion_frame_list != NULL) g_list_free(tf->motion_frame_list);
+		tf->motion_frame_list = gtk_container_get_children(GTK_CONTAINER(tf->motion_col));
+
 		return TRUE;
 	} else {
 		column_t *col;
@@ -233,9 +237,8 @@ static gboolean reshandle_button_press_callback(GtkWidget *widget, GdkEventButto
 static void find_motion_frames(tframe_t *tf, tframe_t **prev, tframe_t **cur, bool increasing_prev) {
 	if (tf->motion_col == NULL) return;
 
-	GList *list = gtk_container_get_children(GTK_CONTAINER(tf->motion_col));
 	bool before = true;
-	for (GList *it = list; it != NULL; it = it->next) {
+	for (GList *it = tf->motion_frame_list; it != NULL; it = it->next) {
 		if (!GTK_IS_TFRAME(it->data)) continue;
 		tframe_t *itf = GTK_TFRAME(it->data);
 
@@ -263,7 +266,6 @@ static void find_motion_frames(tframe_t *tf, tframe_t **prev, tframe_t **cur, bo
 			}
 		}
 	}
-	g_list_free(list);
 }
 
 static gboolean reshandle_motion_callback(GtkWidget *widget, GdkEventMotion *event, tframe_t *tf) {
@@ -347,6 +349,8 @@ static void column_resize_frame_pair(column_t *column, tframe_t *above, double n
 
 static gboolean reshandle_button_release_callback(GtkWidget *widget, GdkEventButton *event, tframe_t *tf) {
 	tf->moving = false;
+	g_list_free(tf->motion_frame_list);
+	tf->motion_frame_list = NULL;
 	return TRUE;
 }
 
@@ -562,6 +566,7 @@ tframe_t *tframe_new(const char *title, GtkWidget *content, columns_t *columns) 
 	r->modified = false;
 
 	r->moving = false;
+	r->motion_frame_list = NULL;
 
 	gtk_table_set_homogeneous(t, FALSE);
 
