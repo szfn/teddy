@@ -80,7 +80,10 @@ static void execute_command(editor_t *editor) {
 
 	interp_eval(top_context_editor(), NULL, command, false);
 
-	if (top_context_editor() != NULL) gtk_widget_queue_draw(GTK_WIDGET(top_context_editor()));
+	if (top_context_editor() != NULL) {
+		set_label_text(top_context_editor());
+		gtk_widget_queue_draw(GTK_WIDGET(top_context_editor()));
+	}
 
 	// select contents of command line
 	lpoint_t start, end;
