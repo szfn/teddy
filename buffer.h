@@ -10,7 +10,6 @@
 #include "undo.h"
 #include "jobs.h"
 #include "point.h"
-#include "parmatch.h"
 #include "critbit.h"
 #include "cfg.h"
 
@@ -80,7 +79,6 @@ typedef struct _buffer_t {
 	lpoint_t mark;
 	lpoint_t savedmark;
 	enum select_type select_type;
-	parmatch_t parmatch;
 
 	/* Undo information */
 	undo_t undo;
@@ -192,5 +190,7 @@ char *buffer_all_lines_to_text(buffer_t *buffer);
 void buffer_select_all(buffer_t *buffer);
 void buffer_wordcompl_update_line(real_line_t *line, critbit0_tree *c);
 char *buffer_get_selection_text(buffer_t *buffer);
+
+void parmatch_find(lpoint_t *cursor, lpoint_t *match, int nlines);
 
 #endif

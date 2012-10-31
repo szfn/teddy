@@ -93,33 +93,7 @@ static void editor_replace_selection(editor_t *editor, const char *new_text) {
 		editor_maybe_show_completions(editor, editor->completer, false, 2);
 	}
 
-	editor_center_on_cursor(editor);
-}
-
-static void absolute_position(editor_t *editor, double *x, double *y) {
-	GtkAllocation allocation;
-	gtk_widget_get_allocation(editor->drar, &allocation);
-
-	*x += gtk_adjustment_get_value(GTK_ADJUSTMENT(editor->hadjustment));
-	*y += gtk_adjustment_get_value(GTK_ADJUSTMENT(editor->adjustment));
-}
-
-void editor_cursor_position(editor_t *editor, double *x, double *y, double *alty) {
-	line_get_glyph_coordinates(editor->buffer, &(editor->buffer->cursor), x, y);
-	*y -= gtk_adjustment_get_value(GTK_ADJUSTMENT(editor->adjustment));
-	*x -= gtk_adjustment_get_value(GTK_ADJUSTMENT(editor->hadjustment));
-
-	//printf("x = %g y = %g\n", x, y);
-
-	GtkAllocation allocation;
-	gtk_widget_get_allocation(editor->drar, &allocation);
-	*x += allocation.x; *y += allocation.y;
-
-	gint wpos_x, wpos_y;
-	gdk_window_get_position(gtk_widget_get_window(gtk_widget_get_toplevel(GTK_WIDGET(editor))), &wpos_x, &wpos_y);
-	*x += wpos_x; *y += wpos_y;
-
-	*alty = *y - editor->buffer->line_height;
+	editor_include_cursor(editor, ICM_TOP, ICM_BOT);
 }
 
 static bool editor_maybe_show_completions(editor_t *editor, struct completer *completer, bool autoinsert, int min) {
@@ -158,54 +132,63 @@ static bool editor_maybe_show_completions(editor_t *editor, struct completer *co
 	return true;
 }
 
-void editor_center_on_cursor(editor_t *editor) {
-	double x, y;
+/*
+Converts a pair of translated coordinates into un-translated coordinates
+*/
+static void absolute_position(editor_t *editor, double *x, double *y) {
+	*x += gtk_adjustment_get_value(GTK_ADJUSTMENT(editor->hadjustment));
+	*y += gtk_adjustment_get_value(GTK_ADJUSTMENT(editor->adjustment));
+}
+
+/*
+Returns cursor position as a pair of translated coordinates relative to the window
+*/
+void editor_cursor_position(editor_t *editor, double *x, double *y, double *alty) {
+	line_get_glyph_coordinates(editor->buffer, &(editor->buffer->cursor), x, y);
+	*y -= gtk_adjustment_get_value(GTK_ADJUSTMENT(editor->adjustment));
+	*x -= gtk_adjustment_get_value(GTK_ADJUSTMENT(editor->hadjustment));
+
+	//printf("x = %g y = %g\n", x, y);
+
 	GtkAllocation allocation;
-
 	gtk_widget_get_allocation(editor->drar, &allocation);
+	*x += allocation.x; *y += allocation.y;
+
+	gint wpos_x, wpos_y;
+	gdk_window_get_position(gtk_widget_get_window(gtk_widget_get_toplevel(GTK_WIDGET(editor))), &wpos_x, &wpos_y);
+	*x += wpos_x; *y += wpos_y;
+
+	*alty = *y - editor->buffer->line_height;
+}
+
+void editor_include_cursor(editor_t *editor, enum include_cursor_mode above, enum include_cursor_mode below) {
+	double x, y;
 	line_get_glyph_coordinates(editor->buffer, &(editor->buffer->cursor), &x, &y);
+	double ty = y - gtk_adjustment_get_value(GTK_ADJUSTMENT(editor->adjustment));
+	double tx = x - gtk_adjustment_get_value(GTK_ADJUSTMENT(editor->hadjustment));
 
-	double translated_y = y - gtk_adjustment_get_value(GTK_ADJUSTMENT(editor->adjustment));
-	double translated_x = x - gtk_adjustment_get_value(GTK_ADJUSTMENT(editor->hadjustment));
-
-	if ((editor->buffer->cursor.line == NULL) || (editor->buffer->cursor.line->prev == NULL)) {
-		gtk_adjustment_set_value(GTK_ADJUSTMENT(editor->adjustment), 0);
-	} else {
-		if ((translated_y < 0) || (translated_y > allocation.height)) {
-			gtk_adjustment_set_value(GTK_ADJUSTMENT(editor->adjustment), y - allocation.height / 2);
-		}
-	}
+	GtkAllocation allocation;
+	gtk_widget_get_allocation(editor->drar, &allocation);
 
 	if (editor->buffer->cursor.glyph == 0) {
 		gtk_adjustment_set_value(GTK_ADJUSTMENT(editor->hadjustment), 0);
 	} else {
-		if ((translated_x < 0) || (translated_x > allocation.width)) {
-			gtk_adjustment_set_value(GTK_ADJUSTMENT(editor->hadjustment), x - allocation.width / 2);
+		if ((tx - editor->buffer->em_advance) < 0) {
+			gtk_adjustment_set_value(GTK_ADJUSTMENT(editor->hadjustment), x - editor->buffer->em_advance);
+		} else if (tx > allocation.width) {
+			gtk_adjustment_set_value(GTK_ADJUSTMENT(editor->hadjustment), x - allocation.width);
 		}
 	}
-}
 
-static void editor_include_cursor(editor_t *editor) {
-	double x, y;
-	double translated_y;
-	GtkAllocation allocation;
+	double pos_off[] = { editor->buffer->line_height, allocation.height/2, allocation.height };
 
-	gtk_widget_get_allocation(editor->drar, &allocation);
-	line_get_glyph_coordinates(editor->buffer, &(editor->buffer->cursor), &x, &y);
-	translated_y = y - gtk_adjustment_get_value(GTK_ADJUSTMENT(editor->adjustment));
-
-	if ((translated_y - editor->buffer->line_height) < 0) {
-		gtk_adjustment_set_value(GTK_ADJUSTMENT(editor->adjustment), gtk_adjustment_get_value(GTK_ADJUSTMENT(editor->adjustment)) + (translated_y - editor->buffer->line_height));
-	} else if (translated_y > allocation.height) {
-		gtk_adjustment_set_value(GTK_ADJUSTMENT(editor->adjustment), gtk_adjustment_get_value(GTK_ADJUSTMENT(editor->adjustment)) + (translated_y - allocation.height));
-	}
-
-	if (editor->buffer->rendered_width > allocation.width) {
-		double translated_x = x - gtk_adjustment_get_value(GTK_ADJUSTMENT(editor->hadjustment));
-		if ((translated_x - editor->buffer->em_advance) < 0) {
-			gtk_adjustment_set_value(GTK_ADJUSTMENT(editor->hadjustment), gtk_adjustment_get_value(GTK_ADJUSTMENT(editor->hadjustment)) + (translated_x - editor->buffer->em_advance));
-		} else if (translated_x > allocation.width) {
-			gtk_adjustment_set_value(GTK_ADJUSTMENT(editor->hadjustment), gtk_adjustment_get_value(GTK_ADJUSTMENT(editor->hadjustment)) + (translated_x - allocation.width));
+	if ((editor->buffer->cursor.line == NULL) || (editor->buffer->cursor.line->prev == NULL)) {
+		gtk_adjustment_set_value(GTK_ADJUSTMENT(editor->adjustment), 0);
+	} else {
+		if ((ty - editor->buffer->line_height) < 0) {
+			gtk_adjustment_set_value(GTK_ADJUSTMENT(editor->adjustment), y - pos_off[above]);
+		} else if (ty > allocation.height)  {
+			gtk_adjustment_set_value(GTK_ADJUSTMENT(editor->adjustment), y - pos_off[below]);
 		}
 	}
 }
@@ -224,7 +207,7 @@ void editor_complete_move(editor_t *editor, gboolean should_move_origin) {
 	gtk_widget_queue_draw(editor->drar);
 	editor->cursor_visible = TRUE;
 	if (should_move_origin) {
-		editor_center_on_cursor(editor);
+		editor_include_cursor(editor, ICM_MID, ICM_MID);
 	}
 	lexy_update_for_move(editor->buffer, editor->buffer->cursor.line);
 }
@@ -697,7 +680,7 @@ static gboolean button_press_callback(GtkWidget *widget, GdkEventButton *event, 
 			const char *argv[] = { cmd, "1", text };
 			interp_eval_command(editor, NULL, 3, argv);
 			free(text);
-			editor_center_on_cursor(editor);
+			// there was a center on cursor here
 		}
 	} else if (event->button == 2) {
 		move_cursor_to_mouse(editor, event->x, event->y);
@@ -759,7 +742,7 @@ static gboolean scroll_callback(GtkWidget *widget, GdkEventScroll *event, editor
 static void selection_move(editor_t *editor, double x, double y) {
 	move_cursor_to_mouse(editor, x, y);
 	gtk_clipboard_set_with_data(selection_clipboard, &selection_clipboard_target_entry, 1, (GtkClipboardGetFunc)editor_get_primary_selection, NULL, editor);
-	editor_include_cursor(editor);
+	editor_include_cursor(editor, ICM_TOP, ICM_BOT);
 	gtk_widget_queue_draw(editor->drar);
 }
 
@@ -864,18 +847,19 @@ static void draw_selection(editor_t *editor, double width, cairo_t *cr, int sel_
 }
 
 static void draw_parmatch(editor_t *editor, GtkAllocation *allocation, cairo_t *cr) {
-	buffer_update_parmatch(editor->buffer);
+	lpoint_t match;
+	parmatch_find(&(editor->buffer->cursor), &match, allocation->height / editor->buffer->line_height);
 
-	if (editor->buffer->parmatch.matched.line == NULL) return;
+	if (match.line == NULL) return;
 
 	double x, y;
-	line_get_glyph_coordinates(editor->buffer, &(editor->buffer->parmatch.matched), &x, &y);
+	line_get_glyph_coordinates(editor->buffer, &match, &x, &y);
 
 	set_color_cfg(cr, config_intval(&(editor->buffer->config), CFG_EDITOR_SEL_COLOR));
 
 	cairo_set_operator(cr, CAIRO_OPERATOR_DIFFERENCE);
 
-	cairo_rectangle(cr, x, y - editor->buffer->ascent, LPOINTGI(editor->buffer->parmatch.matched).x_advance, editor->buffer->ascent + editor->buffer->descent);
+	cairo_rectangle(cr, x, y - editor->buffer->ascent, LPOINTGI(match).x_advance, editor->buffer->ascent + editor->buffer->descent);
 	cairo_fill(cr);
 
 	cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
@@ -1199,7 +1183,7 @@ static gboolean expose_event_callback(GtkWidget *widget, GdkEventExpose *event, 
 
 	if (editor->center_on_cursor_after_next_expose) {
 		editor->center_on_cursor_after_next_expose = FALSE;
-		editor_center_on_cursor(editor);
+		editor_include_cursor(editor, ICM_MID, ICM_MID);
 	}
 
 	if (editor->warp_mouse_after_next_expose) {

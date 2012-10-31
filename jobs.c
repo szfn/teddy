@@ -68,7 +68,7 @@ static void job_destroy(job_t *job) {
 		editor_t *editor;
 		find_editor_for_buffer(job->buffer, NULL, NULL, &editor);
 		if (editor != NULL) {
-			editor_center_on_cursor(editor);
+			editor_include_cursor(editor, ICM_MID, ICM_MID);
 			gtk_widget_queue_draw(GTK_WIDGET(editor));
 		}
 	}
@@ -112,7 +112,7 @@ static void job_append(job_t *job, const char *msg, int len, int on_new_line) {
 	editor_t *editor;
 	find_editor_for_buffer(job->buffer, NULL, NULL, &editor);
 	if (editor != NULL) {
-		editor_center_on_cursor(editor);
+		editor_include_cursor(editor, ICM_MID, ICM_MID);
 		gtk_widget_queue_draw(GTK_WIDGET(editor));
 	}
 }
@@ -153,7 +153,7 @@ static void ansi_append_escape(job_t *job) {
 		buffer_move_point_glyph(buffer, &(buffer->cursor), MT_ABS, 1);
 		editor_t *editor;
 		find_editor_for_buffer(buffer, NULL, NULL, &editor);
-		if (editor != NULL) editor_center_on_cursor(editor);
+		if (editor != NULL) editor_include_cursor(editor, ICM_MID, ICM_MID);
 	} else {
 		job_append(job, "<esc>", strlen("<esc>"), 0);
 	}

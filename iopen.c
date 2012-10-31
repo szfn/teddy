@@ -79,7 +79,7 @@ static void iopen_open(GtkTreeView *tree, GtkTreePath *treepath) {
 
 			const char *argv[] = { "teddy_intl::iopen_search", search };
 			interp_eval_command(editor, NULL, 2, argv);
-			editor_center_on_cursor(editor);
+			editor_include_cursor(editor, ICM_TOP, ICM_TOP);
 		}
 	} else {
 		char *msg;

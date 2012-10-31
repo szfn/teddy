@@ -487,7 +487,7 @@ int teddy_buffer_command(ClientData client_data, Tcl_Interp *interp, int argc, c
 		Tcl_SetResult(interp, bufferid, TCL_VOLATILE);
 	} else if (strcmp(argv[1], "coc") == 0) {
 		SINGLE_ARGUMENT_BUFFER_SUBCOMMAND("buffer coc");
-		if (editor != NULL) editor_center_on_cursor(editor);
+		if (editor != NULL) editor_include_cursor(editor, ICM_MID, ICM_MID);
 	} else if (strcmp(argv[1], "save") == 0) {
 		SINGLE_ARGUMENT_BUFFER_SUBCOMMAND("buffer save");
 		if (editor != NULL) editor_save_action(editor); else save_to_text_file(buffer);
@@ -513,7 +513,7 @@ int teddy_buffer_command(ClientData client_data, Tcl_Interp *interp, int argc, c
 	} else if (strcmp(argv[1], "focus") == 0) {
 		SINGLE_ARGUMENT_BUFFER_SUBCOMMAND("buffer focus");
 		if (editor != NULL) {
-			editor_center_on_cursor(editor);
+			editor_include_cursor(editor, ICM_MID, ICM_MID);
 			editor_grab_focus(editor, true);
 		}
 	} else if (strcmp(argv[1], "dup") == 0) {

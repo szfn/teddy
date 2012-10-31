@@ -245,7 +245,7 @@ void move_search(editor_t *editor, bool ctrl_g_invoked, bool direction_forward, 
 		break;
 	}
 
-	editor_center_on_cursor(editor);
+	editor_include_cursor(editor, ICM_MID, ICM_MID);
 	gtk_widget_queue_draw(GTK_WIDGET(editor));
 }
 

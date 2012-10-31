@@ -1,3 +1,9 @@
+- easier way to create a new file (touch + buffer open is lame)
+- dependency reduction experiments
+- possible code sharing between columns and column?
+- test other charsets (like japanese)
+
+- lines -> ropes for internal representation
 - bold matched text in autocompletions window and iopen window
 - EDITOR and VISUAL setting (needs some IPC implementation)
 - multiprocess highlighting

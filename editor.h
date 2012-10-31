@@ -68,7 +68,14 @@ void set_label_text(editor_t *editor);
 editor_t *new_editor(buffer_t *buffer, bool single_line);
 void editor_free(editor_t *editor);
 void editor_switch_buffer(editor_t *editor, buffer_t *buffer);
-void editor_center_on_cursor(editor_t *editor);
+
+enum include_cursor_mode {
+	ICM_TOP = 0,
+	ICM_MID = 1,
+	ICM_BOT = 2
+};
+
+void editor_include_cursor(editor_t *editor, enum include_cursor_mode above, enum include_cursor_mode below);
 
 void editor_start_search(editor_t *editor, enum search_mode_t search_mode, const char *initial_search_term);
 void editor_save_action(editor_t *editor);

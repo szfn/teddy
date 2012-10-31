@@ -504,7 +504,6 @@ void buffer_replace_selection(buffer_t *buffer, const char *new_text) {
 	buffer_typeset_from(buffer, start_point.line);
 
 	buffer_unset_mark(buffer);
-	parmatch_invalidate(&(buffer->parmatch));
 
 	if (pre_start_line == NULL) {
 		lexy_update_starting_at(buffer, buffer->real_line, true);
@@ -867,12 +866,6 @@ void buffer_move_cursor_to_position(buffer_t *buffer, double x, double y) {
 	buffer_extend_selection_by_select_type(buffer);
 }
 
-void buffer_update_parmatch(buffer_t *buffer) {
-	if ((buffer->parmatch.cursor_cache.line == buffer->cursor.line) &&
-		(buffer->parmatch.cursor_cache.glyph == buffer->cursor.glyph)) return;
-	parmatch_find(&(buffer->parmatch), &(buffer->cursor));
-}
-
 buffer_t *buffer_create(void) {
 	buffer_t *buffer = malloc(sizeof(buffer_t));
 
@@ -907,8 +900,6 @@ buffer_t *buffer_create(void) {
 
 	buffer->mark.line = NULL;
 	buffer->mark.glyph = -1;
-
-	parmatch_init(&(buffer->parmatch));
 
 	buffer->left_margin = 4.0;
 	buffer->right_margin = 4.0;
@@ -1423,3 +1414,79 @@ char *buffer_all_lines_to_text(buffer_t *buffer) {
 	return buffer_lines_to_text(buffer, &start, &end);
 }
 
+const char *OPENING_PARENTHESIS = "([{<";
+const char *CLOSING_PARENTHESIS = ")]}>";
+
+static uint32_t point_to_char_to_find(lpoint_t *point, const char *tomatch, const char *tofind) {
+	uint32_t code = LPOINTGI(*point).code;
+	if (code > 0x7f) return false;
+
+	for (int i = 0; i < strlen(tomatch); ++i) {
+		if (tomatch[i] == (char)code) {
+			return tofind[i];
+		}
+	}
+
+	return 0;
+}
+
+static bool parmatch_find_ex(lpoint_t *start, lpoint_t *match, const char *tomatch, const char *tofind, int direction, int nlines) {
+	if (start->glyph < 0) return false;
+	if (start->glyph >= start->line->cap) return false;
+
+	uint32_t cursor_char = LPOINTGI(*start).code;
+	uint32_t char_to_find = point_to_char_to_find(start, tomatch, tofind);
+	if (char_to_find == 0) return false;
+
+	lpoint_t cur;
+
+	copy_lpoint(&cur, start);
+
+	int checked_lines = 0;
+	int depth = 1;
+
+	for (;;) {
+		if (cur.line == NULL) break;
+		if (checked_lines >= nlines) break;
+		cur.glyph += direction;
+
+		if (cur.glyph < 0) {
+			cur.line = cur.line->prev;
+			if (cur.line != NULL) cur.glyph = cur.line->cap;
+			++checked_lines;
+			continue;
+		} else if (cur.glyph >= cur.line->cap) {
+			cur.line = cur.line->next;
+			cur.glyph = -1;
+			++checked_lines;
+			continue;
+		}
+
+		if (LPOINTGI(cur).code == cursor_char) {
+			++depth;
+		}
+
+		if (LPOINTGI(cur).code == char_to_find) {
+			--depth;
+			if (depth == 0) {
+				copy_lpoint(match, &cur);
+				return true;
+			}
+		}
+	}
+
+	return false;
+}
+
+void parmatch_find(lpoint_t *cursor, lpoint_t *match, int nlines) {
+	match->line = NULL; match->glyph = 0;
+	if ((cursor->line != NULL) && (cursor->glyph >= 0)) {
+		if (parmatch_find_ex(cursor, match, OPENING_PARENTHESIS, CLOSING_PARENTHESIS, +1, nlines)) return;
+
+		lpoint_t preceding_cursor;
+		copy_lpoint(&preceding_cursor, cursor);
+		--(preceding_cursor.glyph);
+
+		if (parmatch_find_ex(&preceding_cursor, match, CLOSING_PARENTHESIS, OPENING_PARENTHESIS, -1, nlines)) return;
+	}
+}
