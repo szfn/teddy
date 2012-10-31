@@ -1,4 +1,5 @@
-- dependency reduction experiments
+- BUG: cursor on the last character of a link is not a hand
+- setting to remove underline from links
 - possible code sharing between columns and column?
 - test other charsets (like japanese)
 

@@ -3,8 +3,8 @@
 
 #include "buffer.h"
 #include "editor.h"
-#include "interp.h"
 
+#include <tcl.h>
 #include <gtk/gtk.h>
 
 void buffers_init(void);

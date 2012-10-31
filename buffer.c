@@ -4,16 +4,14 @@
 #include <stdlib.h>
 #include <math.h>
 #include <assert.h>
-#include <unistd.h>
 
 #include <unicode/uchar.h>
 
 #include "global.h"
-#include "cfg.h"
 #include "columns.h"
 #include "lexy.h"
-#include "interp.h"
 #include "foundry.h"
+#include "interp.h"
 #include "buffers.h"
 
 #define WORDCOMPL_UPDATE_RADIUS 1000

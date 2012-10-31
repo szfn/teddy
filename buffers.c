@@ -5,6 +5,7 @@
 #include "editor.h"
 #include "tags.h"
 #include "top.h"
+#include "interp.h"
 
 #include "critbit.h"
 
