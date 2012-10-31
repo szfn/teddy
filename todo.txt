@@ -1,5 +1,6 @@
-- possible code sharing between columns and column?
 - lines -> ropes for internal representation
+
+- possible code sharing between columns and column?
 - bold matched text in autocompletions window and iopen window
 - EDITOR and VISUAL setting (needs some IPC implementation)
 - multiprocess highlighting
