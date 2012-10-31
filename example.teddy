@@ -14,6 +14,9 @@ setcfg posbox_font Arial-8
 # Run the antique theme (see builtin.tcl for how themes are defined)
 antique_theme
 
+# Set to zero if you don't want to underline links
+setcfg underline_links 1
+
 ### MISC OPTIONS ###
 
 # When focus_follows_mouse is set to 1 the focus will be moved to the editor under the mouse pointer

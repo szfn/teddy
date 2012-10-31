@@ -935,6 +935,8 @@ static void draw_line(editor_t *editor, GtkAllocation *allocation, cairo_t *cr, 
 	double filey, filex_start, filex_end;
 	bool onfile = false;
 
+	bool do_underline = config_intval(&(editor->buffer->config), CFG_UNDERLINE_LINKS) != 0;
+
 	for (int i = 0; i < line->cap; ++i) {
 		// draws soft wrapping indicators
 		if (line->glyph_info[i].y - cury > 0.001) {
@@ -962,6 +964,7 @@ static void draw_line(editor_t *editor, GtkAllocation *allocation, cairo_t *cr, 
 		uint16_t type = (uint16_t)(line->glyph_info[i].color) + ((uint16_t)(line->glyph_info[i].fontidx) << 8);
 
 		bool thisfile = line->glyph_info[i].color == (CFG_LEXY_FILE - CFG_LEXY_NOTHING);
+		if (!do_underline) thisfile = false;
 
 		if (thisfile) {
 			if (onfile && (abs(filey - line->glyph_info[i].y) < 0.001)) {
@@ -1101,6 +1104,7 @@ static gboolean expose_event_callback(GtkWidget *widget, GdkEventExpose *event, 
 			uint8_t color = (uint8_t)type;
 			uint8_t fontidx = (uint8_t)(type >> 8);
 			cairo_set_scaled_font(cr, fontset_get_cairofont_by_name(config_strval(&(editor->buffer->config), CFG_MAIN_FONT), fontidx));
+
 			set_color_cfg(cr, config_intval(&(editor->buffer->config), CFG_LEXY_NOTHING+color));
 			cairo_show_glyphs(cr, gga->glyphs, gga->n);
 			//set_color_cfg(cr, config_intval(&(editor->buffer->config), CFG_LEXY_FILE));

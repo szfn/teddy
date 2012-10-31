@@ -1,6 +1,7 @@
 cfg_main_font Arial-11
 cfg_main_font_height_reduction 0
 cfg_posbox_font Arial-8
+cfg_underline_links 1
 
 cfg_focus_follows_mouse 1
 cfg_autoindent 1
