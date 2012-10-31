@@ -155,6 +155,12 @@ proc ss {args} {
 }
 
 namespace eval teddy {
+	namespace export open
+	proc open {path} {
+		catch {shellsync "" touch $path}
+		buffer open $path
+	}
+
 	# options passed to ls to display a directory
 	namespace export ls_options
 	set ls_options {-F -1 --group-directories-first}
@@ -293,7 +299,7 @@ proc solarized_theme {} {
 	setcfg -global lexy_string $cyan
 	setcfg -global lexy_id $base2
 	setcfg -global lexy_literal $cyan
-	setcfg -global lexy_file [rgbcolor cyan]	
+	setcfg -global lexy_file [rgbcolor cyan]
 
 	setcfg -global editor_sel_invert 1
 }

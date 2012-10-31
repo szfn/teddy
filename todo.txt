@@ -1,4 +1,3 @@
-- easier way to create a new file (touch + buffer open is lame)
 - dependency reduction experiments
 - possible code sharing between columns and column?
 - test other charsets (like japanese)

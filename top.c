@@ -215,6 +215,12 @@ static void iopen_mitem_callback(GtkMenuItem *menuitem, gpointer data) {
 	iopen();
 }
 
+static void open_mitem_callback(GtkMenuItem *menuitem, gpointer data) {
+	buffer_select_all(cmdline_editor->buffer);
+	buffer_replace_selection(cmdline_editor->buffer, "teddy::open ");
+	editor_grab_focus(cmdline_editor, false);
+}
+
 static void save_session_mitem_callback(GtkMenuItem *menuitem, gpointer data) {
 	interp_eval(NULL, NULL, "teddy_intl::savesession_mitem", false);
 }
@@ -269,6 +275,10 @@ GtkWidget *top_init(GtkWidget *window) {
 	GtkWidget *iopen_mitem = gtk_menu_item_new_with_label("Fuzzy search file");
 	g_signal_connect(G_OBJECT(iopen_mitem), "activate", G_CALLBACK(iopen_mitem_callback), NULL);
 	gtk_menu_append(tools_menu, iopen_mitem);
+
+	GtkWidget *open_mitem = gtk_menu_item_new_with_label("Open file");
+	g_signal_connect(G_OBJECT(open_mitem), "activate", G_CALLBACK(open_mitem_callback), NULL);
+	gtk_menu_append(tools_menu, open_mitem);
 
 	GtkWidget *new_column_mitem = gtk_menu_item_new_with_label("New column");
 	g_signal_connect(G_OBJECT(new_column_mitem), "activate", G_CALLBACK(new_column_mitem_callback), NULL);

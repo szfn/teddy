@@ -493,14 +493,14 @@ int teddy_buffer_command(ClientData client_data, Tcl_Interp *interp, int argc, c
 		if (editor != NULL) editor_save_action(editor); else save_to_text_file(buffer);
 	} else if (strcmp(argv[1], "open") == 0) {
 		ARGNUM((argc != 3), "buffer open");
-		HASBUF("buffer open");
+		//HASBUF("buffer open");
 
 		enum go_file_failure_reason gffr;
 		buffer_t *b = go_file(argv[2], false, false, &gffr);
 		if (b != NULL) {
 			tframe_t *frame;
 			find_editor_for_buffer(b, NULL, &frame, NULL);
-			if (frame == NULL) {
+			if ((frame == NULL) && (interp_context_buffer() != NULL)) {
 				find_editor_for_buffer(interp_context_buffer(), NULL, &frame, NULL);
 				heuristic_new_frame(columnset, frame, b);
 			}
