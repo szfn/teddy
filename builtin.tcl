@@ -174,7 +174,7 @@ namespace eval teddy {
 	# reads a file from disk
 	namespace export slurp
 	proc slurp {path} {
-		set thefile [open $path]
+		set thefile [::open $path]
 		fconfigure $thefile -translation binary
 		set r [read $thefile]
 		close $thefile
