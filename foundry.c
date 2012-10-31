@@ -39,22 +39,22 @@ void foundry_init(void) {
 	FcInit();
 	int error = FT_Init_FreeType(&library);
 	if (error) {
-		printf("Freetype initialization error\n");
+		fprintf(stderr, "Freetype initialization error\n");
 		exit(EXIT_FAILURE);
 	}
 
 	fontset_table = g_hash_table_new_full(g_str_hash, g_str_equal, NULL, (GDestroyNotify)fontset_free);
 }
 
-static void teddy_finish_init_font(teddy_font_t *font, double size, bool set_ft_size) {
+static bool teddy_finish_init_font(teddy_font_t *font, double size, bool set_ft_size) {
 	gdouble dpi = gdk_screen_get_resolution(gdk_screen_get_default());
 	double text_size = dpi / 72.0 * size;
 
 	if (set_ft_size) {
 		int error = FT_Set_Char_Size(font->face, 0, size * 64, dpi, dpi);
 		if (error) {
-			printf("Error loading freetype font %02X\n", error);
-			exit(EXIT_FAILURE);
+			//fprintf(stderr, "Error loading freetype font %02X\n", error);
+			return false;
 		}
 	}
 
@@ -68,19 +68,22 @@ static void teddy_finish_init_font(teddy_font_t *font, double size, bool set_ft_
 	cairo_font_options_set_hint_style(font->font_options, CAIRO_HINT_STYLE_SLIGHT);
 
 	font->cairofont = cairo_scaled_font_create(font->cairoface, &(font->font_size_matrix), &(font->font_ctm), font->font_options);
+
+	return true;
 }
 
-static void teddy_font_init_ex(teddy_font_t *font,  const char *fontfile, double size, int face_index) {
+static bool teddy_font_init_ex(teddy_font_t *font,  const char *fontfile, double size, int face_index) {
 	int error = FT_New_Face(library, (const char *)fontfile, face_index, &(font->face));
 	if (error) {
-		printf("Error loading freetype font\n");
-		exit(EXIT_FAILURE);
+		fprintf(stderr, "Error loading freetype font\n");
+		return false;
 	}
 
-	teddy_finish_init_font(font, size, true);
+	//printf("finishing: %s\n", fontfile);
+	return teddy_finish_init_font(font, size, true);
 }
 
-static void fontconfig_init_from_pattern(FcPattern *match, teddy_font_t *font, double default_size) {
+static bool fontconfig_init_from_pattern(FcPattern *match, teddy_font_t *font, double default_size) {
 	FcChar8 *fontfile;
 	if (FcPatternGetString(match, FC_FILE, 0, &fontfile) != FcResultMatch) {
 		printf("Font file not found\n");
@@ -97,7 +100,8 @@ static void fontconfig_init_from_pattern(FcPattern *match, teddy_font_t *font, d
 		index = 0;
 	}
 
-	teddy_font_init_ex(font, (const char *)fontfile, size, index);
+	//printf("\t%s %g\n", fontfile, size);
+	return teddy_font_init_ex(font, (const char *)fontfile, size, index);
 }
 
 static void match_write_coverage(teddy_fontset_t *fontset, int idx, FcCharSet *cset, FcCharSet *accumulator) {
@@ -129,6 +133,8 @@ static teddy_fontset_t *fontset_new(const char *fontname) {
 	for (int i = 0; i <= 0xffff; ++i) {
 		fontset->map[i] = 0xff;
 	}
+
+	//printf("Creating %s\n", fontname);
 
 	FcResult result;
 
@@ -165,16 +171,16 @@ static teddy_fontset_t *fontset_new(const char *fontname) {
 
 		int limit = 0;
 		if (acc_count > 0) {
-			limit = 128;
+			limit = 8;
 		}
 		if (acc_count > 1024) {
-			limit = 512;
+			limit = 16;
 		}
 
 		if (c > limit) {
-			match_write_coverage(fontset, fontset->count, cset, accumulator);
+			if (!fontconfig_init_from_pattern(match, fontset->fonts+fontset->count, size)) continue;
 
-			fontconfig_init_from_pattern(match, fontset->fonts+fontset->count, size);
+			match_write_coverage(fontset, fontset->count, cset, accumulator);
 			++(fontset->count);
 
 			FcCharSetMerge(accumulator, cset, NULL);
@@ -183,6 +189,8 @@ static teddy_fontset_t *fontset_new(const char *fontname) {
 			if (fontset->count >= 0xfe) break;
 		}
 	}
+
+	//printf("Loaded faces for %s: %d\n", fontname, fontset->count);
 
 	return fontset;
 }
@@ -254,7 +262,7 @@ void foundry_release(teddy_fontset_t *fontset) {
 }
 
 cairo_scaled_font_t *fontset_get_cairofont(teddy_fontset_t *fontset, int fontidx) {
-	return fontset->fonts[0].cairofont;
+	return fontset->fonts[fontidx].cairofont;
 }
 
 cairo_scaled_font_t *fontset_get_cairofont_by_name(const char *name, int fontidx) {

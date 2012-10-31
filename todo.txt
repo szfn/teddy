@@ -1,8 +1,4 @@
-- BUG: cursor on the last character of a link is not a hand
-- setting to remove underline from links
 - possible code sharing between columns and column?
-- test other charsets (like japanese)
-
 - lines -> ropes for internal representation
 - bold matched text in autocompletions window and iopen window
 - EDITOR and VISUAL setting (needs some IPC implementation)
