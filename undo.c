@@ -55,22 +55,20 @@ static void debug_print_undo(undo_node_t *node) {
 #endif
 
 static bool selection_is_empty(selection_t *selection) {
-	return points_equal(&(selection->start), &(selection->end)) && (selection->text[0] == '\0');
+	return (selection->start == selection->end) && (selection->text[0] == '\0');
 }
 
 static bool selections_are_adjacent(selection_t *a, selection_t *b) {
-	return points_equal(&(a->end), &(b->start));
+	return a->end == b->start;
 }
 
 static int selection_len(selection_t *selection) {
-	if (selection->start.lineno != selection->end.lineno) return -1;
-	int r = selection->end.glyph - selection->start.glyph;
+	int r = selection->end - selection->start;
 	return (r < 0) ? -r : r;
 }
 
 static void selections_cat(selection_t *dst, selection_t *src) {
-	dst->end.lineno = src->end.lineno;
-	dst->end.glyph = src->end.glyph;
+	dst->end = src->end;
 
 	char *newtext = malloc(strlen(src->text) + strlen(dst->text) + 1);
 

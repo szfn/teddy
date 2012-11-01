@@ -21,7 +21,7 @@ void interp_context_buffer_set(buffer_t *buffer);*/
 editor_t *interp_context_editor(void);
 buffer_t *interp_context_buffer(void);
 
-void interp_return_point_pair(lpoint_t *mark, lpoint_t *cursor);
+void interp_return_point_pair(buffer_t *buffer, int mark, int cursor);
 void interp_frame_debug();
 bool interp_toplevel_frame();
 

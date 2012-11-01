@@ -450,14 +450,13 @@ static int teddy_change_command(ClientData client_data, Tcl_Interp *interp, int 
 	}
 }
 
-static bool move_command_ex(const char *sin, lpoint_t *p, lpoint_t *ref, enum movement_type_t default_glyph_motion) {
+static bool move_command_ex(const char *sin, int *p, int ref, enum movement_type_t default_glyph_motion) {
 	if (strcmp(sin, "nil") == 0) {
-		if (ref == NULL) {
+		if (ref < 0) {
 			Tcl_AddErrorInfo(interp, "Attempted to null cursor in 'm' command");
 			return false;
 		} else {
-			p->line = NULL;
-			p->glyph = 0;
+			*p = -1;
 			return true;
 		}
 	}
@@ -538,14 +537,13 @@ static bool move_command_ex(const char *sin, lpoint_t *p, lpoint_t *ref, enum mo
 		if (!forward) colno = -colno;
 	}
 
-	if (p->line == NULL) {
-		if (ref != NULL) {
-			p->line = ref->line;
-			p->glyph = ref->glyph;
+	if (*p < 0) {
+		if (ref >= 0) {
+			*p = ref;
 		}
 	}
 
-	if (p->line == NULL) {
+	if (*p < 0) {
 		if (lineflag == MT_REL) goto move_command_relative_with_nil;
 		if (colflag == MT_REL) goto move_command_relative_with_nil;
 	}
@@ -579,25 +577,24 @@ move_command_relative_with_nil: {
 }
 
 static void sort_mark_cursor(buffer_t *buffer) {
-	if (buffer->mark.line == NULL) return;
-	if (before_lpoint(&(buffer->mark), &(buffer->cursor))) return;
+	if (buffer->mark < 0) return;
+	if (buffer->mark < buffer->cursor) return;
 
-	lpoint_t swap;
-
-	copy_lpoint(&swap, &(buffer->mark));
-	copy_lpoint(&(buffer->mark), &(buffer->cursor));
-	copy_lpoint(&(buffer->cursor), &swap);
+	int swap;
+	swap = buffer->mark;
+	buffer->mark = buffer->cursor;
+	buffer->cursor = swap;
 }
 
 static int teddy_move_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
 #define MOVE_MARK(argument, d) { \
-	if (!move_command_ex(argument, &(interp_context_buffer()->mark), &(interp_context_buffer()->cursor), d)) { \
+	if (!move_command_ex(argument, &(interp_context_buffer()->mark), interp_context_buffer()->cursor, d)) { \
 		return TCL_ERROR; \
 	} \
 }
 
 #define MOVE_CURSOR(argument, d) {\
-	if (!move_command_ex(argument, &(interp_context_buffer()->cursor), NULL, d)) { \
+	if (!move_command_ex(argument, &(interp_context_buffer()->cursor), -1, d)) { \
 		return TCL_ERROR; \
 	} \
 }
@@ -605,14 +602,14 @@ static int teddy_move_command(ClientData client_data, Tcl_Interp *interp, int ar
 #define MOVE_MARK_CURSOR(mark_argument, cursor_argument) {\
 	MOVE_MARK(mark_argument, MT_START);\
 	MOVE_CURSOR(cursor_argument, MT_END);\
-	copy_lpoint(&(interp_context_buffer()->savedmark), &(interp_context_buffer()->mark));\
+	interp_context_buffer()->savedmark = interp_context_buffer()->mark;\
 }
 
 	HASBUF("move");
 
 	switch (argc) {
 	case 1:
-		interp_return_point_pair(&(interp_context_buffer()->mark), &(interp_context_buffer()->cursor));
+		interp_return_point_pair(interp_context_buffer(), interp_context_buffer()->mark, interp_context_buffer()->cursor);
 		return TCL_OK;
 	case 2:
 		if (strcmp(argv[1], "all") == 0) {
@@ -1256,15 +1253,15 @@ buffer_t *interp_context_buffer(void) {
 	return the_context_buffer;
 }
 
-void interp_return_point_pair(lpoint_t *mark, lpoint_t *cursor) {
+void interp_return_point_pair(buffer_t *buffer, int mark, int cursor) {
 	char *r;
-	if (mark->line == NULL) {
+	if (mark < 0) {
 		asprintf(&r, "nil %d:%d",
-			cursor->line->lineno+1, cursor->glyph+1);
+			1, 1);
 	} else {
 		asprintf(&r, "%d:%d %d:%d",
-			mark->line->lineno+1, mark->glyph+1,
-			cursor->line->lineno+1, cursor->glyph+1);
+			1, 1,
+			1, 1);
 	}
 	alloc_assert(r);
 	Tcl_SetResult(interp, r, TCL_VOLATILE);

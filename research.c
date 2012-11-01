@@ -29,28 +29,23 @@ void quit_search_mode(editor_t *editor) {
 	editor->research.mode = SM_NONE;
 	editor->ignore_next_entry_keyrelease = TRUE;
 
-	editor->buffer->mark.line = NULL;
-	editor->buffer->mark.glyph = 0;
+	editor->buffer->mark = -1;
 
 	gtk_widget_grab_focus(editor->drar);
 	gtk_widget_queue_draw(GTK_WIDGET(editor));
 }
 
-static void search_start_point(editor_t *editor, bool ctrl_g_invoked, bool start_at_top, real_line_t **search_line, int *search_glyph) {
-	if ((editor->buffer->mark.line == NULL) || editor->research.search_failed) {
+static void search_start_point(editor_t *editor, bool ctrl_g_invoked, bool start_at_top, int *start_point) {
+	if ((editor->buffer->mark < 0) || editor->research.search_failed) {
 		if (start_at_top) {
-			*search_line = editor->buffer->real_line;
-			*search_glyph = 0;
+			*start_point = 0;
 		} else {
-			for (*search_line = editor->buffer->real_line; (*search_line != NULL) && ((*search_line)->next != NULL); *search_line = (*search_line)->next);
-			*search_glyph = (*search_line)->cap-1;
+			*start_point = editor->buffer->size - editor->buffer->gapsz - 1;
 		}
 	} else if (ctrl_g_invoked) {
-		*search_line = editor->buffer->cursor.line;
-		*search_glyph = editor->buffer->cursor.glyph;
+		*start_point = editor->buffer->cursor;
 	} else {
-		*search_line = editor->buffer->mark.line;
-		*search_glyph = editor->buffer->mark.glyph;
+		*start_point = editor->buffer->mark;
 	}
 }
 
@@ -83,21 +78,20 @@ static void move_incremental_search(editor_t *editor, bool ctrl_g_invoked, bool 
 
 	uchar_match_fn *match_fn = should_be_case_sensitive(editor->buffer, needle, dst);
 
-	real_line_t *search_line;
-	int search_glyph;
-	search_start_point(editor, ctrl_g_invoked, direction_forward, &search_line, &search_glyph);
+	int search_point;
+	search_start_point(editor, ctrl_g_invoked, direction_forward, &search_point);
 
 	int direction = direction_forward ? +1 : -1;
 
 #define OS(start, offset) (start + direction * offset)
 
-	while (search_line != NULL) {
+	while (bat(editor->buffer, search_point) != NULL) {
 		int i = 0, j = 0;
 		int needle_start = direction_forward ? 0 : dst-1;
 
-		for ( ; i < search_line->cap; ++i) {
+		for ( ; i < search_point; ++i) {
 			if (j >= dst) break;
-			if (match_fn(search_line->glyph_info[OS(search_glyph, i)].code, needle[OS(needle_start, j)])) {
+			if (match_fn(bat(editor->buffer, OS(search_point, i))->code, needle[OS(needle_start, j)])) {
 				++j;
 			} else {
 				i -= j;
@@ -109,20 +103,16 @@ static void move_incremental_search(editor_t *editor, bool ctrl_g_invoked, bool 
 			if (!direction_forward) --i; // correction, because of selection semantics
 
 			// search was successful
-			editor->buffer->mark.line = search_line;
-			editor->buffer->mark.glyph = OS(OS(search_glyph, i), -j);
-			editor->buffer->cursor.line = search_line;
-			editor->buffer->cursor.glyph = OS(search_glyph, i);
-			lexy_update_for_move(editor->buffer, editor->buffer->cursor.line);
+			editor->buffer->mark = OS(OS(search_point, i), -j);
+			editor->buffer->cursor = OS(search_point, i);
+			lexy_update_for_move(editor->buffer, editor->buffer->cursor);
 			break;
 		}
 
-		// every line searched after the first line will start from the beginning
-		search_line = direction_forward ? search_line->next : search_line->prev;
-		search_glyph = direction_forward ? 0 : ((search_line != NULL) ? search_line->cap-1 : 0);
+		search_point = direction_forward ? search_point+1 : search_point-1;
 	}
 
-	if (search_line == NULL) {
+	if (search_point < 0) {
 		editor->research.search_failed = false;
 		buffer_unset_mark(editor->buffer);
 	}
@@ -130,7 +120,7 @@ static void move_incremental_search(editor_t *editor, bool ctrl_g_invoked, bool 
 	free(needle);
 }
 
-static bool regmatch_to_lpoints(struct augmented_lpoint_t *search_point, regmatch_t *m, lpoint_t *s, lpoint_t *e) {
+/*static bool regmatch_to_lpoints(struct augmented_lpoint_t *search_point, regmatch_t *m, lpoint_t *s, lpoint_t *e) {
 	int start_glyph = m->rm_so + search_point->start_glyph;
 	int end_glyph = m->rm_eo + search_point->start_glyph;
 
@@ -142,9 +132,9 @@ static bool regmatch_to_lpoints(struct augmented_lpoint_t *search_point, regmatc
 	} else {
 		return false;
 	}
-}
+}*/
 
-static bool move_regexp_search_forward(struct research_t *research, bool execute, lpoint_t *mark, lpoint_t *cursor) {
+/*static bool move_regexp_search_forward(struct research_t *research, bool execute, lpoint_t *mark, lpoint_t *cursor) {
 	//printf("Moving forward search <%s> limit %p/%d (%p/%d) %d\n", research->cmd, research->regex_endpoint.line, (research->regex_endpoint.line != NULL) ? research->regex_endpoint.line->lineno : -1, cursor->line, cursor->line->lineno, cursor_on_last_line_before);
 	if (execute && (research->cmd != NULL) && (mark->line != NULL)) {
 		editor_t *editor;
@@ -227,7 +217,7 @@ static bool move_regexp_search_forward(struct research_t *research, bool execute
 	research->search_failed = true;
 
 	return false;
-}
+}*/
 
 void move_search(editor_t *editor, bool ctrl_g_invoked, bool direction_forward, bool replace) {
 	switch(editor->research.mode) {
@@ -236,7 +226,7 @@ void move_search(editor_t *editor, bool ctrl_g_invoked, bool direction_forward, 
 		break;
 	case SM_REGEXP:
 		if (ctrl_g_invoked) {
-			move_regexp_search_forward(&(editor->research), replace, &(editor->buffer->mark), &(editor->buffer->cursor));
+			//move_regexp_search_forward(&(editor->research), replace, &(editor->buffer->mark), &(editor->buffer->cursor));
 		}
 		break;
 	case SM_NONE:
@@ -255,7 +245,7 @@ void research_init(struct research_t *r) {
 	r->cmd = NULL;
 }
 
-void do_regex_noninteractive_search(struct research_t *research) {
+/*void do_regex_noninteractive_search(struct research_t *research) {
 	lpoint_t mark;
 	lpoint_t cursor;
 	copy_lpoint(&mark, &(research->buffer->mark));
@@ -294,9 +284,9 @@ static bool do_regex_noninteractive_replace(struct research_t *research) {
 	research->buffer->mark.glyph = 0;
 	research_free_temp(research);
 	return true;
-}
+}*/
 
-void start_regex_interactive(struct research_t *research, const char *regexp) {
+/*void start_regex_interactive(struct research_t *research, const char *regexp) {
 	if (interp_context_editor() == NULL) {
 		Tcl_AddErrorInfo(interp, "Can not execute interactive 's' without a selection");
 		return;
@@ -311,10 +301,10 @@ void start_regex_interactive(struct research_t *research, const char *regexp) {
 	editor_start_search(editor, SM_REGEXP, msg);
 	move_regexp_search_forward(&(editor->research), false, &(research->buffer->mark), &(research->buffer->cursor));
 	free(msg);
-}
+}*/
 
 int teddy_research_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
-	bool get = false, literal = false;
+/*	bool get = false, literal = false;
 	struct research_t research;
 
 	if (interp_context_buffer() == NULL) {
@@ -441,11 +431,12 @@ int teddy_research_command(ClientData client_data, Tcl_Interp *interp, int argc,
 			do_regex_noninteractive_search(&research);
 			return TCL_OK;
 		}
-	}
+	}*/
+	return TCL_OK;
 }
 
 extern void research_continue_replace_to_end(editor_t *editor) {
-	if (!do_regex_noninteractive_replace(&(editor->research))) {
+/*	if (!do_regex_noninteractive_replace(&(editor->research))) {
 		quick_message("Search and replace error", "Automatic search and replace seemed stuck on the same line, and it was aborted");
-	}
+	}*/
 }

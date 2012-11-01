@@ -15,6 +15,8 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <sys/inotify.h>
+#include <unistd.h>
+#include <sys/stat.h>
 
 buffer_t **buffers;
 int buffers_allocated;
@@ -155,10 +157,9 @@ static bool buffers_close_set(buffer_t **bufset, int n) {
 		buffer_t *errbuf = buffers_make("+Errors+");
 		if (errbuf == NULL) return false;
 
-		lpoint_t start, end;
+		int start, end;
 		buffer_get_extremes(errbuf, &start, &end);
-		copy_lpoint(&(errbuf->mark), &start);
-		copy_lpoint(&(errbuf->cursor), &end);
+		errbuf->mark = start; errbuf->cursor = end;
 		buffer_replace_selection(errbuf, "");
 
 		for (int i = 0; i < n; ++i) {
@@ -195,8 +196,7 @@ static bool buffers_close_set(buffer_t **bufset, int n) {
 			if (dr == DR_DIRJOB) continue;
 		}
 
-		errbuf->cursor.line = errbuf->real_line;
-		errbuf->cursor.glyph = 0;
+		errbuf->cursor = -1;
 
 		return false;
 	} else {
@@ -683,12 +683,7 @@ void buffers_refresh(buffer_t *buffer) {
 
 	if (null_buffer() == buffer) return;
 
-	int lineno = 1, glyph = 1;
-
-	if (buffer->cursor.line != NULL) {
-		lineno = buffer->cursor.line->lineno+1;
-		glyph = buffer->cursor.glyph+1;
-	}
+	int cursor = buffer->cursor;
 
 	int r = buffers_close(buffer, false);
 	if (r == 0) return;
@@ -696,9 +691,7 @@ void buffers_refresh(buffer_t *buffer) {
 	enum go_file_failure_reason gffr;
 	buffer_t *new_buffer = go_file(path, false, true, &gffr);
 	if (new_buffer != NULL) {
-		buffer_move_point_line(new_buffer, &(new_buffer->cursor), MT_ABS, lineno);
-		buffer_move_point_glyph(new_buffer, &(new_buffer->cursor), MT_ABS, glyph);
-
+		if (cursor < new_buffer->size - new_buffer->gapsz) new_buffer->cursor = cursor;
 		editor_switch_buffer(editor, new_buffer);
 	}
 

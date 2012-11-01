@@ -312,7 +312,7 @@ int lexy_append_command(ClientData client_data, Tcl_Interp *interp, int argc, co
 	return TCL_OK;
 }
 
-static bool check_file_match(struct lexy_row *row, buffer_t *buffer, real_line_t *line, int glyph, int nmatch, regmatch_t *pmatch) {
+/*static bool check_file_match(struct lexy_row *row, buffer_t *buffer, real_line_t *line, int glyph, int nmatch, regmatch_t *pmatch) {
 	//printf("file_group %d nmatch %d (%d)\n", row->file_group, nmatch, tokenizer->verify_file);
 	if (!row->check) return true;
 	if (row->file_group >= nmatch) return false;
@@ -328,9 +328,9 @@ static bool check_file_match(struct lexy_row *row, buffer_t *buffer, real_line_t
 	free(text);
 
 	return r;
-}
+}*/
 
-static void lexy_update_one_token(buffer_t *buffer, real_line_t *line, int *glyph, int *status) {
+/*static void lexy_update_one_token(buffer_t *buffer, real_line_t *line, int *glyph, int *status) {
 	int base = *status;
 	if (line->cap > LEXY_LINE_LENGTH_LIMIT) {
 		return;
@@ -385,9 +385,9 @@ static void lexy_update_one_token(buffer_t *buffer, real_line_t *line, int *glyp
 			return;
 		}
 	}
-}
+}*/
 
-static void lexy_update_line(buffer_t *buffer, real_line_t *line, int *state) {
+/*static void lexy_update_line(buffer_t *buffer, real_line_t *line, int *state) {
 	line->lexy_state_start = *state;
 	for (int glyph = 0; glyph < line->cap; ) {
 		int prev_glyph = glyph;
@@ -399,7 +399,7 @@ static void lexy_update_line(buffer_t *buffer, real_line_t *line, int *state) {
 		}
 	}
 	line->lexy_state_end = *state;
-}
+}*/
 
 static struct lexy_association *association_for_buffer(buffer_t *buffer) {
 	if (buffer == NULL) return NULL;
@@ -437,8 +437,8 @@ const char *lexy_get_link_fn(buffer_t *buffer) {
 	return a->link_fn;
 }
 
-void lexy_update_starting_at(buffer_t *buffer, real_line_t *start_line, bool quick_exit) {
-	if (start_line == NULL) return;
+void lexy_update_starting_at(buffer_t *buffer, int start, bool quick_exit) {
+	/*if (start_line == NULL) return;
 	int start_status_index = start_status_for_buffer(buffer);
 	if (start_status_index < 0) return;
 
@@ -464,11 +464,11 @@ void lexy_update_starting_at(buffer_t *buffer, real_line_t *start_line, bool qui
 		++count;
 	}
 
-	buffer->lexy_last_update_line = line;
+	buffer->lexy_last_update_line = line;*/
 }
 
-void lexy_update_for_move(buffer_t *buffer, real_line_t *start_line) {
-	if (buffer->lexy_last_update_line == NULL) return;
+void lexy_update_for_move(buffer_t *buffer, int start_point) {
+/*	if (buffer->lexy_last_update_line == NULL) return;
 
 	if (start_line->lineno > buffer->lexy_last_update_line->lineno) {
 		start_line = buffer->lexy_last_update_line;
@@ -481,7 +481,7 @@ void lexy_update_for_move(buffer_t *buffer, real_line_t *start_line) {
 		start_line = buffer->lexy_last_update_line;
 		if (start_line == NULL) break;
 		if (start_line->lineno >= buffer->cursor.line->lineno) break;
-	}
+	}*/
 }
 
 int lexy_create_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {

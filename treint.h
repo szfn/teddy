@@ -7,7 +7,7 @@
 #include "buffer.h"
 
 struct augmented_lpoint_t {
-	real_line_t *line;
+	buffer_t *buffer;
 	int start_glyph;
 	int offset;
 };

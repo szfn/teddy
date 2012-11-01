@@ -86,10 +86,7 @@ static void execute_command(editor_t *editor) {
 	}
 
 	// select contents of command line
-	lpoint_t start, end;
-	buffer_get_extremes(editor->buffer, &start, &end);
-	copy_lpoint(&(editor->buffer->mark), &start);
-	copy_lpoint(&(editor->buffer->cursor), &end);
+	buffer_get_extremes(editor->buffer, &(editor->buffer->mark), &(editor->buffer->cursor));
 	gtk_widget_queue_draw(GTK_WIDGET(editor));
 
 	history_add(&command_history, time(NULL), working_directory, command, true);
@@ -132,11 +129,8 @@ static void release_command_line(editor_t *editor) {
 static void history_substitute_with_index(struct history *h, editor_t *editor) {
 	char *r = history_index_get(h);
 	if (r == NULL) return;
-	lpoint_t start, end;
-	buffer_get_extremes(editor->buffer, &start, &end);
+	buffer_get_extremes(editor->buffer, &(editor->buffer->mark), &(editor->buffer->cursor));
 
-	copy_lpoint(&(editor->buffer->mark), &start);
-	copy_lpoint(&(editor->buffer->cursor), &end);
 	buffer_replace_selection(editor->buffer, r);
 	gtk_widget_queue_draw(GTK_WIDGET(editor));
 }
@@ -216,7 +210,7 @@ static void iopen_mitem_callback(GtkMenuItem *menuitem, gpointer data) {
 }
 
 static void open_mitem_callback(GtkMenuItem *menuitem, gpointer data) {
-	buffer_select_all(cmdline_editor->buffer);
+	buffer_get_extremes(cmdline_editor->buffer, &(cmdline_buffer->mark), &(cmdline_buffer->cursor));
 	buffer_replace_selection(cmdline_editor->buffer, "teddy::open ");
 	editor_grab_focus(cmdline_editor, false);
 }
@@ -314,12 +308,12 @@ GtkWidget *top_init(GtkWidget *window) {
 
 void top_start_command_line(editor_t *editor, const char *text) {
 	the_top_context_editor = editor;
-	buffer_select_all(cmdline_editor->buffer);
+	buffer_get_extremes(cmdline_editor->buffer, &(cmdline_editor->buffer->mark), &(cmdline_editor->buffer->cursor));
 	if (text != NULL) {
 		buffer_replace_selection(cmdline_editor->buffer, " {");
 		buffer_replace_selection(cmdline_editor->buffer, text);
 		buffer_replace_selection(cmdline_editor->buffer, "}");
-		cmdline_editor->buffer->cursor.glyph = 0;
+		cmdline_editor->buffer->cursor = 0;
 	}
 	editor_grab_focus(cmdline_editor, false);
 }

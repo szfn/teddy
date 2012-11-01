@@ -5,7 +5,7 @@
 #include <math.h>
 #include <assert.h>
 
-#include <unicode/uchar.h>
+
 
 #include "global.h"
 #include "columns.h"
@@ -14,58 +14,12 @@
 #include "interp.h"
 #include "buffers.h"
 
-#define WORDCOMPL_UPDATE_RADIUS 1000
-#define MINIMUM_WORDCOMPL_WORD_LEN 3
 
-static void buffer_init_font_extents(buffer_t *buffer) {
-	cairo_text_extents_t extents;
-	cairo_font_extents_t font_extents;
 
-	teddy_fontset_t *font = foundry_lookup(config_strval(&(buffer->config), CFG_MAIN_FONT), true);
 
-	cairo_scaled_font_text_extents(fontset_get_cairofont(font, 0), "M", &extents);
-	buffer->em_advance = extents.x_advance;
 
-	cairo_scaled_font_text_extents(fontset_get_cairofont(font, 0), "x", &extents);
-	buffer->ex_height = extents.height;
 
-	cairo_scaled_font_text_extents(fontset_get_cairofont(font, 0), " ", &extents);
-	buffer->space_advance = extents.x_advance;
 
-	cairo_scaled_font_extents(fontset_get_cairofont(font, 0), &font_extents);
-	buffer->line_height = font_extents.height - config_intval(&(buffer->config), CFG_MAIN_FONT_HEIGHT_REDUCTION);
-	buffer->ascent = font_extents.ascent;
-	buffer->descent = font_extents.descent;
-
-	fontset_underline_info(font, 0, &(buffer->underline_thickness), &(buffer->underline_position));
-
-	//printf("Underline thickness: %g position: %g\n", buffer->underline_thickness, buffer->underline_position);
-
-	foundry_release(font);
-}
-
-static void buffer_setup_hook(buffer_t *buffer) {
-	const char *argv[] = { "buffer_setup_hook", buffer->path };
-	interp_eval_command(NULL, buffer, 2, argv);
-}
-
-void buffer_set_mark_at_cursor(buffer_t *buffer) {
-	copy_lpoint(&(buffer->mark), &(buffer->cursor));
-	copy_lpoint(&(buffer->savedmark), &(buffer->cursor));
-	buffer->select_type = BST_NORMAL;
-	//printf("Mark set @ %d,%d\n", buffer->mark_line->lineno, buffer->mark_glyph);
-}
-
-void buffer_unset_mark(buffer_t *buffer) {
-	if (buffer->mark.line != NULL) {
-		buffer->mark.line = NULL;
-		buffer->mark.glyph = -1;
-
-		buffer->savedmark.line = NULL;
-		buffer->savedmark.glyph = -1;
-		//printf("Mark unset\n");
-	}
-}
 
 static void buffer_set_to_real(buffer_t *buffer, lpoint_t *real_point) {
 	copy_lpoint(&(buffer->cursor), real_point);
@@ -233,29 +187,7 @@ static void buffer_split_line(buffer_t *buffer, lpoint_t *point) {
 	buffer_real_line_insert(buffer, point->line, copied_segment);
 }
 
-static void buffer_reload_glyph_info(buffer_t *buffer) {
-	teddy_fontset_t *font = foundry_lookup(config_strval(&(buffer->config), CFG_MAIN_FONT), true);
-	for (real_line_t *line = buffer->real_line; line != NULL; line = line->next) {
-		FT_UInt previous = 0;
-		uint8_t previous_fontidx = 0;
 
-		for (int i = 0; i < line->cap; ++i) {
-			uint8_t fontidx = fontset_fontidx(font, line->glyph_info[i].code);
-			line->glyph_info[i].glyph_index = fontset_glyph_index(font, fontidx, (line->glyph_info[i].code != 0x09) ? line->glyph_info[i].code : 0x20);
-			line->glyph_info[i].kerning_correction = (previous_fontidx == fontidx) ? fontset_get_kerning(font, fontidx, previous, line->glyph_info[i].glyph_index) : 0.0;
-
-			previous = line->glyph_info[i].glyph_index;
-			previous_fontidx = line->glyph_info[i].fontidx = fontidx;
-
-			line->glyph_info[i].x = 0.0;
-			line->glyph_info[i].y = 0.0;
-
-			line->glyph_info[i].x_advance = fontset_x_advance(font, fontidx, line->glyph_info[i].glyph_index);
-		}
-	}
-
-	foundry_release(font);
-}
 
 static int buffer_line_insert_utf8_text(buffer_t *buffer, real_line_t *line, const char *text, int len, int insertion_point, int *valid_chars, int *invalid_chars) {
 	FT_UInt previous = 0;
@@ -268,12 +200,12 @@ static int buffer_line_insert_utf8_text(buffer_t *buffer, real_line_t *line, con
 		previous_fontidx = line->glyph_info[insertion_point-1].fontidx;
 	}
 
-	teddy_fontset_t *font = foundry_lookup(config_strval(&(buffer->config), CFG_MAIN_FONT), true);
+
 
 	for (src = 0, dst = insertion_point; src < len; ) {
 		bool valid = true;
 		uint32_t code = utf8_to_utf32(text, &src, len, &valid);
-		uint8_t fontidx = fontset_fontidx(font, code);
+
 		//printf("First char: %02x\n", (uint8_t)text[src]);
 
 		if ((code < 0x20) && (code != 0x09) && (code != 0x0a) && (code != 0x0d)) {
@@ -283,12 +215,10 @@ static int buffer_line_insert_utf8_text(buffer_t *buffer, real_line_t *line, con
 		if (valid) *valid_chars = *valid_chars + 1;
 		else *invalid_chars = *invalid_chars + 1;
 
-		FT_UInt glyph_index = fontset_glyph_index(font, fontidx, (code != 0x09) ? code : 0x20);
+
 
 		grow_line(line, dst, 1);
 
-		line->glyph_info[dst].code = code;
-		line->glyph_info[dst].color = buffer->default_color;
 
 		line->glyph_info[dst].kerning_correction = (previous_fontidx == fontidx) ? fontset_get_kerning(font, fontidx, previous, glyph_index) : 0.0;
 
@@ -311,7 +241,7 @@ static int buffer_line_insert_utf8_text(buffer_t *buffer, real_line_t *line, con
 
 	}
 
-	foundry_release(font);
+
 
 	return inserted_glyphs;
 }
@@ -372,21 +302,7 @@ static void buffer_insert_multiline_text(buffer_t *buffer, lpoint_t *start_point
 	copy_lpoint(&(buffer->cursor), &point);
 }
 
-static void freeze_selection(buffer_t *buffer, selection_t *selection, lpoint_t *start, lpoint_t *end) {
-	if ((start->line == NULL) || (end->line == NULL)) {
-		freeze_point(&(selection->start), &(buffer->cursor));
-		freeze_point(&(selection->end), &(buffer->cursor));
-		selection->text = malloc(sizeof(char));
-		alloc_assert(selection->text);
 
-		selection->text[0] = '\0';
-	} else {
-		freeze_point(&(selection->start), start);
-		freeze_point(&(selection->end), end);
-
-		selection->text = buffer_lines_to_text(buffer, start, end);
-	}
-}
 
 static void buffer_line_adjust_glyphs(buffer_t *buffer, real_line_t *line, double y) {
 	int i;
@@ -576,367 +492,18 @@ void buffer_undo(buffer_t *buffer, bool redo) {
 	if (buffer->onchange != NULL) buffer->onchange(buffer);
 }
 
-void load_empty(buffer_t *buffer) {
-	if (buffer->has_filename) {
-		return;
-	}
 
-	buffer->has_filename = 0;
-	if (buffer->path == NULL)
-		buffer->path = strdup("+empty+");
 
-	buffer->cursor.line = buffer->real_line = new_real_line(0);
-	buffer->cursor.glyph = 0;
 
-	buffer_setup_hook(buffer);
-}
 
-int load_dir(buffer_t *buffer, const char *dirname) {
-	buffer->cursor.line = buffer->real_line = new_real_line(0);
-	buffer->cursor.glyph = 0;
 
-	buffer->has_filename = 0;
-	buffer->path = realpath(dirname, NULL);
-	if (buffer->path[strlen(buffer->path)-1] != '/') {
-		char *p = malloc((strlen(buffer->path) + 2) * sizeof(char));
-		strcpy(p, buffer->path);
-		strcat(p, "/");
-		free(buffer->path);
-		buffer->path = p;
-	}
 
-	buffer_setup_hook(buffer);
 
-	buffer->modified = false;
 
-	return 0;
-}
 
-int load_text_file(buffer_t *buffer, const char *filename) {
-	buffer->mtime = time(NULL);
 
-	FILE *fin = fopen(filename, "r");
-	int ch;
-	int i = 0;
-	int text_allocation = 10;
-	char *text = malloc(sizeof(char) * text_allocation);
-	alloc_assert(text);
 
-	real_line_t *prev_line = NULL;
-	real_line_t **real_line_pp = &(buffer->real_line);
-	int lineno = 0;
 
-	if (!fin) {
-		return -1;
-	}
-
-	if (buffer->has_filename) {
-		return -1;
-	}
-
-	buffer->has_filename = 1;
-	free(buffer->path);
-	buffer->path = realpath(filename, NULL);
-
-	buffer_setup_hook(buffer);
-
-	int valid_chars = 0, invalid_chars = 0;
-
-	while ((ch = fgetc(fin)) != EOF) {
-		if (i >= text_allocation) {
-			text_allocation *= 2;
-			text = realloc(text, sizeof(char) * text_allocation);
-			if (text == NULL) {
-				perror("Couldn't allocate memory");
-				exit(EXIT_FAILURE);
-			}
-		}
-		if (ch == '\n') {
-			text[i] = '\0';
-			if (strlen(text) > 100000) {
-				valid_chars = 0;
-				invalid_chars = 2048;
-				break;
-			}
-			if (*real_line_pp == NULL) *real_line_pp = new_real_line(lineno);
-			buffer_line_insert_utf8_text(buffer, *real_line_pp, text, i, (*real_line_pp)->cap, &valid_chars, &invalid_chars);
-			(*real_line_pp)->prev = prev_line;
-			prev_line = *real_line_pp;
-			real_line_pp = &((*real_line_pp)->next);
-			i = 0;
-			++lineno;
-
-			if (valid_chars + invalid_chars > 1024) {
-				if (((float)valid_chars / (float)(valid_chars + invalid_chars)) < 0.75) {
-					break;
-				}
-			}
-		} else {
-			text[i++] = ch;
-		}
-	}
-
-	text[i] = '\0';
-	if (*real_line_pp == NULL) *real_line_pp = new_real_line(lineno);
-	buffer_line_insert_utf8_text(buffer, *real_line_pp, text, i, (*real_line_pp)->cap, &valid_chars, &invalid_chars);
-	(*real_line_pp)->prev = prev_line;
-
-	buffer->cursor.line = buffer->real_line;
-	buffer->cursor.glyph = 0;
-
-	free(text);
-
-	//printf("Loaded lines: %d (name: %s) (path: %s)\n", lineno, buffer->name, buffer->path);
-
-	fclose(fin);
-
-	buffer_wordcompl_update(buffer, &(buffer->cbt));
-	lexy_update_starting_at(buffer, buffer->real_line, false);
-
-	if (valid_chars + invalid_chars > 100) {
-		if ((float)valid_chars / (float)(valid_chars + invalid_chars) < 0.75) {
-			return -2;
-		}
-	}
-
-	const char *argv[] = { "buffer_loaded_hook", buffer->path };
-	interp_eval_command(NULL, buffer, 2, argv);
-
-	return 0;
-}
-
-char *buffer_lines_to_text(buffer_t *buffer, lpoint_t *startp, lpoint_t *endp) {
-	real_line_t *line;
-	int allocated = 0;
-	int cap = 0;
-	char *r = NULL;
-
-	allocated = 10;
-	r = malloc(sizeof(char) * allocated);
-
-	for (line = startp->line; line != NULL; line = line->next) {
-		int start, end, i;
-		if (line == startp->line) {
-			start = startp->glyph;
-		} else {
-			start = 0;
-		}
-
-		if (line == endp->line) {
-			end = endp->glyph;
-			if (end > line->cap) end = line->cap;
-		} else {
-			end = line->cap;
-		}
-
-		for (i = start; i < end; ++i) {
-			uint32_t code = line->glyph_info[i].code;
-
-			utf32_to_utf8(code, &r, &cap, &allocated);
-		}
-
-
-		if (line == endp->line) break;
-		else utf32_to_utf8((uint32_t)'\n', &r, &cap, &allocated);
-	}
-
-	if (cap >= allocated) {
-		allocated *= 2;
-		r = realloc(r, sizeof(char)*allocated);
-	}
-	r[cap++] = '\0';
-
-	return r;
-}
-
-void save_to_text_file(buffer_t *buffer) {
-	if (buffer->path[0] == '+') return;
-
-	FILE *file = fopen(buffer->path, "w");
-
-	if (!file) {
-		quick_message("Error writing file", "Couldn't open file for write");
-		return;
-	}
-
-	buffer_wordcompl_update(buffer, &(buffer->cbt));
-
-	char *r; {
-		lpoint_t startp = { buffer->real_line, 0 };
-		lpoint_t endp = { NULL, -1 };
-		r = buffer_lines_to_text(buffer, &startp, &endp);
-	}
-
-	if (r[strlen(r)-1] == '\n') r[strlen(r)-1] = '\0'; // removing spurious final newline added by loading function
-
-	size_t towrite = strlen(r);
-	size_t write_start = 0;
-
-	while (towrite > 0) {
-		size_t written = fwrite(r+write_start, sizeof(char), towrite, file);
-		if (written == 0) {
-			quick_message("Error writing file", "Error writing file to disk");
-			return;
-		}
-		towrite -= written;
-		write_start += written;
-	}
-
-	if (fclose(file) != 0) {
-		quick_message("Error writing file", "Error writing file to disk");
-		return;
-	}
-
-	free(r);
-
-	buffer->modified = 0;
-	buffer->mtime = time(NULL)+10;
-}
-
-void line_get_glyph_coordinates(buffer_t *buffer, lpoint_t *point, double *x, double *y) {
-	if (point->line == NULL) {
-		*y = 0.0;
-		*x = 0.0;
-		return;
-	}
-
-	if (point->line->cap == 0) {
-		*x = buffer->left_margin;
-		*y = point->line->start_y;
-		return;
-	}
-
-	if (point->glyph >= point->line->cap) {
-		*y = point->line->glyph_info[point->line->cap-1].y;
-		*x = point->line->glyph_info[point->line->cap-1].x + point->line->glyph_info[point->line->cap-1].x_advance;
-	} else {
-		*y = point->line->glyph_info[point->glyph].y;
-		*x = point->line->glyph_info[point->glyph].x;
-	}
-}
-
-void buffer_point_from_position(buffer_t *buffer, double x, double y, lpoint_t *p) {
-	real_line_t *line, *prev = NULL;
-	int i, glyph = 0;
-
-	for (line = buffer->real_line; line->next != NULL; line = line->next) {
-		//printf("Cur y: %g (searching %g)\n", line->start_y, y);
-		if (line->end_y > y) break;
-	}
-
-	//printf("New position lineno: %d\n", line->lineno);
-
-	if (line == NULL) line = prev;
-	assert(line != NULL);
-
-	for (i = 0; i < line->cap; ++i) {
-		if ((y >= line->glyph_info[i].y - buffer->line_height) && (y <= line->glyph_info[i].y)) {
-			double glyph_start = line->glyph_info[i].x;
-			double glyph_end = glyph_start + line->glyph_info[i].x_advance;
-
-			if (x < glyph_start) {
-				glyph = i;
-				break;
-			}
-
-			if ((x >= glyph_start) && (x <= glyph_end)) {
-				double dist_start = x - glyph_start;
-				double dist_end = glyph_end - x;
-				if (dist_start < dist_end) {
-					glyph = i;
-				} else {
-					glyph = i+1;
-				}
-				break;
-			}
-		}
-	}
-
-	if (i >= line->cap) glyph = line->cap;
-
-	p->line = line; p->glyph = glyph;
-}
-
-void buffer_move_cursor_to_position(buffer_t *buffer, double x, double y) {
-	lpoint_t p;
-	buffer_point_from_position(buffer, x, y, &p);
-	copy_lpoint(&(buffer->cursor), &p);
-	buffer_extend_selection_by_select_type(buffer);
-}
-
-buffer_t *buffer_create(void) {
-	buffer_t *buffer = malloc(sizeof(buffer_t));
-
-	config_init(&(buffer->config), &global_config);
-
-	buffer->modified = 0;
-	buffer->editable = 1;
-	buffer->job = NULL;
-	buffer->default_color = 0;
-	buffer->inotify_wd = -1;
-	buffer->mtime = 0;
-	buffer->stale = false;
-
-	asprintf(&(buffer->path), "+unnamed");
-	alloc_assert(buffer->path);
-	buffer->has_filename = 0;
-	buffer->select_type = BST_NORMAL;
-
-	buffer->lexy_last_update_line = NULL;
-
-	undo_init(&(buffer->undo));
-
-	buffer_init_font_extents(buffer);
-
-	buffer->real_line = NULL;
-
-	buffer->rendered_height = 0.0;
-	buffer->rendered_width = 0.0;
-
-	buffer->cursor.line = NULL;
-	buffer->cursor.glyph = 0;
-
-	buffer->mark.line = NULL;
-	buffer->mark.glyph = -1;
-
-	buffer->left_margin = 4.0;
-	buffer->right_margin = 4.0;
-
-	buffer->props = g_hash_table_new_full(g_str_hash, g_str_equal, free, free);
-	buffer->keyprocessor = NULL;
-
-	buffer->cbt.root = NULL;
-
-	buffer->onchange = NULL;
-
-	return buffer;
-}
-
-static int to_closed_buffers_critbit(const char *entry, void *p) {
-	critbit0_insert(&closed_buffers_critbit, entry);
-	return 1;
-}
-
-void buffer_free(buffer_t *buffer, bool save_critbit) {
-	for (real_line_t *cursor = buffer->real_line; cursor != NULL; ) {
-		real_line_t *next = cursor->next;
-		free(cursor->glyph_info);
-		free(cursor);
-		cursor = next;
-	}
-
-	g_hash_table_destroy(buffer->props);
-
-	undo_free(&(buffer->undo));
-
-	if (save_critbit) critbit0_allprefixed(&(buffer->cbt), "", to_closed_buffers_critbit, NULL);
-
-	critbit0_clear(&(buffer->cbt));
-
-	free(buffer->path);
-	if (buffer->keyprocessor != NULL) free(buffer->keyprocessor);
-	free(buffer);
-}
 
 void debug_print_real_lines_state(buffer_t *buffer) __attribute__ ((unused));
 void debug_print_real_lines_state(buffer_t *buffer) {
@@ -955,108 +522,18 @@ void debug_print_real_lines_state(buffer_t *buffer) {
 
 }
 
-void buffer_get_selection_pointers(buffer_t *buffer, lpoint_t **start, lpoint_t **end) {
-	if (buffer->mark.line == NULL) {
-		*start = NULL;
-		*end = NULL;
-		return;
-	}
 
-	if (buffer->mark.line == buffer->cursor.line) {
-		if (buffer->mark.glyph == buffer->cursor.glyph) {
-			*start = &(buffer->cursor);
-			*end = &(buffer->mark);
-			return;
-		} else if (buffer->mark.glyph < buffer->cursor.glyph) {
-			*start = &(buffer->mark);
-			*end = &(buffer->cursor);
-		} else {
-			*start = &(buffer->cursor);
-			*end = &(buffer->mark);
-		}
-	} else if (buffer->mark.line->lineno < buffer->cursor.line->lineno) {
-		*start = &(buffer->mark);
-		*end = &(buffer->cursor);
-	} else {
-		*start = &(buffer->cursor);
-		*end = &(buffer->mark);
-	}
 
-	return;
-}
 
-void buffer_get_selection(buffer_t *buffer, lpoint_t *start, lpoint_t *end) {
-	lpoint_t *pstart, *pend;
-	buffer_get_selection_pointers(buffer, &pstart, &pend);
-
-	if ((pstart == NULL) || (pend == NULL)) {
-		start->line = end->line = NULL;
-		start->glyph = end->glyph = 0;
-	} else {
-		copy_lpoint(start, pstart);
-		copy_lpoint(end, pend);
-	}
-}
-
-void buffer_typeset_maybe(buffer_t *buffer, double width, bool single_line, bool force) {
-	if (buffer == NULL) return;
-	real_line_t *line;
-	double y = single_line ? buffer->ascent : buffer->line_height + (buffer->ex_height / 2);
-
-	if (!force) {
-		if (fabs(width - buffer->rendered_width) < 0.001) {
-			return;
-		}
-		buffer->rendered_width = width;
-	}
-
-	for (line = buffer->real_line; line != NULL; line = line->next) {
-		buffer_line_adjust_glyphs(buffer, line, y);
-		y += line->y_increment;
-	}
-}
 
 void buffer_change_select_type(buffer_t *buffer, enum select_type select_type) {
 	buffer->select_type = select_type;
 	buffer_extend_selection_by_select_type(buffer);
 }
 
-void buffer_extend_selection_by_select_type(buffer_t *buffer) {
-	if (buffer->select_type == BST_NORMAL) return;
-	if (buffer->mark.line == NULL) return;
-	if (buffer->savedmark.line == NULL) return;
-	if (buffer->cursor.line == NULL) return;
 
-	copy_lpoint(&(buffer->mark), &(buffer->savedmark));
 
-	lpoint_t *start, *end;
 
-	buffer_get_selection_pointers(buffer, &start, &end);
-
-	switch (buffer->select_type) {
-	case BST_LINES:
-		start->glyph = 0;
-		end->glyph = end->line->cap;
-		break;
-	case BST_WORDS:
-		buffer_move_point_glyph(buffer, start, MT_RELW, -1);
-		buffer_move_point_glyph(buffer, end, MT_RELW, +1);
-		break;
-	default:
-		//nothing to do (is unknown)
-		break;
-	}
-}
-
-void buffer_config_changed(buffer_t *buffer) {
-	buffer_reload_glyph_info(buffer);
-	buffer_init_font_extents(buffer);
-	buffer_typeset_maybe(buffer, 0.0, false, true);
-}
-
-void buffer_set_onchange(buffer_t *buffer, void (*fn)(buffer_t *buffer)) {
-	buffer->onchange = fn;
-}
 
 static void buffer_aux_go_first_nonws(lpoint_t *p) {
 	int i;
@@ -1121,296 +598,15 @@ static bool buffer_aux_wnwa_prev_ex(lpoint_t *point) {
 	return r;
 }
 
-bool buffer_move_point_line(buffer_t *buffer, lpoint_t *p, enum movement_type_t type, int arg) {
-	//printf("Move point line: %d (%d)\n", arg, type);
 
-	bool r = true;
 
-	switch (type) {
-	case MT_REL:
-		if (p->line == NULL) return false;
 
-		while (arg < 0) {
-			real_line_t *to = p->line->prev;
-			if (to == NULL) { r = false; break; }
-			p->line = to;
-			++arg;
-		}
 
-		while (arg > 0) {
-			real_line_t *to = p->line->next;
-			if (to == NULL) { r = false; break; }
-			p->line = to;
-			--arg;
-		}
 
-		break;
 
-	case MT_END:
-		if (p->line == NULL) p->line = buffer->real_line;
-		for (; p->line->next != NULL; p->line = p->line->next);
-		break;
 
-	case MT_ABS: {
-		real_line_t *prev = buffer->real_line;
-		for (p->line = buffer->real_line; p->line != NULL; p->line = p->line->next) {
-			if (p->line->lineno+1 == arg) break;
-			prev = p->line;
-		}
-		if (p->line == NULL) { r = false; p->line = prev; }
-		break;
-	}
 
-	default:
-		quick_message("Internal error", "Internal error buffer_move_point_line");
-		return false;
-	}
 
-	if (p->glyph > p->line->cap) p->glyph = p->line->cap;
-	if (p->glyph < 0) p->glyph = 0;
-
-	return r;
-}
-
-bool buffer_move_point_glyph(buffer_t *buffer, lpoint_t *p, enum movement_type_t type, int arg) {
-	if (p->line == NULL) return false;
-
-	bool r = true;
-
-	//printf("Move point glyph: %d (%d)\n", arg, type);
-
-	switch (type) {
-	case MT_REL:
-		p->glyph += arg;
-
-		while (p->glyph > p->line->cap) {
-			if (p->line->next == NULL) { r = false; break; }
-			p->glyph = p->glyph - p->line->cap - 1;
-			p->line = p->line->next;
-		}
-
-		while (p->glyph < 0) {
-			if (p->line->prev == NULL) { r = false; break; }
-			p->line = p->line->prev;
-			p->glyph = p->line->cap + (p->glyph + 1);
-		}
-		break;
-
-	case MT_RELW:
-		while (arg < 0) {
-			r = buffer_aux_wnwa_prev_ex(p);
-			++arg;
-		}
-
-		while (arg > 0) {
-			r = buffer_aux_wnwa_next_ex(p);
-			--arg;
-		}
-		break;
-
-	case MT_END:
-		p->glyph = p->line->cap;
-		break;
-
-	case MT_START:
-		buffer_aux_go_first_nonws(p);
-		break;
-
-	case MT_HOME:
-		buffer_aux_go_first_nonws_or_0(p);
-		break;
-
-	case MT_ABS:
-		if (arg < 0) return false;
-		p->glyph = arg-1;
-		break;
-
-	default:
-		quick_message("Internal error", "Internal error buffer_move_point_glyph");
-	}
-
-	if (p->glyph > p->line->cap) p->glyph = p->line->cap;
-	if (p->glyph < 0) p->glyph = 0;
-
-	return r;
-}
-
-void buffer_indent_newline(buffer_t *buffer, char *r) {
-	real_line_t *line;
-	for (line = buffer->cursor.line; line != NULL; line = line->prev) {
-		if (line->cap > 0) break;
-	}
-
-	if (line == NULL) line = buffer->cursor.line;
-
-	r[0] = '\n';
-	int i;
-	for (i = 0; i < line->cap; ++i) {
-		uint32_t code = line->glyph_info[i].code;
-		if (code == 0x20) {
-			r[i+1] = ' ';
-		} else if (code == 0x09) {
-			r[i+1] = '\t';
-		} else {
-			r[i+1] = '\0';
-			break;
-		}
-	}
-	r[i+1] = '\0';
-}
-
-bool wordcompl_charset[0x10000];
-bool wordcompl_red_charset[0x10000];
-
-void buffer_wordcompl_init_charset(void) {
-	for (uint32_t i = 0; i < 0x10000; ++i) {
-		if (u_isalnum(i)) {
-			wordcompl_charset[i] = true;
-			wordcompl_red_charset[i] = true;
-		} else if (i == 0x5f) { // underscore
-			wordcompl_charset[i] = true;
-			wordcompl_red_charset[i] = true;
-		} else if (i == '.') {
-			wordcompl_charset[i] = true;
-			wordcompl_red_charset[i] = true;
-		} else if (i == '-') {
-			wordcompl_charset[i] = true;
-			wordcompl_red_charset[i] = false;
-		} else if (i == '+') {
-			wordcompl_charset[i] = true;
-			wordcompl_red_charset[i] = false;
-		} else if (i == '/') {
-			wordcompl_charset[i] = true;
-			wordcompl_red_charset[i] = false;
-		} else if (i == ',') {
-			wordcompl_charset[i] = true;
-			wordcompl_red_charset[i] = false;
-		} else if (i == '~') {
-			wordcompl_charset[i] = true;
-			wordcompl_red_charset[i] = false;
-		} else {
-			wordcompl_charset[i] = false;
-			wordcompl_red_charset[i] = false;
-		}
-	}
-}
-
-char *buffer_wordcompl_word_at_cursor(buffer_t *buffer) {
-	if (buffer->cursor.line == NULL) return NULL;
-
-	lpoint_t start;
-	copy_lpoint(&start, &(buffer->cursor));
-
-	for (start.glyph = buffer->cursor.glyph-1; start.glyph >= 0; --(start.glyph)) {
-		uint32_t code = buffer->cursor.line->glyph_info[start.glyph].code;
-		if ((code >= 0x10000) || (!wordcompl_charset[code])) { break; }
-	}
-
-	++(start.glyph);
-
-	if (start.glyph ==  buffer->cursor.glyph) return NULL;
-
-	return buffer_lines_to_text(buffer, &start, &(buffer->cursor));
-}
-
-char *buffer_historycompl_word_at_cursor(buffer_t *buffer) {
-	if (buffer->cursor.line == NULL) return NULL;
-
-	lpoint_t start;
-	copy_lpoint(&start, &(buffer->cursor));
-	start.glyph = 0;
-	return buffer_lines_to_text(buffer, &start, &(buffer->cursor));
-}
-
-static void buffer_wordcompl_update_word(real_line_t *line, int start, int end, critbit0_tree *c) {
-	if (end - start < MINIMUM_WORDCOMPL_WORD_LEN) return;
-
-	int allocated = end-start, cap = 0;
-	char *r = malloc(allocated * sizeof(char));
-	alloc_assert(r);
-
-	for (int j = 0; j < end-start; ++j) {
-		utf32_to_utf8(line->glyph_info[j+start].code, &r, &cap, &allocated);
-	}
-
-	utf32_to_utf8(0, &r, &cap, &allocated);
-
-	critbit0_insert(c, r);
-	free(r);
-}
-
-void buffer_wordcompl_update_line(real_line_t *line, critbit0_tree *c) {
-	int start = -1;
-	for (int i = 0; i < line->cap; ++i) {
-		if (start < 0) {
-			if (line->glyph_info[i].code > 0x10000) continue;
-			if (wordcompl_red_charset[line->glyph_info[i].code]) start = i;
-		} else {
-			if ((line->glyph_info[i].code >= 0x10000) || !wordcompl_red_charset[line->glyph_info[i].code]) {
-				buffer_wordcompl_update_word(line, start, i, c);
-				start = -1;
-			}
-		}
-	}
-
-	if (start >= 0) buffer_wordcompl_update_word(line, start, line->cap, c);
-}
-
-void buffer_wordcompl_update(buffer_t *buffer, critbit0_tree *cbt) {
-	critbit0_clear(cbt);
-
-	real_line_t *start = buffer->cursor.line;
-	if (start == NULL) start = buffer->real_line;
-
-	int count = WORDCOMPL_UPDATE_RADIUS;
-	for (real_line_t *line = start; line != NULL; line = line->prev) {
-		--count;
-		if (count <= 0) break;
-
-		buffer_wordcompl_update_line(line, cbt);
-	}
-
-	count = WORDCOMPL_UPDATE_RADIUS;
-	for (real_line_t *line = start->next; line != NULL; line = line->next) {
-		--count;
-		if (count <= 0) break;
-
-		buffer_wordcompl_update_line(line, cbt);
-	}
-
-	word_completer_full_update();
-}
-
-void buffer_get_extremes(buffer_t *buffer, lpoint_t *start, lpoint_t *end) {
-	start->line = buffer->real_line;
-	start->glyph = 0;
-
-	for (end->line = start->line; end->line->next != NULL; end->line = end->line->next);
-	end->glyph = end->line->cap;
-}
-
-void buffer_aux_clear(buffer_t *buffer) {
-	buffer_get_extremes(buffer, &(buffer->mark), &(buffer->cursor));
-	buffer_replace_selection(buffer, "");
-}
-
-void buffer_select_all(buffer_t *buffer) {
-	buffer_get_extremes(buffer, &(buffer->mark), &(buffer->cursor));
-}
-
-char *buffer_get_selection_text(buffer_t *buffer) {
-	lpoint_t start, end;
-	buffer_get_selection(buffer, &start, &end);
-	if (start.line == NULL) return NULL;
-	if (end.line == NULL) return NULL;
-	return buffer_lines_to_text(buffer, &start, &end);
-}
-
-char *buffer_all_lines_to_text(buffer_t *buffer) {
-	lpoint_t start, end;
-	buffer_get_extremes(buffer, &start, &end);
-	return buffer_lines_to_text(buffer, &start, &end);
-}
 
 const char *OPENING_PARENTHESIS = "([{<";
 const char *CLOSING_PARENTHESIS = ")]}>";
@@ -1474,17 +670,4 @@ static bool parmatch_find_ex(lpoint_t *start, lpoint_t *match, const char *tomat
 	}
 
 	return false;
-}
-
-void parmatch_find(lpoint_t *cursor, lpoint_t *match, int nlines) {
-	match->line = NULL; match->glyph = 0;
-	if ((cursor->line != NULL) && (cursor->glyph >= 0)) {
-		if (parmatch_find_ex(cursor, match, OPENING_PARENTHESIS, CLOSING_PARENTHESIS, +1, nlines)) return;
-
-		lpoint_t preceding_cursor;
-		copy_lpoint(&preceding_cursor, cursor);
-		--(preceding_cursor.glyph);
-
-		if (parmatch_find_ex(&preceding_cursor, match, CLOSING_PARENTHESIS, OPENING_PARENTHESIS, -1, nlines)) return;
-	}
 }
