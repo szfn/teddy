@@ -195,7 +195,7 @@ static int buffer_replace_selection_ex(buffer_t *buffer, const char *text) {
 		buffer->buf[buffer->gap].code = code;
 
 		uint8_t fontidx = fontset_fontidx(font, code);
-		FT_UInt glyph_index = fontset_glyph_index(font, fontidx, (code != 0x09) ? code : 0x20);
+		FT_UInt glyph_index = fontset_glyph_index(font, fontidx, ((code != 0x09) && (code != '\n')) ? code : 0x20);
 
 		buffer->buf[buffer->gap].code = code;
 		buffer->buf[buffer->gap].color = buffer->default_color;
@@ -246,8 +246,7 @@ int load_text_file(buffer_t *buffer, const char *filename) {
 
 	buffer_setup_hook(buffer);
 
-#define MAX_UTF8 12
-	char text[MAX_UTF8];
+	char text[12];
 	int i = 0;
 	int ch;
 	while ((ch = fgetc(fin)) != EOF) {
@@ -261,6 +260,7 @@ int load_text_file(buffer_t *buffer, const char *filename) {
 		}
 
 		text[i] = '\0';
+		i = 0;
 
 		buffer_replace_selection_ex(buffer, text);
 	}
