@@ -1,8 +1,5 @@
 GAP BUFFER
 
-- reset undo info after load_text_file
-- cursor interpretation should be changed (along with movegap), 0 is before the first character
-- reimplement buffer_point_from_position
 - reimplement buffer_move_point_line / buffer_move_point_glyph
 - reimplement buffer_indent_newline
 - reimplement parmatch_find

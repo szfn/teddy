@@ -119,7 +119,7 @@ buffer_t *buffer_create(void) {
 	buffer->buf = malloc(sizeof(my_glyph_info_t) * SLOP);
 	alloc_assert(buffer->buf);
 	buffer->size = SLOP;
-	buffer->cursor = -1;
+	buffer->cursor = 0;
 	buffer->mark = -1;
 	buffer->gap = 0;
 	buffer->gapsz = SLOP;
@@ -174,13 +174,13 @@ static int buffer_replace_selection_ex(buffer_t *buffer, const char *text) {
 	// there is a mark, delete
 	if (buffer->mark >= 0) {
 		int region_size = MAX(buffer->mark, buffer->cursor) - MIN(buffer->mark, buffer->cursor);
-		movegap(buffer, MIN(buffer->mark, buffer->cursor)+1);
+		movegap(buffer, MIN(buffer->mark, buffer->cursor));
 		buffer->gapsz += region_size;
 		buffer->cursor = MIN(buffer->mark, buffer->cursor);
 		buffer->mark = -1;
 	} else {
 		//printf("Calling movegap: %d\n", buffer->cursor+1);
-		movegap(buffer, buffer->cursor+1);
+		movegap(buffer, buffer->cursor);
 	}
 
 	int start_cursor = buffer->cursor;
@@ -264,8 +264,6 @@ int load_text_file(buffer_t *buffer, const char *filename) {
 
 		buffer_replace_selection_ex(buffer, text);
 	}
-
-	//TODO: reset undo informations here
 
 	buffer->cursor = 0;
 
@@ -380,7 +378,13 @@ my_glyph_info_t *buffer_next_glyph(buffer_t *buffer, my_glyph_info_t *glyph) {
 
 static void buffer_typeset_from(buffer_t *buffer, int point, bool single_line) {
 	my_glyph_info_t *glyph = bat(buffer, point);
+	//printf("Typeset %p from %d %p\n", buffer, point, glyph);
 	double y = (glyph != NULL) ? glyph->y : (single_line ? buffer->ascent : buffer->line_height + (buffer->ex_height / 2));
+
+	if (y <= 0.0001) {
+		y = (single_line ? buffer->ascent : buffer->line_height + (buffer->ex_height / 2));
+	}
+
 	double x = (glyph != NULL) ? (glyph->x + glyph->x_advance) : buffer->left_margin;
 	glyph = (glyph == NULL) ? bat(buffer, point+1) : buffer_next_glyph(buffer, glyph);
 
@@ -396,8 +400,6 @@ static void buffer_typeset_from(buffer_t *buffer, int point, bool single_line) {
 			}
 			glyph->x_advance = to_next_cell;
 		} else if (glyph->code == '\n') {
-			y += buffer->line_height;
-			x = buffer->left_margin;
 			glyph->x_advance = 0.0;
 		}
 
@@ -415,6 +417,12 @@ static void buffer_typeset_from(buffer_t *buffer, int point, bool single_line) {
 		glyph->y = y;
 		x += glyph->x_advance;
 
+		if (glyph->code == '\n') {
+			y += buffer->line_height;
+			x = buffer->left_margin;
+		}
+
+		buffer->rendered_height = y;
 		glyph = buffer_next_glyph(buffer, glyph);
 	}
 }
@@ -579,8 +587,15 @@ void buffer_extend_selection_by_select_type(buffer_t *buffer) {
 void line_get_glyph_coordinates(buffer_t *buffer, int point, double *x, double *y) {
 	my_glyph_info_t *glyph = bat(buffer, point);
 	if (glyph == NULL) {
-		*y = 0.0;
-		*x = 0.0;
+		glyph = bat(buffer, point-1);
+		if (glyph == NULL) {
+			*y = 0.0;
+			*x = 0.0;
+		} else { // after the last character of the buffer
+			*y = glyph->y;
+			*x = glyph->x + glyph->x_advance;
+		}
+
 		return;
 	}
 
@@ -783,51 +798,51 @@ char *buffer_indent_newline(buffer_t *buffer) {
 	r[i+1] = '\0';*/
 }
 
-void buffer_point_from_position(buffer_t *buffer, double x, double y, int *p) {
-	*p = -1;
-/*	real_line_t *line, *prev = NULL;
-	int i, glyph = 0;
+int buffer_point_from_position(buffer_t *buffer, double x, double y) {
+	int p = buffer->size - buffer->gapsz;
 
-	for (line = buffer->real_line; line->next != NULL; line = line->next) {
-		//printf("Cur y: %g (searching %g)\n", line->start_y, y);
-		if (line->end_y > y) break;
-	}
+	for (int i = 0; i < buffer->size-buffer->gapsz; ++i) {
+		my_glyph_info_t *g = bat(buffer, i);
 
-	//printf("New position lineno: %d\n", line->lineno);
+		if (g->y < y) continue;
+		if (g->y - buffer->line_height > y) {
+			p = i;
+			break;
+		}
 
-	if (line == NULL) line = prev;
-	assert(line != NULL);
+		//printf("\tin line: %g < %g < %g\n", g->y - buffer->line_height, y, g->y);
 
-	for (i = 0; i < line->cap; ++i) {
-		if ((y >= line->glyph_info[i].y - buffer->line_height) && (y <= line->glyph_info[i].y)) {
-			double glyph_start = line->glyph_info[i].x;
-			double glyph_end = glyph_start + line->glyph_info[i].x_advance;
+		double glyph_start = g->x;
+		double glyph_end = glyph_start + g->x_advance;
 
-			if (x < glyph_start) {
-				glyph = i;
-				break;
+		if (x < glyph_start) {
+			p = i;
+			break;
+		}
+
+		if (g->code == '\n') {
+			p = i;
+			break;
+		}
+
+		if ((x >= glyph_start) && (x <= glyph_end)) {
+			double dist_start = x - glyph_start;
+			double dist_end = glyph_end - x;
+			if (dist_start < dist_end) {
+				p = i;
+			} else {
+				p = i+1;
 			}
-
-			if ((x >= glyph_start) && (x <= glyph_end)) {
-				double dist_start = x - glyph_start;
-				double dist_end = glyph_end - x;
-				if (dist_start < dist_end) {
-					glyph = i;
-				} else {
-					glyph = i+1;
-				}
-				break;
-			}
+			break;
 		}
 	}
 
-	if (i >= line->cap) glyph = line->cap;
-
-	p->line = line; p->glyph = glyph;*/
+	return p;
 }
 
 void buffer_move_cursor_to_position(buffer_t *buffer, double x, double y) {
-	buffer_point_from_position(buffer, x, y, &(buffer->cursor));
+	buffer->cursor = buffer_point_from_position(buffer, x, y);
+	//printf("Cursor on: (%d) %04x\n", buffer->cursor, bat(buffer, buffer->cursor) != NULL ? bat(buffer, buffer->cursor)->code : 0);
 	buffer_extend_selection_by_select_type(buffer);
 }
 

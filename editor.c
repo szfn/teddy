@@ -637,8 +637,7 @@ static void move_cursor_to_mouse(editor_t *editor, double x, double y) {
 
 static bool on_file_link(editor_t *editor, double x, double y, int *r) {
 	absolute_position(editor, &x, &y);
-	int p;
-	buffer_point_from_position(editor->buffer, x, y, &p);
+	int p = buffer_point_from_position(editor->buffer, x, y);
 
 	if (r != NULL) *r = p;
 
@@ -936,33 +935,37 @@ static void draw_lines(editor_t *editor, GtkAllocation *allocation, cairo_t *cr,
 	bool onfile = false;
 
 	bool do_underline = config_intval(&(editor->buffer->config), CFG_UNDERLINE_LINKS) != 0;
+	bool newline = false;
 
 	while (glyph != NULL) {
+		//printf("current: %c\n", (char)glyph->code);
 		// draws soft wrapping indicators
-		if (glyph->code == '\n') {
-			cury = glyph->y;
-		} else if (glyph->y - cury > 0.001) {
-
-			/* draw ending tract */
-			cairo_set_line_width(cr, AUTOWRAP_INDICATOR_WIDTH);
-
-			double indy = cury - (editor->buffer->ex_height/2.0);
-			cairo_move_to(cr, allocation->width - editor->buffer->right_margin, indy);
-			cairo_line_to(cr, allocation->width, indy);
-
-			/*cairo_move_to(cr, line->glyph_info[i-1].x + line->glyph_info[i-1].x_advance, indy);
-			cairo_line_to(cr, allocation->width, indy);*/
-			cairo_stroke(cr);
+		if (glyph->y - cury > 0.001) {
+			//printf("change %c %g %g\n", (char)glyph->code, glyph->y, cury);
+			if (!newline) {
+				/* draw ending tract */
+				cairo_set_line_width(cr, AUTOWRAP_INDICATOR_WIDTH);
+				double indy = cury - (editor->buffer->ex_height/2.0);
+				cairo_move_to(cr, allocation->width - editor->buffer->right_margin, indy);
+				cairo_line_to(cr, allocation->width, indy);
+				cairo_stroke(cr);
+			}
 
 			cury = glyph->y;
 
-			/* draw initial tract */
-			cairo_set_line_width(cr, AUTOWRAP_INDICATOR_WIDTH);
-			cairo_move_to(cr, 0.0, cury-(editor->buffer->ex_height/2.0));
-			cairo_line_to(cr, editor->buffer->left_margin, cury-(editor->buffer->ex_height/2.0));
-			cairo_stroke(cr);
+			if (!newline) {
+				/* draw initial tract */
+				cairo_set_line_width(cr, AUTOWRAP_INDICATOR_WIDTH);
+				double indy = cury  - (editor->buffer->ex_height/2.0);
+				cairo_move_to(cr, 0.0, indy);
+				cairo_line_to(cr, editor->buffer->left_margin, indy);
+				cairo_stroke(cr);
+			}
+
 			cairo_set_line_width(cr, 2.0);
 		}
+
+		newline = (glyph->code == '\n'); // next loop iteration don't draw autowrap indicators
 
 		uint16_t type = (uint16_t)(glyph->color) + ((uint16_t)(glyph->fontidx) << 8);
 
@@ -1079,7 +1082,7 @@ static gboolean expose_event_callback(GtkWidget *widget, GdkEventExpose *event, 
 	draw_cursorline(cr, editor);
 	if (!sel_invert) draw_selection(editor, allocation.width, cr, sel_invert);
 
-	editor->buffer->rendered_height = 0.0;
+	//editor->buffer->rendered_height = 0.0;
 
 	GHashTable *ht = g_hash_table_new(g_direct_hash, g_direct_equal);
 
