@@ -1,6 +1,5 @@
 GAP BUFFER
 
-- reimplement extend selection
 - reimplement buffer_indent_newline
 - reimplement parmatch_find
 - reimplement interp_return_point_pair
@@ -19,6 +18,7 @@ GAP BUFFER
 
 OTHER
 
+- memory leaks?
 - better colors for the tag in all modes
 - don't open current directory unless no arguments are given
 - buffer_set_mark_at_cursor and buffer_unset_mark are rare, check for deletion

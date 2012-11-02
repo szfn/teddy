@@ -563,33 +563,6 @@ char *buffer_lines_to_text(buffer_t *buffer, int start, int end) {
 	return r;
 }
 
-void buffer_extend_selection_by_select_type(buffer_t *buffer) {
-/*	if (buffer->select_type == BST_NORMAL) return;
-	if (buffer->mark.line == NULL) return;
-	if (buffer->savedmark.line == NULL) return;
-	if (buffer->cursor.line == NULL) return;
-
-	copy_lpoint(&(buffer->mark), &(buffer->savedmark));
-
-	lpoint_t *start, *end;
-
-	buffer_get_selection_pointers(buffer, &start, &end);
-
-	switch (buffer->select_type) {
-	case BST_LINES:
-		start->glyph = 0;
-		end->glyph = end->line->cap;
-		break;
-	case BST_WORDS:
-		buffer_move_point_glyph(buffer, start, MT_RELW, -1);
-		buffer_move_point_glyph(buffer, end, MT_RELW, +1);
-		break;
-	default:
-		//nothing to do (is unknown)
-		break;
-	}*/
-}
-
 void line_get_glyph_coordinates(buffer_t *buffer, int point, double *x, double *y) {
 	my_glyph_info_t *glyph = bat(buffer, point);
 	if (glyph == NULL) {
@@ -622,7 +595,7 @@ char *buffer_get_selection_text(buffer_t *buffer) {
 	return buffer_lines_to_text(buffer, start, end);
 }
 
-void buffer_get_selection_pointers(buffer_t *buffer, int **start, int **end) {
+static void buffer_get_selection_pointers(buffer_t *buffer, int **start, int **end) {
 	if (buffer->mark < 0) {
 		*start = NULL;
 		*end = NULL;
@@ -635,6 +608,32 @@ void buffer_get_selection_pointers(buffer_t *buffer, int **start, int **end) {
 	} else {
 		*start = &(buffer->cursor);
 		*end = &(buffer->mark);
+	}
+}
+
+void buffer_extend_selection_by_select_type(buffer_t *buffer) {
+	if (buffer->select_type == BST_NORMAL) return;
+	if (buffer->mark < 0) return;
+	if (buffer->savedmark < 0) return;
+	if (buffer->cursor < 0) return;
+
+	buffer->mark = buffer->savedmark;
+
+	int *start, *end;
+	buffer_get_selection_pointers(buffer, &start, &end);
+
+	switch (buffer->select_type) {
+	case BST_LINES:
+		buffer_move_point_glyph(buffer, start, MT_ABS, 1);
+		buffer_move_point_glyph(buffer, end, MT_END, 0);
+		break;
+	case BST_WORDS:
+		buffer_move_point_glyph(buffer, start, MT_RELW, -1);
+		buffer_move_point_glyph(buffer, end, MT_RELW, +1);
+		break;
+	default:
+		//nothing to do (is unknown)
+		break;
 	}
 }
 
@@ -734,16 +733,14 @@ static UBool u_isalnum_or_underscore(uint32_t code) {
 
 /*if it is at the beginning of a word (or inside a word) goes to the end of this word, if it is at the end of a word (or inside a non-word sequence) goes to the beginning of the next one*/
 static bool buffer_aux_wnwa_next_ex(buffer_t *buffer, int *point) {
-	printf("next word: %d\n", *point);
 	if (*point >= BSIZE(buffer)) return false;
 	if (*point < 0) return false;
-
-	printf("Checkpoint\n");
 
 	UBool searching_alnum = !u_isalnum_or_underscore(bat(buffer, *point)->code);
 
 	for ( ; *point < BSIZE(buffer); ++(*point)) {
-		if (u_isalnum_or_underscore(bat(buffer, *point)->code) == searching_alnum) return true;
+		uint32_t code = bat(buffer, *point)->code;
+		if ((code == '\n') || (u_isalnum_or_underscore(bat(buffer, *point)->code) == searching_alnum)) return true;
 	}
 
 	return false;
@@ -759,7 +756,8 @@ static bool buffer_aux_wnwa_prev_ex(buffer_t *buffer, int *point) {
 	UBool searching_alnum = !u_isalnum_or_underscore(bat(buffer, *point)->code);
 
 	for ( ; *point >= 0; --(*point)) {
-		if (u_isalnum_or_underscore(bat(buffer, *point)->code) == searching_alnum) {
+		uint32_t code = bat(buffer, *point)->code;
+		if ((code == '\n') || (u_isalnum_or_underscore(code) == searching_alnum)) {
 			++(*point);
 			return true;
 		}
@@ -826,6 +824,7 @@ bool buffer_move_point_glyph(buffer_t *buffer, int *p, enum movement_type_t type
 
 	case MT_ABS:
 		if (arg >= 1) {
+			--(*p);
 			if (!buffer_aux_findchar(buffer, p, '\n', -1)) *p = -1;
 			*p += arg;
 		}
