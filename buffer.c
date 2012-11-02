@@ -31,20 +31,14 @@ my_glyph_info_t *bat(buffer_t *encl, int point) {
 static void movegap(buffer_t *buffer, int point) {
 	int pp = phisical(buffer, point);
 	if (pp < buffer->gap) {
-		//printf("slide forward %d -> %zd (size: %d) (%p)\n", pp, pp + buffer->gapsz, buffer->gap - pp, buffer->buf);
-		memmove(buffer->buf + pp + buffer->gapsz, buffer->buf + pp, sizeof(my_glyph_info_t) * (buffer->gap - pp));
+		int size = buffer->gap - pp;
+		if (size > 0) memmove(buffer->buf + pp + buffer->gapsz, buffer->buf + pp, sizeof(my_glyph_info_t) * size);
 		buffer->gap = pp;
-		//printf("after slide: ");
-		//gb_debug_print(buffer);
 	} else if (pp > buffer->gap) {
-		/*printf("slide backwards:\n");
-		printf("\t gap: %d gapsz %zd pp %d (point: %d)\n", buffer->gap, buffer->gapsz, pp, point);
-		printf("\t %zd -> %d (move size: %zd total size: %zd) (%p)\n", buffer->gap + buffer->gapsz, buffer->gap, pp - buffer->gap - buffer->gapsz, buffer->size, buffer->buf);*/
-		memmove(buffer->buf + buffer->gap, buffer->buf + buffer->gap + buffer->gapsz, sizeof(my_glyph_info_t) * (pp - buffer->gap - buffer->gapsz));
+		int size = pp - buffer->gap - buffer->gapsz;
+		if (size > 0) memmove(buffer->buf + buffer->gap, buffer->buf + buffer->gap + buffer->gapsz, sizeof(my_glyph_info_t) * size);
 		buffer->gap = pp - buffer->gapsz;
 	}
-
-	//printf("buffer->size = %zd\n", buffer->size);
 }
 
 static void regap(buffer_t *buffer) {
@@ -173,13 +167,14 @@ static int buffer_replace_selection_ex(buffer_t *buffer, const char *text) {
 
 	// there is a mark, delete
 	if (buffer->mark >= 0) {
+		//printf("bla! %d %d <%s>\n", buffer->mark, buffer->cursor, text);
 		int region_size = MAX(buffer->mark, buffer->cursor) - MIN(buffer->mark, buffer->cursor);
 		movegap(buffer, MIN(buffer->mark, buffer->cursor));
 		buffer->gapsz += region_size;
 		buffer->cursor = MIN(buffer->mark, buffer->cursor);
 		buffer->mark = -1;
 	} else {
-		//printf("Calling movegap: %d\n", buffer->cursor+1);
+		//printf("Calling movegap: %d\n", buffer->cursor);
 		movegap(buffer, buffer->cursor);
 	}
 
@@ -378,7 +373,6 @@ my_glyph_info_t *buffer_next_glyph(buffer_t *buffer, my_glyph_info_t *glyph) {
 
 static void buffer_typeset_from(buffer_t *buffer, int point, bool single_line) {
 	my_glyph_info_t *glyph = bat(buffer, point);
-	//printf("Typeset %p from %d %p\n", buffer, point, glyph);
 	double y = (glyph != NULL) ? glyph->y : (single_line ? buffer->ascent : buffer->line_height + (buffer->ex_height / 2));
 
 	if (y <= 0.0001) {
@@ -447,9 +441,9 @@ void buffer_replace_selection(buffer_t *buffer, const char *new_text) {
 		undo_push(&(buffer->undo), undo_node);
 	}
 
-	buffer_typeset_from(buffer, start_cursor, false);
+	buffer_typeset_from(buffer, start_cursor-1, false);
 	buffer_unset_mark(buffer);
-	lexy_update_starting_at(buffer, start_cursor, false);
+	lexy_update_starting_at(buffer, start_cursor-1, false);
 
 	if (buffer->onchange != NULL) buffer->onchange(buffer);
 }
@@ -542,7 +536,7 @@ char *buffer_lines_to_text(buffer_t *buffer, int start, int end) {
 	allocated = 10;
 	r = malloc(sizeof(char) * allocated);
 
-	for (int i = start+1; i < end; ++i) {
+	for (int i = start; i < end; ++i) {
 		my_glyph_info_t *glyph = bat(buffer, i);
 		if (glyph == NULL) break;
 		utf32_to_utf8(glyph->code, &r, &cap, &allocated);
@@ -863,7 +857,7 @@ int parmatch_find(buffer_t *buffer, int nlines) {
 
 void buffer_get_extremes(buffer_t *buffer, int *start, int *end) {
 	*start = 0;
-	*end = buffer->size - buffer->gapsz - 1;
+	*end = buffer->size - buffer->gapsz;
 }
 
 void buffer_aux_clear(buffer_t *buffer) {

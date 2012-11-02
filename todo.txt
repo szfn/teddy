@@ -16,12 +16,15 @@ GAP BUFFER
 - test everything
 - test sending input to processes
 - reoptimize drawlines to skip glyphs outside
+- optimize code that changes mouse cursor into a hand over links (right now its linear in the size of the buffer)
 - reimplement posbox
 
 OTHER
 
-- lines -> gap buffer
+- don't open current directory unless no arguments are given
 - buffer_set_mark_at_cursor and buffer_unset_mark are rare, check for deletion
+- tooltips for tag buttons
+- add one tag button to +bg buffers to prevent reuse
 
 - possible code sharing between columns and column?
 - bold matched text in autocompletions window and iopen window

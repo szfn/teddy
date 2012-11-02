@@ -40,7 +40,7 @@ void gb_init(GBENCL *encl) {
 	encl->buf = malloc(sizeof(my_glyph_info_t) * SLOP);
 	alloc_assert(encl->buf);
 	encl->size = SLOP;
-	encl->cursor = -1;
+	encl->cursor = 0;
 	encl->mark = -1;
 	encl->gap = 0;
 	encl->gapsz = SLOP;
@@ -67,6 +67,10 @@ void gb_debug_print(GBENCL *encl) {
 	for (int i = 0; i < encl->size; ++i) {
 		//printf("%d ", i);
 
+		if (i == pp_cursor) {
+			printf("<%d cursor/> ", i);
+		}
+
 		if (i == encl->gap) {
 			printf("<gap: %zd> ", encl->gapsz);
 			gapsz = encl->gapsz;
@@ -85,9 +89,7 @@ void gb_debug_print(GBENCL *encl) {
 			}
 		}
 
-		if (i == pp_cursor) {
-			printf("<%d cursor/> ", i);
-		}
+
 		if (i == pp_mark) {
 			printf("<%d mark/> ", i);
 		}
@@ -121,7 +123,9 @@ static int movegap(GBENCL *encl, int point) {
 		printf("after slide: ");
 		gb_debug_print(encl);
 	} else if (pp > encl->gap) {
-		printf("slide backward %zd -> %d (size: %zd) (%p)\n", encl->gap + encl->gapsz, encl->gap, pp - encl->gap - encl->gapsz, encl->buf);
+		printf("slide backward:\n");
+		printf("\t gap: %d gapsz %zd pp %d (point: %d)\n", encl->gap, encl->gapsz, pp, point);
+		printf("\t %zd -> %d (size: %zd) (%p)\n", encl->gap + encl->gapsz, encl->gap, pp - encl->gap - encl->gapsz, encl->buf);
 		memmove(encl->buf + encl->gap, encl->buf + encl->gap + encl->gapsz, sizeof(my_glyph_info_t) * (pp - encl->gap - encl->gapsz));
 		encl->gap = pp - encl->gapsz;
 	}
@@ -156,13 +160,13 @@ void buffer_replace_selection(GBENCL *encl, char *text) {
 	// there is a mark, delete
 	if (encl->mark >= 0) {
 		int region_size = MAX(encl->mark, encl->cursor) - MIN(encl->mark, encl->cursor);
-		movegap(encl, MIN(encl->mark, encl->cursor)+1);
+		movegap(encl, MIN(encl->mark, encl->cursor));
 		encl->gapsz += region_size;
 		encl->cursor = MIN(encl->mark, encl->cursor);
 		encl->mark = -1;
 	} else {
-		printf("Calling movegap: %d\n", encl->cursor+1);
-		movegap(encl, encl->cursor+1);
+		printf("Calling movegap: %d\n", encl->cursor);
+		movegap(encl, encl->cursor);
 	}
 
 	int len = strlen(text);
@@ -217,7 +221,7 @@ int main(void) {
 
 	printf("after initial insertion: ");
 	gb_debug_print(&encl);
-	gb_assert(&encl, "abcdefghijklmnopqrstuvwxyz", 25, 26, 6);
+	gb_assert(&encl, "abcdefghijklmnopqrstuvwxyz", 26, 26, 6);
 
 	printf("\n==== mid insertion ====\n");
 	encl.cursor = 12;
@@ -225,19 +229,19 @@ int main(void) {
 
 	printf("after mid insertion: ");
 	gb_debug_print(&encl);
-	gb_assert(&encl, "abcdefghijklmAnopqrstuvwxyz", 13, 14, 5);
+	gb_assert(&encl, "abcdefghijklAmnopqrstuvwxyz", 13, 13, 5);
 
 	printf("\n==== consuming gap ====\n");
 	buffer_replace_selection(&encl, "BCDEF");
 	gb_debug_print(&encl);
-	gb_assert(&encl, "abcdefghijklmABCDEFnopqrstuvwxyz", 18, 19, 0);
+	gb_assert(&encl, "abcdefghijklABCDEFmnopqrstuvwxyz", 18, 18, 0);
 
 	printf("\n==== gapless insertion ====\n");
 	encl.cursor = 8;
 	buffer_replace_selection(&encl, "GH");
 	printf("after gapless insertion: ");
 	gb_debug_print(&encl);
-	gb_assert(&encl, "abcdefghiGHjklmABCDEFnopqrstuvwxyz",10, 11, 6);
+	gb_assert(&encl, "abcdefghGHijklABCDEFmnopqrstuvwxyz",10, 10, 6);
 
 	printf("\n==== replacement after gap ====\n");
 	encl.mark = 13;
@@ -245,7 +249,7 @@ int main(void) {
 	buffer_replace_selection(&encl, "I");
 	printf("after replacement after gap: ");
 	gb_debug_print(&encl);
-	gb_assert(&encl, "abcdefghiGHjklIBCDEFnopqrstuvwxyz", 14, 15, 7);
+	gb_assert(&encl, "abcdefghGHijkIBCDEFmnopqrstuvwxyz", 14, 14, 7);
 
 	printf("\n==== replacement before gap ====\n");
 	encl.mark = 2;
@@ -253,10 +257,7 @@ int main(void) {
 	buffer_replace_selection(&encl, "JK");
 	printf("after replacement before gap: ");
 	gb_debug_print(&encl);
-	gb_assert(&encl, "abcJKhiGHjklIBCDEFnopqrstuvwxyz", 4, 5, 9);
-
-
-	// abcJK[]hiGHjklIBCDEFnopqrstuvwxyz
+	gb_assert(&encl, "abJKghGHijkIBCDEFmnopqrstuvwxyz", 4, 4, 9);
 
 	printf("\n==== replacement containing gap ====\n");
 	encl.cursor = 3;
@@ -264,7 +265,16 @@ int main(void) {
 	buffer_replace_selection(&encl, "LMNO");
 	printf("after replacement midgap: ");
 	gb_debug_print(&encl);
-	gb_assert(&encl, "abcJLMNOHjklIBCDEFnopqrstuvwxyz", 7, 8, 9);
+	gb_assert(&encl, "abJLMNOHijkIBCDEFmnopqrstuvwxyz", 7, 7, 9);
+
+	printf("\n==== appending ====\n");
+	encl.mark = -1;
+	encl.cursor = encl.size - encl.gapsz;
+	buffer_replace_selection(&encl, "PQR");
+	printf("after appending: ");
+	gb_debug_print(&encl);
+	gb_assert(&encl, "abJLMNOHijkIBCDEFmnopqrstuvwxyzPQR", 34, 34, 6);
+
 
 	printf("\n\n");
 }
