@@ -1,17 +1,15 @@
 GAP BUFFER
 
-- reimplement buffer_move_point_line / buffer_move_point_glyph
+- reimplement extend selection
 - reimplement buffer_indent_newline
 - reimplement parmatch_find
 - reimplement interp_return_point_pair
 - reimplement research
 - reimplement lexy
-- reimplement extend selection
 - reimplement buffer_undo
 - reimplement buffer_reload_glyph_info
 - reimplement buffer_historycompl_word_at_cursor / buffer_wordcompl_word_at_cursor
 - test saving
-- implement m =<number> for absolute positioning by character number
 - test selection from the very first character of the buffer (we need one extra empty character at the beginning of each file)
 - test everything
 - test sending input to processes
@@ -21,11 +19,12 @@ GAP BUFFER
 
 OTHER
 
+- better colors for the tag in all modes
 - don't open current directory unless no arguments are given
 - buffer_set_mark_at_cursor and buffer_unset_mark are rare, check for deletion
 - tooltips for tag buttons
 - add one tag button to +bg buffers to prevent reuse
-
+- do not show input textbox for incremental search (just an overlay saying "Searching" and move selection while typing)
 - possible code sharing between columns and column?
 - bold matched text in autocompletions window and iopen window
 - EDITOR and VISUAL setting (needs some IPC implementation)

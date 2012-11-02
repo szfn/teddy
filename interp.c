@@ -461,6 +461,17 @@ static bool move_command_ex(const char *sin, int *p, int ref, enum movement_type
 		}
 	}
 
+	if (sin[0] == '=') {
+		// exact positioning
+		int arg = atoi(sin+1);
+
+		bool r = buffer_move_point_glyph(interp_context_buffer(), p, MT_ABS, arg);
+
+		Tcl_SetResult(interp, r ? "true" : "false", TCL_VOLATILE);
+
+		return true;
+	}
+
 	char *s = strdup(sin);
 	alloc_assert(s);
 

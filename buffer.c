@@ -429,6 +429,10 @@ static void buffer_typeset_from(buffer_t *buffer, int point) {
 	}
 }
 
+void buffer_undo(buffer_t *buffer, bool redo) {
+	//TODO
+}
+
 void buffer_replace_selection(buffer_t *buffer, const char *new_text) {
 	if (!(buffer->editable)) return;
 
@@ -590,12 +594,17 @@ void line_get_glyph_coordinates(buffer_t *buffer, int point, double *x, double *
 	my_glyph_info_t *glyph = bat(buffer, point);
 	if (glyph == NULL) {
 		glyph = bat(buffer, point-1);
-		if (glyph == NULL) {
+		if (glyph == NULL) { // either the point is corrupted or there is nothing in this buffer
 			*y = buffer->single_line ? buffer->ascent : (buffer->line_height + (buffer->ex_height/2.0));
 			*x = buffer->left_margin;
 		} else { // after the last character of the buffer
-			*y = glyph->y;
-			*x = glyph->x + glyph->x_advance;
+			if (glyph->code == '\n') {
+				*y = glyph->y + buffer->line_height;
+				*x = buffer->left_margin;
+			} else {
+				*y = glyph->y;
+				*x = glyph->x + glyph->x_advance;
+			}
 		}
 
 		return;
@@ -654,124 +663,180 @@ void buffer_typeset_maybe(buffer_t *buffer, double width, bool force) {
 	buffer_typeset_from(buffer, -1);
 }
 
-void buffer_undo(buffer_t *buffer, bool redo) {
-	//TODO
+static bool buffer_aux_findchar(buffer_t *buffer, int *p, uint32_t k, int dir) {
+	for (int i = *p; (i >= 0) && (i < BSIZE(buffer)); i += dir) {
+		if (bat(buffer, i)->code == k) {
+			*p = i;
+			return true;
+		}
+	}
+
+	return false;
 }
 
 bool buffer_move_point_line(buffer_t *buffer, int *p, enum movement_type_t type, int arg) {
-	return false;
-/*	//printf("Move point line: %d (%d)\n", arg, type);
+	//printf("Move point line: %d (%d)\n", arg, type);
 
 	bool r = true;
 
 	switch (type) {
 	case MT_REL:
-		if (p->line == NULL) return false;
-
-		while (arg < 0) {
-			real_line_t *to = p->line->prev;
-			if (to == NULL) { r = false; break; }
-			p->line = to;
-			++arg;
-		}
-
-		while (arg > 0) {
-			real_line_t *to = p->line->next;
-			if (to == NULL) { r = false; break; }
-			p->line = to;
+		if (arg < 0) {
 			--arg;
-		}
+			for (; r && (arg < 0); ++arg) {
+				--(*p);
+				r = buffer_aux_findchar(buffer, p, '\n', -1);
+			}
+			if (!r) *p = -1;
+			++(*p);
 
+		} else if (arg > 0) {
+			buffer_aux_findchar(buffer, p, '\n', +1);
+			for (; r && (arg > 0); --arg) {
+				r = buffer_aux_findchar(buffer, p, '\n', +1);
+				++(*p);
+			}
+			if (!r) *p = BSIZE(buffer);
+		}
 		break;
 
 	case MT_END:
-		if (p->line == NULL) p->line = buffer->real_line;
-		for (; p->line->next != NULL; p->line = p->line->next);
+		*p = BSIZE(buffer);
+		--(*p);
+		r = buffer_aux_findchar(buffer, p, '\n', -1);
+		if (!r) *p = -1;
+		++(*p);
 		break;
 
-	case MT_ABS: {
-		real_line_t *prev = buffer->real_line;
-		for (p->line = buffer->real_line; p->line != NULL; p->line = p->line->next) {
-			if (p->line->lineno+1 == arg) break;
-			prev = p->line;
+	case MT_ABS:
+		*p = 0;
+		for (; r && (arg > 1); --arg) {
+			r = buffer_aux_findchar(buffer, p, '\n', +1);
+			++(*p);
 		}
-		if (p->line == NULL) { r = false; p->line = prev; }
+		if (!r) *p = BSIZE(buffer);
 		break;
-	}
 
 	default:
 		quick_message("Internal error", "Internal error buffer_move_point_line");
-		return false;
+		r = false;
 	}
 
-	if (p->glyph > p->line->cap) p->glyph = p->line->cap;
-	if (p->glyph < 0) p->glyph = 0;
+	if (*p < 0) *p = 0;
+	if (*p > BSIZE(buffer)) *p = BSIZE(buffer);
 
-	return r;*/
+	return r;
+}
+
+static UBool u_isalnum_or_underscore(uint32_t code) {
+	return u_isalnum(code) || (code == 0x5f);
+}
+
+/*if it is at the beginning of a word (or inside a word) goes to the end of this word, if it is at the end of a word (or inside a non-word sequence) goes to the beginning of the next one*/
+static bool buffer_aux_wnwa_next_ex(buffer_t *buffer, int *point) {
+	printf("next word: %d\n", *point);
+	if (*point >= BSIZE(buffer)) return false;
+	if (*point < 0) return false;
+
+	printf("Checkpoint\n");
+
+	UBool searching_alnum = !u_isalnum_or_underscore(bat(buffer, *point)->code);
+
+	for ( ; *point < BSIZE(buffer); ++(*point)) {
+		if (u_isalnum_or_underscore(bat(buffer, *point)->code) == searching_alnum) return true;
+	}
+
+	return false;
+}
+
+/* If it is at the beginning of a word (or inside a non-word sequence) goes to the end of the previous word, if it is at the end of a word (or inside a word) goes to the beginning of the word) */
+static bool buffer_aux_wnwa_prev_ex(buffer_t *buffer, int *point) {
+	if (*point <= 0) return false;
+	if (*point >= BSIZE(buffer)) return false;
+
+	--(*point);
+
+	UBool searching_alnum = !u_isalnum_or_underscore(bat(buffer, *point)->code);
+
+	for ( ; *point >= 0; --(*point)) {
+		if (u_isalnum_or_underscore(bat(buffer, *point)->code) == searching_alnum) {
+			++(*point);
+			return true;
+		}
+	}
+
+	++(*point);
+	return false;
+}
+
+static bool buffer_aux_go_first_nonws(buffer_t *buffer, int *p, bool alternate) {
+	int startp = *p;
+	--(*p);
+	if (!buffer_aux_findchar(buffer, p, '\n', -1)) {
+		*p = -1;
+	}
+	++(*p);
+	int beginning = *p;
+	while (*p < BSIZE(buffer) && u_isspace(bat(buffer, *p)->code)) { ++(*p); }
+
+	if (alternate && (*p == startp)) {
+		*p = beginning;
+	}
+
+	return true;
 }
 
 bool buffer_move_point_glyph(buffer_t *buffer, int *p, enum movement_type_t type, int arg) {
-	return false;
-/*	if (p->line == NULL) return false;
+	if (*p < 0) return false;
 
 	bool r = true;
 
-	//printf("Move point glyph: %d (%d)\n", arg, type);
-
 	switch (type) {
 	case MT_REL:
-		p->glyph += arg;
-
-		while (p->glyph > p->line->cap) {
-			if (p->line->next == NULL) { r = false; break; }
-			p->glyph = p->glyph - p->line->cap - 1;
-			p->line = p->line->next;
-		}
-
-		while (p->glyph < 0) {
-			if (p->line->prev == NULL) { r = false; break; }
-			p->line = p->line->prev;
-			p->glyph = p->line->cap + (p->glyph + 1);
-		}
+		*p += arg;
 		break;
 
 	case MT_RELW:
 		while (arg < 0) {
-			r = buffer_aux_wnwa_prev_ex(p);
+			r = buffer_aux_wnwa_prev_ex(buffer, p);
+			if (!r) break;
 			++arg;
 		}
 
 		while (arg > 0) {
-			r = buffer_aux_wnwa_next_ex(p);
+			r = buffer_aux_wnwa_next_ex(buffer, p);
+			if (!r) break;
 			--arg;
 		}
 		break;
 
 	case MT_END:
-		p->glyph = p->line->cap;
+		if (!buffer_aux_findchar(buffer, p, '\n', +1)) {
+			*p = BSIZE(buffer);
+		}
 		break;
 
 	case MT_START:
-		buffer_aux_go_first_nonws(p);
+		r = buffer_aux_go_first_nonws(buffer, p, false);
 		break;
 
 	case MT_HOME:
-		buffer_aux_go_first_nonws_or_0(p);
+		r = buffer_aux_go_first_nonws(buffer, p, true);
 		break;
 
 	case MT_ABS:
-		if (arg < 0) return false;
-		p->glyph = arg-1;
+		if (arg >= 1) {
+			if (!buffer_aux_findchar(buffer, p, '\n', -1)) *p = -1;
+			*p += arg;
+		}
 		break;
 
-	default:
-		quick_message("Internal error", "Internal error buffer_move_point_glyph");
 	}
 
-	if (p->glyph > p->line->cap) p->glyph = p->line->cap;
-	if (p->glyph < 0) p->glyph = 0;
+	if (*p < 0) *p = 0;
+	if (*p > BSIZE(buffer)) *p = BSIZE(buffer);
 
-	return r;*/
+	return r;
 }
 
 char *buffer_indent_newline(buffer_t *buffer) {
