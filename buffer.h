@@ -33,6 +33,7 @@ typedef struct _buffer_t {
 	int inotify_wd;
 	time_t mtime;
 	bool stale;
+	bool single_line;
 
 	job_t *job;
 
@@ -130,7 +131,7 @@ void buffer_get_selection(buffer_t *buffer, int *start, int *end);
 char *buffer_lines_to_text(buffer_t *buffer, int start, int end);
 
 // sets character positions if width has changed
-void buffer_typeset_maybe(buffer_t *buffer, double width, bool single_line, bool force);
+void buffer_typeset_maybe(buffer_t *buffer, double width, bool force);
 
 // functions to get screen coordinates of things (yes, I have no idea anymore what the hell they do or are used for)
 void line_get_glyph_coordinates(buffer_t *buffer, int point, double *x, double *y);
@@ -168,5 +169,7 @@ char *buffer_get_selection_text(buffer_t *buffer);
 
 int parmatch_find(buffer_t *buffer, int nlines);
 my_glyph_info_t *buffer_next_glyph(buffer_t *buffer, my_glyph_info_t *glyph);
+
+#define BSIZE(x) ((x)->size - (x)->gapsz)
 
 #endif

@@ -691,7 +691,7 @@ void buffers_refresh(buffer_t *buffer) {
 	enum go_file_failure_reason gffr;
 	buffer_t *new_buffer = go_file(path, false, true, &gffr);
 	if (new_buffer != NULL) {
-		if (cursor < new_buffer->size - new_buffer->gapsz) new_buffer->cursor = cursor;
+		if (cursor < BSIZE(new_buffer)) new_buffer->cursor = cursor;
 		editor_switch_buffer(editor, new_buffer);
 	}
 

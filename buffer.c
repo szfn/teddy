@@ -100,6 +100,7 @@ buffer_t *buffer_create(void) {
 	buffer->inotify_wd = -1;
 	buffer->mtime = 0;
 	buffer->stale = false;
+	buffer->single_line = false;
 
 	asprintf(&(buffer->path), "+unnamed");
 	alloc_assert(buffer->path);
@@ -316,7 +317,7 @@ void save_to_text_file(buffer_t *buffer) {
 	buffer_wordcompl_update(buffer, &(buffer->cbt), WORDCOMPL_UPDATE_RADIUS);
 
 	char *r; {
-		r = buffer_lines_to_text(buffer, 0, buffer->size - buffer->gapsz);
+		r = buffer_lines_to_text(buffer, 0, BSIZE(buffer));
 	}
 
 	size_t towrite = strlen(r);
@@ -371,15 +372,22 @@ my_glyph_info_t *buffer_next_glyph(buffer_t *buffer, my_glyph_info_t *glyph) {
 	return (pp < buffer->size) ? buffer->buf + pp : NULL;
 }
 
-static void buffer_typeset_from(buffer_t *buffer, int point, bool single_line) {
+static void buffer_typeset_from(buffer_t *buffer, int point) {
 	my_glyph_info_t *glyph = bat(buffer, point);
-	double y = (glyph != NULL) ? glyph->y : (single_line ? buffer->ascent : buffer->line_height + (buffer->ex_height / 2));
 
-	if (y <= 0.0001) {
-		y = (single_line ? buffer->ascent : buffer->line_height + (buffer->ex_height / 2));
+	double y, x;
+	if (glyph != NULL) {
+		y = glyph->y;
+		x = glyph->x + glyph->x_advance;
+		if (glyph->code == '\n') {
+			y += buffer->line_height;
+			x = buffer->left_margin;
+		}
+	} else {
+		y = buffer->single_line ? buffer->ascent : buffer->line_height + (buffer->ex_height / 2);
+		x = buffer->left_margin;
 	}
 
-	double x = (glyph != NULL) ? (glyph->x + glyph->x_advance) : buffer->left_margin;
 	glyph = (glyph == NULL) ? bat(buffer, point+1) : buffer_next_glyph(buffer, glyph);
 
 	while (glyph != NULL) {
@@ -441,7 +449,7 @@ void buffer_replace_selection(buffer_t *buffer, const char *new_text) {
 		undo_push(&(buffer->undo), undo_node);
 	}
 
-	buffer_typeset_from(buffer, start_cursor-1, false);
+	buffer_typeset_from(buffer, start_cursor-1);
 	buffer_unset_mark(buffer);
 	lexy_update_starting_at(buffer, start_cursor-1, false);
 
@@ -583,8 +591,8 @@ void line_get_glyph_coordinates(buffer_t *buffer, int point, double *x, double *
 	if (glyph == NULL) {
 		glyph = bat(buffer, point-1);
 		if (glyph == NULL) {
-			*y = 0.0;
-			*x = 0.0;
+			*y = buffer->single_line ? buffer->ascent : (buffer->line_height + (buffer->ex_height/2.0));
+			*x = buffer->left_margin;
 		} else { // after the last character of the buffer
 			*y = glyph->y;
 			*x = glyph->x + glyph->x_advance;
@@ -633,7 +641,7 @@ void buffer_get_selection(buffer_t *buffer, int *start, int *end) {
 	}
 }
 
-void buffer_typeset_maybe(buffer_t *buffer, double width, bool single_line, bool force) {
+void buffer_typeset_maybe(buffer_t *buffer, double width, bool force) {
 	if (buffer == NULL) return;
 
 	if (!force) {
@@ -643,7 +651,7 @@ void buffer_typeset_maybe(buffer_t *buffer, double width, bool single_line, bool
 		buffer->rendered_width = width;
 	}
 
-	buffer_typeset_from(buffer, -1, single_line);
+	buffer_typeset_from(buffer, -1);
 }
 
 void buffer_undo(buffer_t *buffer, bool redo) {
@@ -892,7 +900,7 @@ static void buffer_reload_glyph_info(buffer_t *buffer) {
 void buffer_config_changed(buffer_t *buffer) {
 	buffer_reload_glyph_info(buffer);
 	buffer_init_font_extents(buffer);
-	buffer_typeset_maybe(buffer, 0.0, false, true);
+	buffer_typeset_maybe(buffer, 0.0, true);
 }
 
 char *buffer_all_lines_to_text(buffer_t *buffer) {

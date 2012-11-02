@@ -224,7 +224,7 @@ void editor_switch_buffer(editor_t *editor, buffer_t *buffer) {
 	{
 		GtkAllocation allocation;
 		gtk_widget_get_allocation(editor->drar, &allocation);
-		buffer_typeset_maybe(editor->buffer, allocation.width, editor->single_line, false);
+		buffer_typeset_maybe(editor->buffer, allocation.width, false);
 	}
 
 	editor->center_on_cursor_after_next_expose = TRUE;
@@ -372,7 +372,7 @@ static char *select_file(buffer_t *buffer, int p) {
 			break;
 		}
 
-	for (; end < buffer->size - buffer->gapsz; ++end)
+	for (; end < BSIZE(buffer); ++end)
 		if (bat(buffer, end)->color != CFG_LEXY_FILE - CFG_LEXY_NOTHING) break;
 
 	return buffer_lines_to_text(buffer, start, end);
@@ -431,7 +431,7 @@ static gboolean key_press_callback(GtkWidget *widget, GdkEventKey *event, editor
 					editor_complete(editor, visible_completer);
 					return TRUE;
 			}
-		} else if (editor->single_line) {
+		} else if (editor->buffer->single_line) {
 			if (editor->single_line_other_keys(editor, shift, ctrl, alt, super, event->keyval)) {
 				return TRUE;
 			}
@@ -514,12 +514,12 @@ static gboolean key_press_callback(GtkWidget *widget, GdkEventKey *event, editor
 		}
 
 		case GDK_KEY_Return: {
-			if (editor->single_line) {
+			if (editor->buffer->single_line) {
 				editor->single_line_return(editor);
 			} else {
 				dirty_line_update(editor);
 
-				bool send_input = (editor->buffer->job != NULL) && (editor->buffer->cursor == editor->buffer->size - editor->buffer->gapsz - 1);
+				bool send_input = (editor->buffer->job != NULL) && (editor->buffer->cursor == BSIZE(editor->buffer));
 
 				if (send_input) job_send_input(editor->buffer->job);
 
@@ -543,7 +543,7 @@ static gboolean key_press_callback(GtkWidget *widget, GdkEventKey *event, editor
 	}
 
 	/* Keybindings specially defined for a single-line editor */
-	if (editor->single_line) {
+	if (editor->buffer->single_line) {
 		if (editor->single_line_other_keys(editor, shift, ctrl, alt, super, event->keyval)) {
 			return TRUE;
 		}
@@ -617,7 +617,7 @@ static gboolean key_release_callback(GtkWidget *widget, GdkEventKey *event, edit
 			} else if (compl_wnd_visible(editor->alt_completer)) {
 				compl_wnd_hide(editor->alt_completer);
 			} else {
-				if (editor->single_line) {
+				if (editor->buffer->single_line) {
 					editor->single_line_escape(editor);
 				} else {
 					top_start_command_line(editor, NULL);
@@ -1026,7 +1026,7 @@ static void draw_lines(editor_t *editor, GtkAllocation *allocation, cairo_t *cr,
 static void draw_cursorline(cairo_t *cr, editor_t *editor) {
 	if (!(editor->cursor_visible)) return;
 	if (editor->buffer->cursor < 0) return;
-	if (editor->single_line) return;
+	if (editor->buffer->single_line) return;
 
 	GtkAllocation allocation;
 	gtk_widget_get_allocation(editor->drar, &allocation);
@@ -1075,7 +1075,7 @@ static gboolean expose_event_callback(GtkWidget *widget, GdkEventExpose *event, 
 
 	cairo_translate(cr, -gtk_adjustment_get_value(GTK_ADJUSTMENT(editor->hadjustment)), -gtk_adjustment_get_value(GTK_ADJUSTMENT(editor->adjustment)));
 
-	buffer_typeset_maybe(editor->buffer, allocation.width, editor->single_line, false);
+	buffer_typeset_maybe(editor->buffer, allocation.width, false);
 
 	int sel_invert = config_intval(&(editor->buffer->config), CFG_EDITOR_SEL_INVERT);
 
@@ -1132,7 +1132,7 @@ static gboolean expose_event_callback(GtkWidget *widget, GdkEventExpose *event, 
 	/********** NOTHING IS TRANSLATED BEYOND THIS ***************************/
 	cairo_translate(cr, gtk_adjustment_get_value(GTK_ADJUSTMENT(editor->hadjustment)), gtk_adjustment_get_value(GTK_ADJUSTMENT(editor->adjustment)));
 
-	if (!editor->single_line) {
+	if (!editor->buffer->single_line) {
 		char *posbox_text;
 		cairo_text_extents_t posbox_ext;
 		double x, y;
@@ -1160,7 +1160,7 @@ static gboolean expose_event_callback(GtkWidget *widget, GdkEventExpose *event, 
 		free(posbox_text);
 	}
 
-	if (editor->single_line) {
+	if (editor->buffer->single_line) {
 		gtk_widget_hide(GTK_WIDGET(editor->drarhscroll));
 		gtk_widget_hide(GTK_WIDGET(editor->drarscroll));
 	} else {
@@ -1398,8 +1398,6 @@ editor_t *new_editor(buffer_t *buffer, bool single_line) {
 
 	r->selection_scroll_timer = -1;
 
-	r->single_line = single_line;
-
 	research_init(&(r->research));
 
 	gtk_widget_add_events(r->drar, GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK | GDK_POINTER_MOTION_MASK);
@@ -1488,7 +1486,7 @@ editor_t *new_editor(buffer_t *buffer, bool single_line) {
 	g_signal_connect(G_OBJECT(r->drarscroll), "value_changed", G_CALLBACK(scrolled_callback), (gpointer)r);
 	g_signal_connect(G_OBJECT(r->drarhscroll), "value_changed", G_CALLBACK(hscrolled_callback), (gpointer)r);
 
-	if (r->single_line) {
+	if (single_line) {
 		gtk_widget_set_size_request(r->drar, 1, r->buffer->line_height + config_intval(&(buffer->config), CFG_MAIN_FONT_HEIGHT_REDUCTION));
 	}
 
@@ -1569,7 +1567,7 @@ void editor_grab_focus(editor_t *editor, bool warp) {
 }
 
 void editor_start_search(editor_t *editor, enum search_mode_t search_mode, const char *initial_search_term) {
-	if (editor->single_line) return;
+	if (editor->buffer->single_line) return;
 
 	editor->buffer->mark = editor->buffer->cursor;
 

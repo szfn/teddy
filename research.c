@@ -40,7 +40,7 @@ static void search_start_point(editor_t *editor, bool ctrl_g_invoked, bool start
 		if (start_at_top) {
 			*start_point = 0;
 		} else {
-			*start_point = editor->buffer->size - editor->buffer->gapsz - 1;
+			*start_point = BSIZE(editor->buffer);
 		}
 	} else if (ctrl_g_invoked) {
 		*start_point = editor->buffer->cursor;

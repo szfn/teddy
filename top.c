@@ -229,6 +229,7 @@ GtkWidget *top_init(GtkWidget *window) {
 	/**** COMMAND LINE ****/
 
 	cmdline_buffer = buffer_create();
+	cmdline_buffer->single_line = true;
 	load_empty(cmdline_buffer);
 	cmdline_editor = new_editor(cmdline_buffer, true);
 
