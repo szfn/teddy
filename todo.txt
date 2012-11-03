@@ -1,6 +1,5 @@
 GAP BUFFER
 
-- test oneliners
 - reimplement parmatch_find
 - reimplement buffer_historycompl_word_at_cursor / buffer_wordcompl_word_at_cursor
 - reimplement lexy

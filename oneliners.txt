@@ -4,33 +4,30 @@
 # sed G
 
 # extended version
-m 1:1 $:$			;# select entire file
 s {^.*$} {			;# for each line (matches of ^.*$)
-	m nil +0:+0		;# deselect line and move to the end
-	c "\n"			;# insert a new line
+	c "[c]\n"		;# add a new line at the end
 }
 
 # compact
-forlines { m nil +:+; c "\n" }
+forlines { c "[c]\n" }
 
 # double space a file which already has blank lines in it. Output file
 # should contain no more than one blank line between lines of text.
 # sed '/^$/d;G'
 
 # extended
-m 1:1 $:$			;# select entire file
 s {^$} {				;# for each empty line
 	m +0:+1		;# extend selection to the beginning of the next line
 	c ""			;# delete current selection
 }
-m 1:1 $:$			;# same as double spacing a file
+m nil 1:1			;# same as double spacing a file
 s {^.*$} {
 	m nil +0:+0
 	c "\n"
 }
 
 # compact
-m all
+m nil 1:1
 s {^$} { m +:+1; c "" }
 forlines { m nil +:+; c "\n" }
 
@@ -38,14 +35,13 @@ forlines { m nil +:+; c "\n" }
 # sed 'G;G'
 
 # extended
-m 1:1 $:$			;# same as double spacing a file
 s {^.*$} {
 	m nil +0:+0
 	c "\n\n"
 }
 
 # compact
-forlines { m nil +:+; c "\n\n" }
+forlines { c "[c]\n\n" }
 
 # undo double-spacing (assumes even-numbered lines are always blank)
 # sed 'n;d'
@@ -58,41 +54,17 @@ while {[m +1:1]} {		;# move cursor to the next line
 # insert a blank line above every line which matches "regex"
 # sed '/regex/{x;p;x;}'
 
-# extended
-m 1:1 $:$
-s {regex} {
-	m +0:1 +0:$		;# extend selection to include the entire line
-	c "\n[c]"		;# replace selection with a newline character followed by the selected line
-}
-
-# compact
 forlines {regex} { c "\n[c]" }
 
 # insert a blank line below every line which matches "regex"
 # sed '/regex/G'
 
-# extended
-m 1:1 $:$			;# this could be done in a similar way to the previous example, this is just the optimized version
-s {regex} {
-	m nil +0:$		;# move to the end of the matched line
-	c "\n"			;# insert a newline
-}
-
-# compact
-forall {regex} { c "\n[c]" }
+forlines {regex} { c "[c]\n" }
 
 # insert a blank line above and below every line which matches "regex"
 # sed '/regex/{x;p;x;G;}'
 
-# extended
-m 1:1 $:$			;# very much like adding a newline at the beginning of each matched line
-s {regex} {
-	m +0:1 +0:$
-	c "\n[c]\n"
-}
-
-# compact
-forall {regex} { c "\n[c]\n" }
+forlines {regex} { c "\n[c]\n" }
 
 # NUMBERING
 
@@ -100,29 +72,15 @@ forall {regex} { c "\n[c]\n" }
 # note on '\t' at end of file) instead of space will preserve margins.
 # sed = filename | sed 'N;s/\n/\t/'
 
-# extended
-m 1:1 $:$
-s {^.*$} {
-	set n [teddy::lineof [lindex [m] 1]]	;# retrieves the line number of the current line
-	c "$n\t[c]"				;# replaces the current line with the line number followed by a tab and the previous contents of the line
-}
-
-# compact
-forall { c "[teddy::lineof [lindex [m] 1]]\t[c]" }
+forlines { c "[teddy::lineof [lindex [m] 1]]\t[c]" }
+# notes:
+# m without arguments returns the current selection as a two element array
 
 # number each line of a file (number on left, right-aligned)
 # sed = filename | sed 'N; s/^/     /; s/ *\(.\{6,\}\)\n/\1  /
 
-# extended
-m 1:1 $:$
-s {^.*$} {					;# like before, but formatting the number
-	set n [teddy::lineof [lindex [m] 1]]
-	set n [format "%6d" $n]
-	c "$n\t[c]"
-}
-
 # compact
-forall {
+forlines {
 	set n [format "%6d" [teddy::lineof [lindex [m] 1]]]
 	c "$n\t[c]"
 }
@@ -132,10 +90,9 @@ forall {
 # sed '/./=' filename | sed '/./N; s/\n/ /'
 
 # extended
-m all					;# Very much like the previous examples but uses + instead of * in the regexp
+m nil 1:1 ;# Very much like the previous examples but uses + instead of * in the regexp
 s {^.+$} {
-	set n [teddy::lineof [lindex [m] 1]]
-	c "$n\t[c]"
+	c "[teddy::lineof [lindex [m] 1]]\t[c]"
 }
 
 # count lines (emulates "wc -l")
@@ -161,22 +118,22 @@ s "$" c "\r"
 # aligns all text flush left
 # sed 's/^[ \t]*//'                    # see note on '\t' at end of file
 
-m 1:1 $:$
-s {^\s+} c ""			;# watch out for {s {^\s*} c ""} it's an infinite loop
+m nil 1:1
+s {^[ \t]+} c ""			;# watch out for {s {^\s*} c ""} it's an infinite loop
 
 # delete trailing whitespace (spaces, tabs) from end of each line
 # sed 's/[ \t]*$//'                    # see note on '\t' at end of file
 
 m all
-s {\s+$} c ""
+s {[ \t]+$} c ""
 
 # delete BOTH leading and trailing whitespace from each line
 # sed 's/^[ \t]*//;s/[ \t]*$//'
 
 m all
-s {\s+$} c ""
+s {[ \t]+$} c ""
 m all
-s {^\s+} c ""
+s {^[ \t]+} c ""
 
 # insert 5 blank spaces at beginning of each line (make page offset)
 #sed 's/^/     /'
@@ -235,7 +192,6 @@ c [join [lreverse [split [c] "\n"]] "\n"]
 # reverse each character on the line (emulates "rev")
 # sed '/\n/!G;s/\(.\)\(.*\n\)/&\2\1/;//D;s/.//'
 
-m all
 forlines {
 	c [string reverse [c]]
 }
@@ -243,7 +199,6 @@ forlines {
 # join pairs of lines side-by-side (like "paste")
 # sed '$!N;s/\n/ /'
 
-m all
 forlines {
 	m +:$ +:+1
 	c "\t"
@@ -252,7 +207,7 @@ forlines {
 # if a line ends with a backslash, append the next line to it
 #sed -e :a -e '/\\$/N; s/\\\n//; ta'
 
-m all
+m nil 1:1
 s {\\$} {
 	m +:+1
 	c " "
@@ -262,7 +217,7 @@ s {\\$} {
 # and replace the "=" with a single space
 #sed -e :a -e '$!N;s/\n=/ /;ta' -e 'P;D'
 
-m all
+m nil 1:1
 s {^=} {
 	m -1:$ +:+
 	c " "
@@ -308,7 +263,7 @@ forlines {
 # delete all leading blank lines at top of file
 #sed '/./,$!d'
 
-m 1:1; m 1:1 [lindex [s -get {.}] 0]; c ""
+m nil 1:1; m 1:1 [lindex [s -get {.}] 0]; c ""
 
 # delete all trailing blank lines at end of file
 #sed -e :a -e '/^\n*$/{$d;N;ba' -e '}'  # works on all seds
