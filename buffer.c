@@ -756,7 +756,7 @@ static bool buffer_aux_wnwa_next_ex(buffer_t *buffer, int *point) {
 /* If it is at the beginning of a word (or inside a non-word sequence) goes to the end of the previous word, if it is at the end of a word (or inside a word) goes to the beginning of the word) */
 static bool buffer_aux_wnwa_prev_ex(buffer_t *buffer, int *point) {
 	if (*point <= 0) return false;
-	if (*point >= BSIZE(buffer)) return false;
+	if (*point > BSIZE(buffer)) return false;
 
 	--(*point);
 
