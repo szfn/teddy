@@ -41,18 +41,20 @@ static void movegap(buffer_t *buffer, int point) {
 	}
 }
 
-static void regap(buffer_t *buffer) {
+static void regap(buffer_t *buffer, bool twice) {
 	/*printf("before regap: ");
 	gb_debug_print(buffer);*/
 
-	my_glyph_info_t *newbuf = malloc(sizeof(my_glyph_info_t) * (buffer->size+SLOP));
+	int slop = twice ? buffer->size : SLOP;
+
+	my_glyph_info_t *newbuf = malloc(sizeof(my_glyph_info_t) * (buffer->size+slop));
 	alloc_assert(newbuf);
 
 	memmove(newbuf, buffer->buf, sizeof(my_glyph_info_t) * buffer->gap);
-	memmove(newbuf+buffer->gap+SLOP, buffer->buf + buffer->gap, sizeof(my_glyph_info_t) * (buffer->size - buffer->gap));
+	memmove(newbuf+buffer->gap+slop, buffer->buf + buffer->gap, sizeof(my_glyph_info_t) * (buffer->size - buffer->gap));
 
-	buffer->gapsz = SLOP;
-	buffer->size += SLOP;
+	buffer->gapsz = slop;
+	buffer->size += slop;
 
 	free(buffer->buf);
 	buffer->buf = newbuf;
@@ -163,7 +165,7 @@ static void buffer_setup_hook(buffer_t *buffer) {
 	interp_eval_command(NULL, buffer, 2, argv);
 }
 
-static int buffer_replace_selection_ex(buffer_t *buffer, const char *text) {
+static int buffer_replace_selection_ex(buffer_t *buffer, const char *text, bool twice) {
 	teddy_fontset_t *font = foundry_lookup(config_strval(&(buffer->config), CFG_MAIN_FONT), true);
 
 	// there is a mark, delete
@@ -183,7 +185,7 @@ static int buffer_replace_selection_ex(buffer_t *buffer, const char *text) {
 
 	int len = strlen(text);
 	for (int i = 0; i < len; ) {
-		if (buffer->gapsz <= 0) regap(buffer);
+		if (buffer->gapsz <= 0) regap(buffer, twice);
 
 		bool valid = false;
 		uint32_t code = utf8_to_utf32(text, &i, len, &valid);
@@ -242,23 +244,25 @@ int load_text_file(buffer_t *buffer, const char *filename) {
 
 	buffer_setup_hook(buffer);
 
-	char text[12];
-	int i = 0;
-	int ch;
-	while ((ch = fgetc(fin)) != EOF) {
-		text[i++] = ch;
-		int charlen = utf8_first_byte_processing(ch);
+#define BUFSIZE 1024
+	char text[BUFSIZE + 12];
+	while (!feof(fin)) {
+		int n = fread(text, sizeof(char), BUFSIZE, fin);
+		if (n == 0) continue;
+
+		int charlen = utf8_first_byte_processing(text[n-1]);
 
 		if (charlen < 8) {
-			for (; i < charlen+1; ++i) {
-				text[i++] = fgetc(fin);
+			int i;
+			for (i = 0; i < charlen; ++i) {
+				text[n+i] = fgetc(fin);
 			}
+			n += i;
 		}
 
-		text[i] = '\0';
-		i = 0;
+		text[n] = '\0';
 
-		buffer_replace_selection_ex(buffer, text);
+		buffer_replace_selection_ex(buffer, text, true);
 	}
 
 	buffer->cursor = 0;
@@ -446,7 +450,7 @@ void buffer_replace_selection(buffer_t *buffer, const char *new_text) {
 		freeze_selection(buffer, &(undo_node->before_selection), MIN(buffer->mark, buffer->cursor), MAX(buffer->mark, buffer->cursor));
 	}
 
-	int start_cursor = buffer_replace_selection_ex(buffer, new_text);
+	int start_cursor = buffer_replace_selection_ex(buffer, new_text, false);
 
 	if (buffer->job == NULL) {
 		freeze_selection(buffer, &(undo_node->after_selection), start_cursor, buffer->cursor);
@@ -544,6 +548,9 @@ char *buffer_lines_to_text(buffer_t *buffer, int start, int end) {
 	int allocated = 0;
 	int cap = 0;
 	char *r = NULL;
+
+	if (start < 0) return NULL;
+	if (end < 0) return NULL;
 
 	allocated = 10;
 	r = malloc(sizeof(char) * allocated);
@@ -775,7 +782,7 @@ static bool buffer_aux_go_first_nonws(buffer_t *buffer, int *p, bool alternate) 
 	}
 	++(*p);
 	int beginning = *p;
-	while (*p < BSIZE(buffer) && u_isspace(bat(buffer, *p)->code)) { ++(*p); }
+	while (*p < BSIZE(buffer) && u_isspace(bat(buffer, *p)->code) && (bat(buffer, *p)->code != '\n')) { ++(*p); }
 
 	if (alternate && (*p == startp)) {
 		*p = beginning;
@@ -839,29 +846,18 @@ bool buffer_move_point_glyph(buffer_t *buffer, int *p, enum movement_type_t type
 }
 
 char *buffer_indent_newline(buffer_t *buffer) {
-	return strdup("\n");
-	/*
-	real_line_t *line;
-	for (line = buffer->cursor.line; line != NULL; line = line->prev) {
-		if (line->cap > 0) break;
-	}
+	int start = buffer->cursor;
+	buffer_move_point_glyph(buffer, &start, MT_ABS, 1);
+	int end = start;
+	buffer_move_point_glyph(buffer, &end, MT_START, 0);
+	char *r = buffer_lines_to_text(buffer, start, end);
+	char *rr;
+	asprintf(&rr, "\n%s", r);
+	alloc_assert(rr);
 
-	if (line == NULL) line = buffer->cursor.line;
-
-	r[0] = '\n';
-	int i;
-	for (i = 0; i < line->cap; ++i) {
-		uint32_t code = line->glyph_info[i].code;
-		if (code == 0x20) {
-			r[i+1] = ' ';
-		} else if (code == 0x09) {
-			r[i+1] = '\t';
-		} else {
-			r[i+1] = '\0';
-			break;
-		}
-	}
-	r[i+1] = '\0';*/
+	printf("newline <%s>\n", rr);
+	free(r);
+	return rr;
 }
 
 int buffer_point_from_position(buffer_t *buffer, double x, double y) {
@@ -1004,4 +1000,23 @@ char *buffer_wordcompl_word_at_cursor(buffer_t *buffer) {
 
 void buffer_set_onchange(buffer_t *buffer, void (*fn)(buffer_t *buffer)) {
 	buffer->onchange = fn;
+}
+
+int buffer_line_of(buffer_t *buffer, int p) {
+	int c = 0;
+	int line = 0;
+	while (c <= p) {
+		bool r = buffer_move_point_line(buffer, &c, MT_REL, +1);
+		++line;
+		if (!r) break;
+	}
+	//printf("line_of called: (%d) %d\n", p, line);
+	return line;
+}
+
+int buffer_column_of(buffer_t *buffer, int p) {
+	int c = p;
+	buffer_move_point_glyph(buffer, &c, MT_ABS, 1);
+	//printf("column of called: (%d) %d\n", p, (p - c + 1));
+	return p - c + 1;
 }

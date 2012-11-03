@@ -170,6 +170,9 @@ char *buffer_get_selection_text(buffer_t *buffer);
 int parmatch_find(buffer_t *buffer, int nlines);
 my_glyph_info_t *buffer_next_glyph(buffer_t *buffer, my_glyph_info_t *glyph);
 
+int buffer_line_of(buffer_t *buffer, int p);
+int buffer_column_of(buffer_t *buffer, int p);
+
 #define BSIZE(x) ((x)->size - (x)->gapsz)
 
 #endif

@@ -40,7 +40,7 @@ static void search_start_point(editor_t *editor, bool ctrl_g_invoked, bool start
 		if (start_at_top) {
 			*start_point = 0;
 		} else {
-			*start_point = BSIZE(editor->buffer);
+			*start_point = BSIZE(editor->buffer)-1;
 		}
 	} else if (ctrl_g_invoked) {
 		*start_point = editor->buffer->cursor;
@@ -85,34 +85,27 @@ static void move_incremental_search(editor_t *editor, bool ctrl_g_invoked, bool 
 
 #define OS(start, offset) (start + direction * offset)
 
-	while (bat(editor->buffer, search_point) != NULL) {
-		int i = 0, j = 0;
-		int needle_start = direction_forward ? 0 : dst-1;
+	int i = 0, j = 0;
+	int needle_start = direction_forward ? 0 : dst-1;
 
-		for ( ; i < search_point; ++i) {
-			if (j >= dst) break;
-			if (match_fn(bat(editor->buffer, OS(search_point, i))->code, needle[OS(needle_start, j)])) {
-				++j;
-			} else {
-				i -= j;
-				j = 0;
-			}
+	for (; (OS(search_point, i) >= 0) && (OS(search_point, i) < BSIZE(editor->buffer)); ++i) {
+		if (j >= dst) break;
+		if (match_fn(bat(editor->buffer, OS(search_point, i))->code, needle[OS(needle_start, j)])) {
+			++j;
+		} else {
+			i -= j;
+			j = 0;
 		}
-
-		if (j >= dst) {
-			if (!direction_forward) --i; // correction, because of selection semantics
-
-			// search was successful
-			editor->buffer->mark = OS(OS(search_point, i), -j);
-			editor->buffer->cursor = OS(search_point, i);
-			lexy_update_for_move(editor->buffer, editor->buffer->cursor);
-			break;
-		}
-
-		search_point = direction_forward ? search_point+1 : search_point-1;
 	}
 
-	if (search_point < 0) {
+	if (j >= dst) {
+		if (!direction_forward) --i; // correction, because of selection semantics
+
+		// search was successful
+		editor->buffer->mark = OS(OS(search_point, i), -j);
+		editor->buffer->cursor = OS(search_point, i);
+		lexy_update_for_move(editor->buffer, editor->buffer->cursor);
+	} else {
 		editor->research.search_failed = false;
 		buffer_unset_mark(editor->buffer);
 	}

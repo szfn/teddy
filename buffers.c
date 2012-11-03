@@ -667,6 +667,8 @@ void buffers_refresh(buffer_t *buffer) {
 	editor_t *editor;
 	find_editor_for_buffer(buffer, NULL, NULL, &editor);
 
+	printf("Refreshing buffer <%s>\n", buffer->path);
+
 	if (buffer->path[strlen(buffer->path)-1] == '/') {
 		buffer_aux_clear(buffer);
 		const char *cmd[] = { "teddy_intl::dir", buffer->path };
@@ -694,7 +696,6 @@ void buffers_refresh(buffer_t *buffer) {
 		if (cursor < BSIZE(new_buffer)) new_buffer->cursor = cursor;
 		editor_switch_buffer(editor, new_buffer);
 	}
-
 
 	free(path);
 }

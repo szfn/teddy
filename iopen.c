@@ -379,6 +379,7 @@ void iopen_init(GtkWidget *window) {
 	GtkWidget *main_vbox = gtk_vbox_new(false, 0);
 
 	iopen_buffer = buffer_create();
+	iopen_buffer->single_line = true;
 	load_empty(iopen_buffer);
 	iopen_editor = new_editor(iopen_buffer, true);
 

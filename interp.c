@@ -1268,13 +1268,14 @@ void interp_return_point_pair(buffer_t *buffer, int mark, int cursor) {
 	char *r;
 	if (mark < 0) {
 		asprintf(&r, "nil %d:%d",
-			1, 1);
+			buffer_line_of(buffer, cursor), buffer_column_of(buffer, cursor));
 	} else {
 		asprintf(&r, "%d:%d %d:%d",
-			1, 1,
-			1, 1);
+			buffer_line_of(buffer, mark), buffer_column_of(buffer, mark),
+			buffer_line_of(buffer, cursor), buffer_column_of(buffer, cursor));
 	}
 	alloc_assert(r);
+	//printf("return_point_pair: %d %d: <%s>\n", mark, cursor, r);
 	Tcl_SetResult(interp, r, TCL_VOLATILE);
 	free(r);
 }
