@@ -48,17 +48,13 @@ proc double_spacing_test {} {
 		}
 	}
 	assert_result "test/output1_double.txt"
-
 	print_to_result "Undoing double spacing test... "
 	buffer eval $st_stage {
 		m nil 1:1
 		while {[m +1:1]} {
 			kill_line
 		}
-		m -1:$ +:+
-		c ""
 	}
-
 	assert_result "test/input1.txt"
 }
 
@@ -72,7 +68,6 @@ proc blank_line_above_match_test {} {
 			c "\n[c]"
 		}
 	}
-
 	assert_result "test/output1_line_above.txt"
 }
 
@@ -87,7 +82,6 @@ proc blank_line_below_match_test {} {
 			c "\n"
 		}
 	}
-
 	assert_result "test/output1_line_below.txt"
 }
 
@@ -101,7 +95,6 @@ proc line_numbering_test {} {
 			c "$n\t[c]"
 		}
 	}
-
 	assert_result "test/output1_numbered.txt"
 }
 
@@ -115,7 +108,6 @@ proc line_numbering_nonempty_test {} {
 			c "$n\t[c]"
 		}
 	}
-
 	assert_result "test/output1_double_numbered.txt"
 }
 
@@ -129,7 +121,6 @@ proc todos_test {} {
 		m $:1 $:$
 		c ""
 	}
-
 	assert_result "test/output1_dos.txt"
 }
 
@@ -141,7 +132,6 @@ proc tounix_test {} {
 		m all
 		s "\r" c ""
 	}
-
 	assert_result "test/input1.txt"
 }
 
@@ -153,7 +143,6 @@ proc reverse_test {} {
 		m all
 		c [join [lreverse [split [c] "\n"]] "\n"]
 	}
-
 	assert_result "test/output1_reverse.txt"
 }
 
@@ -166,7 +155,6 @@ proc chareverse_test {} {
 			c [string reverse [c]]
 		}
 	}
-
 	assert_result "test/output1_reverseline.txt"
 }
 
@@ -180,7 +168,6 @@ proc pairs_test {} {
 			c "\t"
 		}
 	}
-
 	assert_result "test/output1_pairs.txt"
 }
 
@@ -196,7 +183,6 @@ proc section_delete_test {} {
 		m [lindex $start 0] [lindex $end 1]
 		c ""
 	}
-
 	assert_result "test/output1_section_delete.txt"
 }
 

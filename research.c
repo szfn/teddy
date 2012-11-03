@@ -141,10 +141,14 @@ static bool move_regexp_search_forward(struct research_t *research, bool execute
 		research->search_failed = false;
 	} else {
 		search_point.start_glyph = *cursor;
+		my_glyph_info_t *glyph = bat(research->buffer, *cursor);
+		if ((glyph != NULL) && (glyph->code == '\n')) ++(search_point.start_glyph);
+		//printf("cursor %d mark %d start_glyph: %d\n", *cursor, *mark, search_point.start_glyph);
+	}
 
-		if (*cursor == *mark) {
-			++(search_point.start_glyph);
-		}
+	if (search_point.start_glyph >= BSIZE(research->buffer)) {
+		research->search_failed = true;
+		return false;
 	}
 
 	//printf("Starting search at: %d\n", search_point.start_glyph);

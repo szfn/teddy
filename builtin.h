@@ -77,7 +77,7 @@ namespace eval bindent {\n\
 	proc get_current_line_indent {} {\n\
 		set saved_mark [m]\n\
 		m nil +:1\n\
-		m {*}[s -line {^\\s+}]\n\
+		m {*}[s -line {^[ \\x9]+}]\n\
 		set r [c]\n\
 		m {*}$saved_mark\n\
 		return $r\n\
@@ -90,7 +90,7 @@ namespace eval bindent {\n\
 \n\
 		set cursor [m]\n\
 		m +:1 +:$;\n\
-		if {![regexp {^\\s*$} [c]]} {\n\
+		if {![regexp {^[ \\x9]*$} [c]]} {\n\
 			m {*}$cursor\n\
 			c $text\n\
 			return\n\
@@ -190,7 +190,7 @@ namespace eval teddy {\n\
 		set saved [m]\n\
 		# delete empty spaces from the end of lines\n\
 		m nil 1:1\n\
-		s {\\s+$} {\n\
+		s {[ \\x9]+$} {\n\
 			if {[teddy::lineof [lindex [m] 1]] ne [teddy::lineof [lindex $saved 1]]} {\n\
 				c \"\"\n\
 			}\n\

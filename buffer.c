@@ -854,8 +854,6 @@ char *buffer_indent_newline(buffer_t *buffer) {
 	char *rr;
 	asprintf(&rr, "\n%s", r);
 	alloc_assert(rr);
-
-	printf("newline <%s>\n", rr);
 	free(r);
 	return rr;
 }
