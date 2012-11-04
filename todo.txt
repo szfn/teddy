@@ -1,15 +1,12 @@
 GAP BUFFER
 
-- reimplement parmatch_find
 - reimplement buffer_historycompl_word_at_cursor / buffer_wordcompl_word_at_cursor
+
+- reimplement parmatch_find
 - reimplement lexy
-- reimplement buffer_undo
 - reimplement buffer_reload_glyph_info
-- test saving
-- test selection from the very first character of the buffer (we need one extra empty character at the beginning of each file)
-- test everything
-- test sending input to processes
 - reimplement posbox
+- test sending input to processes
 - reoptimize drawlines to skip glyphs outside
 - optimize code that changes mouse cursor into a hand over links (right now its linear in the size of the buffer)
 

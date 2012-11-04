@@ -366,7 +366,12 @@ void buffer_change_select_type(buffer_t *buffer, enum select_type select_type) {
 static void freeze_selection(buffer_t *buffer, selection_t *selection, int start, int end) {
 	selection->start = start;
 	selection->end = end;
+	if (selection->start < 0) selection->start = end;	
 	selection->text = buffer_lines_to_text(buffer, start, end);
+	if (selection->text == NULL) {
+		selection->text = strdup("");
+		alloc_assert(selection->text);
+	}
 }
 
 my_glyph_info_t *buffer_next_glyph(buffer_t *buffer, my_glyph_info_t *glyph) {
@@ -434,7 +439,35 @@ static void buffer_typeset_from(buffer_t *buffer, int point) {
 }
 
 void buffer_undo(buffer_t *buffer, bool redo) {
-	//TODO
+	if (!(buffer->editable)) return;
+	if (buffer->job != NULL) return;
+
+	undo_node_t *undo_node = redo ? undo_redo_pop(&(buffer->undo)) : undo_pop(&(buffer->undo));
+	if (undo_node == NULL) return;
+
+	buffer->modified = 1;
+
+	buffer_unset_mark(buffer);
+
+	int start, end;
+
+	if (redo) {
+		start = undo_node->before_selection.start;
+		end = undo_node->before_selection.end;
+	} else {
+		start = undo_node->after_selection.start;
+		end = undo_node->after_selection.end;
+	}
+
+	buffer->mark = start;
+	buffer->cursor = end;
+	int start_cursor = buffer_replace_selection_ex(buffer, redo ? undo_node->after_selection.text : undo_node->before_selection.text, false);
+
+	buffer_typeset_from(buffer, start_cursor-1);
+	buffer_unset_mark(buffer);
+	lexy_update_starting_at(buffer, start_cursor-1, false);
+
+	if (buffer->onchange != NULL) buffer->onchange(buffer);
 }
 
 void buffer_replace_selection(buffer_t *buffer, const char *new_text) {

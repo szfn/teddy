@@ -36,7 +36,7 @@ void undo_free(undo_t *undo) {
 
 #ifdef UNDO_DEBUGGING
 static void debug_print_selection(selection_t *selection) {
-	printf("   %d:%d,%d:%d [[%s]]\n", selection->start.lineno, selection->start.glyph, selection->end.lineno, selection->end.glyph, selection->text);
+	printf("   %d,%d <%s>\n", selection->start, selection->end, selection->text);
 }
 
 static void debug_print_undo(undo_node_t *node) __attribute__ ((unused));
@@ -68,6 +68,9 @@ static int selection_len(selection_t *selection) {
 }
 
 static void selections_cat(selection_t *dst, selection_t *src) {
+#ifdef UNDO_DEBUGGING
+	printf("Concatenating\n");
+#endif
 	dst->end = src->end;
 
 	char *newtext = malloc(strlen(src->text) + strlen(dst->text) + 1);
@@ -96,6 +99,17 @@ void undo_push(undo_t *undo, undo_node_t *new_node) {
 	undo_drop_redo_info(undo);
 
 	new_node->fake = false;
+
+#ifdef UNDO_DEBUGGING
+	printf("PUSHING (pre):\n");
+	debug_print_undo(undo->head);
+	printf("\tundo->head->before_selection isempty: %d\n", selection_is_empty(&(undo->head->before_selection)));
+	printf("\tnew_node->before_selection isempty: %d\n", selection_is_empty(&(new_node->before_selection)));
+	printf("\tnew_node->after_selection length: %d\n", selection_len(&(new_node->after_selection)));
+	printf("\tnew_node->after_selection.text[0] = '%c'\n", new_node->after_selection.text[0]);
+	printf("\tselections_are_adjacent: %d\n", selections_are_adjacent(&(undo->head->after_selection), &(new_node->after_selection)));
+	printf("\ttiming: %d %d\n", now - undo->head->time, TYPING_FUSION_INTERVAL);
+#endif
 
 	// when appropriate we fuse the new undo node with the last one so you don't have to undo typing one character at a time
 	if (undo->please_fuse
