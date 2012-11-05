@@ -1,7 +1,5 @@
 GAP BUFFER
 
-- bug x from the end of a line gets removed
-- reimplement posbo
 - reimplement buffer_reload_glyph_info
 - test sending input to processes
 - reoptimize drawlines to skip glyphs outside the window
@@ -25,3 +23,8 @@ OTHER
 - tabs
 - macro recording
 
+TRE PROBLEMS
+
+- \s matches newlines too when REG_NEWLINE is enabled, it shouldn't
+- nothing works inside [], \t doesn't work, \x<number> doesn't work etx...
+- match with ^ still tries to match anywhere in the string, then fails

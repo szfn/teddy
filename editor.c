@@ -211,6 +211,8 @@ void editor_complete_move(editor_t *editor, gboolean should_move_origin) {
 		editor_include_cursor(editor, ICM_MID, ICM_MID);
 	}
 	lexy_update_for_move(editor->buffer, editor->buffer->cursor);
+	editor->lineno = buffer_line_of(editor->buffer, editor->buffer->cursor);
+	editor->colno = buffer_column_of(editor->buffer, editor->buffer->cursor);
 }
 
 static void text_entry_callback(GtkIMContext *context, gchar *str, editor_t *editor) {
@@ -1143,7 +1145,7 @@ static gboolean expose_event_callback(GtkWidget *widget, GdkEventExpose *event, 
 		cairo_text_extents_t posbox_ext;
 		double x, y;
 
-		asprintf(&posbox_text, " %d,%d %0.0f%%", 1, 1, (100.0));
+		asprintf(&posbox_text, " %d:%d %0.0f%%", editor->lineno, editor->colno, (100.0 * editor->buffer->cursor / BSIZE(editor->buffer)));
 
 		cairo_set_scaled_font(cr, fontset_get_cairofont_by_name(config_strval(&(editor->buffer->config), CFG_POSBOX_FONT), 0));
 
@@ -1395,6 +1397,7 @@ editor_t *new_editor(buffer_t *buffer, bool single_line) {
 	r->completer = &the_word_completer;
 	r->alt_completer = NULL;
 	r->dirty_line = false;
+	r->lineno = 1; r->colno = 1;
 
 	r->single_line_escape = NULL;
 	r->single_line_return = NULL;
