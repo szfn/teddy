@@ -797,8 +797,7 @@ proc buffer_loaded_hook {buffer-name} { }\n\
 # Definitions of lexy state machines to syntax highlight source code\n\
 \n\
 lexydef c 0 {\n\
-		\"\\\\<(?:auto|_Bool|break|case|char|_Complex|const|continue|default|do|double|else|enum|extern|float|for|goto|if|_Imaginary|inline|int|long|register|restrict|return|short|signed|sizeof|static|struct|switch|typedef|union|unsigned|void|volatile|while|int8_t|uint8_t|int16_t|uint16_t|int32_t|uint32_t|int64_t|uint64_t|size_t|time_t|bool)\\\\>\" keyword\n\
-\n\
+ 		\"\\\\<(?:auto|_Bool|break|case|char|_Complex|const|continue|default|do|double|else|enum|extern|float|for|goto|if|_Imaginary|inline|int|long|register|restrict|return|short|signed|sizeof|static|struct|switch|typedef|union|unsigned|void|volatile|while|int8_t|uint8_t|int16_t|uint16_t|int32_t|uint32_t|int64_t|uint64_t|size_t|time_t|bool)\\\\>\" keyword\n\
 		{#\\s*(?:include|ifdef|ifndef|if|else|endif|pragma|define)\\>} keyword\n\
 \n\
 		\"-?(?:0x)[0-9a-fA-F]*\" literal\n\
@@ -851,7 +850,7 @@ lexydef python 0 {\n\
 \n\
 		\"-?(?:0[bB])?[0-9][0-9]*(?:\\\\.[0-9]+)?(?:e-[0-9]+?)?[LljJ]?\" literal\n\
 		\"-?(?:0[xX])[0-9a-fA-F]*\" literal\n\
-		\"\\<None|True|False\\>\" literal\n\
+		\"\\\\<None|True|False\\\\>\" literal\n\
 \n\
 		{\\<[a-zA-Z_][a-zA-Z0-9_]*\\>} id\n\
 \n\

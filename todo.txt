@@ -1,19 +1,18 @@
 GAP BUFFER
 
-- reimplement buffer_historycompl_word_at_cursor / buffer_wordcompl_word_at_cursor
-
-- reimplement parmatch_find
-- reimplement lexy
+- bug x from the end of a line gets removed
+- reimplement posbo
 - reimplement buffer_reload_glyph_info
-- reimplement posbox
 - test sending input to processes
-- reoptimize drawlines to skip glyphs outside
+- reoptimize drawlines to skip glyphs outside the window
 - optimize code that changes mouse cursor into a hand over links (right now its linear in the size of the buffer)
+- remove buffer_next_glyph, it's only used in one place
 
 OTHER
 
-- memory leaks?
+- simpler implementation of lexy (no regexp)
 - better colors for the tag in all modes
+- simplify acme color scheme
 - don't open current directory unless no arguments are given
 - buffer_set_mark_at_cursor and buffer_unset_mark are rare, check for deletion
 - tooltips for tag buttons

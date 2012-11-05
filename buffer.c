@@ -108,6 +108,8 @@ buffer_t *buffer_create(void) {
 	alloc_assert(buffer->path);
 	buffer->has_filename = 0;
 	buffer->select_type = BST_NORMAL;
+	
+	buffer->lexy_last_update_point = -1;
 
 	undo_init(&(buffer->undo));
 
@@ -197,6 +199,7 @@ static int buffer_replace_selection_ex(buffer_t *buffer, const char *text, bool 
 
 		buffer->buf[buffer->gap].code = code;
 		buffer->buf[buffer->gap].color = buffer->default_color;
+		buffer->buf[buffer->gap].status = 0xffff;
 
 		//printf("gap: %d\n", buffer->gap);
 		if ((buffer->gap > 0) && (buffer->buf[buffer->gap-1].fontidx == fontidx)) {
@@ -270,6 +273,7 @@ int load_text_file(buffer_t *buffer, const char *filename) {
 	fclose(fin);
 
 	buffer_wordcompl_update(buffer, &(buffer->cbt), WORDCOMPL_UPDATE_RADIUS);
+	//printf("Calling lexy update\n");
 	lexy_update_starting_at(buffer, 0, false);
 
 	const char *argv[] = { "buffer_loaded_hook", buffer->path };
@@ -366,7 +370,7 @@ void buffer_change_select_type(buffer_t *buffer, enum select_type select_type) {
 static void freeze_selection(buffer_t *buffer, selection_t *selection, int start, int end) {
 	selection->start = start;
 	selection->end = end;
-	if (selection->start < 0) selection->start = end;	
+	if (selection->start < 0) selection->start = end;
 	selection->text = buffer_lines_to_text(buffer, start, end);
 	if (selection->text == NULL) {
 		selection->text = strdup("");
@@ -472,6 +476,8 @@ void buffer_undo(buffer_t *buffer, bool redo) {
 
 void buffer_replace_selection(buffer_t *buffer, const char *new_text) {
 	if (!(buffer->editable)) return;
+	
+	//printf("buffer replace selection: <%s>\n", buffer->path);
 
 	buffer->modified = true;
 
@@ -492,6 +498,8 @@ void buffer_replace_selection(buffer_t *buffer, const char *new_text) {
 
 	buffer_typeset_from(buffer, start_cursor-1);
 	buffer_unset_mark(buffer);
+	
+	//printf("\tcalling lexy update\n");
 	lexy_update_starting_at(buffer, start_cursor-1, false);
 
 	if (buffer->onchange != NULL) buffer->onchange(buffer);
@@ -939,19 +947,61 @@ void buffer_move_cursor_to_position(buffer_t *buffer, double x, double y) {
 	buffer_extend_selection_by_select_type(buffer);
 }
 
+static uint32_t point_to_char_to_find(uint32_t code, const char *tomatch, const char *tofind) {
+	if (code > 0x7f) return 0;
+
+	for (int i = 0; i < strlen(tomatch); ++i) {
+		if (tomatch[i] == (char)code) {
+			return tofind[i];
+		}
+	}
+
+	return 0;
+}
+
+static int parmatch_find_ex(buffer_t  *buffer, int start, const char *tomatch, const char *tofind, int direction, int nlines) {
+#define PARMATCH_CHAR_LIMIT 1000
+	if (start < 0) return -1;
+	if (start >= BSIZE(buffer)) return -1;
+
+	uint32_t cursor_code = bat(buffer, start)->code;
+	uint32_t match_code = point_to_char_to_find(cursor_code, tomatch, tofind);
+	if (match_code <= 0) return -1;
+	
+	//printf("\tcode: %c searching: %c direction: %d\n", (char)cursor_code, (char)match_code, direction);
+
+	int depth = 1;
+	int count = 0;
+	
+	for (int i = start+direction; (i >= 0) && (i < BSIZE(buffer)); i += direction) {
+		my_glyph_info_t *cur = bat(buffer, i);
+		if (cur == NULL) return -1;
+		if (cur->code == '\n') --nlines;
+		if (nlines < 0) return -1;
+		if (count++ > PARMATCH_CHAR_LIMIT) return -1;
+		
+		if (cur->code == cursor_code) ++depth;		
+		if (cur->code == match_code) --depth;
+		
+		//printf("\%d tdepth: %d (%c)\n", i, depth, cur->code);
+		
+		if (depth == 0) return i;
+	}	
+	
+	return -1;
+}
 
 int parmatch_find(buffer_t *buffer, int nlines) {
-	return -1;
-/*	match->line = NULL; match->glyph = 0;
-	if ((cursor->line != NULL) && (cursor->glyph >= 0)) {
-		if (parmatch_find_ex(cursor, match, OPENING_PARENTHESIS, CLOSING_PARENTHESIS, +1, nlines)) return;
-
-		lpoint_t preceding_cursor;
-		copy_lpoint(&preceding_cursor, cursor);
-		--(preceding_cursor.glyph);
-
-		if (parmatch_find_ex(&preceding_cursor, match, CLOSING_PARENTHESIS, OPENING_PARENTHESIS, -1, nlines)) return;
-	}*/
+#define OPENING_PARENTHESIS "([{<"
+#define CLOSING_PARENTHESIS ")]}>"
+	//printf("parmatch_find called\n");
+	if (buffer->cursor < 0) return -1;
+	
+	int r = parmatch_find_ex(buffer, buffer->cursor, OPENING_PARENTHESIS, CLOSING_PARENTHESIS, +1, nlines);
+	if (r >= 0) return r;
+	
+	r = parmatch_find_ex(buffer, buffer->cursor-1, CLOSING_PARENTHESIS, OPENING_PARENTHESIS, -1, nlines);
+	return r;
 }
 
 void buffer_get_extremes(buffer_t *buffer, int *start, int *end) {
@@ -1001,32 +1051,22 @@ char *buffer_all_lines_to_text(buffer_t *buffer) {
 }
 
 char *buffer_historycompl_word_at_cursor(buffer_t *buffer) {
-	return NULL;
-/*	if (buffer->cursor.line == NULL) return NULL;
-
-	lpoint_t start;
-	copy_lpoint(&start, &(buffer->cursor));
-	start.glyph = 0;
-	return buffer_lines_to_text(buffer, &start, &(buffer->cursor));*/
+	int start = buffer->cursor;
+	buffer_move_point_glyph(buffer, &start, MT_ABS, 1);
+	return buffer_lines_to_text(buffer, start, buffer->cursor);
 }
 
 char *buffer_wordcompl_word_at_cursor(buffer_t *buffer) {
-	return NULL;
-/*	if (buffer->cursor.line == NULL) return NULL;
+	if (buffer->cursor < 0) return NULL;
 
-	lpoint_t start;
-	copy_lpoint(&start, &(buffer->cursor));
-
-	for (start.glyph = buffer->cursor.glyph-1; start.glyph >= 0; --(start.glyph)) {
-		uint32_t code = buffer->cursor.line->glyph_info[start.glyph].code;
-		if ((code >= 0x10000) || (!wordcompl_charset[code])) { break; }
+	int start;
+	for (start = buffer->cursor-1; start >= 0; --start) {
+		my_glyph_info_t *glyph = bat(buffer, start);
+		if ((glyph == NULL) || (glyph->code >= 0x10000) || (!wordcompl_charset[glyph->code])) { break; }
 	}
 
-	++(start.glyph);
-
-	if (start.glyph ==  buffer->cursor.glyph) return NULL;
-
-	return buffer_lines_to_text(buffer, &start, &(buffer->cursor));*/
+	++start;
+	return buffer_lines_to_text(buffer, start, buffer->cursor);
 }
 
 void buffer_set_onchange(buffer_t *buffer, void (*fn)(buffer_t *buffer)) {

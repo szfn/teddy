@@ -135,6 +135,7 @@ static bool move_regexp_search_forward(struct research_t *research, bool execute
 
 	search_point.buffer = research->buffer;
 	search_point.offset = 0;
+	search_point.endatnewline = false;
 
 	if (research->search_failed) {
 		search_point.start_glyph = 0;

@@ -12,6 +12,7 @@
 typedef struct _my_glyph_info_t {
 	uint32_t code;
 	uint8_t color;
+	uint16_t status;
 
 	double kerning_correction;
 	double x_advance;
@@ -66,7 +67,7 @@ typedef struct _buffer_t {
 	double right_margin;
 
 	/* Lexy stuff */
-	//real_line_t *lexy_last_update_line;
+	int lexy_last_update_point;
 
 	/* Scripting support */
 	GHashTable *props;

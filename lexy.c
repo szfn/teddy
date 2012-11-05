@@ -312,64 +312,62 @@ int lexy_append_command(ClientData client_data, Tcl_Interp *interp, int argc, co
 	return TCL_OK;
 }
 
-/*static bool check_file_match(struct lexy_row *row, buffer_t *buffer, real_line_t *line, int glyph, int nmatch, regmatch_t *pmatch) {
+static bool check_file_match(struct lexy_row *row, buffer_t *buffer, int glyph, int nmatch, regmatch_t *pmatch) {
 	//printf("file_group %d nmatch %d (%d)\n", row->file_group, nmatch, tokenizer->verify_file);
 	if (!row->check) return true;
 	if (row->file_group >= nmatch) return false;
 
-	lpoint_t start, end;
-	start.line = end.line = line;
-	start.glyph = glyph + pmatch[row->file_group].rm_so;
-	end.glyph = glyph + pmatch[row->file_group].rm_eo;
-
-	char *text = buffer_lines_to_text(buffer, &start, &end);
+	int start = glyph + pmatch[row->file_group].rm_so, end = glyph + pmatch[row->file_group].rm_eo;
+	char *text = buffer_lines_to_text(buffer, start, end);
 	bool r = (access(text, F_OK) == 0);
 	//printf("Check <%s> %d (file_group: %d)\n", text, r, row->file_group);
 	free(text);
 
 	return r;
-}*/
+}
 
-/*static void lexy_update_one_token(buffer_t *buffer, real_line_t *line, int *glyph, int *status) {
-	int base = *status;
-	if (line->cap > LEXY_LINE_LENGTH_LIMIT) {
-		return;
-		*glyph = line->cap;
-	}
-
+static void lexy_update_one_token(buffer_t *buffer, int *i, int *status) {
+	int base = *status;	
+	
+	//printf("Coloring one token at %p:%d (status %d)\n", buffer, *i, *status);
+	
 	for (int offset = 0; offset < LEXY_STATUS_BLOCK_SIZE; ++offset) {
 		struct lexy_row *row = lexy_rows + base + offset;
 		if (!(row->enabled)) {
-			line->glyph_info[*glyph].color = 0;
-			++(*glyph);
+			bat(buffer, *i)->color = 0;
+			bat(buffer, *i)->status = *status;
+			++(*i);
 			return;
 		}
 		if (row->jump) {
 			base = row->next_status;
 			offset = -1;
 			continue;
-		}
-
+		}	
+		
 		struct augmented_lpoint_t matchpoint;
-		matchpoint.line = line;
-		matchpoint.start_glyph = *glyph;
-		matchpoint.offset = 0;
-
+		matchpoint.buffer = buffer;
+		matchpoint.start_glyph = *i;
+		matchpoint.offset = 0;	
+		matchpoint.endatnewline = true;
+		
 		tre_str_source tss;
-		tre_bridge_init(&matchpoint, &tss);
-
+		tre_bridge_init(&matchpoint, &tss);			
+		
 #define NMATCH 10
 		regmatch_t pmatch[NMATCH];
-
-		int r = tre_reguexec(&(row->pattern), &tss, NMATCH, pmatch, 0);
-
+		
+		//printf("\tPattern matching:\n");
+		int r = tre_reguexec(&(row->pattern), &tss, NMATCH, pmatch, 0);		
+		//printf("\tdone %d %d\n", r, REG_OK);
+		
 		if (r == REG_OK) {
-			//printf("\t\tMatched: %d (%d) - %d as %d [", *glyph+pmatch[0].rm_so, pmatch[0].rm_so, *glyph+pmatch[0].rm_eo, row->token_type);
+			//printf("\t\tMatched: %d (%d) - %d as %d [", *i+pmatch[0].rm_so, pmatch[0].rm_so, *i+pmatch[0].rm_eo, row->token_type);
 
 			uint8_t token_type = row->token_type;
 
 			if (row->token_type == CFG_LEXY_FILE - CFG_LEXY_NOTHING) {
-				if (!check_file_match(row, buffer, line, *glyph, NMATCH, pmatch)) {
+				if (!check_file_match(row, buffer, *i, NMATCH, pmatch)) {
 					token_type = CFG_LEXY_NOTHING - CFG_LEXY_NOTHING;
 				}
 			}
@@ -377,29 +375,16 @@ int lexy_append_command(ClientData client_data, Tcl_Interp *interp, int argc, co
 			for (int j = 0; j < pmatch[0].rm_eo; ++j) {
 				//uint32_t code = line->glyph_info[*glyph + j].code;
 				//printf("%c", (code >= 0x20) && (code <= 0x7f) ? (char)code : '?');
-				line->glyph_info[*glyph + j].color = token_type;
+				bat(buffer, *i + j)->color = token_type;
+				bat(buffer, *i + j)->status = *status;
 			}
 			//printf("]\n");
-			*glyph += pmatch[0].rm_eo;
+			*i += pmatch[0].rm_eo;
 			*status = row->next_status;
 			return;
-		}
+		}		
 	}
-}*/
-
-/*static void lexy_update_line(buffer_t *buffer, real_line_t *line, int *state) {
-	line->lexy_state_start = *state;
-	for (int glyph = 0; glyph < line->cap; ) {
-		int prev_glyph = glyph;
-		//printf("Update one token %d %d\n", line->lineno, glyph);
-		lexy_update_one_token(buffer, line, &glyph, state);
-		if (prev_glyph == glyph) {
-			line->glyph_info[glyph].color = 0;
-			++glyph;
-		}
-	}
-	line->lexy_state_end = *state;
-}*/
+}
 
 static struct lexy_association *association_for_buffer(buffer_t *buffer) {
 	if (buffer == NULL) return NULL;
@@ -438,50 +423,65 @@ const char *lexy_get_link_fn(buffer_t *buffer) {
 }
 
 void lexy_update_starting_at(buffer_t *buffer, int start, bool quick_exit) {
-	/*if (start_line == NULL) return;
 	int start_status_index = start_status_for_buffer(buffer);
 	if (start_status_index < 0) return;
+	
+	//printf("Coloring buffer %p (%s) starting at %d (%d)\n", buffer, buffer->path, start, BSIZE(buffer));
 
-	int count = 0;
-	int status = LEXY_ROWS;
-
-	real_line_t *line;
-	for (line = start_line; line != NULL; line = line->next) {
-		if ((line->lexy_state_start != status) || (line->lexy_state_start == LEXY_ROWS) || (count < 2)) {
-			if (status == LEXY_ROWS) {
-				if (line->lexy_state_start == LEXY_ROWS) line->lexy_state_start = start_status_index;
-				status = line->lexy_state_start;
-			}
-
-			lexy_update_line(buffer, line, &status);
-		} else {
-			if (quick_exit) return;
-		}
-
-		status = line->lexy_state_end;
-
-		if (count >= LEXY_LOAD_HOOK_MAX_COUNT) break;
-		++count;
+	int status;
+		
+	if (start < 0) {
+		start = 0;
+		status = start_status_index;
+	} else {
+		buffer_move_point_glyph(buffer, &start, MT_ABS, 1);
+		if (start > 0) --start;
+		my_glyph_info_t *glyph = bat(buffer, start);
+		status = (glyph != NULL) ? glyph->status : start_status_index;	
+		if (status == 0xffff) status = start_status_index;		
 	}
-
-	buffer->lexy_last_update_line = line;*/
+	
+	//printf("\tActual start %d (status: %d)\n", start, status);	
+	//printf("Buffer <%s> status: %d start_status_for_buffer %d\n", buffer->path, status, start_status_index);
+	
+	int count = 0;
+	
+	for (int i = start; i < BSIZE(buffer); ) {
+		my_glyph_info_t *g = bat(buffer, i);
+		if (g == NULL) return;
+		if (g->code == '\n') {
+			//printf("\tnew line %d\n", count);
+			++count;
+		}
+		int previ = i;
+		if (g->status == status) {
+			if (count < 4) lexy_update_one_token(buffer, &i, &status);
+			else {
+				//printf("\tquick exit %d\n", i);
+				break;
+			}
+		} else {
+			lexy_update_one_token(buffer, &i, &status);
+			buffer->lexy_last_update_point = i;
+		}
+		if (previ == i) ++i;
+		if (count > LEXY_LOAD_HOOK_MAX_COUNT) break;
+	}
+	//printf("Finished %d\n", buffer->lexy_last_update_point);
 }
 
 void lexy_update_for_move(buffer_t *buffer, int start_point) {
-/*	if (buffer->lexy_last_update_line == NULL) return;
+	if (buffer->lexy_last_update_point < 0) return;
+	int real_start = MIN(start_point, buffer->lexy_last_update_point);
 
-	if (start_line->lineno > buffer->lexy_last_update_line->lineno) {
-		start_line = buffer->lexy_last_update_line;
-	} else {
-		return;
-	}
-
+	//printf("Lexy update for move: %p:%d (%d %d)\n", buffer, start_point, buffer->lexy_last_update_point, real_start);
+	
 	for (int count = 0; count < 10; ++count) { // count is here just to prevent this loop from running forever on pathological situations
-		lexy_update_starting_at(buffer, start_line, true);
-		start_line = buffer->lexy_last_update_line;
-		if (start_line == NULL) break;
-		if (start_line->lineno >= buffer->cursor.line->lineno) break;
-	}*/
+		lexy_update_starting_at(buffer, real_start-1, true);
+		real_start = buffer->lexy_last_update_point;
+		if (real_start < 0) break;
+		if (real_start > buffer->cursor) break;
+	}
 }
 
 int lexy_create_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {

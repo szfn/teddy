@@ -459,11 +459,17 @@ static gboolean key_press_callback(GtkWidget *widget, GdkEventKey *event, editor
 
 		case GDK_KEY_Up:
 			dirty_line_update(editor);
-			if (mark_move(editor, shift)) buffer_move_point_line(editor->buffer, &(editor->buffer->cursor), MT_REL, -1);
+			if (mark_move(editor, shift)) {
+				buffer_move_point_line(editor->buffer, &(editor->buffer->cursor), MT_REL, -1);
+				buffer_move_point_glyph(editor->buffer, &(editor->buffer->cursor), MT_START, 0);
+			}
 			goto key_press_return_true;
 		case GDK_KEY_Down:
 			dirty_line_update(editor);
-			if (mark_move(editor, shift)) buffer_move_point_line(editor->buffer, &(editor->buffer->cursor), MT_REL, +1);
+			if (mark_move(editor, shift)) {
+				buffer_move_point_line(editor->buffer, &(editor->buffer->cursor), MT_REL, +1);
+				buffer_move_point_glyph(editor->buffer, &(editor->buffer->cursor), MT_START, 0);
+			}
 			goto key_press_return_true;
 		case GDK_KEY_Right:
 			if (mark_move(editor, shift)) buffer_move_point_glyph(editor->buffer, &(editor->buffer->cursor), MT_REL, +1);
@@ -1425,7 +1431,7 @@ editor_t *new_editor(buffer_t *buffer, bool single_line) {
 	r->drarscroll = gtk_vscrollbar_new((GtkAdjustment *)(r->adjustment = gtk_adjustment_new(0.0, 0.0, 1.0, 1.0, 1.0, 1.0)));
 	r->drarhscroll = gtk_hscrollbar_new((GtkAdjustment *)(r->hadjustment = gtk_adjustment_new(0.0, 0.0, 1.0, 1.0, 1.0, 1.0)));
 
-	{ // search box
+	{ // search bo
 		r->search_entry = gtk_entry_new();
 		r->search_box = gtk_hbox_new(FALSE, 0);
 		GtkWidget *search_label = gtk_label_new("Search: ");
@@ -1459,7 +1465,7 @@ editor_t *new_editor(buffer_t *buffer, bool single_line) {
 		gtk_widget_hide(r->search_box);
 	}
 
-	{ // stale box
+	{ // stale bo
 		r->stale_box = gtk_hbox_new(FALSE, 0);
 		GtkWidget *stale_label = gtk_label_new("Content of this file changed on disk");
 		GtkWidget *keep_stale_button = gtk_button_new_with_label("Keep this version");
