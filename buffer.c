@@ -108,7 +108,7 @@ buffer_t *buffer_create(void) {
 	alloc_assert(buffer->path);
 	buffer->has_filename = 0;
 	buffer->select_type = BST_NORMAL;
-	
+
 	buffer->lexy_last_update_point = -1;
 
 	undo_init(&(buffer->undo));
@@ -476,7 +476,7 @@ void buffer_undo(buffer_t *buffer, bool redo) {
 
 void buffer_replace_selection(buffer_t *buffer, const char *new_text) {
 	if (!(buffer->editable)) return;
-	
+
 	//printf("buffer replace selection: <%s>\n", buffer->path);
 
 	buffer->modified = true;
@@ -498,7 +498,7 @@ void buffer_replace_selection(buffer_t *buffer, const char *new_text) {
 
 	buffer_typeset_from(buffer, start_cursor-1);
 	buffer_unset_mark(buffer);
-	
+
 	//printf("\tcalling lexy update\n");
 	lexy_update_starting_at(buffer, start_cursor-1, false);
 
@@ -967,27 +967,27 @@ static int parmatch_find_ex(buffer_t  *buffer, int start, const char *tomatch, c
 	uint32_t cursor_code = bat(buffer, start)->code;
 	uint32_t match_code = point_to_char_to_find(cursor_code, tomatch, tofind);
 	if (match_code <= 0) return -1;
-	
+
 	//printf("\tcode: %c searching: %c direction: %d\n", (char)cursor_code, (char)match_code, direction);
 
 	int depth = 1;
 	int count = 0;
-	
+
 	for (int i = start+direction; (i >= 0) && (i < BSIZE(buffer)); i += direction) {
 		my_glyph_info_t *cur = bat(buffer, i);
 		if (cur == NULL) return -1;
 		if (cur->code == '\n') --nlines;
 		if (nlines < 0) return -1;
 		if (count++ > PARMATCH_CHAR_LIMIT) return -1;
-		
-		if (cur->code == cursor_code) ++depth;		
+
+		if (cur->code == cursor_code) ++depth;
 		if (cur->code == match_code) --depth;
-		
+
 		//printf("\%d tdepth: %d (%c)\n", i, depth, cur->code);
-		
+
 		if (depth == 0) return i;
-	}	
-	
+	}
+
 	return -1;
 }
 
@@ -996,10 +996,10 @@ int parmatch_find(buffer_t *buffer, int nlines) {
 #define CLOSING_PARENTHESIS ")]}>"
 	//printf("parmatch_find called\n");
 	if (buffer->cursor < 0) return -1;
-	
+
 	int r = parmatch_find_ex(buffer, buffer->cursor, OPENING_PARENTHESIS, CLOSING_PARENTHESIS, +1, nlines);
 	if (r >= 0) return r;
-	
+
 	r = parmatch_find_ex(buffer, buffer->cursor-1, CLOSING_PARENTHESIS, OPENING_PARENTHESIS, -1, nlines);
 	return r;
 }
@@ -1015,27 +1015,25 @@ void buffer_aux_clear(buffer_t *buffer) {
 }
 
 static void buffer_reload_glyph_info(buffer_t *buffer) {
-/*	teddy_fontset_t *font = foundry_lookup(config_strval(&(buffer->config), CFG_MAIN_FONT), true);
-	for (real_line_t *line = buffer->real_line; line != NULL; line = line->next) {
-		FT_UInt previous = 0;
-		uint8_t previous_fontidx = 0;
+	teddy_fontset_t *font = foundry_lookup(config_strval(&(buffer->config), CFG_MAIN_FONT), true);
+	FT_UInt previous = 0;
+	uint8_t previous_fontidx = 0;
+	for (int i = 0; i < BSIZE(buffer); ++i) {
+		my_glyph_info_t *g = bat(buffer, i);
 
-		for (int i = 0; i < line->cap; ++i) {
-			uint8_t fontidx = fontset_fontidx(font, line->glyph_info[i].code);
-			line->glyph_info[i].glyph_index = fontset_glyph_index(font, fontidx, (line->glyph_info[i].code != 0x09) ? line->glyph_info[i].code : 0x20);
-			line->glyph_info[i].kerning_correction = (previous_fontidx == fontidx) ? fontset_get_kerning(font, fontidx, previous, line->glyph_info[i].glyph_index) : 0.0;
+		uint8_t fontidx = fontset_fontidx(font, g->code);
+		g->glyph_index = fontset_glyph_index(font, fontidx, ((g->code != 0x09) && (g->code != 0x0a)) ? g->code : 0x20);
+		g->kerning_correction = (previous_fontidx == fontidx) ? fontset_get_kerning(font, fontidx, previous, g->glyph_index) : 0.0;
 
-			previous = line->glyph_info[i].glyph_index;
-			previous_fontidx = line->glyph_info[i].fontidx = fontidx;
+		previous = g->glyph_index;
+		previous_fontidx = g->fontidx = fontidx;
 
-			line->glyph_info[i].x = 0.0;
-			line->glyph_info[i].y = 0.0;
+		g->x = 0.0;
+		g->y = 0.0;
 
-			line->glyph_info[i].x_advance = fontset_x_advance(font, fontidx, line->glyph_info[i].glyph_index);
-		}
+		g->x_advance = fontset_x_advance(font, fontidx, g->glyph_index);
 	}
-
-	foundry_release(font);*/
+	foundry_release(font);
 }
 
 void buffer_config_changed(buffer_t *buffer) {
