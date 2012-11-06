@@ -66,7 +66,7 @@ void set_label_text(editor_t *editor) {
 static void dirty_line_update(editor_t *editor) {
 	if (editor->dirty_line) {
 		editor->dirty_line = false;
-		buffer_wordcompl_update(editor->buffer, &(editor->buffer->cbt), 100);
+		buffer_wordcompl_update(editor->buffer, &(editor->buffer->cbt), WORDCOMPL_UPDATE_RADIUS);
 		word_completer_full_update();
 	}
 }

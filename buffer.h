@@ -176,4 +176,6 @@ int buffer_column_of(buffer_t *buffer, int p);
 
 #define BSIZE(x) ((x)->size - (x)->gapsz)
 
+#define WORDCOMPL_UPDATE_RADIUS 50000
+
 #endif

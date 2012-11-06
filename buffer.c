@@ -15,7 +15,6 @@
 
 #define SLOP 32
 
-#define WORDCOMPL_UPDATE_RADIUS 5000
 #define MINIMUM_WORDCOMPL_WORD_LEN 3
 
 static int phisical(buffer_t *encl, int point) {

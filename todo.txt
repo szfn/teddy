@@ -1,5 +1,3 @@
-- bug: wordcompl update may be too small a region around cursor
-
 - simpler implementation of lexy (no regexp)
 
 - bug: sometimes movement slows down, instrument editor_complete_move to find out cause of slowdown
