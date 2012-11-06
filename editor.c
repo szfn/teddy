@@ -932,7 +932,7 @@ static void growable_glyph_array_append_underline(struct growable_glyph_array *g
 }
 
 #define AUTOWRAP_INDICATOR_WIDTH 2.0
-static void draw_lines(editor_t *editor, GtkAllocation *allocation, cairo_t *cr, GHashTable *ht) {
+static void draw_lines(editor_t *editor, GtkAllocation *allocation, cairo_t *cr, GHashTable *ht, double starty, double endy) {
 	struct growable_glyph_array *gga_current = NULL;
 
 	my_glyph_info_t *glyph = bat(editor->buffer, 0);
@@ -947,6 +947,10 @@ static void draw_lines(editor_t *editor, GtkAllocation *allocation, cairo_t *cr,
 
 	for  (int i = 0; i < BSIZE(editor->buffer); ++i) {
 		my_glyph_info_t *glyph = bat(editor->buffer, i);
+
+		if (glyph->y < starty) continue;
+		if (glyph->y - editor->buffer->line_height > endy) break;
+
 		//printf("current: %c\n", (char)glyph->code);
 		// draws soft wrapping indicators
 		if (glyph->y - cury > 0.001) {
@@ -1096,7 +1100,7 @@ static gboolean expose_event_callback(GtkWidget *widget, GdkEventExpose *event, 
 	cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
 	set_color_cfg(cr, config_intval(&(editor->buffer->config), CFG_EDITOR_FG_COLOR));
 
-	draw_lines(editor, &allocation, cr, ht);
+	draw_lines(editor, &allocation, cr, ht, gtk_adjustment_get_value(GTK_ADJUSTMENT(editor->adjustment)), gtk_adjustment_get_value(GTK_ADJUSTMENT(editor->adjustment)) + allocation.height);
 
 	{
 		cairo_set_operator(cr, CAIRO_OPERATOR_OVER);

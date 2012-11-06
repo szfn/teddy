@@ -1,15 +1,7 @@
-GAP BUFFER
-
-- reimplement special space width at the beginning of a line
-- reoptimize drawlines to skip glyphs outside the window
-- optimize code that changes mouse cursor into a hand over links (right now its linear in the size of the buffer)
-
-
-OTHER
-
 - simpler implementation of lexy (no regexp)
 - better colors for the tag in all modes
 - simplify acme color scheme
+- optimize code that changes mouse cursor into a hand over links (right now its linear in the size of the buffer)
 - don't open current directory unless no arguments are given
 - buffer_set_mark_at_cursor and buffer_unset_mark are rare, check for deletion
 - tooltips for tag buttons
