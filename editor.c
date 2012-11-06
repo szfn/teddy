@@ -1158,10 +1158,10 @@ static gboolean expose_event_callback(GtkWidget *widget, GdkEventExpose *event, 
 		x = allocation.width - posbox_ext.x_advance - 4.0;
 
 		set_color_cfg(cr, config_intval(&(editor->buffer->config), CFG_POSBOX_BORDER_COLOR));
-		cairo_rectangle(cr, x-1.0, y-1.0, posbox_ext.x_advance+4.0, posbox_ext.height+4.0);
+		cairo_rectangle(cr, x-1.0, y-2.0, posbox_ext.x_advance+4.0, posbox_ext.height+4.0);
 		cairo_fill(cr);
 		set_color_cfg(cr, config_intval(&(editor->buffer->config), CFG_POSBOX_BG_COLOR));
-		cairo_rectangle(cr, x, y, posbox_ext.x_advance + 2.0, posbox_ext.height + 2.0);
+		cairo_rectangle(cr, x, y-1.0, posbox_ext.x_advance + 2.0, posbox_ext.height + 2.0);
 		cairo_fill(cr);
 
 		cairo_move_to(cr, x+1.0, y+posbox_ext.height);

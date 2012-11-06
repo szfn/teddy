@@ -667,7 +667,7 @@ void buffers_refresh(buffer_t *buffer) {
 	editor_t *editor;
 	find_editor_for_buffer(buffer, NULL, NULL, &editor);
 
-	printf("Refreshing buffer <%s>\n", buffer->path);
+	//printf("Refreshing buffer <%s>\n", buffer->path);
 
 	if (buffer->path[strlen(buffer->path)-1] == '/') {
 		buffer_aux_clear(buffer);
