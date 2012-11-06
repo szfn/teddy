@@ -398,13 +398,22 @@ static void buffer_typeset_from(buffer_t *buffer, int point) {
 	for (int i = point+1; i < BSIZE(buffer); ++i) {
 		glyph = bat(buffer, i);
 		if (glyph->code == 0x20) {
-			//TODO:
-			// - if index is 0 use em_advance
-			// - if previous character is a tab use em_advance
-			// - if previous character is a newline use em_advance
-			// - if previous character is a space use its width
-			// - otherwise use space_advance
-			glyph->x_advance = buffer->space_advance;
+			if (i == 0) {
+				glyph->x_advance = buffer->em_advance;
+			} else {
+				my_glyph_info_t *prev = bat(buffer, i - 1);
+				if (prev == NULL) {
+					glyph->x_advance = buffer->space_advance;
+				} else if (prev->code == '\t') {
+					glyph->x_advance = buffer->em_advance;
+				} else if (prev->code == '\n') {
+					glyph->x_advance = buffer->em_advance;
+				} else if (prev->code == ' ') {
+					glyph->x_advance = prev->x_advance;
+				} else {
+					glyph->x_advance = buffer->space_advance;
+				}
+			}
 		} else if (glyph->code == 0x09) {
 			double size = config_intval(&(buffer->config), CFG_TAB_WIDTH) * buffer->em_advance;
 			double to_next_cell = size - fmod(x - buffer->left_margin, size);
