@@ -40,12 +40,7 @@ static char *cut_prompt(job_t *job) {
 	buffer_move_point_line(job->buffer, &(job->buffer->cursor), MT_END, 0);
 	buffer_move_point_glyph(job->buffer, &(job->buffer->cursor), MT_END, 0);
 
-	if (job->input_start >= job->buffer->cursor.line->cap) return NULL;
-
-	copy_lpoint(&(job->buffer->mark), &(job->buffer->cursor));
-	job->buffer->mark.glyph = job->input_start;
-
-	return buffer_lines_to_text(job->buffer, &(job->buffer->mark), &(job->buffer->cursor));
+	return buffer_lines_to_text(job->buffer, job->input_start, job->buffer->cursor);
 }
 
 static void job_destroy(job_t *job) {
@@ -62,8 +57,7 @@ static void job_destroy(job_t *job) {
 		if (p != NULL) free(p);
 		buffer_replace_selection(job->buffer, "");
 
-		job->buffer->cursor.line = job->buffer->real_line;
-		job->buffer->cursor.glyph = 0;
+		job->buffer->cursor = 0;
 
 		editor_t *editor;
 		find_editor_for_buffer(job->buffer, NULL, NULL, &editor);
@@ -88,7 +82,8 @@ static void job_append(job_t *job, const char *msg, int len, int on_new_line) {
 	char *prompt_str = cut_prompt(job);
 
 	if (on_new_line) {
-		if (buffer->cursor.glyph != 0) {
+		my_glyph_info_t *glyph = bat(buffer, buffer->cursor);
+		if ((glyph != NULL) && (glyph->code != '\n')) {
 			buffer_replace_selection(buffer, "\n");
 		}
 	}
@@ -102,7 +97,7 @@ static void job_append(job_t *job, const char *msg, int len, int on_new_line) {
 
 	free(text);
 
-	job->input_start = buffer->cursor.glyph;
+	job->input_start = buffer->cursor;
 
 	if (prompt_str != NULL) {
 		buffer_replace_selection(buffer, prompt_str);
@@ -136,8 +131,7 @@ static void ansi_append_escape(job_t *job) {
 	const char command_char = job->ansiseq[job->ansiseq_cap-1];
 
 	if (command_char == 'J') {
-		buffer->cursor.line = buffer->real_line;
-		buffer->cursor.glyph = 0;
+		buffer->cursor = 0;
 		buffer_set_mark_at_cursor(buffer);
 		buffer_move_point_line(buffer, &(buffer->cursor), MT_END, 0);
 		buffer_replace_selection(buffer, "");
@@ -171,9 +165,15 @@ static void ansi_append(job_t *job, const char *msg, int len) {
 				job_append(job, msg+start, i - start, 0);
 				start = i+1;
 
-				buffer->cursor.glyph = 0;
-				buffer_set_mark_at_cursor(buffer);
-				buffer->cursor.glyph = buffer->cursor.line->cap;
+				job->buffer->mark = job->buffer->cursor;
+				buffer_move_point_glyph(buffer, &(job->buffer->mark), MT_ABS, 1);
+				buffer_move_point_glyph(buffer, &(job->buffer->cursor), MT_END, 0);
+				buffer_replace_selection(buffer, "");
+			} else if (msg[i] == 0x08) {
+				job_append(job, msg+start, i - start, 0);
+				start = i+1;
+				job->buffer->mark = job->buffer->cursor;
+				buffer_move_point_glyph(buffer, &(job->buffer->mark), MT_REL, -1);
 				buffer_replace_selection(buffer, "");
 			} else if (msg[i] == 0x1b) { /* ANSI escape */
 				job_append(job, msg+start, i - start, 0);

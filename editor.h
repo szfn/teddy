@@ -42,8 +42,8 @@ typedef struct _editor_t {
 	glong selection_scroll_timer;
 
 	bool dirty_line;
+	int lineno, colno;
 
-	bool single_line;
 	void (*single_line_escape)(struct _editor_t *editor);
 	void (*single_line_return)(struct _editor_t *editor);
 	bool (*single_line_other_keys)(struct _editor_t *editor, bool shift, bool ctrl, bool alt, bool super, guint keyval);

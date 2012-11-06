@@ -10,8 +10,8 @@
 #define LEXY_ROWS 0xffff
 
 void lexy_init(void);
-void lexy_update_starting_at(buffer_t *buffer, real_line_t *start_line, bool quick_exit);
-void lexy_update_for_move(buffer_t *buffer, real_line_t *possible_start_line);
+void lexy_update_starting_at(buffer_t *buffer, int start, bool quick_exit);
+void lexy_update_for_move(buffer_t *buffer, int possible_start);
 
 int lexy_create_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]);
 int lexy_append_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]);

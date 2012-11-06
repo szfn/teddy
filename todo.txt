@@ -1,8 +1,20 @@
+- better colors for the tag in all modes
+- simpler implementation of lexy (no regexp)
+- optimize code that changes mouse cursor into a hand over links (right now its linear in the size of the buffer)
+- don't open current directory unless no arguments are given
+- buffer_set_mark_at_cursor and buffer_unset_mark are rare, check for deletion
+- tooltips for tag buttons
+- add one tag button to +bg buffers to prevent reuse
+- do not show input textbox for incremental search (just an overlay saying "Searching" and move selection while typing)
 - possible code sharing between columns and column?
-- lines -> ropes for internal representation
 - bold matched text in autocompletions window and iopen window
 - EDITOR and VISUAL setting (needs some IPC implementation)
 - multiprocess highlighting
 - tabs
 - macro recording
 
+TRE PROBLEMS
+
+- \s matches newlines too when REG_NEWLINE is enabled, it shouldn't
+- nothing works inside [], \t doesn't work, \x<number> doesn't work etx...
+- match with ^ still tries to match anywhere in the string, then fails

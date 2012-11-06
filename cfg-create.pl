@@ -68,6 +68,3 @@ for my $cfg_name (@cfg_names) {
 print $cout <<"CBODY_END";
 }
 CBODY_END
-
-#TODO:
-# - print initialization function

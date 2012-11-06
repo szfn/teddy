@@ -74,7 +74,7 @@ namespace eval bindent {
 	proc get_current_line_indent {} {
 		set saved_mark [m]
 		m nil +:1
-		m {*}[s -line {^\s+}]
+		m {*}[s -line {^(?: |\t)+}]
 		set r [c]
 		m {*}$saved_mark
 		return $r
@@ -87,7 +87,7 @@ namespace eval bindent {
 
 		set cursor [m]
 		m +:1 +:$;
-		if {![regexp {^\s*$} [c]]} {
+		if {![regexp {^(?: |\t)*$} [c]]} {
 			m {*}$cursor
 			c $text
 			return
@@ -187,7 +187,7 @@ namespace eval teddy {
 		set saved [m]
 		# delete empty spaces from the end of lines
 		m nil 1:1
-		s {\s+$} {
+		s {(?: |\t)+$} {
 			if {[teddy::lineof [lindex [m] 1]] ne [teddy::lineof [lindex $saved 1]]} {
 				c ""
 			}
@@ -231,11 +231,11 @@ proc acme_theme {} {
 	setcfg -global posbox_fg_color 0
 
 	setcfg -global lexy_nothing [rgbcolor black]
-	setcfg -global lexy_keyword [rgbcolor "midnight blue"]
+	setcfg -global lexy_keyword [rgbcolor black]
 	setcfg -global lexy_comment [rgbcolor "dark green"]
 	setcfg -global lexy_string [rgbcolor "saddle brown"]
 	setcfg -global lexy_id [rgbcolor black]
-	setcfg -global lexy_literal [rgbcolor "saddle brown"]
+	setcfg -global lexy_literal [rgbcolor black]
 	setcfg -global lexy_file [rgbcolor "midnight blue"]
 
 	setcfg -global editor_sel_color [rgbcolor 238 238 158]
@@ -794,8 +794,7 @@ proc buffer_loaded_hook {buffer-name} { }
 # Definitions of lexy state machines to syntax highlight source code
 
 lexydef c 0 {
-		"\\<(?:auto|_Bool|break|case|char|_Complex|const|continue|default|do|double|else|enum|extern|float|for|goto|if|_Imaginary|inline|int|long|register|restrict|return|short|signed|sizeof|static|struct|switch|typedef|union|unsigned|void|volatile|while|int8_t|uint8_t|int16_t|uint16_t|int32_t|uint32_t|int64_t|uint64_t|size_t|time_t|bool)\\>" keyword
-
+ 		"\\<(?:auto|_Bool|break|case|char|_Complex|const|continue|default|do|double|else|enum|extern|float|for|goto|if|_Imaginary|inline|int|long|register|restrict|return|short|signed|sizeof|static|struct|switch|typedef|union|unsigned|void|volatile|while|int8_t|uint8_t|int16_t|uint16_t|int32_t|uint32_t|int64_t|uint64_t|size_t|time_t|bool)\\>" keyword
 		{#\s*(?:include|ifdef|ifndef|if|else|endif|pragma|define)\>} keyword
 
 		"-?(?:0x)[0-9a-fA-F]*" literal
@@ -848,7 +847,7 @@ lexydef python 0 {
 
 		"-?(?:0[bB])?[0-9][0-9]*(?:\\.[0-9]+)?(?:e-[0-9]+?)?[LljJ]?" literal
 		"-?(?:0[xX])[0-9a-fA-F]*" literal
-		"\<None|True|False\>" literal
+		"\\<None|True|False\\>" literal
 
 		{\<[a-zA-Z_][a-zA-Z0-9_]*\>} id
 

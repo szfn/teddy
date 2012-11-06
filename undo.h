@@ -1,8 +1,6 @@
 #ifndef __UNDO_H__
 #define __UNDO_H__
 
-#include "point.h"
-
 #include <stdbool.h>
 
 #include <time.h>
@@ -10,8 +8,7 @@
 #define TYPING_FUSION_INTERVAL 2
 
 typedef struct _selection_t {
-	point_t start;
-	point_t end;
+	int start, end;
 	char *text;
 } selection_t;
 

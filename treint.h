@@ -3,13 +3,15 @@
 
 #include <tre/tre.h>
 #include <stdlib.h>
+#include <stdbool.h>
 
 #include "buffer.h"
 
 struct augmented_lpoint_t {
-	real_line_t *line;
+	buffer_t *buffer;
 	int start_glyph;
 	int offset;
+	bool endatnewline;
 };
 
 void tre_bridge_init(struct augmented_lpoint_t *point, tre_str_source *tss);

@@ -74,8 +74,7 @@ static void iopen_open(GtkTreeView *tree, GtkTreePath *treepath) {
 		if ((editor != NULL) && (search != NULL)) {
 			//printf("searching for <%s>\n", search);
 			buffer_unset_mark(editor->buffer);
-			editor->buffer->cursor.line = editor->buffer->real_line;
-			editor->buffer->cursor.glyph = 0;
+			editor->buffer->cursor = 0;
 
 			const char *argv[] = { "teddy_intl::iopen_search", search };
 			interp_eval_command(editor, NULL, 2, argv);
@@ -380,6 +379,7 @@ void iopen_init(GtkWidget *window) {
 	GtkWidget *main_vbox = gtk_vbox_new(false, 0);
 
 	iopen_buffer = buffer_create();
+	iopen_buffer->single_line = true;
 	load_empty(iopen_buffer);
 	iopen_editor = new_editor(iopen_buffer, true);
 
@@ -441,15 +441,13 @@ void iopen(void) {
 	gtk_list_store_clear(results_list);
 
 	buffer_aux_clear(iopen_buffer);
-	iopen_buffer->cursor.line = iopen_buffer->real_line;
-	iopen_buffer->cursor.glyph = 0;
+	iopen_buffer->cursor = 0;
 
 	gchar *text = gtk_clipboard_wait_for_text(selection_clipboard);
 	if ((text != NULL) && (strcmp(text, "") != 0)) {
 		if (strstr(text, "\n") == NULL) {
 			buffer_replace_selection(iopen_buffer, text);
-			iopen_buffer->mark.line = iopen_buffer->real_line;
-			iopen_buffer->mark.glyph = 0;
+			iopen_buffer->mark = 0;
 		}
 	}
 

@@ -1,23 +1,21 @@
 #ifndef __BUFFER_H__
 #define __BUFFER_H__
 
-#include <cairo.h>
-#include <cairo-ft.h>
-#include <ft2build.h>
-#include FT_FREETYPE_H
 #include <stdint.h>
+#include <stdbool.h>
 
-#include "undo.h"
 #include "jobs.h"
-#include "point.h"
-#include "critbit.h"
 #include "cfg.h"
+#include "critbit.h"
+#include "undo.h"
 
 typedef struct _my_glyph_info_t {
-	double kerning_correction;
-	double x_advance;
 	uint32_t code;
 	uint8_t color;
+	uint16_t status;
+
+	double kerning_correction;
+	double x_advance;
 
 	unsigned long glyph_index;
 	uint8_t fontidx;
@@ -25,25 +23,7 @@ typedef struct _my_glyph_info_t {
 	double y;
 } my_glyph_info_t;
 
-typedef struct _real_line_t {
-	my_glyph_info_t *glyph_info;
-	int allocated;
-	int cap;
-	int lineno; // real line number
-	double start_y;
-	double end_y;
-	double y_increment;
-	uint16_t lexy_state_start, lexy_state_end;
-	struct _real_line_t *prev;
-	struct _real_line_t *next;
-} real_line_t;
-
 enum select_type { BST_NORMAL = 0, BST_WORDS, BST_LINES };
-
-enum tab_mode {
-	TAB_FIXED = 0,
-	TAB_MODN = 1,
-};
 
 typedef struct _buffer_t {
 	char *path;
@@ -54,6 +34,7 @@ typedef struct _buffer_t {
 	int inotify_wd;
 	time_t mtime;
 	bool stale;
+	bool single_line;
 
 	job_t *job;
 
@@ -68,16 +49,14 @@ typedef struct _buffer_t {
 	double underline_position, underline_thickness;
 
 	/* Buffer's text and glyphs */
-	real_line_t *real_line;
+	my_glyph_info_t *buf; size_t size; int cursor; int mark; int gap; size_t gapsz;
 
 	/* Buffer's secondary properties (calculated) */
 	double rendered_height;
 	double rendered_width;
 
 	/* Cursor and mark*/
-	lpoint_t cursor;
-	lpoint_t mark;
-	lpoint_t savedmark;
+	int savedmark;
 	enum select_type select_type;
 
 	/* Undo information */
@@ -88,7 +67,7 @@ typedef struct _buffer_t {
 	double right_margin;
 
 	/* Lexy stuff */
-	real_line_t *lexy_last_update_line;
+	int lexy_last_update_point;
 
 	/* Scripting support */
 	GHashTable *props;
@@ -100,6 +79,7 @@ typedef struct _buffer_t {
 	critbit0_tree cbt;
 } buffer_t;
 
+
 enum movement_type_t {
 	MT_ABS = 0, // move to absolute line/column
 	MT_REL, // relative move
@@ -108,6 +88,8 @@ enum movement_type_t {
 	MT_HOME, // toggle between first column and first non-whitespace character (buffer_move_point_glyph only)
 	MT_RELW, // word based relative move (buffer_move_point_glyph only)
 };
+
+
 
 buffer_t *buffer_create(void);
 void buffer_free(buffer_t *buffer, bool save_critbit);
@@ -124,10 +106,7 @@ int load_dir(buffer_t *buffer, const char *dirname);
 // save the buffer to its file (if exists, otherwise fails)
 void save_to_text_file(buffer_t *buffer);
 
-/*
-  Sets working directory for the buffer (only works if there is no associated file
- */
-void buffer_cd(buffer_t *buffer, const char *wd);
+my_glyph_info_t *bat(buffer_t *encl, int point);
 
 /*
   Mark management
@@ -139,58 +118,62 @@ void buffer_set_mark_at_cursor(buffer_t *buffer);
 void buffer_unset_mark(buffer_t *buffer);
 void buffer_change_select_type(buffer_t *buffer, enum select_type select_type);
 void buffer_extend_selection_by_select_type(buffer_t *buffer);
-void buffer_update_parmatch(buffer_t *buffer);
 
 // replace current selection with new_text (main editing function)
 void buffer_replace_selection(buffer_t *buffer, const char *new_text);
-void buffer_replace_region(buffer_t *buffer, const char *new_text, lpoint_t *start, lpoint_t *end);
 
 // undo
 void buffer_undo(buffer_t *buffer, bool redo);
 
 // returns current selection
-void buffer_get_selection(buffer_t *buffer, lpoint_t *start, lpoint_t *end);
-
-// returns pointer to mark and cursor for current selection (or NULL if no selection exists)
-void buffer_get_selection_pointers(buffer_t *buffer, lpoint_t **start, lpoint_t **end);
+void buffer_get_selection(buffer_t *buffer, int *start, int *end);
 
 // converts a selection of line from this buffer into text
-char *buffer_lines_to_text(buffer_t *buffer, lpoint_t *start, lpoint_t *end);
+char *buffer_lines_to_text(buffer_t *buffer, int start, int end);
 
 // sets character positions if width has changed
-void buffer_typeset_maybe(buffer_t *buffer, double width, bool single_line, bool force);
+void buffer_typeset_maybe(buffer_t *buffer, double width, bool force);
 
 // functions to get screen coordinates of things (yes, I have no idea anymore what the hell they do or are used for)
-void line_get_glyph_coordinates(buffer_t *buffer, lpoint_t *point, double *x, double *y);
-void buffer_point_from_position(buffer_t *buffer, double x, double y, lpoint_t *p);
+void line_get_glyph_coordinates(buffer_t *buffer, int point, double *x, double *y);
+int buffer_point_from_position(buffer_t *buffer, double x, double y);
 void buffer_move_cursor_to_position(buffer_t *buffer, double x, double y);
 
+// informs buffer that the configuration is changed, reload fonts
 void buffer_config_changed(buffer_t *buffer);
 
+// point motion by lines and glyphs
+bool buffer_move_point_line(buffer_t *buffer, int *p, enum movement_type_t type, int arg);
+bool buffer_move_point_glyph(buffer_t *buffer, int *p, enum movement_type_t type, int arg);
+
+// function to execute on change
 void buffer_set_onchange(buffer_t *buffer, void (*fn)(buffer_t *buffer));
 
-bool buffer_move_point_line(buffer_t *buffer, lpoint_t *p, enum movement_type_t type, int arg);
-bool buffer_move_point_glyph(buffer_t *buffer, lpoint_t *p, enum movement_type_t type, int arg);
-
 /* writes in r the indent of cursor_line + a newline and the 0 byte */
-void buffer_indent_newline(buffer_t *buffer, char *r);
+char *buffer_indent_newline(buffer_t *buffer);
 
 /* internal word autocompletion functions */
 void buffer_wordcompl_init_charset(void);
 char *buffer_wordcompl_word_at_cursor(buffer_t *buffer);
-void buffer_wordcompl_update(buffer_t *buffer, critbit0_tree *cbt);
+void buffer_wordcompl_update(buffer_t *buffer, critbit0_tree *cbt, int radius);
 char *buffer_cmdcompl_word_at_cursor(buffer_t *buffer);
 char *buffer_historycompl_word_at_cursor(buffer_t *buffer);
 
 // removes all text from a buffer
 void buffer_aux_clear(buffer_t *buffer);
 
-void buffer_get_extremes(buffer_t *buffer, lpoint_t *start, lpoint_t *end);
+void buffer_get_extremes(buffer_t *buffer, int *start, int *end);
 char *buffer_all_lines_to_text(buffer_t *buffer);
 void buffer_select_all(buffer_t *buffer);
-void buffer_wordcompl_update_line(real_line_t *line, critbit0_tree *c);
+void buffer_wordcompl_update_line(int position, critbit0_tree *c);
 char *buffer_get_selection_text(buffer_t *buffer);
 
-void parmatch_find(lpoint_t *cursor, lpoint_t *match, int nlines);
+int parmatch_find(buffer_t *buffer, int nlines);
+my_glyph_info_t *buffer_next_glyph(buffer_t *buffer, my_glyph_info_t *glyph);
+
+int buffer_line_of(buffer_t *buffer, int p);
+int buffer_column_of(buffer_t *buffer, int p);
+
+#define BSIZE(x) ((x)->size - (x)->gapsz)
 
 #endif

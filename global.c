@@ -1,5 +1,7 @@
 #include "global.h"
 
+#include <fontconfig/fontconfig.h>
+
 #include "cfg.h"
 #include "top.h"
 #include "interp.h"
@@ -192,7 +194,7 @@ bool inside_allocation(double x, double y, GtkAllocation *allocation) {
 
 static char first_byte_result_to_mask[] = { 0xff, 0x3f, 0x1f, 0x0f, 0x00, 0x00, 0x00, 0x00, 0x00 };
 
-static uint8_t utf8_first_byte_processing(uint8_t ch) {
+uint8_t utf8_first_byte_processing(uint8_t ch) {
 	if (ch <= 127) return 0;
 
 	if ((ch & 0xF0) == 0xF0) {
@@ -464,12 +466,12 @@ void save_tied_session(void) {
 
 		fprintf(f, "set b [buffer find {%s}]\n", buffers[i]->path);
 		fprintf(f, "buffer eval $b { m ");
-		if (buffers[i]->mark.line != NULL) {
-			fprintf(f, "%d:%d ", buffers[i]->mark.line->lineno, buffers[i]->mark.glyph);
+		if (buffers[i]->mark < 0) {
+			fprintf(f, "=%d ", buffers[i]->mark);
 		} else {
 			fprintf(f, "nil ");
 		}
-		fprintf(f, "%d:%d", buffers[i]->cursor.line->lineno+1, buffers[i]->cursor.glyph+1);
+		fprintf(f, "=%d", buffers[i]->cursor);
 		fprintf(f, " }\n");
 		fprintf(f, "buffer coc $b\n");
 	}
