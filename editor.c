@@ -945,7 +945,8 @@ static void draw_lines(editor_t *editor, GtkAllocation *allocation, cairo_t *cr,
 	bool do_underline = config_intval(&(editor->buffer->config), CFG_UNDERLINE_LINKS) != 0;
 	bool newline = false;
 
-	while (glyph != NULL) {
+	for  (int i = 0; i < BSIZE(editor->buffer); ++i) {
+		my_glyph_info_t *glyph = bat(editor->buffer, i);
 		//printf("current: %c\n", (char)glyph->code);
 		// draws soft wrapping indicators
 		if (glyph->y - cury > 0.001) {
@@ -1022,8 +1023,6 @@ static void draw_lines(editor_t *editor, GtkAllocation *allocation, cairo_t *cr,
 		g.y = glyph->y;
 
 		growable_glyph_array_append(gga_current, g);
-
-		glyph = buffer_next_glyph(editor->buffer, glyph);
 	}
 
 	if (onfile && (gga_current != NULL)) {

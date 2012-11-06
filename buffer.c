@@ -378,13 +378,6 @@ static void freeze_selection(buffer_t *buffer, selection_t *selection, int start
 	}
 }
 
-my_glyph_info_t *buffer_next_glyph(buffer_t *buffer, my_glyph_info_t *glyph) {
- 	int pp = glyph - buffer->buf;
-	++pp;
-	if (pp == buffer->gap) pp += buffer->gapsz;
-	return (pp < buffer->size) ? buffer->buf + pp : NULL;
-}
-
 static void buffer_typeset_from(buffer_t *buffer, int point) {
 	my_glyph_info_t *glyph = bat(buffer, point);
 
@@ -401,10 +394,16 @@ static void buffer_typeset_from(buffer_t *buffer, int point) {
 		x = buffer->left_margin;
 	}
 
-	glyph = (glyph == NULL) ? bat(buffer, point+1) : buffer_next_glyph(buffer, glyph);
 
-	while (glyph != NULL) {
+	for (int i = point+1; i < BSIZE(buffer); ++i) {
+		glyph = bat(buffer, i);
 		if (glyph->code == 0x20) {
+			//TODO:
+			// - if index is 0 use em_advance
+			// - if previous character is a tab use em_advance
+			// - if previous character is a newline use em_advance
+			// - if previous character is a space use its width
+			// - otherwise use space_advance
 			glyph->x_advance = buffer->space_advance;
 		} else if (glyph->code == 0x09) {
 			double size = config_intval(&(buffer->config), CFG_TAB_WIDTH) * buffer->em_advance;
@@ -438,7 +437,6 @@ static void buffer_typeset_from(buffer_t *buffer, int point) {
 		}
 
 		buffer->rendered_height = y;
-		glyph = buffer_next_glyph(buffer, glyph);
 	}
 }
 
