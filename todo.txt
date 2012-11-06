@@ -1,6 +1,6 @@
-- simpler implementation of lexy (no regexp)
 - better colors for the tag in all modes
 - simplify acme color scheme
+- simpler implementation of lexy (no regexp)
 - optimize code that changes mouse cursor into a hand over links (right now its linear in the size of the buffer)
 - don't open current directory unless no arguments are given
 - buffer_set_mark_at_cursor and buffer_unset_mark are rare, check for deletion
