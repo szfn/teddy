@@ -211,7 +211,7 @@ static void iopen_mitem_callback(GtkMenuItem *menuitem, gpointer data) {
 
 static void open_mitem_callback(GtkMenuItem *menuitem, gpointer data) {
 	buffer_get_extremes(cmdline_editor->buffer, &(cmdline_buffer->mark), &(cmdline_buffer->cursor));
-	buffer_replace_selection(cmdline_editor->buffer, "teddy::open ");
+	buffer_replace_selection(cmdline_editor->buffer, "O ");
 	editor_grab_focus(cmdline_editor, false);
 }
 

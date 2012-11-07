@@ -1,12 +1,12 @@
-- export teddy::open into the global namespace, do not touch existing files (end at first whitespace by default)
+- tooltips for tag buttons
 - handcoded matchers for identifiers and numbers
-- optimize code that changes mouse cursor into a hand over links (right now its linear in the size of the buffer)
-- left-right click combo should always eval
 - don't open current directory unless no arguments are given
 - buffer_set_mark_at_cursor and buffer_unset_mark are rare, check for deletion
-- tooltips for tag buttons
 - add one tag button to +bg buffers to prevent reuse
+- optimize code that changes mouse cursor into a hand over links (right now its linear in the size of the buffer)
 - do not show input textbox for incremental search (just an overlay saying "Searching" and move selection while typing)
+
+- left-right click combo should always eval
 - possible code sharing between columns and column?
 - bold matched text in autocompletions window and iopen window
 - EDITOR and VISUAL setting (needs some IPC implementation)

@@ -154,10 +154,16 @@ proc ss {args} {
 	return $text
 }
 
+proc O {args} {
+	teddy::open {*}$args
+}
+
 namespace eval teddy {
 	namespace export open
 	proc open {path} {
-		catch {shellsync "" touch $path}
+		if {![file exists $path]} {
+			catch {shellsync "" touch $path}
+		}
 		buffer open $path
 	}
 

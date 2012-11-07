@@ -157,10 +157,16 @@ proc ss {args} {\n\
 	return $text\n\
 }\n\
 \n\
+proc O {args} {\n\
+	teddy::open {*}$args\n\
+}\n\
+\n\
 namespace eval teddy {\n\
 	namespace export open\n\
 	proc open {path} {\n\
-		catch {shellsync \"\" touch $path}\n\
+		if {![file exists $path]} {\n\
+			catch {shellsync \"\" touch $path}\n\
+		}\n\
 		buffer open $path\n\
 	}\n\
 \n\
