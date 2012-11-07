@@ -104,7 +104,6 @@ static void move_incremental_search(editor_t *editor, bool ctrl_g_invoked, bool 
 		// search was successful
 		editor->buffer->mark = OS(OS(search_point, i), -j);
 		editor->buffer->cursor = OS(search_point, i);
-		lexy_update_for_move(editor->buffer, editor->buffer->cursor);
 	} else {
 		editor->research.search_failed = false;
 		buffer_unset_mark(editor->buffer);
@@ -136,6 +135,7 @@ static bool move_regexp_search_forward(struct research_t *research, bool execute
 	search_point.buffer = research->buffer;
 	search_point.offset = 0;
 	search_point.endatnewline = false;
+	search_point.endatspace = false;
 
 	if (research->search_failed) {
 		search_point.start_glyph = 0;
@@ -191,8 +191,6 @@ static bool move_regexp_search_forward(struct research_t *research, bool execute
 					return false;
 				}
 			}
-
-			lexy_update_for_move(research->buffer, (*cursor)-1);
 
 			char name[3] = "g.";
 			for (int i = 1; i < OVECTOR_SIZE; ++i) {

@@ -364,9 +364,10 @@ proc lexydef {name args} {
 	for {set i 0} {$i < [llength $args]} {set i [expr $i + 2]} {
 		set start_state [lindex $args $i]
 		set transitions [lindex $args [expr $i + 1]]
-		for {set j 0} {$j < [llength $transitions]} {set j [expr $j + 2]} {
-			set pattern [lindex $transitions $j]
-			set state_and_token_type [split [lindex $transitions [expr $j + 1]] :]
+		for {set j 0} {$j < [llength $transitions]} {set j [expr $j + 3]} {
+			set match_kind [lindex $transitions $j]
+			set pattern [lindex $transitions [expr $j + 1]]
+			set state_and_token_type [split [lindex $transitions [expr $j + 2]] :]
 
 			if {[llength $state_and_token_type] > 1} {
 				set next_state [lindex $state_and_token_type 0]
@@ -379,7 +380,7 @@ proc lexydef {name args} {
 				set type [lindex $state_and_token_type 0]
 			}
 
-			lexydef-append "$name/$start_state" $pattern $next_state $type
+			lexydef-append "$name/$start_state" $match_kind $pattern $next_state $type
 		}
 	}
 }
@@ -846,232 +847,165 @@ proc buffer_loaded_hook {buffer-name} { }
 #### LEXY DEFINITIONS ##########################################################
 # Definitions of lexy state machines to syntax highlight source code
 
+
 lexydef c 0 {
- 		"\\<(?:auto|_Bool|break|case|char|_Complex|const|continue|default|do|double|else|enum|extern|float|for|goto|if|_Imaginary|inline|int|long|register|restrict|return|short|signed|sizeof|static|struct|switch|typedef|union|unsigned|void|volatile|while|int8_t|uint8_t|int16_t|uint16_t|int32_t|uint32_t|int64_t|uint64_t|size_t|time_t|bool)\\>" keyword
-		{#\s*(?:include|ifdef|ifndef|if|else|endif|pragma|define)\>} keyword
+		space "" nothing
+		keywords {auto>|_Bool>|break>|case>|char>|_Complex>|const>|continue>|default>|do>|double>|else>|enum>|extern>|float>|for>|goto>|if>|_Imaginary>|inline>|int>|long>|register>|restrict>|return>|short>|signed>|sizeof>|static>|struct>|switch>|typedef>|union>|unsigned>|void>|volatile>|while>|int8_t>|uint8_t>|int16_t>|uint16_t>|int32_t>|uint32_t>|int64_t>|uint64_t>|size_t>|time_t>|bool>|NULL>|true>|false>} keyword
 
-		"-?(?:0x)[0-9a-fA-F]*" literal
-		"-?[0-9][0-9]*(?:\\.[0-9]+)?(?:e-[0-9]+?)?" literal
-		"NULL|true|false" literal
+		matchspace "#\s*(?:include|ifdef|ifndef|if|else|endif|pragma|define)\\>" keyword
+		match "-?(?:0x)[0-9a-fA-F]*" literal
+		match "-?[0-9][0-9]*(?:\\.[0-9]+)?(?:e-[0-9]+?)?" literal
 
-		"[a-zA-Z_][a-zA-Z0-9_]*" id
+		match "[a-zA-Z_][a-zA-Z0-9_]*" id
 
-		"//.*$" comment
-		"/\\*" comment:comment
+		region "//,\n," comment
+		region {/*,*/,} comment
 
-		"'.'" string
-		{'\\.'} string
-		"\"" string:string
+		region {',',\\} string
+		region {",",\\} string
 
-		"." nothing
-	} comment {
-		"\\*/" 0:comment
-		"." comment
-	} string {
-		{\\.} string
-		"\"" 0:string
-		"." string
+		any "." nothing
 	}
 
 lexyassoc c/0 {\.c$}
 lexyassoc c/0 {\.h$}
 
 lexydef tcl 0 {
-		{\<(?:after|error|lappend|platform|tcl_findLibrary|append|eval|lassign|platform::shell|tcl_startOfNextWord|apply|exec|lindex|proc|tcl_startOfPreviousWord|array|exit|linsert|puts|tcl_wordBreakAfter|auto_execok|expr	list|pwd|tcl_wordBreakBefore|auto_import|fblocked|llength|re_syntax|tcltest|auto_load|fconfigure|load|read|tclvars|auto_mkindex|fcopy|lrange|refchan|tell|auto_mkindex_old|file|lrepeat|regexp|time|auto_qualify|fileevent|lreplace|registry|tm|auto_reset|filename|lreverse|regsub|trace|bgerror|flush|lsearch|rename|unknown|binary|for|lset|return|unload|break|foreach|lsort||unset|catch|format|mathfunc|scan|update|cd|gets|mathop|seek|uplevel|chan|glob|memory|set|upvar|clock|global|msgcat|socket|variable|close|history|namespace|source|vwait|concat|http|open|split|while|continue|if|else|package|string|dde|incr|parray|subst|dict|info|pid|switch|encoding|interp|pkg::create|eof|join|pkg_mkIndex|tcl_endOfWord)\>} keyword
+		space "" nothing
+		keywords {after>|error>|lappend>|platform>|tcl_findLibrary>|append>|eval>|lassign>|platform::shell>|tcl_startOfNextWord>|apply>|exec>|lindex>|proc>|tcl_startOfPreviousWord>|array>|exit>|linsert>|puts>|tcl_wordBreakAfter>|auto_execok>|expr>|list>|pwd>|tcl_wordBreakBefore>|auto_import>|fblocked>|llength>|re_syntax>|tcltest>|auto_load>|fconfigure>|load>|read>|tclvars>|auto_mkindex>|fcopy>|lrange>|refchan>|tell>|auto_mkindex_old>|file>|lrepeat>|regexp>|time>|auto_qualify>|fileevent>|lreplace>|registry>|tm>|auto_reset>|filename>|lreverse>|regsub>|trace>|bgerror>|flush>|lsearch>|rename>|unknown>|binary>|for>|lset>|return>|unload>|break>|foreach>|lsort>|>|unset>|catch>|format>|mathfunc>|scan>|update>|cd>|gets>|mathop>|seek>|uplevel>|chan>|glob>|memory>|set>|upvar>|clock>|global>|msgcat>|socket>|variable>|close>|history>|namespace>|source>|vwait>|concat>|http>|open>|split>|while>|continue>|if>|else>|package>|string>|dde>|incr>|parray>|subst>|dict>|info>|pid>|switch>|encoding>|interp>|pkg::create>|eof>|join>|pkg_mkIndex>|tcl_endOfWord>|{*}} keyword
+		match "\$[a-zA-Z_][a-zA-Z0-9_]*" id
+		region {",",\\} string
+		region "#,\n," comment
 
-		{\<$[a-zA-Z_][a-zA-Z0-9_]*\>} id
-		{"} string:string
-		{\{\*\}} keyword
-		{#.*$} comment
+		match {\<[a-zA-Z0-9]*\>} nothing
 
-		{\<[a-zA-Z0-9]*\>} nothing
-
-		"." nothing
-	} string {
-		{\\.} string
-		{"} 0:string
-		"." string
+		any "." nothing
 	}
 
 lexyassoc tcl/0 {\.tcl$}
 
 lexydef python 0 {
-		{\<(?:and|del|from|not|while|as|elif|global|or|with|assert|else|if|pass|yield|break|except|import|print|class|exec|in|raise|continue|finally|is|return|def|for|lambda|try)\>} keyword
+		space "" nothing
+		keywords {and>|del>|from>|not>|while>|as>|elif>|global>|or>|with>|assert>|else>|if>|pass>|yield>|break>|except>|import>|print>|class>|exec>|in>|raise>|continue>|finally>|is>|return>|def>|for>|lambda>|try>|None>|True>|False>} keyword
 
-		"-?(?:0[bB])?[0-9][0-9]*(?:\\.[0-9]+)?(?:e-[0-9]+?)?[LljJ]?" literal
-		"-?(?:0[xX])[0-9a-fA-F]*" literal
-		"\\<None|True|False\\>" literal
+		match "-?(?:0[bB])?[0-9][0-9]*(?:\\.[0-9]+)?(?:e-[0-9]+?)?[LljJ]?" literal
+		match "-?(?:0[xX])[0-9a-fA-F]*" literal
 
-		{\<[a-zA-Z_][a-zA-Z0-9_]*\>} id
+		match {[a-zA-Z_][a-zA-Z0-9_]*} id
 
-		{(?:r|u|ur|R|U|UR|Ur|uR|b|B|br|Br|bR|BR)?"""} lstringqq:string
-		{(?:r|u|ur|R|U|UR|Ur|uR|b|B|br|Br|bR|BR)?'''} lstringq:string
-		{(?:r|u|ur|R|U|UR|Ur|uR|b|B|br|Br|bR|BR)?"} stringqq:string
-		{(?:r|u|ur|R|U|UR|Ur|uR|b|B|br|Br|bR|BR)?'} stringq:string
+		region {""",""",\\} string
+		region {''',''',\\} string
+		region {",",\\} string
+		region {',',\\} string
 
-		{#.*$} comment
+		region "#,\n," comment
 
-		"." nothing
-	} stringqq {
-		{\\.} string
-		{"} 0:string
-		{.} string
-	} stringq {
-		{\\.} string
-		{'} 0:string
-		{.} string
-	} lstringqq {
-		{\\.} string
-		{"""} 0:string
-		{.} string
-	} lstringq {
-		{\\.} string
-		{'''} 0:string
-		{.} string
+		any "." nothing
 	}
 
 lexyassoc python/0 {\.py$}
 
 lexydef java 0 {
-		{\<(?:abstract|continue|for|new|switch|assert|default|goto|package|synchronized|boolean|do|if|private|this|break|double|implements|protected|throw|byte|else|import|public|throws|case|enum|instanceof|return|transient|catch|extends|int|short|try|char|final|interface|static|void|class|finally|long|strictfp|volatile|const|float|native|super|while)\>} keyword
+		space "" nothing
+		keywords {abstract>|continue>|for>|new>|switch>|assert>|default>|goto>|package>|synchronized>|boolean>|do>|if>|private>|this>|break>|double>|implements>|protected>|throw>|byte>|else>|import>|public>|throws>|case>|enum>|instanceof>|return>|transient>|catch>|extends>|int>|short>|try>|char>|final>|interface>|static>|void>|class>|finally>|long>|strictfp>|volatile>|const>|float>|native>|super>|while>|null>|true>|false>} keyword
 
-		"-?(?:0x)[0-9a-fA-F]*" literal
-		"-?[0-9][0-9]*(?:\\.[0-9]+)?(?:e-[0-9]+?)?" literal
-		"null|true|false" literal
+		match "-?(?:0x)[0-9a-fA-F]*" literal
+		match "-?[0-9][0-9]*(?:\\.[0-9]+)?(?:e-[0-9]+?)?" literal
 
-		"[a-zA-Z_][a-zA-Z0-9_]*" id
+		match "[a-zA-Z_][a-zA-Z0-9_]*" id
 
-		"//.*$" comment
-		"/\\*" comment:comment
+		region "//,\n," comment
+		region {/*,*/,} comment
+		region {',',\\} string
+		region {",",\\} string
 
-		"'.'" string
-		{'\\.'} string
-		"\"" string:string
-
-		"." nothing
-	} comment {
-		"\\*/" 0:comment
-		"." comment
-	} string {
-		{\\.} string
-		"\"" 0:string
-		"." string
+		any "." nothing
 	}
 
 lexyassoc java/0 {\.java$}
 
 lexydef go 0 {
-		{\<(?:break|default|func|interface|select|case|defer|go|map|struct|chan|else|goto|package|switch|const|fallthrough|if|range|type|continue|for|import|return|var)\>} keyword
+		space "" nothing
+		keywords {break>|default>|func>|interface>|select>|case>|defer>|go>|map>|struct>|chan>|else>|goto>|package>|switch>|const>|fallthrough>|if>|range>|type>|continue>|for>|import>|return>|var>|nil>|true>|false>|iota>} keyword
 
-		"-?(?:0x)[0-9a-fA-F]*" literal
-		"-?[0-9][0-9]*(?:\\.[0-9]+)?(?:e-[0-9]+?)?" literal
-		{(?:nil|true|false|iota)} literal
 
-		{\<[a-zA-Z_][a-zA-Z0-9_]*\>} id
+		match "-?(?:0x)[0-9a-fA-F]*" literal
+		match "-?[0-9][0-9]*(?:\\.[0-9]+)?(?:e-[0-9]+?)?" literal
 
-		"//.*$" comment
-		"/\\*" comment:comment
+		match {\<[a-zA-Z_][a-zA-Z0-9_]*\>} id
 
-		"'.'" string
-		{'\\.'} string
-		"\"" string:string
+		region "//,\n," comment
+		region {/*,*/,} comment
+		region {',',\\} string
+		region {",",\\} string
 
-		"." nothing
-	} comment {
-		"\\*/" 0:comment
-		"." comment
-	} string {
-		{\\.} string
-		"\"" 0:string
-		"." string
+		any "." nothing
 	}
 
 lexyassoc go/0 {\.go$}
 
 lexydef filesearch 0 {
-		{https?://\S+} link
-		{([^:[:space:]()]+):(\d+)(?::(\d+))?} file,1,2,3
-		{\<File "(.+?)", line (\d+)} file,1,2
-		{\<at (\S+) line (\d+)} file,1,2
-		{\<in (\S+) on line (\d+)} file,1,2
-		{([^:[:space:]()]+):\[(\d+),(\d+)\]} file,1,2,3
-		{\<([^:[:space:]()]+\.[^:[:space:]()]+)\>} file
-		{\<\S+/} file
-		"." nothing
+		space "" nothing
+		match {https?://\S+} link
+		match {([^:[:space:]()]+):(\d+)(?::(\d+))?} file,1,2,3
+		matchspace {\<File "(.+?)", line (\d+)} file,1,2
+		matchspace {\<at (\S+) line (\d+)} file,1,2
+		matchspace {\<in (\S+) on line (\d+)} file,1,2
+		match {([^:[:space:]()]+):\[(\d+),(\d+)\]} file,1,2,3
+		match {\<([^:[:space:]()]+\.[^:[:space:]()]+)\>} file
+		match {\<\S+/} file
+		any "." nothing
 	}
 
 lexyassoc filesearch/0 {^\+bg}
 lexyassoc filesearch/0 {/$}
 
 lexydef mansearch 0 {
-		{\<(\S+)\((\d+)\)} link,1,2
-		"." nothing
+		match {\<(\S+)\((\d+)\)} link,1,2
+		any "." nothing
 	}
 
 lexyassoc mansearch/0 {^\+man} teddy_intl::man_link_open
 
 lexydef tagsearch 0 {
-		{(\S+)\t/(.+)/$} link,1,2
+		match {(\S+)\t/(.+)/$} link,1,2
 	}
 
 lexydef js 0 {
-		{</script>} html/0:keyword
-		{\<(?:break|const|continue|delete|do|while|export|for|in|function|if|else|instanceOf|label|let|new|return|switch|this|throw|try|catch|typeof|var|void|while|with|yield)\>} keyword
-		"-?(?:0x)[0-9a-fA-F]*" literal
-		"-?[0-9][0-9]*(?:\\.[0-9]+)?(?:e-[0-9]+?)?" literal
-		"null|true|false" literal
+		space "" nothing
+		match {</script>} html/0:keyword
+		keywords {break>|const>|continue>|delete>|do>|while>|export>|for>|in>|function>|if>|else>|instanceOf>|label>|let>|new>|return>|switch>|this>|throw>|try>|catch>|typeof>|var>|void>|while>|with>|yield>|null>|true>|false>} keyword
+		match "-?(?:0x)[0-9a-fA-F]*" literal
+		match "-?[0-9][0-9]*(?:\\.[0-9]+)?(?:e-[0-9]+?)?" literal
 
-		"[a-zA-Z_][a-zA-Z0-9_]*" id
+		match "[a-zA-Z_][a-zA-Z0-9_]*" id
 
-		"//.*$" comment
-		"/\\*" comment:comment
-
-		"\"" stringqq:string
-		"\'" stringq:string
-
-		"." nothing
-	} comment {
-		"\\*/" 0:comment
-		"." comment
-	} stringq {
-		{\\.} string
-		{'} 0:string
-		{.} string
-	} stringqq {
-		{\\.} string
-		"\"" 0:string
-		{.} string
+		region "//,\n," comment
+		region {/*,*/,} comment
+		region {",",\\} string
+		region {',',\\} string
+		any "." nothing
 	}
 
 lexydef html 0 {
-		{&.*?;} literal
-		{<!--} comment:comment
-		{<} html-tag-start:keyword
-		{>} keyword
-		"." nothing
+		space "" nothing
+		region {<!--,-->,} comment
+		keywords {<} html-tag-start:keyword
+		match {>} keyword
+		match {&.*?;} literal
+		any "." nothing
 	} html-tag-start {
-		{script} html-tag-waiting-for-script:keyword
-		{[a-zA-Z]+} html-tag:keyword
-		"." nothing
+		keywords {script} html-tag-waiting-for-script:keyword
+		match {[a-zA-Z]+} html-tag:keyword
+		any "." nothing
 	} html-tag {
-		{'} stringq:string
-		{"} stringqq:string
-		{>} 0:nothing
-		"." nothing
+		region {',',\\} string
+		region {",",\\} string
+		keywords {>} 0:nothing
+		any "." nothing
 	} html-tag-waiting-for-script {
-		{>} js/0:nothing
-		"." nothing
-	} stringqq {
-		{\\.} string
-		{"} html-tag:string
-		{.} string
-	} stringq {
-		{\\.} string
-		{'} html-tag:string
-		{.} string
-	} comment {
-		{-->} 0:comment
-		"." comment
+		keywords {>} js/0:nothing
+		any "." nothing
 	}
 
 lexyassoc html/0 {\.html$}

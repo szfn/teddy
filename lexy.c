@@ -4,6 +4,8 @@
 
 #include <tre/tre.h>
 
+#include <unicode/uchar.h>
+
 #include "global.h"
 #include "treint.h"
 #include "interp.h"
@@ -47,14 +49,37 @@ int lexy_colors[0xff];
 #define LEXY_STATUS_NUMBER LEXY_ROWS/LEXY_STATUS_BLOCK_SIZE
 #define LEXY_LINE_LENGTH_LIMIT 512
 
-#define LEXY_LOAD_HOOK_MAX_COUNT 512
+#define LEXY_LOAD_HOOK_MAX_COUNT 4096
 
 const char *CONTINUATION_STATUS = "continuation-state";
+
+enum match_kind {
+	LM_KEYWORDS = 0,
+	LM_REGION,
+	LM_REGEXP,
+	LM_REGEXP_SPACE,
+	LM_ANY,
+	LM_SPACE,
+	LM_UNKNOWN,
+};
 
 struct lexy_row {
 	bool enabled;
 	bool jump;
+
+	enum match_kind match_kind;
+
+	/* LM_KEYWORDS */
+	size_t kwlen;
+	char *kws;
+
+	/* LM_REGION */
+	char *region_end;
+	char escape;
+
+	/* LM_REGEXP match */
 	regex_t pattern;
+
 	bool check;
 	uint8_t token_type;
 	uint16_t next_status;
@@ -238,16 +263,42 @@ static struct lexy_row *new_row_for_state(int state) {
 	return NULL;
 }
 
+static enum match_kind parse_match_kind(const char *match_kind) {
+	if (strcmp(match_kind, "keywords") == 0) {
+		return LM_KEYWORDS;
+	} else if (strcmp(match_kind, "region") == 0) {
+		return LM_REGION;
+	} else if (strcmp(match_kind, "match") == 0) {
+		return LM_REGEXP;
+	} else if (strcmp(match_kind, "matchspace") == 0) {
+		return LM_REGEXP_SPACE;
+	} else if (strcmp(match_kind, "any") == 0) {
+		return LM_ANY;
+	} else if (strcmp(match_kind, "space") == 0) {
+		return LM_SPACE;
+	} else {
+		return LM_UNKNOWN;
+	}
+}
+
 int lexy_append_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
-	if (argc != 5) {
-		Tcl_AddErrorInfo(interp, "Wrong number of arguments to 'lexydef-append', usage: 'lexydef-append <lexy name> <pattern> <next lexy state> <token type>'");
+	if (argc != 6) {
+		Tcl_AddErrorInfo(interp, "Wrong number of arguments to 'lexydef-append', usage: 'lexydef-append <lexy name> <match kind> <pattern> <next lexy state> <token type>'");
 		return TCL_ERROR;
 	}
 
 	const char *status_name = argv[1];
-	const char *pattern = argv[2];
-	const char *next_status_name = argv[3];
-	const char *token_type_name = argv[4];
+	const char *match_kind_str = argv[2];
+	const char *pattern = argv[3];
+	const char *next_status_name = argv[4];
+	const char *token_type_name = argv[5];
+
+	enum match_kind match_kind = parse_match_kind(match_kind_str);
+
+	if (match_kind == LM_UNKNOWN) {
+		Tcl_AddErrorInfo(interp, "Unknown match kind");
+		return TCL_ERROR;
+	}
 
 	//printf("Lexy append: %s %s %s %s\n", status_name, pattern, next_status_name, token_type_name);
 
@@ -273,25 +324,6 @@ int lexy_append_command(ClientData client_data, Tcl_Interp *interp, int argc, co
 		return TCL_ERROR;
 	}
 
-	char *fixed_pattern;
-	asprintf(&fixed_pattern, "^(?:%s)", pattern);
-	alloc_assert(fixed_pattern);
-
-	regex_t compiled_pattern;
-	int r = tre_regcomp(&compiled_pattern, fixed_pattern, REG_EXTENDED);
-	if (r != REG_OK) {
-#define REGERROR_BUF_SIZE 512
-		char buf[REGERROR_BUF_SIZE];
-		tre_regerror(r, &compiled_pattern, buf, REGERROR_BUF_SIZE);
-		char *msg;
-		asprintf(&msg, "Syntax error in regular expression [%s]: %s\n", fixed_pattern, buf);
-		alloc_assert(msg);
-		Tcl_AddErrorInfo(interp, msg);
-		free(msg);
-		return TCL_ERROR;
-	}
-	tre_regfree(&compiled_pattern);
-
 	struct lexy_row *new_row = new_row_for_state(status_index);
 	if (new_row == NULL) {
 		Tcl_AddErrorInfo(interp, "Out of row space");
@@ -300,14 +332,108 @@ int lexy_append_command(ClientData client_data, Tcl_Interp *interp, int argc, co
 
 	new_row->next_status = next_status_index;
 	new_row->token_type = token_type;
-	tre_regcomp(&(new_row->pattern), fixed_pattern, REG_EXTENDED);
-	new_row->enabled = true;
+	new_row->match_kind = match_kind;
 	new_row->check = check;
 	new_row->file_group = file_group;
 	new_row->lineno_group = lineno_group;
 	new_row->colno_group = colno_group;
 
-	free(fixed_pattern);
+	switch (match_kind) {
+	case LM_REGEXP_SPACE:
+	case LM_REGEXP: {
+		char *fixed_pattern;
+		asprintf(&fixed_pattern, "^(?:%s)", pattern);
+		alloc_assert(fixed_pattern);
+		regex_t compiled_pattern;
+		int r = tre_regcomp(&(new_row->pattern), fixed_pattern, REG_EXTENDED);
+		if (r != REG_OK) {
+#define REGERROR_BUF_SIZE 512
+			char buf[REGERROR_BUF_SIZE];
+			tre_regerror(r, &compiled_pattern, buf, REGERROR_BUF_SIZE);
+			char *msg;
+			asprintf(&msg, "Syntax error in regular expression [%s]: %s\n", fixed_pattern, buf);
+			alloc_assert(msg);
+			Tcl_AddErrorInfo(interp, msg);
+			free(msg);
+			free(fixed_pattern);
+			return TCL_ERROR;
+		}
+		new_row->enabled = true;
+		free(fixed_pattern);
+		break;
+	}
+
+	case LM_SPACE:
+		new_row->enabled = true;
+		break;
+
+	case LM_KEYWORDS:
+		new_row->kwlen = strlen(pattern);
+		new_row->kws = strdup(pattern);
+		alloc_assert(new_row->kws);
+		for (int i = 0; i < new_row->kwlen; ++i) {
+			if (new_row->kws[i] == '|') new_row->kws[i] = '\0';
+		}
+		new_row->enabled = true;
+		break;
+
+	case LM_ANY:
+		new_row->enabled = true;
+		break;
+
+	case LM_REGION: {
+		char *copy_pattern = strdup(pattern);
+		alloc_assert(copy_pattern);
+
+		char *saveptr;
+		char *start = strtok_r(copy_pattern, ",", &saveptr);
+		char *end = strtok_r(NULL, ",", &saveptr);
+		char *escape = strtok_r(NULL, ",", &saveptr);
+
+		if (escape == NULL) escape = "\0";
+
+		if ((start == NULL) || (end == NULL) || (escape == NULL)) {
+			Tcl_AddErrorInfo(interp, "Wrong pattern for 'region' match kind");
+			return TCL_ERROR;
+		}
+
+		new_row->match_kind = LM_KEYWORDS;
+		new_row->kwlen = strlen(start);
+		new_row->kws = strdup(start);
+		alloc_assert(new_row->kws);
+
+		int region_status = create_new_status("synthetic");
+		if (region_status < 0) {
+			Tcl_AddErrorInfo(interp, "Out of row space\n");
+			return TCL_ERROR;
+		}
+		new_row->next_status = region_status;
+
+		struct lexy_row *region_row = new_row_for_state(region_status);
+		if (region_row == NULL) {
+			Tcl_AddErrorInfo(interp, "Out of row space\n");
+			return TCL_ERROR;
+		}
+
+		new_row->check = false;
+		new_row->enabled = true;
+
+		region_row->next_status = next_status_index;
+		region_row->token_type = token_type;
+		region_row->match_kind = LM_REGION;
+		region_row->region_end = strdup(end);
+		region_row->escape = escape[0];
+		region_row->check = false;
+		region_row->enabled = true;
+
+		free(copy_pattern);
+		break;
+	}
+
+	case LM_UNKNOWN:
+		Tcl_AddErrorInfo(interp, "Unknown match kind");
+		return TCL_ERROR;
+	}
 
 	return TCL_OK;
 }
@@ -326,11 +452,40 @@ static bool check_file_match(struct lexy_row *row, buffer_t *buffer, int glyph, 
 	return r;
 }
 
-static void lexy_update_one_token(buffer_t *buffer, int *i, int *status) {
-	int base = *status;	
-	
+static bool bufmatch(buffer_t *buffer, int start, const char *needle) {
+	//printf("Checking %d %s\n", start, needle);
+	int j = 0;
+	uint32_t cur_code;
+	for (int i = 0; i < strlen(needle); ++j) {
+		bool valid;
+		cur_code = utf8_to_utf32(needle, &i, strlen(needle), &valid);
+		if (!valid) return false;
+
+		my_glyph_info_t *cur_glyph = bat(buffer, start + j);
+		if (cur_glyph == NULL) return false;
+
+		//printf("cur_code %d (%c) cur_glyph %d (%c)\n", cur_code, (char)cur_code, cur_glyph->code, (char)cur_glyph->code);
+
+		if (cur_code == '>') break;
+		if (cur_code != cur_glyph->code) return false;
+	}
+
+	if (cur_code == '>') {
+		my_glyph_info_t *g = bat(buffer, start + j);
+		if (g != NULL) {
+			//printf("Extra check for <%s> is %d (%c)\n", needle, g->code, (char)g->code);
+			if (u_isalnum(g->code) || (g->code == '_')) return false;
+		}
+	}
+
+	return true;
+}
+
+static void lexy_update_one_token(buffer_t *buffer, int *i, int *status, bool quick_exit) {
+	int base = *status;
+
 	//printf("Coloring one token at %p:%d (status %d)\n", buffer, *i, *status);
-	
+
 	for (int offset = 0; offset < LEXY_STATUS_BLOCK_SIZE; ++offset) {
 		struct lexy_row *row = lexy_rows + base + offset;
 		if (!(row->enabled)) {
@@ -343,46 +498,118 @@ static void lexy_update_one_token(buffer_t *buffer, int *i, int *status) {
 			base = row->next_status;
 			offset = -1;
 			continue;
-		}	
-		
-		struct augmented_lpoint_t matchpoint;
-		matchpoint.buffer = buffer;
-		matchpoint.start_glyph = *i;
-		matchpoint.offset = 0;	
-		matchpoint.endatnewline = true;
-		
-		tre_str_source tss;
-		tre_bridge_init(&matchpoint, &tss);			
-		
+		}
+
+
+
+		int match_len = -1;
+
+		//printf("%d %d Testing match_kind: %d\n", base, offset, row->match_kind);
+
+		switch (row->match_kind) {
+		case LM_REGEXP_SPACE:
+		case LM_REGEXP: {
+			struct augmented_lpoint_t matchpoint;
+			matchpoint.buffer = buffer;
+			matchpoint.start_glyph = *i;
+			matchpoint.offset = 0;
+			matchpoint.endatnewline = true;
+			matchpoint.endatspace = (row->match_kind == LM_REGEXP_SPACE);
+
+			tre_str_source tss;
+			tre_bridge_init(&matchpoint, &tss);
 #define NMATCH 10
-		regmatch_t pmatch[NMATCH];
-		
-		//printf("\tPattern matching:\n");
-		int r = tre_reguexec(&(row->pattern), &tss, NMATCH, pmatch, 0);		
-		//printf("\tdone %d %d\n", r, REG_OK);
-		
-		if (r == REG_OK) {
-			//printf("\t\tMatched: %d (%d) - %d as %d [", *i+pmatch[0].rm_so, pmatch[0].rm_so, *i+pmatch[0].rm_eo, row->token_type);
+			regmatch_t pmatch[NMATCH];
+			//printf("\tPattern matching:\n");
+			int r = tre_reguexec(&(row->pattern), &tss, NMATCH, pmatch, 0);
+			//printf("\tdone %d %d\n", r, REG_OK);
 
-			uint8_t token_type = row->token_type;
+			if (r == REG_OK) {
+				//printf("\t\tMatched: %d (%d) - %d as %d [", *i+pmatch[0].rm_so, pmatch[0].rm_so, *i+pmatch[0].rm_eo, row->token_type);
 
-			if (row->token_type == CFG_LEXY_FILE - CFG_LEXY_NOTHING) {
-				if (!check_file_match(row, buffer, *i, NMATCH, pmatch)) {
-					token_type = CFG_LEXY_NOTHING - CFG_LEXY_NOTHING;
+				if (row->token_type == CFG_LEXY_FILE - CFG_LEXY_NOTHING) {
+					if (check_file_match(row, buffer, *i, NMATCH, pmatch)) {
+						match_len = pmatch[0].rm_eo;
+					}
+				} else {
+					match_len = pmatch[0].rm_eo;
 				}
 			}
+			break;
+		}
 
-			for (int j = 0; j < pmatch[0].rm_eo; ++j) {
+		case LM_SPACE:
+			if ((bat(buffer, *i)->code == 0x20) || (bat(buffer, *i)->code == 0x09)) {
+				match_len = 1;
+			}
+			break;
+
+		case LM_KEYWORDS:
+			for (int start = 0; start < row->kwlen; start += strlen(row->kws + start)+1) {
+				//printf("Matching %d <%s>\n", row->kwlen, row->kws + start);
+				if (bufmatch(buffer, *i, row->kws + start)) {
+					match_len = strlen(row->kws + start);
+					break;
+				}
+			}
+			break;
+
+		case LM_ANY:
+			match_len = 1;
+			break;
+
+		case LM_REGION: {
+			int dst = 0;
+			bool valid;
+			uint32_t dst_code = utf8_to_utf32(row->region_end, &dst, strlen(row->region_end), &valid);
+			int nlcount = 0;
+			int j;
+			for (j = *i; j < BSIZE(buffer); ++j) {
+				my_glyph_info_t *g = bat(buffer, j);
+				if (g == NULL) break;
+				if (g->code == '\n') ++nlcount;
+				if (quick_exit) {
+					if (nlcount > 2) break;
+				}
+				//printf("\tChecking %d %c\n", g->code, (char)g->code);
+				if (g->code == row->escape) {
+					++j;
+					dst = 0;
+					dst_code = utf8_to_utf32(row->region_end, &dst, strlen(row->region_end), &valid);
+				} else {
+					if (g->code == dst_code) {
+						if (dst >= strlen(row->region_end)) {
+							break;
+						}
+						dst_code = utf8_to_utf32(row->region_end, &dst, strlen(row->region_end), &valid);
+					}
+				}
+			}
+			match_len = j - *i + 1;
+			break;
+		}
+
+		case LM_UNKNOWN:
+			// do nothing, this is an error
+			break;
+		}
+
+		if (match_len >= 0) {
+			uint8_t token_type = row->token_type;
+
+			for (int j = 0; j < match_len; ++j) {
+				my_glyph_info_t *g = bat(buffer, *i + j);
+				if (g == NULL) break;
 				//uint32_t code = line->glyph_info[*glyph + j].code;
 				//printf("%c", (code >= 0x20) && (code <= 0x7f) ? (char)code : '?');
-				bat(buffer, *i + j)->color = token_type;
-				bat(buffer, *i + j)->status = *status;
+				g->color = token_type;
+				g->status = *status;
 			}
 			//printf("]\n");
-			*i += pmatch[0].rm_eo;
+			*i += match_len;
 			*status = row->next_status;
 			return;
-		}		
+		}
 	}
 }
 
@@ -425,11 +652,11 @@ const char *lexy_get_link_fn(buffer_t *buffer) {
 void lexy_update_starting_at(buffer_t *buffer, int start, bool quick_exit) {
 	int start_status_index = start_status_for_buffer(buffer);
 	if (start_status_index < 0) return;
-	
+
 	//printf("Coloring buffer %p (%s) starting at %d (%d)\n", buffer, buffer->path, start, BSIZE(buffer));
 
 	int status;
-		
+
 	if (start < 0) {
 		start = 0;
 		status = start_status_index;
@@ -437,15 +664,15 @@ void lexy_update_starting_at(buffer_t *buffer, int start, bool quick_exit) {
 		buffer_move_point_glyph(buffer, &start, MT_ABS, 1);
 		if (start > 0) --start;
 		my_glyph_info_t *glyph = bat(buffer, start);
-		status = (glyph != NULL) ? glyph->status : start_status_index;	
-		if (status == 0xffff) status = start_status_index;		
+		status = (glyph != NULL) ? glyph->status : start_status_index;
+		if (status == 0xffff) status = start_status_index;
 	}
-	
-	//printf("\tActual start %d (status: %d)\n", start, status);	
+
+	//printf("\tActual start %d (status: %d)\n", start, status);
 	//printf("Buffer <%s> status: %d start_status_for_buffer %d\n", buffer->path, status, start_status_index);
-	
+
 	int count = 0;
-	
+
 	for (int i = start; i < BSIZE(buffer); ) {
 		my_glyph_info_t *g = bat(buffer, i);
 		if (g == NULL) return;
@@ -454,34 +681,25 @@ void lexy_update_starting_at(buffer_t *buffer, int start, bool quick_exit) {
 			++count;
 		}
 		int previ = i;
+		if (quick_exit) {
+			if (count > 2) {
+				break;
+			}
+		}
 		if (g->status == status) {
-			if (count < 4) lexy_update_one_token(buffer, &i, &status);
+			if (count < 4) lexy_update_one_token(buffer, &i, &status, quick_exit);
 			else {
 				//printf("\tquick exit %d\n", i);
 				break;
 			}
 		} else {
-			lexy_update_one_token(buffer, &i, &status);
+			lexy_update_one_token(buffer, &i, &status, quick_exit);
 			buffer->lexy_last_update_point = i;
 		}
 		if (previ == i) ++i;
 		if (count > LEXY_LOAD_HOOK_MAX_COUNT) break;
 	}
 	//printf("Finished %d\n", buffer->lexy_last_update_point);
-}
-
-void lexy_update_for_move(buffer_t *buffer, int start_point) {
-	if (buffer->lexy_last_update_point < 0) return;
-	int real_start = MIN(start_point, buffer->lexy_last_update_point);
-
-	//printf("Lexy update for move: %p:%d (%d %d)\n", buffer, start_point, buffer->lexy_last_update_point, real_start);
-	
-	for (int count = 0; count < 10; ++count) { // count is here just to prevent this loop from running forever on pathological situations
-		lexy_update_starting_at(buffer, real_start-1, true);
-		real_start = buffer->lexy_last_update_point;
-		if (real_start < 0) break;
-		if (real_start > buffer->cursor) break;
-	}
 }
 
 int lexy_create_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
@@ -508,6 +726,8 @@ static int lexy_parse_token( int state, const char *text, char **file, char **li
 			offset = -1;
 			continue;
 		}
+
+		if ((row->match_kind != LM_REGEXP) && (row->match_kind != LM_REGEXP_SPACE)) continue;
 
 		//printf("Checking offset %d\n", offset);
 

@@ -12,6 +12,7 @@ struct augmented_lpoint_t {
 	int start_glyph;
 	int offset;
 	bool endatnewline;
+	bool endatspace;
 };
 
 void tre_bridge_init(struct augmented_lpoint_t *point, tre_str_source *tss);

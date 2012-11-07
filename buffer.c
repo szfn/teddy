@@ -495,6 +495,8 @@ void buffer_replace_selection(buffer_t *buffer, const char *new_text) {
 		freeze_selection(buffer, &(undo_node->before_selection), MIN(buffer->mark, buffer->cursor), MAX(buffer->mark, buffer->cursor));
 	}
 
+	int selbefore = (buffer->mark != -1) ? (MAX(buffer->cursor, buffer->mark) - MIN(buffer->cursor, buffer->mark)) : 0;
+
 	int start_cursor = buffer_replace_selection_ex(buffer, new_text, false);
 
 	if (buffer->job == NULL) {
@@ -506,7 +508,11 @@ void buffer_replace_selection(buffer_t *buffer, const char *new_text) {
 	buffer_unset_mark(buffer);
 
 	//printf("\tcalling lexy update\n");
-	lexy_update_starting_at(buffer, start_cursor-1, false);
+	if ((strlen(new_text) > 1) || (selbefore > 1)) {
+		lexy_update_starting_at(buffer, start_cursor-1, false);
+	} else {
+		lexy_update_starting_at(buffer, start_cursor-1, true);
+	}
 
 	if (buffer->onchange != NULL) buffer->onchange(buffer);
 }

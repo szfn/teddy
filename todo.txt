@@ -1,9 +1,7 @@
-- simpler implementation of lexy (no regexp)
-
-- bug: sometimes movement slows down, instrument editor_complete_move to find out cause of slowdown
-
-- left-right click combo should always eval
+- export teddy::open into the global namespace, do not touch existing files (end at first whitespace by default)
+- handcoded matchers for identifiers and numbers
 - optimize code that changes mouse cursor into a hand over links (right now its linear in the size of the buffer)
+- left-right click combo should always eval
 - don't open current directory unless no arguments are given
 - buffer_set_mark_at_cursor and buffer_unset_mark are rare, check for deletion
 - tooltips for tag buttons

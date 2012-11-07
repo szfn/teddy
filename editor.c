@@ -65,6 +65,7 @@ void set_label_text(editor_t *editor) {
 
 static void dirty_line_update(editor_t *editor) {
 	if (editor->dirty_line) {
+		lexy_update_starting_at(editor->buffer, editor->buffer->cursor-1, false);
 		editor->dirty_line = false;
 		buffer_wordcompl_update(editor->buffer, &(editor->buffer->cbt), WORDCOMPL_UPDATE_RADIUS);
 		word_completer_full_update();
@@ -94,6 +95,8 @@ static void editor_replace_selection(editor_t *editor, const char *new_text) {
 	}
 
 	editor_include_cursor(editor, ICM_TOP, ICM_BOT);
+	editor->lineno = buffer_line_of(editor->buffer, editor->buffer->cursor);
+	editor->colno = buffer_column_of(editor->buffer, editor->buffer->cursor);	
 }
 
 static bool editor_maybe_show_completions(editor_t *editor, struct completer *completer, bool autoinsert, int min) {
@@ -210,7 +213,6 @@ void editor_complete_move(editor_t *editor, gboolean should_move_origin) {
 	if (should_move_origin) {
 		editor_include_cursor(editor, ICM_MID, ICM_MID);
 	}
-	lexy_update_for_move(editor->buffer, editor->buffer->cursor);
 	editor->lineno = buffer_line_of(editor->buffer, editor->buffer->cursor);
 	editor->colno = buffer_column_of(editor->buffer, editor->buffer->cursor);
 }
@@ -1180,7 +1182,7 @@ static gboolean expose_event_callback(GtkWidget *widget, GdkEventExpose *event, 
 		gtk_adjustment_set_page_increment(GTK_ADJUSTMENT(editor->adjustment), allocation.height/2);
 		gtk_adjustment_set_step_increment(GTK_ADJUSTMENT(editor->adjustment), editor->buffer->line_height);
 
-		if (editor->buffer->rendered_width <= allocation.width) {
+		if ((editor->buffer->rendered_width <= allocation.width) || (config_intval(&(editor->buffer->config), CFG_AUTOWRAP) != 0)) {
 			gtk_widget_hide(GTK_WIDGET(editor->drarhscroll));
 		} else {
 			gtk_widget_show(GTK_WIDGET(editor->drarhscroll));
