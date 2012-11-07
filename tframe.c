@@ -588,10 +588,12 @@ tframe_t *tframe_new(const char *title, GtkWidget *content, columns_t *columns) 
 	GtkWidget *close_box = gtk_event_box_new();
 	gtk_widget_modify_bg_all(close_box, &c);
 	gtk_container_add(GTK_CONTAINER(close_box), gtk_image_new_from_pixbuf(close_pixbuf));
+	gtk_widget_set_tooltip_text(close_box, "Close frame");
 
 	GtkWidget *magnify_box = gtk_event_box_new();
 	gtk_widget_modify_bg_all(magnify_box, &c);
 	gtk_container_add(GTK_CONTAINER(magnify_box), gtk_image_new_from_pixbuf(maximize_pixbuf));
+	gtk_widget_set_tooltip_text(magnify_box, "Maximize frame");
 
 	gtk_widget_add_events(close_box, GDK_BUTTON_PRESS_MASK);
 	gtk_widget_add_events(magnify_box, GDK_BUTTON_PRESS_MASK);

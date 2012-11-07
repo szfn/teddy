@@ -1,4 +1,3 @@
-- tooltips for tag buttons
 - handcoded matchers for identifiers and numbers
 - don't open current directory unless no arguments are given
 - buffer_set_mark_at_cursor and buffer_unset_mark are rare, check for deletion
