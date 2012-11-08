@@ -1,3 +1,5 @@
+- display character position in the posbox
+- filesearch doesn't match python/perl/php correctly anymore
 - handcoded matchers for identifiers and numbers
 - don't open current directory unless no arguments are given
 - buffer_set_mark_at_cursor and buffer_unset_mark are rare, check for deletion
@@ -5,6 +7,7 @@
 - optimize code that changes mouse cursor into a hand over links (right now its linear in the size of the buffer)
 - do not show input textbox for incremental search (just an overlay saying "Searching" and move selection while typing)
 
+- freeing memory in tframe, column, columns
 - left-right click combo should always eval
 - possible code sharing between columns and column?
 - bold matched text in autocompletions window and iopen window

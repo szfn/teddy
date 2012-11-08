@@ -401,12 +401,15 @@ int lexy_append_command(ClientData client_data, Tcl_Interp *interp, int argc, co
 		new_row->kwlen = strlen(start);
 		new_row->kws = strdup(start);
 		alloc_assert(new_row->kws);
+		new_row->check = false;
+		new_row->enabled = true;
 
 		int region_status = create_new_status("synthetic");
 		if (region_status < 0) {
 			Tcl_AddErrorInfo(interp, "Out of row space\n");
 			return TCL_ERROR;
 		}
+
 		new_row->next_status = region_status;
 
 		struct lexy_row *region_row = new_row_for_state(region_status);
@@ -414,9 +417,6 @@ int lexy_append_command(ClientData client_data, Tcl_Interp *interp, int argc, co
 			Tcl_AddErrorInfo(interp, "Out of row space\n");
 			return TCL_ERROR;
 		}
-
-		new_row->check = false;
-		new_row->enabled = true;
 
 		region_row->next_status = next_status_index;
 		region_row->token_type = token_type;
@@ -452,33 +452,34 @@ static bool check_file_match(struct lexy_row *row, buffer_t *buffer, int glyph, 
 	return r;
 }
 
-static bool bufmatch(buffer_t *buffer, int start, const char *needle) {
+static int bufmatch(buffer_t *buffer, int start, const char *needle) {
 	//printf("Checking %d %s\n", start, needle);
 	int j = 0;
 	uint32_t cur_code;
 	for (int i = 0; i < strlen(needle); ++j) {
 		bool valid;
 		cur_code = utf8_to_utf32(needle, &i, strlen(needle), &valid);
-		if (!valid) return false;
+		if (!valid) return -1;
 
 		my_glyph_info_t *cur_glyph = bat(buffer, start + j);
-		if (cur_glyph == NULL) return false;
+		if (cur_glyph == NULL) return -1;
 
 		//printf("cur_code %d (%c) cur_glyph %d (%c)\n", cur_code, (char)cur_code, cur_glyph->code, (char)cur_glyph->code);
 
 		if (cur_code == '>') break;
-		if (cur_code != cur_glyph->code) return false;
+		if (cur_code != cur_glyph->code) return -1;
 	}
 
 	if (cur_code == '>') {
 		my_glyph_info_t *g = bat(buffer, start + j);
 		if (g != NULL) {
 			//printf("Extra check for <%s> is %d (%c)\n", needle, g->code, (char)g->code);
-			if (u_isalnum(g->code) || (g->code == '_')) return false;
+			if (u_isalnum(g->code) || (g->code == '_')) return -1;
 		}
+		return strlen(needle) - 1;
+	} else {
+		return strlen(needle);
 	}
-
-	return true;
 }
 
 static void lexy_update_one_token(buffer_t *buffer, int *i, int *status, bool quick_exit) {
@@ -547,8 +548,9 @@ static void lexy_update_one_token(buffer_t *buffer, int *i, int *status, bool qu
 		case LM_KEYWORDS:
 			for (int start = 0; start < row->kwlen; start += strlen(row->kws + start)+1) {
 				//printf("Matching %d <%s>\n", row->kwlen, row->kws + start);
-				if (bufmatch(buffer, *i, row->kws + start)) {
-					match_len = strlen(row->kws + start);
+				int m = bufmatch(buffer, *i, row->kws + start);
+				if (m >= 0) {
+					match_len = m;
 					break;
 				}
 			}

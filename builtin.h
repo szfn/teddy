@@ -859,7 +859,8 @@ proc buffer_loaded_hook {buffer-name} { }\n\
 \n\
 lexydef c 0 {\n\
 		space \"\" nothing\n\
-		keywords {auto>|_Bool>|break>|case>|char>|_Complex>|const>|continue>|default>|do>|double>|else>|enum>|extern>|float>|for>|goto>|if>|_Imaginary>|inline>|int>|long>|register>|restrict>|return>|short>|signed>|sizeof>|static>|struct>|switch>|typedef>|union>|unsigned>|void>|volatile>|while>|int8_t>|uint8_t>|int16_t>|uint16_t>|int32_t>|uint32_t>|int64_t>|uint64_t>|size_t>|time_t>|bool>|NULL>|true>|false>} keyword\n\
+		keywords {auto>|_Bool>|break>|case>|char>|_Complex>|const>|continue>|default>|do>|double>|else>|enum>|extern>|float>|for>|goto>|if>|_Imaginary>|inline>|int>|long>|register>|restrict>|return>|short>|signed>|sizeof>|static>|struct>|switch>|typedef>|union>|unsigned>|void>|volatile>|while>|int8_t>|uint8_t>|int16_t>|uint16_t>|int32_t>|uint32_t>|int64_t>|uint64_t>|size_t>|time_t>|bool>} keyword\n\
+		keywords {NULL>|true>|false>} literal\n\
 \n\
 		matchspace \"#\\s*(?:include|ifdef|ifndef|if|else|endif|pragma|define)\\\\>\" keyword\n\
 		match \"-?(?:0x)[0-9a-fA-F]*\" literal\n\
@@ -879,12 +880,15 @@ lexydef c 0 {\n\
 lexyassoc c/0 {\\.c$}\n\
 lexyassoc c/0 {\\.h$}\n\
 \n\
+# 		keywords {} keyword\n\
+\n\
 lexydef tcl 0 {\n\
-		space \"\" nothing\n\
-		keywords {after>|error>|lappend>|platform>|tcl_findLibrary>|append>|eval>|lassign>|platform::shell>|tcl_startOfNextWord>|apply>|exec>|lindex>|proc>|tcl_startOfPreviousWord>|array>|exit>|linsert>|puts>|tcl_wordBreakAfter>|auto_execok>|expr>|list>|pwd>|tcl_wordBreakBefore>|auto_import>|fblocked>|llength>|re_syntax>|tcltest>|auto_load>|fconfigure>|load>|read>|tclvars>|auto_mkindex>|fcopy>|lrange>|refchan>|tell>|auto_mkindex_old>|file>|lrepeat>|regexp>|time>|auto_qualify>|fileevent>|lreplace>|registry>|tm>|auto_reset>|filename>|lreverse>|regsub>|trace>|bgerror>|flush>|lsearch>|rename>|unknown>|binary>|for>|lset>|return>|unload>|break>|foreach>|lsort>|>|unset>|catch>|format>|mathfunc>|scan>|update>|cd>|gets>|mathop>|seek>|uplevel>|chan>|glob>|memory>|set>|upvar>|clock>|global>|msgcat>|socket>|variable>|close>|history>|namespace>|source>|vwait>|concat>|http>|open>|split>|while>|continue>|if>|else>|package>|string>|dde>|incr>|parray>|subst>|dict>|info>|pid>|switch>|encoding>|interp>|pkg::create>|eof>|join>|pkg_mkIndex>|tcl_endOfWord>|{*}} keyword\n\
+ 		space \"\" nothing\n\
+ 		keywords {after>|error>|lappend>|platform>|tcl_findLibrary>|append>|eval>|lassign>|platform::shell>|tcl_startOfNextWord>|apply>|exec>|lindex>|proc>|tcl_startOfPreviousWord>|array>|exit>|linsert>|puts>|tcl_wordBreakAfter>|auto_execok>|expr>|list>|pwd>|tcl_wordBreakBefore>|auto_import>|fblocked>|llength>|re_syntax>|tcltest>|auto_load>|fconfigure>|load>|read>|tclvars>|auto_mkindex>|fcopy>|lrange>|refchan>|tell>|auto_mkindex_old>|file>|lrepeat>|regexp>|time>|auto_qualify>|fileevent>|lreplace>|registry>|tm>|auto_reset>|filename>|lreverse>|regsub>|trace>|bgerror>|flush>|lsearch>|rename>|unknown>|binary>|for>|lset>|return>|unload>|break>|foreach>|lsort>|unset>|catch>|format>|mathfunc>|scan>|update>|cd>|gets>|mathop>|seek>|uplevel>|chan>|glob>|memory>|set>|upvar>|clock>|global>|msgcat>|socket>|variable>|close>|history>|namespace>|source>|vwait>|concat>|http>|open>|split>|while>|continue>|if>|else>|package>|string>|dde>|incr>|parray>|subst>|dict>|info>|pid>|switch>|encoding>|interp>|pkg::create>|eof>|join>|pkg_mkIndex>|tcl_endOfWord>|{*}} keyword\n\
+		region \"#,\\n,\" comment\n\
+\n\
 		match \"\\$[a-zA-Z_][a-zA-Z0-9_]*\" id\n\
 		region {\",\",\\\\} string\n\
-		region \"#,\\n,\" comment\n\
 \n\
 		match {\\<[a-zA-Z0-9]*\\>} nothing\n\
 \n\
@@ -895,7 +899,8 @@ lexyassoc tcl/0 {\\.tcl$}\n\
 \n\
 lexydef python 0 {\n\
 		space \"\" nothing\n\
-		keywords {and>|del>|from>|not>|while>|as>|elif>|global>|or>|with>|assert>|else>|if>|pass>|yield>|break>|except>|import>|print>|class>|exec>|in>|raise>|continue>|finally>|is>|return>|def>|for>|lambda>|try>|None>|True>|False>} keyword\n\
+		keywords {and>|del>|from>|not>|while>|as>|elif>|global>|or>|with>|assert>|else>|if>|pass>|yield>|break>|except>|import>|print>|class>|exec>|in>|raise>|continue>|finally>|is>|return>|def>|for>|lambda>|try>} keyword\n\
+		keywords {None>|True>|False>} literal\n\
 \n\
 		match \"-?(?:0[bB])?[0-9][0-9]*(?:\\\\.[0-9]+)?(?:e-[0-9]+?)?[LljJ]?\" literal\n\
 		match \"-?(?:0[xX])[0-9a-fA-F]*\" literal\n\
@@ -916,7 +921,8 @@ lexyassoc python/0 {\\.py$}\n\
 \n\
 lexydef java 0 {\n\
 		space \"\" nothing\n\
-		keywords {abstract>|continue>|for>|new>|switch>|assert>|default>|goto>|package>|synchronized>|boolean>|do>|if>|private>|this>|break>|double>|implements>|protected>|throw>|byte>|else>|import>|public>|throws>|case>|enum>|instanceof>|return>|transient>|catch>|extends>|int>|short>|try>|char>|final>|interface>|static>|void>|class>|finally>|long>|strictfp>|volatile>|const>|float>|native>|super>|while>|null>|true>|false>} keyword\n\
+		keywords {abstract>|continue>|for>|new>|switch>|assert>|default>|goto>|package>|synchronized>|boolean>|do>|if>|private>|this>|break>|double>|implements>|protected>|throw>|byte>|else>|import>|public>|throws>|case>|enum>|instanceof>|return>|transient>|catch>|extends>|int>|short>|try>|char>|final>|interface>|static>|void>|class>|finally>|long>|strictfp>|volatile>|const>|float>|native>|super>|while>|null>} keyword\n\
+		keywords {null>|true>|false>} literal\n\
 \n\
 		match \"-?(?:0x)[0-9a-fA-F]*\" literal\n\
 		match \"-?[0-9][0-9]*(?:\\\\.[0-9]+)?(?:e-[0-9]+?)?\" literal\n\
@@ -935,8 +941,8 @@ lexyassoc java/0 {\\.java$}\n\
 \n\
 lexydef go 0 {\n\
 		space \"\" nothing\n\
-		keywords {break>|default>|func>|interface>|select>|case>|defer>|go>|map>|struct>|chan>|else>|goto>|package>|switch>|const>|fallthrough>|if>|range>|type>|continue>|for>|import>|return>|var>|nil>|true>|false>|iota>} keyword\n\
-\n\
+		keywords {break>|default>|func>|interface>|select>|case>|defer>|go>|map>|struct>|chan>|else>|goto>|package>|switch>|const>|fallthrough>|if>|range>|type>|continue>|for>|import>|return>|var>|nil>|true>} keyword\n\
+		keywords {nil>|true>|false>} literal\n\
 \n\
 		match \"-?(?:0x)[0-9a-fA-F]*\" literal\n\
 		match \"-?[0-9][0-9]*(?:\\\\.[0-9]+)?(?:e-[0-9]+?)?\" literal\n\
@@ -957,7 +963,7 @@ lexydef filesearch 0 {\n\
 		space \"\" nothing\n\
 		match {https?://\\S+} link\n\
 		match {([^:[:space:]()]+):(\\d+)(?::(\\d+))?} file,1,2,3\n\
-		matchspace {\\<File \"(.+?)\", line (\\d+)} file,1,2\n\
+		matchspace {File \"(.+?)\", line (\\d+)} file,1,2\n\
 		matchspace {\\<at (\\S+) line (\\d+)} file,1,2\n\
 		matchspace {\\<in (\\S+) on line (\\d+)} file,1,2\n\
 		match {([^:[:space:]()]+):\\[(\\d+),(\\d+)\\]} file,1,2,3\n\
@@ -983,7 +989,8 @@ lexydef tagsearch 0 {\n\
 lexydef js 0 {\n\
 		space \"\" nothing\n\
 		match {</script>} html/0:keyword\n\
-		keywords {break>|const>|continue>|delete>|do>|while>|export>|for>|in>|function>|if>|else>|instanceOf>|label>|let>|new>|return>|switch>|this>|throw>|try>|catch>|typeof>|var>|void>|while>|with>|yield>|null>|true>|false>} keyword\n\
+		keywords {break>|const>|continue>|delete>|do>|while>|export>|for>|in>|function>|if>|else>|instanceOf>|label>|let>|new>|return>|switch>|this>|throw>|try>|catch>|typeof>|var>|void>|while>|with>|yield>} keyword\n\
+		keywords {null>|true>|false>} literal\n\
 		match \"-?(?:0x)[0-9a-fA-F]*\" literal\n\
 		match \"-?[0-9][0-9]*(?:\\\\.[0-9]+)?(?:e-[0-9]+?)?\" literal\n\
 \n\
