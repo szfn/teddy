@@ -96,7 +96,7 @@ static void editor_replace_selection(editor_t *editor, const char *new_text) {
 
 	editor_include_cursor(editor, ICM_TOP, ICM_BOT);
 	editor->lineno = buffer_line_of(editor->buffer, editor->buffer->cursor);
-	editor->colno = buffer_column_of(editor->buffer, editor->buffer->cursor);	
+	editor->colno = buffer_column_of(editor->buffer, editor->buffer->cursor);
 }
 
 static bool editor_maybe_show_completions(editor_t *editor, struct completer *completer, bool autoinsert, int min) {
@@ -1150,7 +1150,7 @@ static gboolean expose_event_callback(GtkWidget *widget, GdkEventExpose *event, 
 		cairo_text_extents_t posbox_ext;
 		double x, y;
 
-		asprintf(&posbox_text, " %d:%d %0.0f%%", editor->lineno, editor->colno, (100.0 * editor->buffer->cursor / BSIZE(editor->buffer)));
+		asprintf(&posbox_text, "=%d %d:%d %0.0f%%", editor->buffer->cursor, editor->lineno, editor->colno, (100.0 * editor->buffer->cursor / BSIZE(editor->buffer)));
 
 		cairo_set_scaled_font(cr, fontset_get_cairofont_by_name(config_strval(&(editor->buffer->config), CFG_POSBOX_FONT), 0));
 

@@ -1,4 +1,4 @@
-- display character position in the posbox
+- lineno, colno updated on editor creation
 - filesearch doesn't match python/perl/php correctly anymore
 - handcoded matchers for identifiers and numbers
 - don't open current directory unless no arguments are given

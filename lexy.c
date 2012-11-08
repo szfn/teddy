@@ -507,6 +507,8 @@ static void lexy_update_one_token(buffer_t *buffer, int *i, int *status, bool qu
 
 		//printf("%d %d Testing match_kind: %d\n", base, offset, row->match_kind);
 
+		uint8_t token_type = row->token_type;
+
 		switch (row->match_kind) {
 		case LM_REGEXP_SPACE:
 		case LM_REGEXP: {
@@ -515,7 +517,7 @@ static void lexy_update_one_token(buffer_t *buffer, int *i, int *status, bool qu
 			matchpoint.start_glyph = *i;
 			matchpoint.offset = 0;
 			matchpoint.endatnewline = true;
-			matchpoint.endatspace = (row->match_kind == LM_REGEXP_SPACE);
+			matchpoint.endatspace = !(row->match_kind == LM_REGEXP_SPACE);
 
 			tre_str_source tss;
 			tre_bridge_init(&matchpoint, &tss);
@@ -529,8 +531,10 @@ static void lexy_update_one_token(buffer_t *buffer, int *i, int *status, bool qu
 				//printf("\t\tMatched: %d (%d) - %d as %d [", *i+pmatch[0].rm_so, pmatch[0].rm_so, *i+pmatch[0].rm_eo, row->token_type);
 
 				if (row->token_type == CFG_LEXY_FILE - CFG_LEXY_NOTHING) {
-					if (check_file_match(row, buffer, *i, NMATCH, pmatch)) {
-						match_len = pmatch[0].rm_eo;
+					//printf("Checking match <%s>\n", buffer_lines_to_text(buffer, *i, (*i)+pmatch[0].rm_eo)); // leaky
+					match_len = pmatch[0].rm_eo;
+					if (!check_file_match(row, buffer, *i, NMATCH, pmatch)) {
+						token_type = 0;
 					}
 				} else {
 					match_len = pmatch[0].rm_eo;
@@ -597,8 +601,6 @@ static void lexy_update_one_token(buffer_t *buffer, int *i, int *status, bool qu
 		}
 
 		if (match_len >= 0) {
-			uint8_t token_type = row->token_type;
-
 			for (int j = 0; j < match_len; ++j) {
 				my_glyph_info_t *g = bat(buffer, *i + j);
 				if (g == NULL) break;
