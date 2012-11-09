@@ -106,7 +106,7 @@ static void move_incremental_search(editor_t *editor, bool ctrl_g_invoked, bool 
 		editor->buffer->cursor = OS(search_point, i);
 	} else {
 		editor->research.search_failed = false;
-		buffer_unset_mark(editor->buffer);
+		editor->buffer->mark = -1;
 	}
 
 	free(needle);

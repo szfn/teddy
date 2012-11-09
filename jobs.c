@@ -115,7 +115,7 @@ static void job_append(job_t *job, const char *msg, int len, int on_new_line) {
 void job_send_input(job_t *job) {
 	if (job->buffer == NULL) return;
 	char *input = cut_prompt(job);
-	buffer_unset_mark(job->buffer);
+	job->buffer->mark = -1;
 	if (input == NULL) return;
 
 	write_all(job->masterfd, input);
@@ -131,8 +131,7 @@ static void ansi_append_escape(job_t *job) {
 	const char command_char = job->ansiseq[job->ansiseq_cap-1];
 
 	if (command_char == 'J') {
-		buffer->cursor = 0;
-		buffer_set_mark_at_cursor(buffer);
+		buffer->mark = buffer->cursor = 0;
 		buffer_move_point_line(buffer, &(buffer->cursor), MT_END, 0);
 		buffer_replace_selection(buffer, "");
 	} else if (command_char == 'm') {

@@ -24,16 +24,20 @@ static gboolean delete_callback(GtkWidget *widget, GdkEvent *event, gpointer dat
 
 static void setup_initial_columns(int argc, char *argv[]) {
 	column_t *col1 = column_new(0);
-	column_t *col2 = column_new(0);
 
 	columns_add_after(columnset, NULL, col1, true);
-	columns_add_after(columnset, col1, col2, true);
 
 	heuristic_new_frame(columnset, NULL, null_buffer());
 
 	enum go_file_failure_reason gffr;
 	buffer_t *cur_dir_buffer = go_file(".", false, false, &gffr);
-	tframe_t *dirframe = heuristic_new_frame(columnset, NULL, cur_dir_buffer);
+
+	tframe_t *dirframe = NULL;
+	if (argc == 1) {
+		column_t *col2 = column_new(0);
+		columns_add_after(columnset, col1, col2, true);
+		dirframe = heuristic_new_frame(columnset, NULL, cur_dir_buffer);
+	}
 
 	tframe_t *frame = NULL;
 

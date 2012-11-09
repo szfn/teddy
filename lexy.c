@@ -691,7 +691,7 @@ void lexy_update_starting_at(buffer_t *buffer, int start, bool quick_exit) {
 			}
 		}
 		if (g->status == status) {
-			if (count < 4) lexy_update_one_token(buffer, &i, &status, quick_exit);
+			if (count < 10) lexy_update_one_token(buffer, &i, &status, quick_exit);
 			else {
 				//printf("\tquick exit %d\n", i);
 				break;

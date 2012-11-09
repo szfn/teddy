@@ -108,14 +108,6 @@ void save_to_text_file(buffer_t *buffer);
 
 my_glyph_info_t *bat(buffer_t *encl, int point);
 
-/*
-  Mark management
-  buffer_set_mark_at_cursor: copies cursor point into mark point
-  buffer_unset_mark: sets mark to null
-  buffer_change_select_type: change selection type
- */
-void buffer_set_mark_at_cursor(buffer_t *buffer);
-void buffer_unset_mark(buffer_t *buffer);
 void buffer_change_select_type(buffer_t *buffer, enum select_type select_type);
 void buffer_extend_selection_by_select_type(buffer_t *buffer);
 

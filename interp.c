@@ -681,6 +681,8 @@ static int parse_signum(const char *sigspec) {
 	if (!strcmp(sigspec, "VTALRM")) return SIGVTALRM;
 	if (!strcmp(sigspec, "XCPU")) return SIGXCPU;
 	if (!strcmp(sigspec, "XFSZ")) return SIGXFSZ;
+	if (!strcmp(sigspec, "USR1")) return SIGUSR1;
+	if (!strcmp(sigspec, "USR2")) return SIGUSR2;
 
 	return -1;
 }

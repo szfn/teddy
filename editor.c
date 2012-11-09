@@ -231,6 +231,8 @@ void editor_switch_buffer(editor_t *editor, buffer_t *buffer) {
 		buffer_typeset_maybe(editor->buffer, allocation.width, false);
 	}
 
+	editor->lineno = buffer_line_of(buffer, buffer->cursor);
+	editor->colno = buffer_column_of(buffer, buffer->cursor);
 	editor->center_on_cursor_after_next_expose = TRUE;
 	gtk_widget_queue_draw(GTK_WIDGET(editor));
 }
@@ -296,14 +298,15 @@ static void freeze_primary_selection(editor_t *editor) {
 static bool mark_move(editor_t *editor, bool shift) {
 	if (editor->buffer->mark < 0) {
 		if (shift) {
-			buffer_set_mark_at_cursor(editor->buffer);
+			editor->buffer->savedmark = editor->buffer->mark = editor->buffer->cursor;
+			editor->buffer->select_type = BST_NORMAL;
 			set_primary_selection(editor);
 		}
 		return true;
 	} else {
 		if (!shift) {
 			//freeze_primary_selection(editor);
-			buffer_unset_mark(editor->buffer);
+			editor->buffer->mark = editor->buffer->savedmark = -1;
 			return false;
 		} else {
 			return true;
@@ -447,7 +450,7 @@ static gboolean key_press_callback(GtkWidget *widget, GdkEventKey *event, editor
 		switch(event->keyval) {
 		case GDK_KEY_Delete:
 			if (editor->buffer->mark < 0) {
-				buffer_set_mark_at_cursor(editor->buffer);
+				editor->buffer->mark = editor->buffer->cursor;
 				buffer_move_point_glyph(editor->buffer, &(editor->buffer->cursor), MT_REL, +1);
 			}
 			editor_replace_selection(editor, "");
@@ -455,7 +458,7 @@ static gboolean key_press_callback(GtkWidget *widget, GdkEventKey *event, editor
 
 		case GDK_KEY_BackSpace:
 			if (editor->buffer->mark < 0) {
-				buffer_set_mark_at_cursor(editor->buffer);
+				editor->buffer->mark = editor->buffer->cursor;
 				buffer_move_point_glyph(editor->buffer, &(editor->buffer->cursor), MT_REL, -1);
 			}
 			editor_replace_selection(editor, "");
@@ -670,7 +673,8 @@ static gboolean button_press_callback(GtkWidget *widget, GdkEventButton *event, 
 		move_cursor_to_mouse(editor, event->x, event->y);
 
 		editor->mouse_marking = 1;
-		buffer_set_mark_at_cursor(editor->buffer);
+		editor->buffer->savedmark = editor->buffer->mark = editor->buffer->cursor;
+		editor->buffer->select_type = BST_NORMAL;
 
 		if (event->type == GDK_2BUTTON_PRESS) {
 			buffer_change_select_type(editor->buffer, BST_WORDS);
@@ -693,7 +697,7 @@ static gboolean button_press_callback(GtkWidget *widget, GdkEventButton *event, 
 		}
 	} else if (event->button == 2) {
 		move_cursor_to_mouse(editor, event->x, event->y);
-		buffer_unset_mark(editor->buffer);
+		editor->buffer->mark = editor->buffer->savedmark = -1;
 		editor_complete_move(editor, TRUE);
 
 		gchar *text = gtk_clipboard_wait_for_text(selection_clipboard);
@@ -1402,7 +1406,13 @@ editor_t *new_editor(buffer_t *buffer, bool single_line) {
 	r->completer = &the_word_completer;
 	r->alt_completer = NULL;
 	r->dirty_line = false;
-	r->lineno = 1; r->colno = 1;
+
+	if (buffer != NULL) {
+		r->lineno = buffer_line_of(buffer, buffer->cursor);
+		r->colno = buffer_column_of(buffer, buffer->cursor);
+	} else {
+		r->lineno = 1; r->colno = 1;
+	}
 
 	r->single_line_escape = NULL;
 	r->single_line_return = NULL;

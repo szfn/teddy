@@ -351,16 +351,6 @@ void save_to_text_file(buffer_t *buffer) {
 	buffer->mtime = time(NULL)+10;
 }
 
-void buffer_set_mark_at_cursor(buffer_t *buffer) {
-	buffer->savedmark = buffer->mark = buffer->cursor;
-	buffer->select_type = BST_NORMAL;
-	//printf("Mark set @ %d,%d\n", buffer->mark_line->lineno, buffer->mark_glyph);
-}
-
-void buffer_unset_mark(buffer_t *buffer) {
-	buffer->mark = buffer->savedmark = -1;
-}
-
 void buffer_change_select_type(buffer_t *buffer, enum select_type select_type) {
 	buffer->select_type = select_type;
 	buffer_extend_selection_by_select_type(buffer);
@@ -457,7 +447,7 @@ void buffer_undo(buffer_t *buffer, bool redo) {
 
 	buffer->modified = 1;
 
-	buffer_unset_mark(buffer);
+	buffer->mark = buffer->savedmark = -1;
 
 	int start, end;
 
@@ -474,7 +464,7 @@ void buffer_undo(buffer_t *buffer, bool redo) {
 	int start_cursor = buffer_replace_selection_ex(buffer, redo ? undo_node->after_selection.text : undo_node->before_selection.text, false);
 
 	buffer_typeset_from(buffer, start_cursor-1);
-	buffer_unset_mark(buffer);
+	buffer->savedmark = buffer->mark = -1;
 	lexy_update_starting_at(buffer, start_cursor-1, false);
 
 	if (buffer->onchange != NULL) buffer->onchange(buffer);
@@ -505,7 +495,7 @@ void buffer_replace_selection(buffer_t *buffer, const char *new_text) {
 	}
 
 	buffer_typeset_from(buffer, start_cursor-1);
-	buffer_unset_mark(buffer);
+	buffer->savedmark = buffer->mark = -1;
 
 	//printf("\tcalling lexy update\n");
 	if ((strlen(new_text) > 1) || (selbefore > 1)) {

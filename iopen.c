@@ -73,7 +73,7 @@ static void iopen_open(GtkTreeView *tree, GtkTreePath *treepath) {
 		//printf("go_to_buffer <%p> <%s>\n", editor, search);
 		if ((editor != NULL) && (search != NULL)) {
 			//printf("searching for <%s>\n", search);
-			buffer_unset_mark(editor->buffer);
+			editor->buffer->mark = editor->buffer->savedmark = -1;
 			editor->buffer->cursor = 0;
 
 			const char *argv[] = { "teddy_intl::iopen_search", search };
