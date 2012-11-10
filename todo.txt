@@ -1,4 +1,3 @@
-- slow highlighting for some bg buffers (+list+)
 - add one tag button to +bg buffers to prevent reuse
 - optimize code that changes mouse cursor into a hand over links (right now its linear in the size of the buffer)
 - do not show input textbox for incremental search (just an overlay saying "Searching" and move selection while typing)

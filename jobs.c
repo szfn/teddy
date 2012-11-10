@@ -281,9 +281,10 @@ static gboolean jobs_input_watch_function(GIOChannel *source, GIOCondition condi
 	if (!job->ratelimit_silenced) {
 		ansi_append(job, buf, (size_t)bytes_read);
 
-		if (job->current_ratelimit_bucket_start - time(NULL) > RATELIMIT_BUCKET_DURATION_SECS) {
+		if (time(NULL) - job->current_ratelimit_bucket_start > RATELIMIT_BUCKET_DURATION_SECS) {
+			//printf("Ratelimit bucket size: %ld\n", job->current_ratelimit_bucket_size);
 			if (job->current_ratelimit_bucket_size > RATELIMIT_MAX_BYTES) {
-				const char *msg = "SILENCED\n";
+				const char *msg = "\nRATELIMIT REACHED - SILENCED\n";
 				job_append(job, msg, strlen(msg), 1);
 				job->ratelimit_silenced = true;
 			}

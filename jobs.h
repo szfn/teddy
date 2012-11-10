@@ -9,7 +9,7 @@
 struct _buffer_t;
 
 #define RATELIMIT_BUCKET_DURATION_SECS 5
-#define RATELIMIT_MAX_BYTES 10000
+#define RATELIMIT_MAX_BYTES 30000
 
 #define ANSI_SEQ_MAX_LEN 32
 
