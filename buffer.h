@@ -3,6 +3,7 @@
 
 #include <stdint.h>
 #include <stdbool.h>
+#include <pthread.h>
 
 #include "jobs.h"
 #include "cfg.h"
@@ -35,6 +36,9 @@ typedef struct _buffer_t {
 	time_t mtime;
 	bool stale;
 	bool single_line;
+
+	pthread_rwlock_t rwlock;
+	volatile bool release_read_lock;
 
 	job_t *job;
 
@@ -73,7 +77,6 @@ typedef struct _buffer_t {
 	GHashTable *props;
 	char *keyprocessor;
 	void (*onchange)(struct _buffer_t *buffer);
-
 
 	/* autocompletion */
 	critbit0_tree cbt;

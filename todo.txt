@@ -5,7 +5,6 @@
 - left-right click combo should always eval
 - bold matched text in autocompletions window and iopen window
 - EDITOR and VISUAL setting (needs some IPC implementation)
-- multiprocess highlighting
 - tabs
 - macro recording
 

@@ -94,6 +94,9 @@ buffer_t *buffer_create(void) {
 
 	config_init(&(buffer->config), &global_config);
 
+	pthread_rwlock_init(&(buffer->rwlock), NULL);
+	buffer->release_read_lock = false;
+
 	buffer->modified = 0;
 	buffer->editable = 1;
 	buffer->job = NULL;
@@ -146,6 +149,12 @@ static int to_closed_buffers_critbit(const char *entry, void *p) {
 }
 
 void buffer_free(buffer_t *buffer, bool save_critbit) {
+	/* XXX There is a race condition here:
+	   One of the reader threads could arrive at the rdlock after we obtain the write lock,
+	   at that point it would execute on corrupted data.
+	*/
+	pthread_rwlock_wrlock(&(buffer->rwlock));
+
 	free(buffer->buf);
 
 	g_hash_table_destroy(buffer->props);
@@ -473,6 +482,9 @@ void buffer_undo(buffer_t *buffer, bool redo) {
 void buffer_replace_selection(buffer_t *buffer, const char *new_text) {
 	if (!(buffer->editable)) return;
 
+	buffer->release_read_lock = true;
+	pthread_rwlock_wrlock(&(buffer->rwlock));
+
 	//printf("buffer replace selection: <%s>\n", buffer->path);
 
 	buffer->modified = true;
@@ -511,6 +523,9 @@ void buffer_replace_selection(buffer_t *buffer, const char *new_text) {
 	}
 
 	if (buffer->onchange != NULL) buffer->onchange(buffer);
+
+	pthread_rwlock_unlock(&(buffer->rwlock));
+	buffer->release_read_lock = false;
 }
 
 bool wordcompl_charset[0x10000];
@@ -569,6 +584,8 @@ static void buffer_wordcompl_update_word(buffer_t *buffer, int start, int end, c
 void buffer_wordcompl_update(buffer_t *buffer, critbit0_tree *cbt, int radius) {
 	critbit0_clear(cbt);
 
+	pthread_rwlock_rdlock(&(buffer->rwlock));
+
 	int start = -1;
 	bool first = true;
 	for (int i = MAX(buffer->cursor - radius, 0); i < buffer->cursor+radius; ++i) {
@@ -591,6 +608,8 @@ void buffer_wordcompl_update(buffer_t *buffer, critbit0_tree *cbt, int radius) {
 	}
 
 	word_completer_full_update();
+
+	pthread_rwlock_unlock(&(buffer->rwlock));
 }
 
 char *buffer_lines_to_text(buffer_t *buffer, int start, int end) {

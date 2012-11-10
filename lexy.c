@@ -482,7 +482,7 @@ static int bufmatch(buffer_t *buffer, int start, const char *needle) {
 	}
 }
 
-static void lexy_update_one_token(buffer_t *buffer, int *i, int *status, bool quick_exit) {
+static void lexy_update_one_token(buffer_t *buffer, int *i, int *status) {
 	int base = *status;
 
 	//printf("Coloring one token at %p:%d (status %d)\n", buffer, *i, *status);
@@ -568,15 +568,10 @@ static void lexy_update_one_token(buffer_t *buffer, int *i, int *status, bool qu
 			int dst = 0;
 			bool valid;
 			uint32_t dst_code = utf8_to_utf32(row->region_end, &dst, strlen(row->region_end), &valid);
-			int nlcount = 0;
 			int j;
 			for (j = *i; j < BSIZE(buffer); ++j) {
 				my_glyph_info_t *g = bat(buffer, j);
 				if (g == NULL) break;
-				if (g->code == '\n') ++nlcount;
-				if (quick_exit) {
-					if (nlcount > 2) break;
-				}
 				//printf("\tChecking %d %c\n", g->code, (char)g->code);
 				if (g->code == row->escape) {
 					++j;
@@ -653,9 +648,21 @@ const char *lexy_get_link_fn(buffer_t *buffer) {
 	return a->link_fn;
 }
 
-void lexy_update_starting_at(buffer_t *buffer, int start, bool quick_exit) {
+struct update_starting_at_argument {
+	buffer_t *buffer;
+	int start;
+};
+
+static void *lexy_update_starting_at_thread(void *varg) {
+	struct update_starting_at_argument *arg = (struct update_starting_at_argument *)varg;
+	buffer_t *buffer = arg->buffer;
+	int start = arg->start;
+	free(arg);
+
 	int start_status_index = start_status_for_buffer(buffer);
-	if (start_status_index < 0) return;
+	if (start_status_index < 0) return NULL;
+
+	pthread_rwlock_rdlock(&(buffer->rwlock));
 
 	//printf("Coloring buffer %p (%s) starting at %d (%d)\n", buffer, buffer->path, start, BSIZE(buffer));
 
@@ -679,31 +686,46 @@ void lexy_update_starting_at(buffer_t *buffer, int start, bool quick_exit) {
 
 	for (int i = start; i < BSIZE(buffer); ) {
 		my_glyph_info_t *g = bat(buffer, i);
-		if (g == NULL) return;
+
+		if (g == NULL) break;
 		if (g->code == '\n') {
 			//printf("\tnew line %d\n", count);
 			++count;
 		}
+
 		int previ = i;
-		if (quick_exit) {
-			if (count > 2) {
-				break;
-			}
+
+		if (buffer->release_read_lock) {
+			break;
 		}
+
 		if (g->status == status) {
-			if (count < 10) lexy_update_one_token(buffer, &i, &status, quick_exit);
+			if (count < 10) lexy_update_one_token(buffer, &i, &status);
 			else {
 				//printf("\tquick exit %d\n", i);
 				break;
 			}
 		} else {
-			lexy_update_one_token(buffer, &i, &status, quick_exit);
+			lexy_update_one_token(buffer, &i, &status);
 			buffer->lexy_last_update_point = i;
 		}
+
 		if (previ == i) ++i;
 		if (count > LEXY_LOAD_HOOK_MAX_COUNT) break;
 	}
 	//printf("Finished %d\n", buffer->lexy_last_update_point);
+
+	pthread_rwlock_unlock(&(buffer->rwlock));
+
+	return NULL;
+}
+
+void lexy_update_starting_at(buffer_t *buffer, int start, bool quick_exit) {
+	struct update_starting_at_argument *arg = malloc(sizeof(struct update_starting_at_argument));
+	arg->buffer = buffer;
+	arg->start = start;
+	pthread_t thread;
+	pthread_create(&thread, NULL, lexy_update_starting_at_thread, arg);
 }
 
 int lexy_create_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
