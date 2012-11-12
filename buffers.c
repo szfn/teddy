@@ -672,6 +672,10 @@ int teddy_buffer_command(ClientData client_data, Tcl_Interp *interp, int argc, c
 		free(interp_context_buffer()->path);
 		interp_context_buffer()->path = strdup(argv[2]);
 		alloc_assert(interp_context_buffer()->path);
+	} else if (strcmp(argv[1], "name") == 0) {
+		SINGLE_ARGUMENT_BUFFER_SUBCOMMAND("buffer name");
+		Tcl_SetResult(interp, buffer->path, TCL_VOLATILE);
+		return TCL_OK;
 	} else {
 		Tcl_AddErrorInfo(interp, "Unknown subcommmand of 'buffer' command");
 		return TCL_ERROR;

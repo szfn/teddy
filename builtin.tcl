@@ -158,6 +158,14 @@ proc O {args} {
 	teddy::open {*}$args
 }
 
+proc P {args} {
+	if {[string first "+bg/" [buffer name]] == 0} {
+		buffer rename "+bg![string range [buffer name] 4 end]"
+	} elseif {[string first "+bg!" [buffer name]] == 0} {
+		buffer rename "+bg/[string range [buffer name] 4 end]"
+	}
+}
+
 namespace eval teddy {
 	namespace export open
 	proc open {path} {
