@@ -655,6 +655,23 @@ int teddy_buffer_command(ClientData client_data, Tcl_Interp *interp, int argc, c
 			if (buffer != NULL) go_to_buffer(editor, buffer, true);
 		}
 		return TCL_OK;
+	} else if (strcmp(argv[1], "rename") == 0) {
+		HASBUF("buffer rename");
+		ARGNUM((argc != 3), "buffer rename");
+
+		if (interp_context_buffer()->has_filename) {
+			Tcl_AddErrorInfo(interp, "Can not rename a buffer attached to a filename");
+			return TCL_ERROR;
+		}
+
+		if (interp_context_buffer()->path[0] != '+') {
+			Tcl_AddErrorInfo(interp, "Can not rename a buffer attached to a filename");
+			return TCL_ERROR;
+		}
+
+		free(interp_context_buffer()->path);
+		interp_context_buffer()->path = strdup(argv[2]);
+		alloc_assert(interp_context_buffer()->path);
 	} else {
 		Tcl_AddErrorInfo(interp, "Unknown subcommmand of 'buffer' command");
 		return TCL_ERROR;
