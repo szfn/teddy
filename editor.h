@@ -24,7 +24,6 @@ typedef struct _editor_t {
 	GtkObject *adjustment, *hadjustment;
 	GtkWidget *drar;
 	GtkWidget *drarscroll;
-	GtkWidget *drarhscroll;
 	GtkIMContext *drarim;
 	gboolean cursor_visible;
 	int mouse_marking;

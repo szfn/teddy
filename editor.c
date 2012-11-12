@@ -1178,7 +1178,6 @@ static gboolean expose_event_callback(GtkWidget *widget, GdkEventExpose *event, 
 	}
 
 	if (editor->buffer->single_line) {
-		gtk_widget_hide(GTK_WIDGET(editor->drarhscroll));
 		gtk_widget_hide(GTK_WIDGET(editor->drarscroll));
 	} else {
 		gtk_adjustment_set_upper(GTK_ADJUSTMENT(editor->adjustment), editor->buffer->rendered_height + (allocation.height / 2));
@@ -1186,10 +1185,7 @@ static gboolean expose_event_callback(GtkWidget *widget, GdkEventExpose *event, 
 		gtk_adjustment_set_page_increment(GTK_ADJUSTMENT(editor->adjustment), allocation.height/2);
 		gtk_adjustment_set_step_increment(GTK_ADJUSTMENT(editor->adjustment), editor->buffer->line_height);
 
-		if ((editor->buffer->rendered_width <= allocation.width) || (config_intval(&(editor->buffer->config), CFG_AUTOWRAP) != 0)) {
-			gtk_widget_hide(GTK_WIDGET(editor->drarhscroll));
-		} else {
-			gtk_widget_show(GTK_WIDGET(editor->drarhscroll));
+		if ((editor->buffer->rendered_width > allocation.width) && (config_intval(&(editor->buffer->config), CFG_AUTOWRAP) == 0)) {
 			gtk_adjustment_set_upper(GTK_ADJUSTMENT(editor->hadjustment), editor->buffer->left_margin + editor->buffer->rendered_width + editor->buffer->right_margin);
 			gtk_adjustment_set_page_size(GTK_ADJUSTMENT(editor->hadjustment), allocation.width);
 			gtk_adjustment_set_page_increment(GTK_ADJUSTMENT(editor->hadjustment), allocation.width/2);
@@ -1213,11 +1209,6 @@ static gboolean expose_event_callback(GtkWidget *widget, GdkEventExpose *event, 
 }
 
 static gboolean scrolled_callback(GtkAdjustment *adj, editor_t *editor) {
-	gtk_widget_queue_draw(editor->drar);
-	return TRUE;
-}
-
-static gboolean hscrolled_callback(GtkAdjustment *adj, editor_t *editor) {
 	gtk_widget_queue_draw(editor->drar);
 	return TRUE;
 }
@@ -1447,8 +1438,8 @@ editor_t *new_editor(buffer_t *buffer, bool single_line) {
 
 
 	r->drarscroll = gtk_vscrollbar_new((GtkAdjustment *)(r->adjustment = gtk_adjustment_new(0.0, 0.0, 1.0, 1.0, 1.0, 1.0)));
-	r->drarhscroll = gtk_hscrollbar_new((GtkAdjustment *)(r->hadjustment = gtk_adjustment_new(0.0, 0.0, 1.0, 1.0, 1.0, 1.0)));
-
+	r->hadjustment = gtk_adjustment_new(0.0, 0.0, 1.0, 1.0, 1.0, 1.0);
+	
 	{ // search bo
 		r->search_entry = gtk_entry_new();
 		r->search_box = gtk_hbox_new(FALSE, 0);
@@ -1505,10 +1496,8 @@ editor_t *new_editor(buffer_t *buffer, bool single_line) {
 	gtk_table_attach(GTK_TABLE(r), r->search_box, 0, 2, 1, 2, GTK_EXPAND|GTK_FILL, 0, 0, 0);
 	gtk_table_attach(GTK_TABLE(r), r->drar, 0, 1, 2, 3, GTK_EXPAND | GTK_FILL, GTK_EXPAND|GTK_FILL, 0, 0);
 	gtk_table_attach(GTK_TABLE(r), r->drarscroll, 1, 2, 2, 3, 0, GTK_EXPAND|GTK_FILL, 0, 0);
-	gtk_table_attach(GTK_TABLE(r), r->drarhscroll, 0, 1, 3, 4, GTK_EXPAND|GTK_FILL, 0, 0, 0);
 
 	g_signal_connect(G_OBJECT(r->drarscroll), "value_changed", G_CALLBACK(scrolled_callback), (gpointer)r);
-	g_signal_connect(G_OBJECT(r->drarhscroll), "value_changed", G_CALLBACK(hscrolled_callback), (gpointer)r);
 
 	if (single_line) {
 		gtk_widget_set_size_request(r->drar, 1, r->buffer->line_height + config_intval(&(buffer->config), CFG_MAIN_FONT_HEIGHT_REDUCTION));
