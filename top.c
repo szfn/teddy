@@ -347,11 +347,17 @@ void top_cd(const char *newdir) {
 	working_directory = get_current_dir_name();
 
 	char *t;
-	if (strncmp(working_directory, getenv("HOME"), strlen(getenv("HOME"))) == 0) {
-		asprintf(&t, "%s – ~%s", GIT_COMPILATION_DATE, working_directory+strlen(getenv("HOME")));
+
+	if (tied_session == NULL) {
+		if (strncmp(working_directory, getenv("HOME"), strlen(getenv("HOME"))) == 0) {
+			asprintf(&t, "%s – ~%s", GIT_COMPILATION_DATE, working_directory+strlen(getenv("HOME")));
+		} else {
+			asprintf(&t, "%s – %s", GIT_COMPILATION_DATE, working_directory);
+		}
 	} else {
-		asprintf(&t, "%s – %s", GIT_COMPILATION_DATE, working_directory);
+		asprintf(&t, "%s @ %s", GIT_COMPILATION_DATE, tied_session);
 	}
+
 	alloc_assert(t);
 	gtk_window_set_title(GTK_WINDOW(top_window), t);
 	free(t);
