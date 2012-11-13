@@ -72,7 +72,25 @@ static int teddy_in_command(ClientData client_data, Tcl_Interp *interp, int argc
 	ARGNUM((argc < 3), "in");
 
 	char *wd = get_current_dir_name();
-	chdir(argv[1]);
+
+	if (strcmp(argv[1], "!") == 0) {
+		HASBUF("in");
+		const char *path = interp_context_buffer()->path;
+		if (path[strlen(path)-1] == '/') {
+			chdir(path);
+		} else {
+			char *last_slash = strrchr(path, '/');
+			if (last_slash == NULL) {
+				Tcl_AddErrorInfo(interp, "Internal error (in command, path)");
+				return TCL_ERROR;
+			}
+			char *r = strndup(path, last_slash-path);
+			chdir(r);
+			free(r);
+		}
+	} else {
+		chdir(argv[1]);
+	}
 
 	char *cmd = Tcl_Merge(argc-2, argv+2);
 	int code = Tcl_Eval(interp, cmd);
