@@ -7,6 +7,7 @@ const char *config_names[] = {
 	"main_font",
 	"main_font_height_reduction",
 	"posbox_font",
+	"notice_font",
 	"underline_links",
 	"focus_follows_mouse",
 	"autoindent",
@@ -44,6 +45,7 @@ void config_init_auto_defaults(void) {
 	config_set(&global_config, CFG_MAIN_FONT, "Arial-11");
 	config_set(&global_config, CFG_MAIN_FONT_HEIGHT_REDUCTION, "0");
 	config_set(&global_config, CFG_POSBOX_FONT, "Arial-8");
+	config_set(&global_config, CFG_NOTICE_FONT, "Arial-14-Bold");
 	config_set(&global_config, CFG_UNDERLINE_LINKS, "1");
 	config_set(&global_config, CFG_FOCUS_FOLLOWS_MOUSE, "1");
 	config_set(&global_config, CFG_AUTOINDENT, "1");

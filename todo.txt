@@ -1,5 +1,5 @@
-- sessions save window position and dimension too
 - BUG: absolute file specifications sometimes do not become links (only sometimes, must be a parsing problem, an empty line solves it)
+- save buffer main font too
 - optimize code that changes mouse cursor into a hand over links (right now its linear in the size of the buffer)
 - do not show input textbox for incremental search (just an overlay saying "Searching" and move selection while typing)
 

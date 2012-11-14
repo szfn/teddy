@@ -1060,6 +1060,20 @@ static void draw_cursorline(cairo_t *cr, editor_t *editor) {
 	cairo_fill(cr);
 }
 
+#define CURSOR_WIDTH 1
+
+static void draw_cursor(cairo_t *cr, editor_t *editor) {
+	if (!(editor->cursor_visible)) return;
+	if (editor->research.mode != SM_NONE) return;
+
+	double cursor_x, cursor_y;
+	line_get_glyph_coordinates(editor->buffer, editor->buffer->cursor, &cursor_x, &cursor_y);
+
+	set_color_cfg(cr, config_intval(&(editor->buffer->config), CFG_EDITOR_FG_COLOR));
+	cairo_rectangle(cr, cursor_x, cursor_y-editor->buffer->ascent, CURSOR_WIDTH, editor->buffer->ascent+editor->buffer->descent);
+	cairo_fill(cr);
+}
+
 static void draw_underline(editor_t *editor, cairo_t *cr, struct growable_glyph_array *gga) {
 	for (int i = 0; i < gga->underline_n; ++i) {
 		struct underline_info_t *u = (gga->underline_info + i);
@@ -1067,6 +1081,61 @@ static void draw_underline(editor_t *editor, cairo_t *cr, struct growable_glyph_
 		cairo_rectangle(cr, u->filex_start, u->filey - editor->buffer->underline_position, u->filex_end - u->filex_start, editor->buffer->underline_thickness);
 		cairo_fill(cr);
 		//printf("Drawing underline from %g to %g at (%g+%g) (thickness: %g)\n", u->filex_start, u->filex_end, u->filey, editor->buffer->underline_position, editor->buffer->underline_thickness);
+	}
+}
+
+static void draw_posbox(cairo_t *cr, editor_t *editor, GtkAllocation *allocation) {
+	if (editor->buffer->single_line) return;
+
+	char *posbox_text;
+	cairo_text_extents_t posbox_ext;
+	double x, y;
+
+	asprintf(&posbox_text, "=%d %d:%d %0.0f%%", editor->buffer->cursor, editor->lineno, editor->colno, (100.0 * editor->buffer->cursor / BSIZE(editor->buffer)));
+
+	cairo_set_scaled_font(cr, fontset_get_cairofont_by_name(config_strval(&(editor->buffer->config), CFG_POSBOX_FONT), 0));
+
+	cairo_text_extents(cr, posbox_text, &posbox_ext);
+
+	y = allocation->height - posbox_ext.height - 4.0;
+	x = allocation->width - posbox_ext.x_advance - 4.0;
+
+	set_color_cfg(cr, config_intval(&(editor->buffer->config), CFG_POSBOX_BORDER_COLOR));
+	cairo_rectangle(cr, x-1.0, y-2.0, posbox_ext.x_advance+4.0, posbox_ext.height+4.0);
+	cairo_fill(cr);
+	set_color_cfg(cr, config_intval(&(editor->buffer->config), CFG_POSBOX_BG_COLOR));
+	cairo_rectangle(cr, x, y-1.0, posbox_ext.x_advance + 2.0, posbox_ext.height + 2.0);
+	cairo_fill(cr);
+
+	cairo_move_to(cr, x+1.0, y+posbox_ext.height);
+	set_color_cfg(cr, config_intval(&(editor->buffer->config), CFG_POSBOX_FG_COLOR));
+	cairo_show_text(cr, posbox_text);
+
+	free(posbox_text);
+}
+
+static void draw_notices(cairo_t *cr, editor_t *editor) {
+	if (editor->buffer->single_line) return;
+
+	if (editor->buffer->stale) {
+		roundbox(cr, 5, 5, "Content of this file changed on disk, reload [y/n/?");
+		return;
+	}
+
+	switch (editor->research.mode) {
+	case SM_REGEXP:
+		//TODO: implement
+		break;
+
+	case SM_LITERAL:
+		//TODO: output searched string too
+	cairo_set_scaled_font(cr, fontset_get_cairofont_by_name(config_strval(&(editor->buffer->config), CFG_NOTICE_FONT), 0));
+		roundbox(cr, 5, 5, "Searching...");
+		break;
+
+	default:
+		// Nothing
+		break;
 	}
 }
 
@@ -1090,11 +1159,11 @@ static gboolean expose_event_callback(GtkWidget *widget, GdkEventExpose *event, 
 	cairo_rectangle(cr, 0, 0, allocation.width, allocation.height);
 	cairo_fill(cr);
 
-	cairo_translate(cr, -gtk_adjustment_get_value(GTK_ADJUSTMENT(editor->hadjustment)), -gtk_adjustment_get_value(GTK_ADJUSTMENT(editor->adjustment)));
-
 	buffer_typeset_maybe(editor->buffer, allocation.width, false);
-
 	int sel_invert = config_intval(&(editor->buffer->config), CFG_EDITOR_SEL_INVERT);
+
+	/********** TRANSLATED STUFF STARTS HERE  ***************************/
+	cairo_translate(cr, -gtk_adjustment_get_value(GTK_ADJUSTMENT(editor->hadjustment)), -gtk_adjustment_get_value(GTK_ADJUSTMENT(editor->adjustment)));
 
 	draw_cursorline(cr, editor);
 	if (!sel_invert) draw_selection(editor, allocation.width, cr, sel_invert);
@@ -1135,47 +1204,13 @@ static gboolean expose_event_callback(GtkWidget *widget, GdkEventExpose *event, 
 	if (sel_invert) draw_selection(editor, allocation.width, cr, sel_invert);
 	draw_parmatch(editor, &allocation, cr);
 
-	if (editor->cursor_visible && (editor->research.mode == SM_NONE)) {
-		double cursor_x, cursor_y;
-
-		set_color_cfg(cr, config_intval(&(editor->buffer->config), CFG_EDITOR_FG_COLOR));
-
-		line_get_glyph_coordinates(editor->buffer, editor->buffer->cursor, &cursor_x, &cursor_y);
-
-		cairo_rectangle(cr, cursor_x, cursor_y-editor->buffer->ascent, 2, editor->buffer->ascent+editor->buffer->descent);
-		cairo_fill(cr);
-	}
+	draw_cursor(cr, editor);
 
 	/********** NOTHING IS TRANSLATED BEYOND THIS ***************************/
 	cairo_translate(cr, gtk_adjustment_get_value(GTK_ADJUSTMENT(editor->hadjustment)), gtk_adjustment_get_value(GTK_ADJUSTMENT(editor->adjustment)));
 
-	if (!editor->buffer->single_line) {
-		char *posbox_text;
-		cairo_text_extents_t posbox_ext;
-		double x, y;
-
-		asprintf(&posbox_text, "=%d %d:%d %0.0f%%", editor->buffer->cursor, editor->lineno, editor->colno, (100.0 * editor->buffer->cursor / BSIZE(editor->buffer)));
-
-		cairo_set_scaled_font(cr, fontset_get_cairofont_by_name(config_strval(&(editor->buffer->config), CFG_POSBOX_FONT), 0));
-
-		cairo_text_extents(cr, posbox_text, &posbox_ext);
-
-		y = allocation.height - posbox_ext.height - 4.0;
-		x = allocation.width - posbox_ext.x_advance - 4.0;
-
-		set_color_cfg(cr, config_intval(&(editor->buffer->config), CFG_POSBOX_BORDER_COLOR));
-		cairo_rectangle(cr, x-1.0, y-2.0, posbox_ext.x_advance+4.0, posbox_ext.height+4.0);
-		cairo_fill(cr);
-		set_color_cfg(cr, config_intval(&(editor->buffer->config), CFG_POSBOX_BG_COLOR));
-		cairo_rectangle(cr, x, y-1.0, posbox_ext.x_advance + 2.0, posbox_ext.height + 2.0);
-		cairo_fill(cr);
-
-		cairo_move_to(cr, x+1.0, y+posbox_ext.height);
-		set_color_cfg(cr, config_intval(&(editor->buffer->config), CFG_POSBOX_FG_COLOR));
-		cairo_show_text(cr, posbox_text);
-
-		free(posbox_text);
-	}
+	draw_posbox(cr, editor, &allocation);
+	draw_notices(cr, editor);
 
 	if (editor->buffer->single_line) {
 		gtk_widget_hide(GTK_WIDGET(editor->drarscroll));
@@ -1439,7 +1474,7 @@ editor_t *new_editor(buffer_t *buffer, bool single_line) {
 
 	r->drarscroll = gtk_vscrollbar_new((GtkAdjustment *)(r->adjustment = gtk_adjustment_new(0.0, 0.0, 1.0, 1.0, 1.0, 1.0)));
 	r->hadjustment = gtk_adjustment_new(0.0, 0.0, 1.0, 1.0, 1.0, 1.0);
-	
+
 	{ // search bo
 		r->search_entry = gtk_entry_new();
 		r->search_box = gtk_hbox_new(FALSE, 0);

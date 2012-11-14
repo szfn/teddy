@@ -500,3 +500,33 @@ void set_gdk_color_cfg(config_t *config, int name, GdkColor *c) {
 	c->green = (uint8_t)(color >> 8) / 255.0 * 65535;
 	c->blue = (uint8_t)(color >> 16) / 255.0 * 65535;
 }
+
+#define ROUNDBOXPAD 8
+void roundbox(cairo_t *cr, double x, double y, const char *text) {
+	cairo_text_extents_t ext;
+	cairo_text_extents(cr, text, &ext);
+
+	cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 0.9);
+
+	double a = x, b = x + ext.x_advance + 2 * ROUNDBOXPAD;
+	double c = y, d = y + ext.height + 2 * ROUNDBOXPAD;
+
+	double radius = ROUNDBOXPAD;
+	double pi = 3.141592653589793;
+
+	/*cairo_rectangle(cr, x, y, ext.x_advance + 2*ROUNDBOXPAD, ext.height + 2*ROUNDBOXPAD);
+	cairo_fill(cr);*/
+
+	cairo_arc(cr, a + radius, c + radius, radius, 2*(pi/2), 3*(pi/2));
+    cairo_arc(cr, b - radius, c + radius, radius, 3*(pi/2), 4*(pi/2));
+    cairo_arc(cr, b - radius, d - radius, radius, 0*(pi/2), 1*(pi/2));
+    cairo_arc(cr, a + radius, d - radius, radius, 1*(pi/2), 2*(pi/2));
+    cairo_line_to(cr, a, c+radius);
+    cairo_close_path(cr);
+
+	cairo_fill(cr);
+
+	cairo_move_to(cr, x+ROUNDBOXPAD, y+ext.height+ROUNDBOXPAD);
+	cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 1.0);
+	cairo_show_text(cr, text);
+}

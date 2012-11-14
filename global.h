@@ -66,4 +66,6 @@ void save_tied_session(void);
 void load_tied_session(void);
 char *session_directory(void);
 
+void roundbox(cairo_t *cairo, double x, double y, const char *text);
+
 #endif
