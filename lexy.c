@@ -721,6 +721,9 @@ static void *lexy_update_starting_at_thread(void *varg) {
 }
 
 void lexy_update_starting_at(buffer_t *buffer, int start, bool quick_exit) {
+	/* Skip doing updates for +unnamed buffers, they are always temp buffers used for computations and as such this code is extremely prone to trigger the buffer_free race condition */
+	if (strcmp(buffer->path, "+unnamed") == 0) return;
+	//printf("Lexy update for <%s>\n", buffer->path);
 	struct update_starting_at_argument *arg = malloc(sizeof(struct update_starting_at_argument));
 	arg->buffer = buffer;
 	arg->start = start;
