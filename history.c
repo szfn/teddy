@@ -6,13 +6,14 @@
 #include "global.h"
 #include "interp.h"
 
-void history_init(struct history *h) {
+void history_init(struct history *h, bool save) {
 	compl_init(&(h->c));
 	h->c.prefix_from_buffer = &buffer_historycompl_word_at_cursor;
 	memset(h->items, 0, sizeof(struct history_item) * HISTORY_SIZE);
 	h->index = 0;
 	h->cap = 0;
 	h->unsaved = 0;
+	h->save = save;
 }
 
 static void history_item_free(struct history_item *it) {
@@ -78,7 +79,7 @@ void history_add(struct history *h, time_t timestamp, const char *wd, const char
 		++(h->unsaved);
 	}
 
-	if (h->unsaved >= 10) {
+	if ((h->unsaved >= 10) && (h->save)) {
 		char *xdg_config_home = getenv("XDG_CONFIG_HOME");
 		char *dst;
 

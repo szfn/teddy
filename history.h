@@ -17,6 +17,7 @@ struct history_item {
 struct history {
 	struct completer c;
 	struct history_item items[HISTORY_SIZE];
+	bool save;
 
 	int index;
 	int cap;
@@ -24,7 +25,7 @@ struct history {
 	int unsaved;
 };
 
-void history_init(struct history *h);
+void history_init(struct history *h, bool save);
 void history_free(struct history *h);
 
 void history_add(struct history *h, time_t timestamp, const char *wd, const char *entry, bool counted);

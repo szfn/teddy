@@ -88,8 +88,8 @@ int main(int argc, char *argv[]) {
 
 	read_conf();
 
-	history_init(&command_history);
-	history_init(&search_history);
+	history_init(&command_history, true);
+	history_init(&search_history, false);
 
 	compl_init(&the_word_completer);
 
