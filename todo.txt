@@ -1,4 +1,3 @@
-- BUG: typing text while doing incremental search doesn't wrap to the top of the buffer
 - BUG: C comments are terminated by a single / character instead of */
 - BUG: search history gest dumped into teddy_history too, it shouldn't
 - BUG: the very first displayed line has always a autowrap continuation marker

@@ -84,7 +84,7 @@ static uchar_match_fn *should_be_case_sensitive(buffer_t *buffer, uint32_t *need
 	return uchar_match_case_insensitive;
 }
 
-static void move_incremental_search(editor_t *editor, bool ctrl_g_invoked, bool direction_forward) {
+static void move_incremental_search(editor_t *editor, bool ctrl_g_invoked, bool direction_forward, bool restart) {
 	int dst = editor->research.literal_text_cap;
 	uint32_t *needle = editor->research.literal_text;
 
@@ -116,9 +116,16 @@ static void move_incremental_search(editor_t *editor, bool ctrl_g_invoked, bool 
 		// search was successful
 		editor->buffer->mark = OS(OS(search_point, i), -j);
 		editor->buffer->cursor = OS(search_point, i);
-	} else {
-		if (!ctrl_g_invoked)
+	} else if (restart) {
+		int mark = editor->buffer->mark;
+		editor->buffer->mark = -1;
+		move_incremental_search(editor, ctrl_g_invoked, direction_forward, false);
+		if (editor->buffer->mark < 0) {
+			editor->buffer->mark = mark;
 			if (editor->research.literal_text_cap > 0) --(editor->research.literal_text_cap);
+		}
+	} else {
+		editor->buffer->mark = -1;
 	}
 }
 
@@ -223,7 +230,7 @@ static bool move_regexp_search_forward(struct research_t *research, bool execute
 void move_search(editor_t *editor, bool ctrl_g_invoked, bool direction_forward, bool replace) {
 	switch(editor->research.mode) {
 	case SM_LITERAL:
-		move_incremental_search(editor, ctrl_g_invoked, direction_forward);
+		move_incremental_search(editor, ctrl_g_invoked, direction_forward, !ctrl_g_invoked);
 		break;
 	case SM_REGEXP:
 		if (ctrl_g_invoked) {
