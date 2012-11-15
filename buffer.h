@@ -40,6 +40,9 @@ typedef struct _buffer_t {
 	pthread_rwlock_t rwlock;
 	volatile bool release_read_lock;
 
+	volatile int lexy_running;
+	volatile int lexy_start;
+
 	job_t *job;
 
 	config_t config;

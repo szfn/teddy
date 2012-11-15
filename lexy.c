@@ -648,21 +648,15 @@ const char *lexy_get_link_fn(buffer_t *buffer) {
 	return a->link_fn;
 }
 
-struct update_starting_at_argument {
-	buffer_t *buffer;
-	int start;
-};
-
 static void *lexy_update_starting_at_thread(void *varg) {
-	struct update_starting_at_argument *arg = (struct update_starting_at_argument *)varg;
-	buffer_t *buffer = arg->buffer;
-	int start = arg->start;
-	free(arg);
+	buffer_t *buffer = (buffer_t *)varg;
 
 	int start_status_index = start_status_for_buffer(buffer);
 	if (start_status_index < 0) return NULL;
 
 	pthread_rwlock_rdlock(&(buffer->rwlock));
+
+	int start = buffer->lexy_start;
 
 	//printf("Coloring buffer %p (%s) starting at %d (%d)\n", buffer, buffer->path, start, BSIZE(buffer));
 
@@ -701,6 +695,7 @@ static void *lexy_update_starting_at_thread(void *varg) {
 		int previ = i;
 
 		if (buffer->release_read_lock) {
+			buffer->lexy_running = 2;
 			break;
 		}
 
@@ -720,20 +715,32 @@ static void *lexy_update_starting_at_thread(void *varg) {
 	}
 	//printf("Finished %d\n", buffer->lexy_last_update_point);
 
+	buffer->lexy_running = 0;
 	pthread_rwlock_unlock(&(buffer->rwlock));
 
 	return NULL;
 }
 
 void lexy_update_starting_at(buffer_t *buffer, int start, bool quick_exit) {
-	/* Skip doing updates for +unnamed buffers, they are always temp buffers used for computations and as such this code is extremely prone to trigger the buffer_free race condition */
+	/* Skip doing updates for +unnamed buffers, they are always temp buffers used for computations */
 	if (strcmp(buffer->path, "+unnamed") == 0) return;
-	//printf("Lexy update for <%s>\n", buffer->path);
-	struct update_starting_at_argument *arg = malloc(sizeof(struct update_starting_at_argument));
-	arg->buffer = buffer;
-	arg->start = start;
+
+	if (buffer->lexy_running == 1) {
+		// this function runs with the write lock acquired, we can only see lexy_running == 1
+		// when the lexy thread is running but hasn't acquired the read lock yet.
+		// just update the start
+		buffer->lexy_start = MIN(buffer->lexy_start, start);
+		return;
+	} else if (buffer->lexy_running == 2) {
+		// the lexy thread was preempted by a buffer update (buffer_replace_selection / buffer_undo)
+		// update lexy_start and restart the thread
+		buffer->lexy_start = MIN(buffer->lexy_start, start);
+	} else if (buffer->lexy_running == 0) {
+		buffer->lexy_start = start;
+	}
+
 	pthread_t thread;
-	pthread_create(&thread, NULL, lexy_update_starting_at_thread, arg);
+	pthread_create(&thread, NULL, lexy_update_starting_at_thread, buffer);
 }
 
 int lexy_create_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {

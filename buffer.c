@@ -105,6 +105,7 @@ buffer_t *buffer_create(void) {
 	buffer->mtime = 0;
 	buffer->stale = false;
 	buffer->single_line = false;
+	buffer->lexy_running = 0;
 
 	asprintf(&(buffer->path), "+unnamed");
 	alloc_assert(buffer->path);
@@ -149,10 +150,14 @@ static int to_closed_buffers_critbit(const char *entry, void *p) {
 }
 
 void buffer_free(buffer_t *buffer, bool save_critbit) {
-	/* XXX There is a race condition here:
-	   One of the reader threads could arrive at the rdlock after we obtain the write lock,
-	   at that point it would execute on corrupted data.
-	*/
+	/* We ask the lexy thread to release the lock and wait for this to happen, then we acquire the write lock and destroy the object */
+	buffer->release_read_lock = true;
+	for (int count = 0; buffer->lexy_running != 0; ++count) {
+		if (count > 5) {
+			quick_message("Internal error", "Failed to destroy buffer");
+			return;
+		}
+	}
 	pthread_rwlock_wrlock(&(buffer->rwlock));
 
 	free(buffer->buf);
@@ -454,6 +459,9 @@ void buffer_undo(buffer_t *buffer, bool redo) {
 	undo_node_t *undo_node = redo ? undo_redo_pop(&(buffer->undo)) : undo_pop(&(buffer->undo));
 	if (undo_node == NULL) return;
 
+	buffer->release_read_lock = true;
+	pthread_rwlock_wrlock(&(buffer->rwlock));
+
 	buffer->modified = 1;
 
 	buffer->mark = buffer->savedmark = -1;
@@ -475,6 +483,8 @@ void buffer_undo(buffer_t *buffer, bool redo) {
 	buffer_typeset_from(buffer, start_cursor-1);
 	buffer->savedmark = buffer->mark = -1;
 	lexy_update_starting_at(buffer, start_cursor-1, false);
+
+	pthread_rwlock_unlock(&(buffer->rwlock));
 
 	if (buffer->onchange != NULL) buffer->onchange(buffer);
 }
