@@ -19,13 +19,25 @@ static void research_free_temp(struct research_t *r) {
 			Tcl_Free(r->cmd);
 			r->cmd = NULL;
 		}
+		if (r->regexpstr != NULL) {
+			free(r->regexpstr);
+			r->regexpstr = NULL;
+		}
+		if (r->literal_text != NULL) {
+			free(r->literal_text);
+			r->literal_text = NULL;
+			r->literal_text_cap = r->literal_text_allocated = 0;
+		}
 	}
 }
 
 void quit_search_mode(editor_t *editor) {
 	research_free_temp(&(editor->research));
-	if (editor->research.mode == SM_LITERAL)
-		history_add(&search_history, time(NULL), NULL, gtk_entry_get_text(GTK_ENTRY(editor->search_entry)), true);
+	if (editor->research.mode == SM_LITERAL) {
+		char *x = utf32_to_utf8_string(editor->research.literal_text, editor->research.literal_text_cap);
+		history_add(&search_history, time(NULL), NULL, x, true);
+		free(x);
+	}
 	editor->research.mode = SM_NONE;
 	editor->ignore_next_entry_keyrelease = TRUE;
 
@@ -73,8 +85,8 @@ static uchar_match_fn *should_be_case_sensitive(buffer_t *buffer, uint32_t *need
 }
 
 static void move_incremental_search(editor_t *editor, bool ctrl_g_invoked, bool direction_forward) {
-	int dst;
-	uint32_t *needle = utf8_to_utf32_string(gtk_entry_get_text(GTK_ENTRY(editor->search_entry)), &dst);
+	int dst = editor->research.literal_text_cap;
+	uint32_t *needle = editor->research.literal_text;
 
 	uchar_match_fn *match_fn = should_be_case_sensitive(editor->buffer, needle, dst);
 
@@ -105,11 +117,9 @@ static void move_incremental_search(editor_t *editor, bool ctrl_g_invoked, bool 
 		editor->buffer->mark = OS(OS(search_point, i), -j);
 		editor->buffer->cursor = OS(search_point, i);
 	} else {
-		editor->research.search_failed = false;
-		editor->buffer->mark = -1;
+		if (!ctrl_g_invoked)
+			if (editor->research.literal_text_cap > 0) --(editor->research.literal_text_cap);
 	}
-
-	free(needle);
 }
 
 static bool regmatch_to_lpoints(struct augmented_lpoint_t *search_point, regmatch_t *m, int *s, int *e) {
@@ -234,6 +244,8 @@ void research_init(struct research_t *r) {
 	r->mode = SM_NONE;
 	r->search_failed = false;
 	r->cmd = NULL;
+	r->regexpstr = NULL;
+	r->literal_text = NULL;
 }
 
 void do_regex_noninteractive_search(struct research_t *research) {
@@ -307,6 +319,8 @@ int teddy_research_command(ClientData client_data, Tcl_Interp *interp, int argc,
 	research.line_limit = false;
 	research.search_failed = false;
 	research.mode = SM_REGEXP;
+	research.literal_text = NULL;
+	research.literal_text_allocated = research.literal_text_cap = 0;
 
 	int flags = 0;
 	bool get = false, literal = false;
@@ -327,6 +341,9 @@ int teddy_research_command(ClientData client_data, Tcl_Interp *interp, int argc,
 		Tcl_AddErrorInfo(interp, "Malformed arguments to 's' command");
 		return TCL_ERROR;
 	}
+
+	research.regexpstr = strdup(argv[i]);
+	alloc_assert(research.regexpstr);
 
 	int r = tre_regcomp(&(research.regexp), argv[i], flags | REG_NEWLINE | (literal ? REG_LITERAL : REG_EXTENDED));
 	if (r != REG_OK) {

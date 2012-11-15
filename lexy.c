@@ -672,6 +672,11 @@ static void *lexy_update_starting_at_thread(void *varg) {
 		start = 0;
 		status = start_status_index;
 	} else {
+		/* We always start at the beginning of a line
+		The reason is that we need to be sure that we don't start in the middle of a token.
+		The beginning of a line is never the beginning of a token because keyword, and regexp matches can not span on multiple lines.
+		The only type of token that can span multiple lines is the region match but that will work (because it is a separate state in the state machine)*/
+
 		buffer_move_point_glyph(buffer, &start, MT_ABS, 1);
 		if (start > 0) --start;
 		my_glyph_info_t *glyph = bat(buffer, start);

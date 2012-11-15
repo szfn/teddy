@@ -146,6 +146,21 @@ void place_frame_piece(GtkWidget *table, gboolean horizontal, int position, int 
 			0, 0);
 }
 
+char *utf32_to_utf8_string(uint32_t *text, int len) {
+	int allocated = 10;
+	int cap = 0;
+	char *r = malloc(sizeof(char) * allocated);
+	alloc_assert(r);
+
+	for (int i = 0; i < len; ++i) {
+		utf32_to_utf8(text[i], &r, &cap, &allocated);
+	}
+
+	utf32_to_utf8(0, &r, &cap, &allocated);
+
+	return r;
+}
+
 void utf32_to_utf8(uint32_t code, char **r, int *cap, int *allocated) {
 	int first_byte_pad, first_byte_mask, inc;
 
@@ -499,4 +514,37 @@ void set_gdk_color_cfg(config_t *config, int name, GdkColor *c) {
 	c->red = (uint8_t)(color) / 255.0 * 65535;
 	c->green = (uint8_t)(color >> 8) / 255.0 * 65535;
 	c->blue = (uint8_t)(color >> 16) / 255.0 * 65535;
+}
+
+#define ROUNDBOXPAD 8
+void roundbox(cairo_t *cr, GtkAllocation *allocation, const char *text) {
+	cairo_text_extents_t ext;
+	cairo_text_extents(cr, text, &ext);
+
+	double y = 5;
+	double x = allocation->width - (ext.x_advance + 2*ROUNDBOXPAD + 5);
+
+	cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 0.9);
+
+	double a = x, b = x + ext.x_advance + 2 * ROUNDBOXPAD;
+	double c = y, d = y + ext.height + 2 * ROUNDBOXPAD;
+
+	double radius = ROUNDBOXPAD;
+	double pi = 3.141592653589793;
+
+	/*cairo_rectangle(cr, x, y, ext.x_advance + 2*ROUNDBOXPAD, ext.height + 2*ROUNDBOXPAD);
+	cairo_fill(cr);*/
+
+	cairo_arc(cr, a + radius, c + radius, radius, 2*(pi/2), 3*(pi/2));
+    cairo_arc(cr, b - radius, c + radius, radius, 3*(pi/2), 4*(pi/2));
+    cairo_arc(cr, b - radius, d - radius, radius, 0*(pi/2), 1*(pi/2));
+    cairo_arc(cr, a + radius, d - radius, radius, 1*(pi/2), 2*(pi/2));
+    cairo_line_to(cr, a, c+radius);
+    cairo_close_path(cr);
+
+	cairo_fill(cr);
+
+	cairo_move_to(cr, x+ROUNDBOXPAD, y+ext.height+ROUNDBOXPAD);
+	cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 1.0);
+	cairo_show_text(cr, text);
 }
