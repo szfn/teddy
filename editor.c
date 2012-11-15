@@ -218,7 +218,27 @@ void editor_complete_move(editor_t *editor, gboolean should_move_origin) {
 }
 
 static void text_entry_callback(GtkIMContext *context, gchar *str, editor_t *editor) {
-	editor_replace_selection(editor, str);
+	if (editor->research.mode == SM_NONE) {
+		editor_replace_selection(editor, str);
+	} else if (editor->research.mode == SM_LITERAL) {
+		if (editor->research.literal_text_cap + strlen(str) >= editor->research.literal_text_allocated) {
+			editor->research.literal_text_allocated *= 2;
+			editor->research.literal_text = realloc(editor->research.literal_text, sizeof(uint32_t) * editor->research.literal_text_allocated);
+			alloc_assert(editor->research.literal_text);
+		}
+
+		for (int src = 0; src < strlen(str); ) {
+			bool valid = false;
+			uint32_t code = utf8_to_utf32(str, &src, strlen(str), &valid);
+			if (!valid) ++src;
+			else {
+				editor->research.literal_text[editor->research.literal_text_cap] = code;
+				++(editor->research.literal_text_cap);
+			}
+		}
+
+		move_search(editor, false, true, false);
+	}
 }
 
 void editor_switch_buffer(editor_t *editor, buffer_t *buffer) {
@@ -396,6 +416,66 @@ static const char *indentchar(editor_t *editor) {
 	return (propvalue != NULL) ? propvalue : "\t";
 }
 
+static bool search_key_press_callback(editor_t *editor, GdkEventKey *event) {
+	int shift = event->state & GDK_SHIFT_MASK;
+	int ctrl = event->state & GDK_CONTROL_MASK;
+	int alt = event->state & GDK_MOD1_MASK;
+	int super = event->state & GDK_SUPER_MASK;
+
+	if (!shift && !ctrl && !alt && !super) {
+		if ((event->keyval == GDK_KEY_Escape) || (event->keyval == GDK_KEY_Return)) {
+			quit_search_mode(editor);
+			return true;
+		}
+	}
+
+	if (ctrl && !alt && !super) {
+		if (event->keyval == GDK_KEY_g) {
+			move_search(editor, true, true, false);
+			return true;
+		} else if (event->keyval == GDK_KEY_G) {
+			move_search(editor, true, false, false);
+			return true;
+		}
+	}
+
+	if (editor->research.mode == SM_REGEXP) {
+		if (!shift && !ctrl && !alt && !super) {
+			switch (event->keyval) {
+			case GDK_KEY_r:
+			case GDK_KEY_a:
+				move_search(editor, true, true, true);
+				break;
+			case GDK_KEY_n:
+				move_search(editor, true, true, false);
+				break;
+			case GDK_KEY_q:
+				quit_search_mode(editor);
+				break;
+			case GDK_KEY_A:
+				research_continue_replace_to_end(editor);
+				editor->research.mode = SM_NONE;
+				gtk_widget_grab_focus(editor->drar);
+				gtk_widget_queue_draw(GTK_WIDGET(editor));
+				break;
+			}
+		}
+		return true;
+	} else if (editor->research.mode == SM_LITERAL) {
+		if (event->keyval == GDK_KEY_BackSpace) {
+			if (editor->research.literal_text_cap > 0) {
+				--(editor->research.literal_text_cap);
+				if ((editor->buffer->mark >= 0) && (editor->buffer->cursor != editor->buffer->mark)) {
+					--(editor->buffer->cursor);
+					gtk_widget_queue_draw(editor->drar);
+				}
+			}
+		}
+	}
+
+	return false;
+}
+
 static gboolean key_press_callback(GtkWidget *widget, GdkEventKey *event, editor_t *editor) {
 	char pressed[40] = "";
 	const char *command;
@@ -404,6 +484,31 @@ static gboolean key_press_callback(GtkWidget *widget, GdkEventKey *event, editor
 	int ctrl = event->state & GDK_CONTROL_MASK;
 	int alt = event->state & GDK_MOD1_MASK;
 	int super = event->state & GDK_SUPER_MASK;
+
+	if (editor->buffer->stale) {
+		switch (event->keyval) {
+		case GDK_KEY_y:
+			editor->buffer->modified = false;
+			buffers_refresh(editor->buffer);
+			break;
+		case GDK_KEY_n:
+			editor->buffer->stale = false;
+			gtk_widget_queue_draw(GTK_WIDGET(editor));
+			break;
+		default:
+			// Do nothing
+			break;
+		}
+		return TRUE;
+	}
+
+	if (editor->research.mode != SM_NONE) {
+		if (search_key_press_callback(editor, event)) {
+			return TRUE;
+		} else {
+			goto im_context;
+		}
+	}
 
 	gtk_widget_get_allocation(editor->drar, &allocation);
 
@@ -810,10 +915,9 @@ static gboolean motion_callback(GtkWidget *widget, GdkEventMotion *event, editor
 
 	// focus follows mouse
 	if ((config_intval(&(editor->buffer->config), CFG_FOCUS_FOLLOWS_MOUSE)) && focus_can_follow_mouse && !top_command_line_focused()) {
-		GtkWidget *requested_focus = (editor->research.mode!=SM_NONE) ? editor->search_entry : editor->drar;
-		if (!gtk_widget_is_focus(requested_focus)) {
-			gtk_widget_grab_focus(requested_focus);
-			gtk_widget_queue_draw(requested_focus);
+		if (!gtk_widget_is_focus(editor->drar)) {
+			gtk_widget_grab_focus(editor->drar);
+			gtk_widget_queue_draw(editor->drar);
 		}
 	}
 
@@ -1114,23 +1218,32 @@ static void draw_posbox(cairo_t *cr, editor_t *editor, GtkAllocation *allocation
 	free(posbox_text);
 }
 
-static void draw_notices(cairo_t *cr, editor_t *editor) {
+static void draw_notices(cairo_t *cr, editor_t *editor, GtkAllocation *allocation) {
 	if (editor->buffer->single_line) return;
 
+	cairo_set_scaled_font(cr, fontset_get_cairofont_by_name(config_strval(&(editor->buffer->config), CFG_NOTICE_FONT), 0));
+
 	if (editor->buffer->stale) {
-		roundbox(cr, 5, 5, "Content of this file changed on disk, reload [y/n/?");
+		roundbox(cr, allocation, "Content of this file changed on disk, reload [y/n]?");
 		return;
 	}
 
 	switch (editor->research.mode) {
-	case SM_REGEXP:
-		//TODO: implement
+	case SM_REGEXP: {
+		char *msg;
+		if (editor->research.cmd != NULL) {
+			asprintf(&msg, "Searching /%s/ executing {%s}... ([a] apply, [A] apply to all, [n] next, [q] quit)", editor->research.regexpstr, editor->research.cmd);
+		} else {
+			asprintf(&msg, "Searching /%s/... ([n] next, [q] quit)", editor->research.regexpstr);
+		}
+		alloc_assert(msg);
+		roundbox(cr, allocation, msg);
+		free(msg);
 		break;
+	}
 
 	case SM_LITERAL:
-		//TODO: output searched string too
-	cairo_set_scaled_font(cr, fontset_get_cairofont_by_name(config_strval(&(editor->buffer->config), CFG_NOTICE_FONT), 0));
-		roundbox(cr, 5, 5, "Searching...");
+		roundbox(cr, allocation, "Searching...");
 		break;
 
 	default:
@@ -1144,16 +1257,6 @@ static gboolean expose_event_callback(GtkWidget *widget, GdkEventExpose *event, 
 
 	GtkAllocation allocation;
 	gtk_widget_get_allocation(widget, &allocation);
-
-	if (editor->research.mode == SM_NONE) {
-		gtk_widget_hide(editor->search_box);
-	}
-
-	if (editor->buffer->stale) {
-		gtk_widget_show(editor->stale_box);
-	} else {
-		gtk_widget_hide(editor->stale_box);
-	}
 
 	set_color_cfg(cr, config_intval(&(editor->buffer->config), CFG_EDITOR_BG_COLOR));
 	cairo_rectangle(cr, 0, 0, allocation.width, allocation.height);
@@ -1210,7 +1313,7 @@ static gboolean expose_event_callback(GtkWidget *widget, GdkEventExpose *event, 
 	cairo_translate(cr, gtk_adjustment_get_value(GTK_ADJUSTMENT(editor->hadjustment)), gtk_adjustment_get_value(GTK_ADJUSTMENT(editor->adjustment)));
 
 	draw_posbox(cr, editor, &allocation);
-	draw_notices(cr, editor);
+	draw_notices(cr, editor, &allocation);
 
 	if (editor->buffer->single_line) {
 		gtk_widget_hide(GTK_WIDGET(editor->drarscroll));
@@ -1251,9 +1354,6 @@ static gboolean scrolled_callback(GtkAdjustment *adj, editor_t *editor) {
 static gboolean editor_focusin_callback(GtkWidget *widget, GdkEventFocus *event, editor_t *editor) {
 	editor->cursor_visible = 1;
 	gtk_widget_queue_draw(editor->drar);
-	if (editor->research.mode != SM_NONE) {
-		gtk_widget_grab_focus(editor->search_entry);
-	}
 	return FALSE;
 }
 
@@ -1264,86 +1364,6 @@ static gboolean editor_focusout_callback(GtkWidget *widget, GdkEventFocus *event
 	gtk_widget_queue_draw(editor->drar);
 	end_selection_scroll(editor);
 	return FALSE;
-}
-
-static gboolean search_key_press_callback(GtkWidget *widget, GdkEventKey *event, editor_t *editor) {
-	int shift = event->state & GDK_SHIFT_MASK;
-	int ctrl = event->state & GDK_CONTROL_MASK;
-	int alt = event->state & GDK_MOD1_MASK;
-	int super = event->state & GDK_SUPER_MASK;
-
-	if (!shift && !ctrl && !alt && !super) {
-		if ((event->keyval == GDK_KEY_Escape) || (event->keyval == GDK_KEY_Return)) {
-			quit_search_mode(editor);
-			return TRUE;
-		}
-	}
-
-	if (ctrl && !alt && !super) {
-		if (event->keyval == GDK_KEY_g) {
-			move_search(editor, true, true, false);
-			return TRUE;
-		} else if (event->keyval == GDK_KEY_G) {
-			move_search(editor, true, false, false);
-			return TRUE;
-		}
-	}
-
-	if (editor->research.mode == SM_REGEXP) {
-		if (!shift && !ctrl && !alt && !super) {
-			switch (event->keyval) {
-			case GDK_KEY_r:
-			case GDK_KEY_a:
-				move_search(editor, true, true, true);
-				break;
-			case GDK_KEY_n:
-				move_search(editor, true, true, false);
-				break;
-			case GDK_KEY_q:
-				quit_search_mode(editor);
-				break;
-			}
-		}
-	}
-
-	return FALSE;
-}
-
-static void search_changed_callback(GtkEditable *editable, editor_t *editor) {
-	move_search(editor, false, true, false);
-}
-
-static void search_button_forward(GtkButton *btn, editor_t *editor) {
-	move_search(editor, true, true, false);
-}
-
-static void search_button_backwards(GtkButton *btn, editor_t *editor) {
-	move_search(editor, true, false, false);
-}
-
-static void search_button_close(GtkButton *btn, editor_t *editor) {
-	quit_search_mode(editor);
-}
-
-static void search_button_execute(GtkButton *btn, editor_t *editor) {
-	move_search(editor, true, true, true);
-}
-
-static void search_button_execute_all(GtkButton *btn, editor_t *editor) {
-	research_continue_replace_to_end(editor);
-	editor->research.mode = SM_NONE;
-	gtk_widget_grab_focus(editor->drar);
-	gtk_widget_queue_draw(GTK_WIDGET(editor));
-}
-
-static void keep_stale_callback(GtkButton *btn, editor_t *editor) {
-	editor->buffer->stale = false;
-	gtk_widget_queue_draw(GTK_WIDGET(editor));
-}
-
-static void reload_stale_callback(GtkButton *btn, editor_t *editor) {
-	editor->buffer->modified = false;
-	buffers_refresh(editor->buffer);
 }
 
 static char *get_selection_or_file_link(editor_t *editor, bool *islink) {
@@ -1475,71 +1495,14 @@ editor_t *new_editor(buffer_t *buffer, bool single_line) {
 	r->drarscroll = gtk_vscrollbar_new((GtkAdjustment *)(r->adjustment = gtk_adjustment_new(0.0, 0.0, 1.0, 1.0, 1.0, 1.0)));
 	r->hadjustment = gtk_adjustment_new(0.0, 0.0, 1.0, 1.0, 1.0, 1.0);
 
-	{ // search bo
-		r->search_entry = gtk_entry_new();
-		r->search_box = gtk_hbox_new(FALSE, 0);
-		GtkWidget *search_label = gtk_label_new("Search: ");
-
-		GtkWidget *next_search_button = gtk_button_new();
-		r->prev_search_button = gtk_button_new();
-		GtkWidget *close_search_button = gtk_button_new();
-		r->execute_search_button = gtk_button_new_with_label("Apply");
-		r->execute_all_search_button = gtk_button_new_with_label("Apply to all");
-
-		gtk_container_add(GTK_CONTAINER(next_search_button), gtk_arrow_new(GTK_ARROW_DOWN, GTK_SHADOW_NONE));
-		gtk_container_add(GTK_CONTAINER(r->prev_search_button), gtk_arrow_new(GTK_ARROW_UP, GTK_SHADOW_NONE));
-		gtk_container_add(GTK_CONTAINER(close_search_button), gtk_image_new_from_stock(GTK_STOCK_CLOSE, GTK_ICON_SIZE_SMALL_TOOLBAR));
-
-		g_signal_connect(G_OBJECT(next_search_button), "clicked", G_CALLBACK(search_button_forward), r);
-		g_signal_connect(G_OBJECT(r->prev_search_button), "clicked", G_CALLBACK(search_button_backwards), r);
-		g_signal_connect(G_OBJECT(close_search_button), "clicked", G_CALLBACK(search_button_close), r);
-		g_signal_connect(G_OBJECT(r->execute_search_button), "clicked", G_CALLBACK(search_button_execute), r);
-		g_signal_connect(G_OBJECT(r->execute_all_search_button), "clicked", G_CALLBACK(search_button_execute_all), r);
-
-		gtk_box_pack_start(GTK_BOX(r->search_box), GTK_WIDGET(search_label), FALSE, FALSE, 0);
-		gtk_box_pack_start(GTK_BOX(r->search_box), GTK_WIDGET(r->search_entry), TRUE, TRUE, 0);
-		gtk_box_pack_end(GTK_BOX(r->search_box), close_search_button, FALSE, FALSE, 2);
-		gtk_box_pack_end(GTK_BOX(r->search_box), r->prev_search_button, FALSE, FALSE, 2);
-		gtk_box_pack_end(GTK_BOX(r->search_box), next_search_button, FALSE, FALSE, 2);
-		gtk_box_pack_end(GTK_BOX(r->search_box), r->execute_all_search_button, FALSE, FALSE, 2);
-		gtk_box_pack_end(GTK_BOX(r->search_box), r->execute_search_button, FALSE, FALSE, 2);
-
-		gtk_widget_show_all(r->search_box);
-		gtk_widget_set_no_show_all(r->search_box, TRUE);
-		gtk_widget_hide(r->search_box);
-	}
-
-	{ // stale bo
-		r->stale_box = gtk_hbox_new(FALSE, 0);
-		GtkWidget *stale_label = gtk_label_new("Content of this file changed on disk");
-		GtkWidget *keep_stale_button = gtk_button_new_with_label("Keep this version");
-		GtkWidget *reload_stale_button = gtk_button_new_with_label("Reload from disk");
-
-		gtk_box_pack_start(GTK_BOX(r->stale_box), stale_label, TRUE, TRUE, 0);
-		gtk_box_pack_end(GTK_BOX(r->stale_box), keep_stale_button, FALSE, FALSE, 2);
-		gtk_box_pack_end(GTK_BOX(r->stale_box), reload_stale_button, FALSE, FALSE, 2);
-
-		g_signal_connect(G_OBJECT(keep_stale_button), "clicked", G_CALLBACK(keep_stale_callback), r);
-		g_signal_connect(G_OBJECT(reload_stale_button), "clicked", G_CALLBACK(reload_stale_callback), r);
-
-		gtk_widget_show_all(r->stale_box);
-		gtk_widget_set_no_show_all(r->stale_box, TRUE);
-		gtk_widget_hide(r->stale_box);
-	}
-
-	gtk_table_attach(GTK_TABLE(r), r->stale_box, 0, 2, 0, 1, GTK_EXPAND|GTK_FILL, 0, 0, 0);
-	gtk_table_attach(GTK_TABLE(r), r->search_box, 0, 2, 1, 2, GTK_EXPAND|GTK_FILL, 0, 0, 0);
-	gtk_table_attach(GTK_TABLE(r), r->drar, 0, 1, 2, 3, GTK_EXPAND | GTK_FILL, GTK_EXPAND|GTK_FILL, 0, 0);
-	gtk_table_attach(GTK_TABLE(r), r->drarscroll, 1, 2, 2, 3, 0, GTK_EXPAND|GTK_FILL, 0, 0);
+	gtk_table_attach(GTK_TABLE(r), r->drar, 0, 1, 0, 1, GTK_EXPAND | GTK_FILL, GTK_EXPAND|GTK_FILL, 0, 0);
+	gtk_table_attach(GTK_TABLE(r), r->drarscroll, 1, 2, 0, 1, 0, GTK_EXPAND|GTK_FILL, 0, 0);
 
 	g_signal_connect(G_OBJECT(r->drarscroll), "value_changed", G_CALLBACK(scrolled_callback), (gpointer)r);
 
 	if (single_line) {
 		gtk_widget_set_size_request(r->drar, 1, r->buffer->line_height + config_intval(&(buffer->config), CFG_MAIN_FONT_HEIGHT_REDUCTION));
 	}
-
-	g_signal_connect(G_OBJECT(r->search_entry), "key-press-event", G_CALLBACK(search_key_press_callback), r);
-	g_signal_connect(G_OBJECT(r->search_entry), "changed", G_CALLBACK(search_changed_callback), r);
 
 	r->context_menu = gtk_menu_new();
 
@@ -1608,10 +1571,6 @@ void editor_grab_focus(editor_t *editor, bool warp) {
 			gdk_display_warp_pointer(display, screen, x, y);
 		}
 	}
-
-	if (editor->research.mode) {
-		gtk_widget_grab_focus(editor->search_entry);
-	}
 }
 
 void editor_start_search(editor_t *editor, enum search_mode_t search_mode, const char *initial_search_term) {
@@ -1622,29 +1581,18 @@ void editor_start_search(editor_t *editor, enum search_mode_t search_mode, const
 	editor->research.search_failed = false;
 	editor->research.mode = search_mode;
 
-	gtk_widget_grab_focus(editor->search_entry);
-
-	gtk_entry_set_text(GTK_ENTRY(editor->search_entry), (initial_search_term != NULL) ? initial_search_term : "");
-
-	gtk_widget_show(editor->search_box);
-
 	if (editor->research.mode == SM_LITERAL) {
-		gtk_widget_hide(editor->execute_search_button);
-		gtk_widget_hide(editor->execute_all_search_button);
-		gtk_widget_show_all(editor->prev_search_button);
-		gtk_entry_set_editable(GTK_ENTRY(editor->search_entry), true);
-	} else {
-		gtk_widget_hide(editor->prev_search_button);
-		if (editor->research.cmd != NULL) {
-			gtk_widget_show_all(editor->execute_search_button);
-			gtk_widget_show_all(editor->execute_all_search_button);
+		if (initial_search_term != NULL) {
+			editor->research.literal_text = utf8_to_utf32_string(initial_search_term, &(editor->research.literal_text_cap));
+			editor->research.literal_text_allocated = strlen(initial_search_term);
 		} else {
-			gtk_widget_hide(editor->execute_search_button);
-			gtk_widget_hide(editor->execute_all_search_button);
+			editor->research.literal_text = malloc(sizeof(uint32_t) * 5);
+			editor->research.literal_text_allocated = 5;
+			editor->research.literal_text_cap = 0;
 		}
-		gtk_entry_set_editable(GTK_ENTRY(editor->search_entry), false);
 	}
 
 	move_search(editor, false, true, false);
+	editor_grab_focus(editor, false);
 	gtk_widget_queue_draw(GTK_WIDGET(editor));
 }

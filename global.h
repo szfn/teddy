@@ -50,6 +50,7 @@ bool inside_allocation(double x, double y, GtkAllocation *allocation);
 
 uint8_t utf8_first_byte_processing(uint8_t ch);
 void utf32_to_utf8(uint32_t code, char **r, int *cap, int *allocated);
+char *utf32_to_utf8_string(uint32_t *text, int len);
 uint32_t utf8_to_utf32(const char *text, int *src, int len, bool *valid);
 uint32_t *utf8_to_utf32_string(const char *text, int *dstlen);
 void utf8_remove_truncated_characters_at_end(char *text);
@@ -66,6 +67,6 @@ void save_tied_session(void);
 void load_tied_session(void);
 char *session_directory(void);
 
-void roundbox(cairo_t *cairo, double x, double y, const char *text);
+void roundbox(cairo_t *cairo, GtkAllocation *allocation, const char *text);
 
 #endif

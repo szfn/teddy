@@ -19,9 +19,13 @@ struct research_t {
 	bool search_failed;
 
 	regex_t regexp;
+	char *regexpstr;
 	char *cmd;
 	bool line_limit;
 	bool next_will_wrap_around;
+
+	uint32_t *literal_text;
+	int literal_text_cap, literal_text_allocated;
 
 	buffer_t *buffer;
 };

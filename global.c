@@ -146,6 +146,21 @@ void place_frame_piece(GtkWidget *table, gboolean horizontal, int position, int 
 			0, 0);
 }
 
+char *utf32_to_utf8_string(uint32_t *text, int len) {
+	int allocated = 10;
+	int cap = 0;
+	char *r = malloc(sizeof(char) * allocated);
+	alloc_assert(r);
+
+	for (int i = 0; i < len; ++i) {
+		utf32_to_utf8(text[i], &r, &cap, &allocated);
+	}
+
+	utf32_to_utf8(0, &r, &cap, &allocated);
+
+	return r;
+}
+
 void utf32_to_utf8(uint32_t code, char **r, int *cap, int *allocated) {
 	int first_byte_pad, first_byte_mask, inc;
 
@@ -502,9 +517,12 @@ void set_gdk_color_cfg(config_t *config, int name, GdkColor *c) {
 }
 
 #define ROUNDBOXPAD 8
-void roundbox(cairo_t *cr, double x, double y, const char *text) {
+void roundbox(cairo_t *cr, GtkAllocation *allocation, const char *text) {
 	cairo_text_extents_t ext;
 	cairo_text_extents(cr, text, &ext);
+
+	double y = 5;
+	double x = allocation->width - (ext.x_advance + 2*ROUNDBOXPAD + 5);
 
 	cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 0.9);
 
