@@ -1058,7 +1058,10 @@ static void draw_lines(editor_t *editor, GtkAllocation *allocation, cairo_t *cr,
 	for  (int i = 0; i < BSIZE(editor->buffer); ++i) {
 		my_glyph_info_t *glyph = bat(editor->buffer, i);
 
-		if (glyph->y < starty) continue;
+		if (glyph->y < starty) {
+			newline = (glyph->code == '\n'); // next loop iteration don't draw autowrap indicators
+			continue;
+		}
 		if (glyph->y - editor->buffer->line_height > endy) break;
 
 		//printf("current: %c\n", (char)glyph->code);

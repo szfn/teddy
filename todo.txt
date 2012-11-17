@@ -1,9 +1,8 @@
 - BUG: C comments are terminated by a single / character instead of */
-- BUG: the very first displayed line has always a autowrap continuation marker
-
+- BUG: lexy updates still sometime fails on background buffers (cat test.txt reproduces it)
 - BUG: issue a redraw when a lexy update ends
-- BUG: lexy updates still sometime fails on background buffers
 
+- rehash command to reload stuff in the path
 - save buffer main font too
 - optimize code that changes mouse cursor into a hand over links (right now its linear in the size of the buffer)
 
