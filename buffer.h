@@ -73,9 +73,6 @@ typedef struct _buffer_t {
 	double left_margin;
 	double right_margin;
 
-	/* Lexy stuff */
-	int lexy_last_update_point;
-
 	/* Scripting support */
 	GHashTable *props;
 	char *keyprocessor;

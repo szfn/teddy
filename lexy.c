@@ -685,25 +685,19 @@ static void *lexy_update_starting_at_thread(void *varg) {
 		int previ = i;
 
 		if (buffer->release_read_lock) {
+			printf("Lexy preempted\n");
 			buffer->lexy_running = 2;
-			break;
+			pthread_rwlock_unlock(&(buffer->rwlock));
+			return NULL;
 		}
 
-		if (g->status == status) {
-			if (count < 10) lexy_update_one_token(buffer, &i, &status);
-			else {
-				//printf("\tquick exit %d\n", i);
-				break;
-			}
-		} else {
-			lexy_update_one_token(buffer, &i, &status);
-			buffer->lexy_last_update_point = i;
-		}
+		lexy_update_one_token(buffer, &i, &status);
 
 		if (previ == i) ++i;
 		if (count > LEXY_LOAD_HOOK_MAX_COUNT) break;
 	}
-	//printf("Finished %d\n", buffer->lexy_last_update_point);
+
+	printf("Lexy finished\n");
 
 	buffer->lexy_running = 0;
 	pthread_rwlock_unlock(&(buffer->rwlock));
@@ -719,16 +713,20 @@ void lexy_update_starting_at(buffer_t *buffer, int start, bool quick_exit) {
 		// this function runs with the write lock acquired, we can only see lexy_running == 1
 		// when the lexy thread is running but hasn't acquired the read lock yet.
 		// just update the start
+		printf("%p Continuing at %d %d -> %d\n", buffer, buffer->lexy_start, start, MIN(buffer->lexy_start, start));
 		buffer->lexy_start = MIN(buffer->lexy_start, start);
 		return;
 	} else if (buffer->lexy_running == 2) {
 		// the lexy thread was preempted by a buffer update (buffer_replace_selection / buffer_undo)
 		// update lexy_start and restart the thread
+		printf("%p Restarting at %d %d -> %d\n", buffer, buffer->lexy_start, start, MIN(buffer->lexy_start, start));
 		buffer->lexy_start = MIN(buffer->lexy_start, start);
 	} else if (buffer->lexy_running == 0) {
+		printf("%p Starting at %d\n", buffer, start);
 		buffer->lexy_start = start;
 	}
 
+	buffer->lexy_running = 1;
 	pthread_t thread;
 	pthread_create(&thread, NULL, lexy_update_starting_at_thread, buffer);
 }

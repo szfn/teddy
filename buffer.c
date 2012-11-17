@@ -112,8 +112,6 @@ buffer_t *buffer_create(void) {
 	buffer->has_filename = 0;
 	buffer->select_type = BST_NORMAL;
 
-	buffer->lexy_last_update_point = -1;
-
 	undo_init(&(buffer->undo));
 
 	buffer_init_font_extents(buffer);
@@ -157,6 +155,7 @@ void buffer_free(buffer_t *buffer, bool save_critbit) {
 			quick_message("Internal error", "Failed to destroy buffer");
 			return;
 		}
+		sleep(100);
 	}
 	pthread_rwlock_wrlock(&(buffer->rwlock));
 

@@ -263,6 +263,21 @@ static void job_create_buffer(job_t *job) {
 	go_to_buffer(NULL, buffer, false);
 }
 
+static void job_lexy_refresh(job_t *job) {
+	if (job->buffer == NULL) return;
+
+	editor_t *editor;
+	find_editor_for_buffer(job->buffer, NULL, NULL, &editor);
+	if (editor == NULL) return;
+
+	for (int count = 0; job->buffer->lexy_running != 0; ++count) {
+		if (count > 5) return;
+		sleep(100);
+	}
+
+	gtk_widget_queue_draw(editor->drar);
+}
+
 static gboolean jobs_input_watch_function(GIOChannel *source, GIOCondition condition, job_t *job) {
 	char buf[JOBS_READ_BUFFER_SIZE];
 	char *msg;
@@ -313,6 +328,7 @@ static gboolean jobs_input_watch_function(GIOChannel *source, GIOCondition condi
 		job_append(job, msg, strlen(msg), 1);
 		free(msg);
 		job->child_source_id = g_child_watch_add(job->child_pid, (GChildWatchFunc)jobs_child_watch_function, job);
+		job_lexy_refresh(job);
 		return FALSE;
 	case G_IO_STATUS_AGAIN:
 		return TRUE;
