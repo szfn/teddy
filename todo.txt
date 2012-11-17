@@ -1,4 +1,3 @@
-- BUG: C comments are terminated by a single / character instead of */
 - BUG: lexy updates still sometime fails on background buffers (cat test.txt reproduces it)
 - BUG: issue a redraw when a lexy update ends
 

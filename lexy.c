@@ -565,28 +565,18 @@ static void lexy_update_one_token(buffer_t *buffer, int *i, int *status) {
 			break;
 
 		case LM_REGION: {
-			int dst = 0;
-			bool valid;
-			uint32_t dst_code = utf8_to_utf32(row->region_end, &dst, strlen(row->region_end), &valid);
 			int j;
 			for (j = *i; j < BSIZE(buffer); ++j) {
 				my_glyph_info_t *g = bat(buffer, j);
 				if (g == NULL) break;
 				//printf("\tChecking %d %c\n", g->code, (char)g->code);
-				if (g->code == row->escape) {
-					++j;
-					dst = 0;
-					dst_code = utf8_to_utf32(row->region_end, &dst, strlen(row->region_end), &valid);
-				} else {
-					if (g->code == dst_code) {
-						if (dst >= strlen(row->region_end)) {
-							break;
-						}
-						dst_code = utf8_to_utf32(row->region_end, &dst, strlen(row->region_end), &valid);
-					}
+				int m = bufmatch(buffer, j, row->region_end);
+				if (m >= 0) {
+					j += m;
+					break;
 				}
 			}
-			match_len = j - *i + 1;
+			match_len = j - *i;
 			break;
 		}
 
