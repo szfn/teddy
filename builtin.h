@@ -322,7 +322,7 @@ proc solarized_theme {} {\n\
 \n\
 	setcfg -global lexy_nothing $base2\n\
 	setcfg -global lexy_keyword $green\n\
-	setcfg -global lexy_comment $base01\n\
+	setcfg -global lexy_comment $yellow\n\
 	setcfg -global lexy_string $cyan\n\
 	setcfg -global lexy_id $base2\n\
 	setcfg -global lexy_literal $cyan\n\
