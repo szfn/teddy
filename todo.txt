@@ -1,5 +1,4 @@
 - center iopen on screen instead of centering it under the mouse
-- rehash command to reload stuff in the path
 - save buffer main font too
 - optimize code that changes mouse cursor into a hand over links (right now its linear in the size of the buffer)
 - left-right click combo should always eval

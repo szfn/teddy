@@ -42,6 +42,8 @@ lexyassoc <lexy name>/<lexy state> <extension>
 
 */
 
+pthread_attr_t lexy_thread_attrs;
+
 int lexy_colors[0xff];
 
 #define LEXY_ASSOCIATION_NUMBER 1024
@@ -116,6 +118,9 @@ void lexy_init(void) {
 	for (int i = 0; i < 0xff; ++i) {
 		lexy_colors[i] = 0;
 	}
+
+	pthread_attr_init(&lexy_thread_attrs);
+	pthread_attr_setdetachstate(&lexy_thread_attrs, PTHREAD_CREATE_DETACHED);
 }
 
 static int find_status(const char *name) {
@@ -746,9 +751,8 @@ void lexy_update_starting_at(buffer_t *buffer, int start, bool quick_exit) {
 
 	buffer->lexy_running = 1;
 	pthread_t thread;
-	if (pthread_create(&thread, NULL, lexy_update_starting_at_thread, buffer) != 0) {
+	if (pthread_create(&thread, &lexy_thread_attrs, lexy_update_starting_at_thread, buffer) != 0) {
 		buffer->lexy_running = 0;
-		quick_message("pthreads error", "Can not start new thread");
 		perror("Can not start new thread");
 	}
 }
