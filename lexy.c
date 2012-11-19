@@ -638,11 +638,22 @@ const char *lexy_get_link_fn(buffer_t *buffer) {
 	return a->link_fn;
 }
 
+static gboolean refresher(editor_t *editor) {
+	gtk_widget_queue_draw(editor->drar);
+	return FALSE;
+}
+
 static void *lexy_update_starting_at_thread(void *varg) {
 	buffer_t *buffer = (buffer_t *)varg;
 
 	int start_status_index = start_status_for_buffer(buffer);
-	if (start_status_index < 0) return NULL;
+	if (start_status_index < 0) {
+		buffer->lexy_running = 0;
+		return NULL;
+	}
+
+	editor_t *editor = NULL;
+	find_editor_for_buffer(buffer, NULL, NULL, &editor);
 
 	pthread_rwlock_rdlock(&(buffer->rwlock));
 
@@ -678,6 +689,9 @@ static void *lexy_update_starting_at_thread(void *varg) {
 
 		if (g == NULL) break;
 		if (g->code == '\n') {
+			if (editor != NULL) {
+				g_idle_add((GSourceFunc)refresher, editor);
+			}
 			//printf("\tnew line %d\n", count);
 			++count;
 		}
@@ -685,7 +699,7 @@ static void *lexy_update_starting_at_thread(void *varg) {
 		int previ = i;
 
 		if (buffer->release_read_lock) {
-			printf("Lexy preempted\n");
+			//printf("Lexy preempted\n");
 			buffer->lexy_running = 2;
 			pthread_rwlock_unlock(&(buffer->rwlock));
 			return NULL;
@@ -697,7 +711,7 @@ static void *lexy_update_starting_at_thread(void *varg) {
 		if (count > LEXY_LOAD_HOOK_MAX_COUNT) break;
 	}
 
-	printf("Lexy finished\n");
+	//printf("Lexy finished\n");
 
 	buffer->lexy_running = 0;
 	pthread_rwlock_unlock(&(buffer->rwlock));
@@ -713,16 +727,16 @@ void lexy_update_starting_at(buffer_t *buffer, int start, bool quick_exit) {
 		// this function runs with the write lock acquired, we can only see lexy_running == 1
 		// when the lexy thread is running but hasn't acquired the read lock yet.
 		// just update the start
-		printf("%p Continuing at %d %d -> %d\n", buffer, buffer->lexy_start, start, MIN(buffer->lexy_start, start));
+		//printf("%p Continuing at %d %d -> %d\n", buffer, buffer->lexy_start, start, MIN(buffer->lexy_start, start));
 		buffer->lexy_start = MIN(buffer->lexy_start, start);
 		return;
 	} else if (buffer->lexy_running == 2) {
 		// the lexy thread was preempted by a buffer update (buffer_replace_selection / buffer_undo)
 		// update lexy_start and restart the thread
-		printf("%p Restarting at %d %d -> %d\n", buffer, buffer->lexy_start, start, MIN(buffer->lexy_start, start));
+		//printf("%p Restarting at %d %d -> %d\n", buffer, buffer->lexy_start, start, MIN(buffer->lexy_start, start));
 		buffer->lexy_start = MIN(buffer->lexy_start, start);
 	} else if (buffer->lexy_running == 0) {
-		printf("%p Starting at %d\n", buffer, start);
+		//printf("%p Starting at %d\n", buffer, start);
 		buffer->lexy_start = start;
 	}
 

@@ -155,7 +155,10 @@ void buffer_free(buffer_t *buffer, bool save_critbit) {
 			quick_message("Internal error", "Failed to destroy buffer");
 			return;
 		}
-		sleep(100);
+		struct timespec s;
+		s.tv_sec = 0;
+		s.tv_nsec = 10000000;
+		nanosleep(&s, NULL);
 	}
 	pthread_rwlock_wrlock(&(buffer->rwlock));
 

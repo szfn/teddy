@@ -1,5 +1,3 @@
-- BUG: issue a redraw when a lexy update ends
-
 - center iopen on screen instead of centering it under the mouse
 - no special meaning to > for region matches
 - rehash command to reload stuff in the path

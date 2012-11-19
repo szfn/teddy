@@ -206,6 +206,30 @@ static void ansi_append(job_t *job, const char *msg, int len) {
 		job_append(job, msg+start, len - start, 0);
 }
 
+static void job_lexy_refresh(job_t *job) {
+	//printf("Job finished waiting for lexy to refresh: %p\n", job->buffer);
+	if (job->buffer == NULL) return;
+
+	editor_t *editor;
+	find_editor_for_buffer(job->buffer, NULL, NULL, &editor);
+	//printf("\teditor: %p\n", editor);
+	if (editor == NULL) return;
+
+	for (int count = 0; job->buffer->lexy_running != 0; ++count) {
+		//printf("Lexy is running: %d\n", job->buffer->lexy_running);
+		if (count > 5) return;
+
+		struct timespec s;
+		s.tv_sec = 0;
+		s.tv_nsec = 10000000;
+		nanosleep(&s, NULL);
+	}
+
+	//printf("Issuing redraw\n");
+
+	gtk_widget_queue_draw(editor->drar);
+}
+
 static void jobs_child_watch_function(GPid pid, gint status, job_t *job) {
 	if ((job->buffer != NULL) && (job->buffer->path[0] == '+')) {
 		char *msg;
@@ -213,6 +237,7 @@ static void jobs_child_watch_function(GPid pid, gint status, job_t *job) {
 		job_append(job, msg, strlen(msg), 1);
 		free(msg);
 	}
+	job_lexy_refresh(job);
 	job_destroy(job);
 }
 
@@ -261,21 +286,6 @@ static void job_create_buffer(job_t *job) {
 	buffer_t *buffer = buffers_get_buffer_for_process();
 	job_attach_to_buffer(job, job->command, buffer);
 	go_to_buffer(NULL, buffer, false);
-}
-
-static void job_lexy_refresh(job_t *job) {
-	if (job->buffer == NULL) return;
-
-	editor_t *editor;
-	find_editor_for_buffer(job->buffer, NULL, NULL, &editor);
-	if (editor == NULL) return;
-
-	for (int count = 0; job->buffer->lexy_running != 0; ++count) {
-		if (count > 5) return;
-		sleep(100);
-	}
-
-	gtk_widget_queue_draw(editor->drar);
 }
 
 static gboolean jobs_input_watch_function(GIOChannel *source, GIOCondition condition, job_t *job) {
@@ -328,7 +338,6 @@ static gboolean jobs_input_watch_function(GIOChannel *source, GIOCondition condi
 		job_append(job, msg, strlen(msg), 1);
 		free(msg);
 		job->child_source_id = g_child_watch_add(job->child_pid, (GChildWatchFunc)jobs_child_watch_function, job);
-		job_lexy_refresh(job);
 		return FALSE;
 	case G_IO_STATUS_AGAIN:
 		return TRUE;

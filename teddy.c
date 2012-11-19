@@ -72,6 +72,8 @@ static void setup_loading_session(const char *session_name) {
 int main(int argc, char *argv[]) {
 	GtkWidget *window;
 
+	gdk_threads_init();
+	gdk_threads_enter();
 	gtk_init(&argc, &argv);
 
 	foundry_init();
@@ -135,6 +137,8 @@ int main(int argc, char *argv[]) {
 	gtk_widget_show_all(window);
 
 	gtk_main();
+
+	gdk_threads_leave();
 
 	buffers_free();
 	interp_free();
