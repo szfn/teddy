@@ -72,6 +72,7 @@ struct lexy_row {
 	/* LM_KEYWORDS */
 	size_t kwlen;
 	char *kws;
+	bool kwsp; /* enable special character match */
 
 	/* LM_REGION */
 	char *region_end;
@@ -370,6 +371,7 @@ int lexy_append_command(ClientData client_data, Tcl_Interp *interp, int argc, co
 	case LM_KEYWORDS:
 		new_row->kwlen = strlen(pattern);
 		new_row->kws = strdup(pattern);
+		new_row->kwsp = true;
 		alloc_assert(new_row->kws);
 		for (int i = 0; i < new_row->kwlen; ++i) {
 			if (new_row->kws[i] == '|') new_row->kws[i] = '\0';
@@ -400,6 +402,7 @@ int lexy_append_command(ClientData client_data, Tcl_Interp *interp, int argc, co
 		new_row->match_kind = LM_KEYWORDS;
 		new_row->kwlen = strlen(start);
 		new_row->kws = strdup(start);
+		new_row->kwsp = false;
 		alloc_assert(new_row->kws);
 		new_row->check = false;
 		new_row->enabled = true;
@@ -452,7 +455,7 @@ static bool check_file_match(struct lexy_row *row, buffer_t *buffer, int glyph, 
 	return r;
 }
 
-static int bufmatch(buffer_t *buffer, int start, const char *needle) {
+static int bufmatch(buffer_t *buffer, int start, const char *needle, bool special) {
 	//printf("Checking %d %s\n", start, needle);
 	int j = 0;
 	uint32_t cur_code;
@@ -466,11 +469,12 @@ static int bufmatch(buffer_t *buffer, int start, const char *needle) {
 
 		//printf("cur_code %d (%c) cur_glyph %d (%c)\n", cur_code, (char)cur_code, cur_glyph->code, (char)cur_glyph->code);
 
-		if (cur_code == '>') break;
+		if (special)
+			if (cur_code == '>') break;
 		if (cur_code != cur_glyph->code) return -1;
 	}
 
-	if (cur_code == '>') {
+	if (special && (cur_code == '>')) {
 		my_glyph_info_t *g = bat(buffer, start + j);
 		if (g != NULL) {
 			//printf("Extra check for <%s> is %d (%c)\n", needle, g->code, (char)g->code);
@@ -552,7 +556,7 @@ static void lexy_update_one_token(buffer_t *buffer, int *i, int *status) {
 		case LM_KEYWORDS:
 			for (int start = 0; start < row->kwlen; start += strlen(row->kws + start)+1) {
 				//printf("Matching %d <%s>\n", row->kwlen, row->kws + start);
-				int m = bufmatch(buffer, *i, row->kws + start);
+				int m = bufmatch(buffer, *i, row->kws + start, row->kwsp);
 				if (m >= 0) {
 					match_len = m;
 					break;
@@ -570,7 +574,7 @@ static void lexy_update_one_token(buffer_t *buffer, int *i, int *status) {
 				my_glyph_info_t *g = bat(buffer, j);
 				if (g == NULL) break;
 				//printf("\tChecking %d %c\n", g->code, (char)g->code);
-				int m = bufmatch(buffer, j, row->region_end);
+				int m = bufmatch(buffer, j, row->region_end, false);
 				if (m >= 0) {
 					j += m;
 					break;

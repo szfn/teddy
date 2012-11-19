@@ -150,7 +150,7 @@ static int to_closed_buffers_critbit(const char *entry, void *p) {
 void buffer_free(buffer_t *buffer, bool save_critbit) {
 	/* We ask the lexy thread to release the lock and wait for this to happen, then we acquire the write lock and destroy the object */
 	buffer->release_read_lock = true;
-	for (int count = 0; buffer->lexy_running != 0; ++count) {
+	for (int count = 0; buffer->lexy_running == 1; ++count) {
 		if (count > 5) {
 			quick_message("Internal error", "Failed to destroy buffer");
 			return;
