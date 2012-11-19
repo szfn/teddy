@@ -746,7 +746,11 @@ void lexy_update_starting_at(buffer_t *buffer, int start, bool quick_exit) {
 
 	buffer->lexy_running = 1;
 	pthread_t thread;
-	pthread_create(&thread, NULL, lexy_update_starting_at_thread, buffer);
+	if (pthread_create(&thread, NULL, lexy_update_starting_at_thread, buffer) != 0) {
+		buffer->lexy_running = 0;
+		quick_message("pthreads error", "Can not start new thread");
+		perror("Can not start new thread");
+	}
 }
 
 int lexy_create_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {

@@ -47,7 +47,7 @@ void compl_wnd_hide(struct completer *c);
 bool compl_wnd_visible(struct completer *c);
 void compl_free(struct completer *c);
 
-void cmdcompl_init(void);
+void cmdcompl_init(bool rehash);
 const char *cmdcompl_recalc(struct completer *c, const char *prefix);
 bool in_external_commands(const char *arg);
 void word_completer_full_update(void);

@@ -481,6 +481,13 @@ int teddy_buffer_command(ClientData client_data, Tcl_Interp *interp, int argc, c
 
 		buffer_to_buffer_id(buffer, bufferid);
 		Tcl_SetResult(interp, bufferid, TCL_VOLATILE);
+	} else if (strcmp(argv[1], "dbg") == 0) {
+		SINGLE_ARGUMENT_BUFFER_SUBCOMMAND("buffer dbg");
+		char *msg;
+		asprintf(&msg, "lexy_running = %d, lexy_start = %d", buffer->lexy_running, buffer->lexy_start);
+		alloc_assert(msg);
+		quick_message("DBG", msg);
+		free(msg);
 	} else if (strcmp(argv[1], "find") == 0) {
 		ARGNUM((argc != 3), "buffer find");
 		buffer_t *buffer = buffers_find_buffer_with_name(argv[2]);

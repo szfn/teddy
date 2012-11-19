@@ -95,7 +95,7 @@ int main(int argc, char *argv[]) {
 
 	compl_init(&the_word_completer);
 
-	cmdcompl_init();
+	cmdcompl_init(false);
 	the_word_completer.recalc = &cmdcompl_recalc;
 	the_word_completer.tmpdata = strdup("");
 	alloc_assert(the_word_completer.tmpdata);

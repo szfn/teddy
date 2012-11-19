@@ -336,13 +336,21 @@ const char **external_commands = NULL;
 int external_commands_cap;
 int external_commands_allocated;
 
-void cmdcompl_init(void) {
+void cmdcompl_init(bool rehash) {
 	char *path, *saveptr, *dir;
 
-	external_commands_allocated = 10;
-	external_commands_cap = 0;
-	external_commands = malloc(sizeof(const char *) * external_commands_allocated);
-	alloc_assert(external_commands);
+	if (rehash) {
+		for (int i = 0; i < external_commands_cap; ++i) {
+			if (external_commands[i] != NULL) free((char *)(external_commands[i]));
+			external_commands[i] = NULL;
+		}
+		external_commands_cap = 0;
+	} else {
+		external_commands_allocated = 10;
+		external_commands_cap = 0;
+		external_commands = malloc(sizeof(const char *) * external_commands_allocated);
+		alloc_assert(external_commands);
+	}
 
 	/*** Getting all executable names ***/
 

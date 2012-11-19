@@ -1038,6 +1038,12 @@ static int teddy_fd2channel_command(ClientData client_data, Tcl_Interp *interp, 
 	return TCL_OK;
 }
 
+static int teddy_rehash_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
+	ARGNUM((argc != 1), "teddy:rehash");
+	cmdcompl_init(true);
+	return TCL_OK;
+}
+
 void interp_init(void) {
 	interp = Tcl_CreateInterp();
 	if (interp == NULL) {
@@ -1078,6 +1084,7 @@ void interp_init(void) {
 
 	Tcl_CreateCommand(interp, "teddy::history", &teddy_history_command, (ClientData)NULL, NULL);
 	Tcl_CreateCommand(interp, "teddy::session", &teddy_session_command, (ClientData)NULL, NULL);
+	Tcl_CreateCommand(interp, "teddy::rehash", &teddy_rehash_command, (ClientData)NULL, NULL);
 
 	Tcl_CreateCommand(interp, "s", &teddy_research_command, (ClientData)NULL, NULL);
 	Tcl_CreateCommand(interp, "c", &teddy_change_command, (ClientData)NULL, NULL);
