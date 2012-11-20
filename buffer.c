@@ -527,12 +527,7 @@ void buffer_replace_selection(buffer_t *buffer, const char *new_text) {
 	buffer_typeset_from(buffer, start_cursor-1);
 	buffer->savedmark = buffer->mark = -1;
 
-	//printf("\tcalling lexy update\n");
-	if ((strlen(new_text) > 1) || (selbefore > 1)) {
-		lexy_update_starting_at(buffer, start_cursor-1, false);
-	} else {
-		lexy_update_starting_at(buffer, start_cursor-1, true);
-	}
+	lexy_update_starting_at(buffer, start_cursor-1, (strlen(new_text) < 5) && (selbefore < 5));
 
 	if (buffer->onchange != NULL) buffer->onchange(buffer);
 

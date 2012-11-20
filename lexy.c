@@ -52,6 +52,7 @@ int lexy_colors[0xff];
 #define LEXY_LINE_LENGTH_LIMIT 512
 
 #define LEXY_LOAD_HOOK_MAX_COUNT 4096
+#define LEXY_QUICK_EXIT_MAX_COUNT 10
 
 const char *CONTINUATION_STATUS = "continuation-state";
 
@@ -718,6 +719,14 @@ static void *lexy_update_starting_at_thread(void *varg) {
 
 		if (previ == i) ++i;
 		if (count > LEXY_LOAD_HOOK_MAX_COUNT) break;
+
+		if (buffer->lexy_quick_exit) {
+			if (count > LEXY_QUICK_EXIT_MAX_COUNT) {
+				buffer->lexy_running = 2;
+				pthread_rwlock_unlock(&(buffer->rwlock));
+				return NULL;
+			}
+		}
 	}
 
 	//printf("Lexy finished\n");
@@ -726,6 +735,17 @@ static void *lexy_update_starting_at_thread(void *varg) {
 	pthread_rwlock_unlock(&(buffer->rwlock));
 
 	return NULL;
+}
+
+void lexy_update_resume(buffer_t *buffer) {
+	if (buffer->lexy_running != 2) return;
+	buffer->lexy_quick_exit = false;
+	buffer->lexy_running = 1;
+	pthread_t thread;
+	if (pthread_create(&thread, &lexy_thread_attrs, lexy_update_starting_at_thread, buffer) != 0) {
+		buffer->lexy_running = 0;
+		perror("Can not start new thread");
+	}
 }
 
 void lexy_update_starting_at(buffer_t *buffer, int start, bool quick_exit) {
@@ -749,7 +769,14 @@ void lexy_update_starting_at(buffer_t *buffer, int start, bool quick_exit) {
 		buffer->lexy_start = start;
 	}
 
+	if (quick_exit) {
+		if (abs(buffer->lexy_start - start) > 1000) {
+			quick_exit = false;
+		}
+	}
+
 	buffer->lexy_running = 1;
+	buffer->lexy_quick_exit = quick_exit;
 	pthread_t thread;
 	if (pthread_create(&thread, &lexy_thread_attrs, lexy_update_starting_at_thread, buffer) != 0) {
 		buffer->lexy_running = 0;

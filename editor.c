@@ -65,7 +65,7 @@ void set_label_text(editor_t *editor) {
 
 static void dirty_line_update(editor_t *editor) {
 	if (editor->dirty_line) {
-		lexy_update_starting_at(editor->buffer, editor->buffer->cursor-1, false);
+		lexy_update_resume(editor->buffer);
 		editor->dirty_line = false;
 		buffer_wordcompl_update(editor->buffer, &(editor->buffer->cbt), WORDCOMPL_UPDATE_RADIUS);
 		word_completer_full_update();
@@ -853,6 +853,8 @@ static gboolean scroll_callback(GtkWidget *widget, GdkEventScroll *event, editor
 		break;
 	}
 
+	lexy_update_resume(editor->buffer);
+
 	return TRUE;
 }
 
@@ -1350,6 +1352,7 @@ static gboolean expose_event_callback(GtkWidget *widget, GdkEventExpose *event, 
 }
 
 static gboolean scrolled_callback(GtkAdjustment *adj, editor_t *editor) {
+	lexy_update_resume(editor->buffer);
 	gtk_widget_queue_draw(editor->drar);
 	return TRUE;
 }
