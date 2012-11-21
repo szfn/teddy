@@ -739,6 +739,7 @@ static void *lexy_update_starting_at_thread(void *varg) {
 
 void lexy_update_resume(buffer_t *buffer) {
 	if (buffer->lexy_running != 2) return;
+	if (config_intval(&(buffer->config), CFG_LEXY_ENABLED) == 0) return;
 	buffer->lexy_quick_exit = false;
 	buffer->lexy_running = 1;
 	pthread_t thread;
@@ -750,6 +751,7 @@ void lexy_update_resume(buffer_t *buffer) {
 
 void lexy_update_starting_at(buffer_t *buffer, int start, bool quick_exit) {
 	/* Skip doing updates for +unnamed buffers, they are always temp buffers used for computations */
+	if (config_intval(&(buffer->config), CFG_LEXY_ENABLED) == 0) return;
 	if (strcmp(buffer->path, "+unnamed") == 0) return;
 
 	if (buffer->lexy_running == 1) {

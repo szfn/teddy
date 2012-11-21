@@ -1068,6 +1068,7 @@ static void buffer_reload_glyph_info(buffer_t *buffer) {
 		g->y = 0.0;
 
 		g->x_advance = fontset_x_advance(font, fontidx, g->glyph_index);
+		g->color = CFG_LEXY_NOTHING - CFG_LEXY_NOTHING;
 	}
 	foundry_release(font);
 }
@@ -1076,6 +1077,7 @@ void buffer_config_changed(buffer_t *buffer) {
 	buffer_reload_glyph_info(buffer);
 	buffer_init_font_extents(buffer);
 	buffer_typeset_maybe(buffer, 0.0, true);
+	lexy_update_starting_at(buffer, -1, false);
 }
 
 char *buffer_all_lines_to_text(buffer_t *buffer) {

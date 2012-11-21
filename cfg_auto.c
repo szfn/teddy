@@ -28,6 +28,7 @@ const char *config_names[] = {
 	"tag_bg_color",
 	"tag_fg_color",
 	"tag_font",
+	"lexy_enabled",
 	"lexy_nothing",
 	"lexy_keyword",
 	"lexy_id",
@@ -66,6 +67,7 @@ void config_init_auto_defaults(void) {
 	config_set(&global_config, CFG_TAG_BG_COLOR, "16777215");
 	config_set(&global_config, CFG_TAG_FG_COLOR, "0");
 	config_set(&global_config, CFG_TAG_FONT, "Arial-11");
+	config_set(&global_config, CFG_LEXY_ENABLED, "1");
 	config_set(&global_config, CFG_LEXY_NOTHING, "0");
 	config_set(&global_config, CFG_LEXY_KEYWORD, "0");
 	config_set(&global_config, CFG_LEXY_ID, "0");
