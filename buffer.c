@@ -210,7 +210,7 @@ static int buffer_replace_selection_ex(buffer_t *buffer, const char *text, bool 
 		buffer->buf[buffer->gap].code = code;
 
 		uint8_t fontidx = fontset_fontidx(font, code);
-		FT_UInt glyph_index = fontset_glyph_index(font, fontidx, ((code != 0x09) && (code != '\n')) ? code : 0x20);
+		FT_UInt glyph_index = fontset_glyph_index(font, fontidx, ((code != 0x09) && (code != '\n') && (code != 0x05)) ? code : 0x20);
 
 		buffer->buf[buffer->gap].code = code;
 		buffer->buf[buffer->gap].color = buffer->default_color;
@@ -419,6 +419,8 @@ static void buffer_typeset_from(buffer_t *buffer, int point) {
 					glyph->x_advance = buffer->space_advance;
 				}
 			}
+		} else if (glyph->code == 0x05) {
+			glyph->x_advance = buffer->space_advance / 2;
 		} else if (glyph->code == 0x09) {
 			double size = config_intval(&(buffer->config), CFG_TAB_WIDTH) * buffer->em_advance;
 			double to_next_cell = size - fmod(x - buffer->left_margin, size);
@@ -1056,7 +1058,7 @@ static void buffer_reload_glyph_info(buffer_t *buffer) {
 		my_glyph_info_t *g = bat(buffer, i);
 
 		uint8_t fontidx = fontset_fontidx(font, g->code);
-		g->glyph_index = fontset_glyph_index(font, fontidx, ((g->code != 0x09) && (g->code != 0x0a)) ? g->code : 0x20);
+		g->glyph_index = fontset_glyph_index(font, fontidx, ((g->code != 0x09) && (g->code != 0x0a) && (g->code != 0x05)) ? g->code : 0x20);
 		g->kerning_correction = (previous_fontidx == fontidx) ? fontset_get_kerning(font, fontidx, previous, g->glyph_index) : 0.0;
 
 		previous = g->glyph_index;
