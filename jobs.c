@@ -37,10 +37,22 @@ static int write_all(int fd, const char *str) {
 }
 
 static char *cut_prompt(job_t *job) {
-	buffer_move_point_line(job->buffer, &(job->buffer->cursor), MT_END, 0);
-	buffer_move_point_glyph(job->buffer, &(job->buffer->cursor), MT_END, 0);
+	int start;
 
-	return buffer_lines_to_text(job->buffer, job->input_start, job->buffer->cursor);
+	job->buffer->cursor = BSIZE(job->buffer);
+
+	for (start = job->buffer->cursor-1; start > 0; --start) {
+		my_glyph_info_t *g = bat(job->buffer, start);
+		if (g == NULL) return NULL;
+		if (g->code == '\n') break;
+		if (g->code == '\05') break;
+	}
+
+	if (start < 0) return NULL;
+
+	job->buffer->mark = start;
+
+	return buffer_lines_to_text(job->buffer, start, job->buffer->cursor);
 }
 
 static void job_destroy(job_t *job) {
@@ -80,6 +92,7 @@ static void job_append(job_t *job, const char *msg, int len, int on_new_line) {
 	//buffer_append(job->buffer, msg, len, on_new_line);
 
 	char *prompt_str = cut_prompt(job);
+	//printf("prompt_str <%s>\n", prompt_str);
 
 	if (on_new_line) {
 		my_glyph_info_t *glyph = bat(buffer, buffer->cursor);
@@ -97,11 +110,11 @@ static void job_append(job_t *job, const char *msg, int len, int on_new_line) {
 
 	free(text);
 
-	job->input_start = buffer->cursor;
-
 	if (prompt_str != NULL) {
 		buffer_replace_selection(buffer, prompt_str);
 		free(prompt_str);
+	} else {
+		buffer_replace_selection(buffer, "\05");
 	}
 
 	editor_t *editor;
@@ -115,10 +128,12 @@ static void job_append(job_t *job, const char *msg, int len, int on_new_line) {
 void job_send_input(job_t *job) {
 	if (job->buffer == NULL) return;
 	char *input = cut_prompt(job);
+	//printf("input <%s>\n", input);
 	job->buffer->mark = -1;
+	buffer_replace_selection(job->buffer, "\n\05");
 	if (input == NULL) return;
 
-	write_all(job->masterfd, input);
+	write_all(job->masterfd, input+1);
 	write_all(job->masterfd, "\n");
 	free(input);
 }
@@ -369,7 +384,6 @@ int jobs_register(pid_t child_pid, int masterfd, buffer_t *buffer, const char *c
 	jobs[i].masterfd = masterfd;
 	jobs[i].buffer = NULL;
 	jobs[i].terminating = false;
-	jobs[i].input_start = 0;
 
 	jobs[i].pipe_from_child = g_io_channel_unix_new(masterfd);
 	g_io_channel_set_encoding(jobs[i].pipe_from_child, NULL, NULL);

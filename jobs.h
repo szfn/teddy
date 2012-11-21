@@ -36,8 +36,6 @@ typedef struct _job_t {
 	int ansiseq_cap;
 
 	char *command;
-
-	int input_start;
 } job_t;
 
 #define MAX_JOBS 128

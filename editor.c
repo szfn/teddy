@@ -637,19 +637,16 @@ static gboolean key_press_callback(GtkWidget *widget, GdkEventKey *event, editor
 			} else {
 				dirty_line_update(editor);
 
-				bool send_input = (editor->buffer->job != NULL) && (editor->buffer->cursor == BSIZE(editor->buffer));
-
-				if (send_input) job_send_input(editor->buffer->job);
-
-				if (config_intval(&(editor->buffer->config), CFG_AUTOINDENT)) {
+				if ((editor->buffer->job != NULL) && (editor->buffer->cursor == BSIZE(editor->buffer))) {
+					// send input
+					job_send_input(editor->buffer->job);
+				} else if (config_intval(&(editor->buffer->config), CFG_AUTOINDENT)) {
 					char *r = buffer_indent_newline(editor->buffer);
 					editor_replace_selection(editor, r);
 					free(r);
 				} else {
 					editor_replace_selection(editor, "\n");
 				}
-
-				if (send_input) editor->buffer->job->input_start = editor->buffer->cursor;
 			}
 			return TRUE;
 		}
