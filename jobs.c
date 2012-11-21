@@ -179,9 +179,8 @@ static void ansi_append(job_t *job, const char *msg, int len) {
 				job_append(job, msg+start, i - start, 0);
 				start = i+1;
 
-				job->buffer->mark = job->buffer->cursor;
+				job->buffer->mark = job->buffer->cursor = BSIZE(job->buffer)-1;
 				buffer_move_point_glyph(buffer, &(job->buffer->mark), MT_ABS, 1);
-				buffer_move_point_glyph(buffer, &(job->buffer->cursor), MT_END, 0);
 				buffer_replace_selection(buffer, "");
 			} else if (msg[i] == 0x08) {
 				job_append(job, msg+start, i - start, 0);

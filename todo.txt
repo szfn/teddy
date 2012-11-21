@@ -1,3 +1,4 @@
+- BUG carriage return not deleting current line in background jobs
 - center iopen on screen instead of centering it under the mouse
 - save buffer main font too
 - text objects?
