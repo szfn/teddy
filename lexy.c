@@ -674,7 +674,7 @@ static void *lexy_update_starting_at_thread(void *varg) {
 
 	int start = buffer->lexy_start;
 
-	//printf("Coloring buffer %p (%s) starting at %d (%d)\n", buffer, buffer->path, start, BSIZE(buffer));
+	//printf("Coloring buffer %p (%s) starting at %d (%zd)\n", buffer, buffer->path, start, BSIZE(buffer));
 
 	int status;
 
@@ -710,6 +710,7 @@ static void *lexy_update_starting_at_thread(void *varg) {
 		int previ = i;
 
 		if (buffer->release_read_lock) {
+			//printf("Lexy preempted\n");
 			buffer->lexy_running = 2;
 			pthread_rwlock_unlock(&(buffer->rwlock));
 			refresher_add(buffer);
@@ -723,6 +724,7 @@ static void *lexy_update_starting_at_thread(void *varg) {
 
 		if (buffer->lexy_quick_exit) {
 			if (count > LEXY_QUICK_EXIT_MAX_COUNT) {
+				//printf("Self preemption\n");
 				buffer->lexy_running = 2;
 				pthread_rwlock_unlock(&(buffer->rwlock));
 				refresher_add(buffer);

@@ -459,6 +459,7 @@ void buffer_undo(buffer_t *buffer, bool redo) {
 
 	buffer->release_read_lock = true;
 	pthread_rwlock_wrlock(&(buffer->rwlock));
+	buffer->release_read_lock = false;
 
 	buffer->modified = 1;
 
@@ -494,6 +495,7 @@ void buffer_replace_selection(buffer_t *buffer, const char *new_text) {
 
 	buffer->release_read_lock = true;
 	pthread_rwlock_wrlock(&(buffer->rwlock));
+	buffer->release_read_lock = false;
 
 	buffer->modified = true;
 
@@ -528,7 +530,6 @@ void buffer_replace_selection(buffer_t *buffer, const char *new_text) {
 	if (buffer->onchange != NULL) buffer->onchange(buffer);
 
 	pthread_rwlock_unlock(&(buffer->rwlock));
-	buffer->release_read_lock = false;
 }
 
 bool wordcompl_charset[0x10000];
