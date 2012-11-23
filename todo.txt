@@ -1,3 +1,4 @@
+- BUG: ctrl-k a few lines then undo -> no highlighting
 - store keywords as utf32 not as utf8 for easier checking
 - save buffer main font too
 - text objects?

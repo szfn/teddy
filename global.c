@@ -180,9 +180,13 @@ void utf32_to_utf8(uint32_t code, char **r, int *cap, int *allocated) {
 		inc = 3;
 		first_byte_pad = 0xf8;
 		first_byte_mask = 0x07;
+	} else {
+		inc = 0;
+		first_byte_pad = '?';
+		first_byte_mask = 0x00;
 	}
 
-	if (*cap+inc >= *allocated) {
+	if (*cap+inc+1 >= *allocated) {
 		*allocated *= 2;
 		*r = realloc(*r, sizeof(char) * *allocated);
 		alloc_assert(r);
