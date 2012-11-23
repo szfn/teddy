@@ -151,8 +151,6 @@ void editor_cursor_position(editor_t *editor, double *x, double *y, double *alty
 	*y -= gtk_adjustment_get_value(GTK_ADJUSTMENT(editor->adjustment));
 	*x -= gtk_adjustment_get_value(GTK_ADJUSTMENT(editor->hadjustment));
 
-	//printf("x = %g y = %g\n", x, y);
-
 	GtkAllocation allocation;
 	gtk_widget_get_allocation(editor->drar, &allocation);
 	*x += allocation.x; *y += allocation.y;
@@ -513,7 +511,6 @@ static gboolean key_press_callback(GtkWidget *widget, GdkEventKey *event, editor
 	gtk_widget_get_allocation(editor->drar, &allocation);
 
 	if (editor->buffer->keyprocessor != NULL) {
-		printf("Keyprocessor invocation\n");
 		full_keyevent_to_string(event->keyval, super, ctrl, alt, shift, pressed);
 		if (pressed[0] != '\0') {
 			compl_wnd_hide(editor->completer);
@@ -686,7 +683,6 @@ static gboolean key_press_callback(GtkWidget *widget, GdkEventKey *event, editor
 	if (pressed[0] == '\0') goto im_context;
 
 	command = g_hash_table_lookup(keybindings, pressed);
-	//printf("Keybinding [%s] -> {%s}\n", pressed, command);
 
 	if (command != NULL) {
 		interp_eval(editor, NULL, command, false);
@@ -707,8 +703,6 @@ static gboolean key_press_callback(GtkWidget *widget, GdkEventKey *event, editor
 	if (gtk_im_context_filter_keypress(editor->drarim, event)) {
 		return TRUE;
 	}
-
-	/*printf("Unknown key sequence: %d (shift %d ctrl %d alt %d super %d)\n", event->keyval, shift, ctrl, alt, super);*/
 
 	return TRUE;
 }
@@ -890,8 +884,6 @@ static gboolean motion_callback(GtkWidget *widget, GdkEventMotion *event, editor
 
 		gdouble x = event->x + allocation.x, y = event->y + allocation.y;
 
-		//printf("inside allocation x = %d y = %d (x = %d y = %d height = %d width = %d)\n", (int)x, (int)y, (int)allocation.x, (int)allocation.y, (int)allocation.height, (int)allocation.width);
-
 		if (inside_allocation(x, y, &allocation)) {
 			end_selection_scroll(editor);
 			selection_move(editor, event->x, event->y);
@@ -1063,10 +1055,8 @@ static void draw_lines(editor_t *editor, GtkAllocation *allocation, cairo_t *cr,
 		}
 		if (glyph->y - editor->buffer->line_height > endy) break;
 
-		//printf("current: %c\n", (char)glyph->code);
 		// draws soft wrapping indicators
 		if (glyph->y - cury > 0.001) {
-			//printf("change %c %g %g\n", (char)glyph->code, glyph->y, cury);
 			if (!newline) {
 				/* draw ending tract */
 				cairo_set_line_width(cr, AUTOWRAP_INDICATOR_WIDTH);
@@ -1160,8 +1150,6 @@ static void draw_cursorline(cairo_t *cr, editor_t *editor) {
 	set_color_cfg(cr, config_intval(&(editor->buffer->config), CFG_EDITOR_BG_CURSORLINE));
 	cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
 
-	//printf("Cursor line %g,%g %d - %g | %g\n", cursor_x, cursor_y, allocation.width, editor->buffer->ascent, editor->buffer->descent);
-
 	cairo_rectangle(cr, cursor_x - allocation.width, cursor_y-editor->buffer->ascent, 2*allocation.width, editor->buffer->ascent+editor->buffer->descent);
 	cairo_fill(cr);
 }
@@ -1186,7 +1174,6 @@ static void draw_underline(editor_t *editor, cairo_t *cr, struct growable_glyph_
 		//cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
 		cairo_rectangle(cr, u->filex_start, u->filey - editor->buffer->underline_position, u->filex_end - u->filex_start, editor->buffer->underline_thickness);
 		cairo_fill(cr);
-		//printf("Drawing underline from %g to %g at (%g+%g) (thickness: %g)\n", u->filex_start, u->filex_end, u->filey, editor->buffer->underline_position, editor->buffer->underline_thickness);
 	}
 }
 
@@ -1302,8 +1289,6 @@ static gboolean expose_event_callback(GtkWidget *widget, GdkEventExpose *event, 
 		}
 	}
 
-	//printf("\n\n");
-
 	g_hash_table_destroy(ht);
 
 	if (sel_invert) draw_selection(editor, allocation.width, cr, sel_invert);
@@ -1409,7 +1394,6 @@ static void search_menu_item_callback(GtkMenuItem *menuitem, editor_t *editor) {
 static void open_link_menu_item_callback(GtkMenuItem *menuitem, editor_t *editor) {
 	bool islink;
 	char *selection = get_selection_or_file_link(editor, &islink);
-	//printf("Returned selection %s\n", selection);
 	if (selection == NULL) return;
 
 	const char *cmd = lexy_get_link_fn(editor->buffer);
@@ -1536,7 +1520,6 @@ editor_t *new_editor(buffer_t *buffer, bool single_line) {
 }
 
 void editor_grab_focus(editor_t *editor, bool warp) {
-	//printf("Grabbing focus %p %d %d\n", editor, warp, config_intval(&(editor->buffer->config), CFG_WARP_MOUSE));
 	gtk_widget_grab_focus(editor->drar);
 	editor->cursor_visible = TRUE;
 
@@ -1552,7 +1535,6 @@ void editor_grab_focus(editor_t *editor, bool warp) {
 		GdkScreen *screen = gdk_display_get_default_screen(display);
 		GtkAllocation allocation;
 		gtk_widget_get_allocation(editor->drar, &allocation);
-		//printf("allocation: %d %d\n", allocation.x, allocation.y);
 		if ((allocation.x < 0) || (allocation.y < 0)) {
 			editor->warp_mouse_after_next_expose = TRUE;
 		} else {
@@ -1570,7 +1552,6 @@ void editor_grab_focus(editor_t *editor, bool warp) {
 				x += 5; y += 5;
 			}
 
-			//printf("Moving mouse %d+%d %d+%d %d\n", allocation.x, wpos_x, allocation.y, wpos_y, gtk_widget_get_mapped(GTK_WIDGET(editor)));
 			gdk_display_warp_pointer(display, screen, x, y);
 		}
 	}

@@ -989,8 +989,6 @@ static int teddy_posixwaitpid_command(ClientData client_data, Tcl_Interp *interp
 		return TCL_ERROR;
 	}
 
-	//printf("WAITPID output: %d %d\n", r, status);
-
 	retval[0] = Tcl_NewIntObj(r);
 	Tcl_IncrRefCount(retval[0]);
 	retval[1] = Tcl_NewIntObj(WEXITSTATUS(status));
@@ -1047,7 +1045,7 @@ static int teddy_rehash_command(ClientData client_data, Tcl_Interp *interp, int 
 void interp_init(void) {
 	interp = Tcl_CreateInterp();
 	if (interp == NULL) {
-		printf("Couldn't create TCL interpreter\n");
+		fprintf(stderr, "Couldn't create TCL interpreter\n");
 		exit(EXIT_FAILURE);
 	}
 
@@ -1120,7 +1118,7 @@ void interp_init(void) {
 		Tcl_DictObjGet(NULL, options, key, &stackTrace);
 		Tcl_DecrRefCount(key);
 
-		printf("Internal TCL Error: %s\n", Tcl_GetString(stackTrace));
+		fprintf(stderr, "Internal TCL Error: %s\n", Tcl_GetString(stackTrace));
 		exit(EXIT_FAILURE);
 	}
 
@@ -1178,8 +1176,6 @@ int interp_eval(editor_t *editor, buffer_t *buffer, const char *command, bool sh
 	editor_t *prev_editor = interp_context_editor();
 	buffer_t *prev_buffer = interp_context_buffer();
 
-	//printf("Starting eval: %p %p\n", prev_editor, prev_buffer);
-
 	interp_context_buffer_set(buffer);
 	if (editor != NULL) interp_context_editor_set(editor);
 
@@ -1187,8 +1183,6 @@ int interp_eval(editor_t *editor, buffer_t *buffer, const char *command, bool sh
 
 	if (prev_editor != NULL) interp_context_editor_set(prev_editor);
 	else interp_context_buffer_set(prev_buffer);
-
-	//printf("Ending eval: %p %p\n", interp_context_editor(), interp_context_buffer());
 
 	return code;
 }
@@ -1235,7 +1229,7 @@ void read_conf(void) {
 		Tcl_DictObjGet(NULL, options, key, &stackTrace);
 		Tcl_DecrRefCount(key);
 
-		printf("TCL Error: %s\n", Tcl_GetString(stackTrace));
+		fprintf(stderr, "TCL Error: %s\n", Tcl_GetString(stackTrace));
 		exit(EXIT_FAILURE);
 	}
 
@@ -1268,8 +1262,6 @@ const char *interp_eval_command(editor_t *editor, buffer_t *buffer, int count, c
 	editor_t *prev_editor = interp_context_editor();
 	buffer_t *prev_buffer = interp_context_buffer();
 
-	//printf("Starting eval command: %p %p\n", prev_editor, prev_buffer);
-
 	interp_context_buffer_set(buffer);
 	if (editor != NULL) interp_context_editor_set(editor);
 
@@ -1277,8 +1269,6 @@ const char *interp_eval_command(editor_t *editor, buffer_t *buffer, int count, c
 
 	if (prev_editor != NULL) interp_context_editor_set(prev_editor);
 	else interp_context_buffer_set(prev_buffer);
-
-	//printf("Ending eval command: %p %p\n", interp_context_editor(), interp_context_buffer());
 
 	return r;
 }
@@ -1302,7 +1292,6 @@ void interp_return_point_pair(buffer_t *buffer, int mark, int cursor) {
 			buffer_line_of(buffer, cursor), buffer_column_of(buffer, cursor));
 	}
 	alloc_assert(r);
-	//printf("return_point_pair: %d %d: <%s>\n", mark, cursor, r);
 	Tcl_SetResult(interp, r, TCL_VOLATILE);
 	free(r);
 }

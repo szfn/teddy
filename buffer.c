@@ -84,8 +84,6 @@ static void buffer_init_font_extents(buffer_t *buffer) {
 
 	fontset_underline_info(font, 0, &(buffer->underline_thickness), &(buffer->underline_position));
 
-	//printf("Underline thickness: %g position: %g\n", buffer->underline_thickness, buffer->underline_position);
-
 	foundry_release(font);
 }
 
@@ -187,14 +185,12 @@ static int buffer_replace_selection_ex(buffer_t *buffer, const char *text, bool 
 
 	// there is a mark, delete
 	if (buffer->mark >= 0) {
-		//printf("bla! %d %d <%s>\n", buffer->mark, buffer->cursor, text);
 		int region_size = MAX(buffer->mark, buffer->cursor) - MIN(buffer->mark, buffer->cursor);
 		movegap(buffer, MIN(buffer->mark, buffer->cursor));
 		buffer->gapsz += region_size;
 		buffer->cursor = MIN(buffer->mark, buffer->cursor);
 		buffer->mark = -1;
 	} else {
-		//printf("Calling movegap: %d\n", buffer->cursor);
 		movegap(buffer, buffer->cursor);
 	}
 
@@ -216,7 +212,6 @@ static int buffer_replace_selection_ex(buffer_t *buffer, const char *text, bool 
 		buffer->buf[buffer->gap].color = buffer->default_color;
 		buffer->buf[buffer->gap].status = 0xffff;
 
-		//printf("gap: %d\n", buffer->gap);
 		if ((buffer->gap > 0) && (buffer->buf[buffer->gap-1].fontidx == fontidx)) {
 			buffer->buf[buffer->gap].kerning_correction = fontset_get_kerning(font, fontidx, buffer->buf[buffer->gap-1].glyph_index, glyph_index);
 		} else {
@@ -288,7 +283,6 @@ int load_text_file(buffer_t *buffer, const char *filename) {
 	fclose(fin);
 
 	buffer_wordcompl_update(buffer, &(buffer->cbt), WORDCOMPL_UPDATE_RADIUS);
-	//printf("Calling lexy update\n");
 	lexy_update_starting_at(buffer, 0, false);
 
 	const char *argv[] = { "buffer_loaded_hook", buffer->path };
@@ -482,11 +476,13 @@ void buffer_undo(buffer_t *buffer, bool redo) {
 
 	buffer->mark = start;
 	buffer->cursor = end;
-	int start_cursor = buffer_replace_selection_ex(buffer, redo ? undo_node->after_selection.text : undo_node->before_selection.text, false);
+	int selbefore = MAX(start, end) - MIN(start, end);
+	const char *new_text = redo ? undo_node->after_selection.text : undo_node->before_selection.text;
+	int start_cursor = buffer_replace_selection_ex(buffer, new_text, false);
 
 	buffer_typeset_from(buffer, start_cursor-1);
 	buffer->savedmark = buffer->mark = -1;
-	lexy_update_starting_at(buffer, start_cursor-1, false);
+	lexy_update_starting_at(buffer, start_cursor-1, (strlen(new_text) < 5) && (selbefore < 5));
 
 	pthread_rwlock_unlock(&(buffer->rwlock));
 
@@ -498,8 +494,6 @@ void buffer_replace_selection(buffer_t *buffer, const char *new_text) {
 
 	buffer->release_read_lock = true;
 	pthread_rwlock_wrlock(&(buffer->rwlock));
-
-	//printf("buffer replace selection: <%s>\n", buffer->path);
 
 	buffer->modified = true;
 
@@ -550,7 +544,7 @@ void buffer_wordcompl_init_charset(void) {
 			wordcompl_red_charset[i] = true;
 		} else if (i == '.') {
 			wordcompl_charset[i] = true;
-			wordcompl_red_charset[i] = true;
+			wordcompl_red_charset[i] = false;
 		} else if (i == '-') {
 			wordcompl_charset[i] = true;
 			wordcompl_red_charset[i] = false;
@@ -758,8 +752,6 @@ static bool buffer_aux_findchar(buffer_t *buffer, int *p, uint32_t k, int dir) {
 }
 
 bool buffer_move_point_line(buffer_t *buffer, int *p, enum movement_type_t type, int arg) {
-	//printf("Move point line: %d (%d)\n", arg, type);
-
 	bool r = true;
 
 	switch (type) {
@@ -947,8 +939,6 @@ int buffer_point_from_position(buffer_t *buffer, double x, double y) {
 			break;
 		}
 
-		//printf("\tin line: %g < %g < %g\n", g->y - buffer->line_height, y, g->y);
-
 		double glyph_start = g->x;
 		double glyph_end = glyph_start + g->x_advance;
 
@@ -979,7 +969,6 @@ int buffer_point_from_position(buffer_t *buffer, double x, double y) {
 
 void buffer_move_cursor_to_position(buffer_t *buffer, double x, double y) {
 	buffer->cursor = buffer_point_from_position(buffer, x, y);
-	//printf("Cursor on: (%d) %04x\n", buffer->cursor, bat(buffer, buffer->cursor) != NULL ? bat(buffer, buffer->cursor)->code : 0);
 	buffer_extend_selection_by_select_type(buffer);
 }
 
@@ -1004,8 +993,6 @@ static int parmatch_find_ex(buffer_t  *buffer, int start, const char *tomatch, c
 	uint32_t match_code = point_to_char_to_find(cursor_code, tomatch, tofind);
 	if (match_code <= 0) return -1;
 
-	//printf("\tcode: %c searching: %c direction: %d\n", (char)cursor_code, (char)match_code, direction);
-
 	int depth = 1;
 	int count = 0;
 
@@ -1019,8 +1006,6 @@ static int parmatch_find_ex(buffer_t  *buffer, int start, const char *tomatch, c
 		if (cur->code == cursor_code) ++depth;
 		if (cur->code == match_code) --depth;
 
-		//printf("\%d tdepth: %d (%c)\n", i, depth, cur->code);
-
 		if (depth == 0) return i;
 	}
 
@@ -1030,7 +1015,6 @@ static int parmatch_find_ex(buffer_t  *buffer, int start, const char *tomatch, c
 int parmatch_find(buffer_t *buffer, int nlines) {
 #define OPENING_PARENTHESIS "([{<"
 #define CLOSING_PARENTHESIS ")]}>"
-	//printf("parmatch_find called\n");
 	if (buffer->cursor < 0) return -1;
 
 	int r = parmatch_find_ex(buffer, buffer->cursor, OPENING_PARENTHESIS, CLOSING_PARENTHESIS, +1, nlines);
@@ -1117,13 +1101,11 @@ int buffer_line_of(buffer_t *buffer, int p) {
 		++line;
 		if (!r) break;
 	}
-	//printf("line_of called: (%d) %d\n", p, line);
 	return line;
 }
 
 int buffer_column_of(buffer_t *buffer, int p) {
 	int c = p;
 	buffer_move_point_glyph(buffer, &c, MT_ABS, 1);
-	//printf("column of called: (%d) %d\n", p, (p - c + 1));
 	return p - c + 1;
 }

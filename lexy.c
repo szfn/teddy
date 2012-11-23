@@ -655,6 +655,12 @@ static gboolean refresher(editor_t *editor) {
 	return FALSE;
 }
 
+static void refresher_add(buffer_t *buffer) {
+	editor_t *editor = NULL;
+	find_editor_for_buffer(buffer, NULL, NULL, &editor);
+	if (editor != NULL) g_idle_add((GSourceFunc)refresher, editor);
+}
+
 static void *lexy_update_starting_at_thread(void *varg) {
 	buffer_t *buffer = (buffer_t *)varg;
 
@@ -663,9 +669,6 @@ static void *lexy_update_starting_at_thread(void *varg) {
 		buffer->lexy_running = 0;
 		return NULL;
 	}
-
-	editor_t *editor = NULL;
-	find_editor_for_buffer(buffer, NULL, NULL, &editor);
 
 	pthread_rwlock_rdlock(&(buffer->rwlock));
 
@@ -701,19 +704,15 @@ static void *lexy_update_starting_at_thread(void *varg) {
 
 		if (g == NULL) break;
 		if (g->code == '\n') {
-			if (editor != NULL) {
-				g_idle_add((GSourceFunc)refresher, editor);
-			}
-			//printf("\tnew line %d\n", count);
 			++count;
 		}
 
 		int previ = i;
 
 		if (buffer->release_read_lock) {
-			//printf("Lexy preempted\n");
 			buffer->lexy_running = 2;
 			pthread_rwlock_unlock(&(buffer->rwlock));
+			refresher_add(buffer);
 			return NULL;
 		}
 
@@ -726,6 +725,7 @@ static void *lexy_update_starting_at_thread(void *varg) {
 			if (count > LEXY_QUICK_EXIT_MAX_COUNT) {
 				buffer->lexy_running = 2;
 				pthread_rwlock_unlock(&(buffer->rwlock));
+				refresher_add(buffer);
 				return NULL;
 			}
 		}
@@ -736,6 +736,7 @@ static void *lexy_update_starting_at_thread(void *varg) {
 	buffer->lexy_running = 0;
 	pthread_rwlock_unlock(&(buffer->rwlock));
 
+	refresher_add(buffer);
 	return NULL;
 }
 

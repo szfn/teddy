@@ -476,7 +476,7 @@ static const char *trim_prefix(const char *prefix) {
 			bool valid = false;
 			uint32_t code = utf8_to_utf32(prefix+i, &src, len, &valid);
 			if (!valid) return prefix+i+len;
-			if (!u_isalnum(code) && (code != '_') && (code != '.')) return prefix+i+len;
+			if (!u_isalnum(code) && (code != '_')) return prefix+i+len;
 			len = 1;
 		} else {
 			++len;
