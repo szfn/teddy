@@ -1,4 +1,3 @@
-- center iopen on screen instead of centering it under the mouse
 - store keywords as utf32 not as utf8 for easier checking
 - save buffer main font too
 - text objects?
