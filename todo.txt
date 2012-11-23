@@ -1,7 +1,8 @@
-- BUG carriage return not deleting current line in background jobs
+- BUG: dot now part of words for word completion
 - center iopen on screen instead of centering it under the mouse
 - save buffer main font too
 - text objects?
+- reimplement empty space heuristic
 - optimize code that changes mouse cursor into a hand over links (right now its linear in the size of the buffer)
 - left-right click combo should always eval
 - bold matched text in autocompletions window and iopen window

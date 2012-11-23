@@ -26,7 +26,6 @@ void jobs_init(void) {
 	}
 }
 
-
 static int write_all(int fd, const char *str) {
 	while (*str != '\0') {
 		int r = write(fd, str, strlen(str));

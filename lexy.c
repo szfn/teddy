@@ -54,6 +54,8 @@ int lexy_colors[0xff];
 #define LEXY_LOAD_HOOK_MAX_COUNT 4096
 #define LEXY_QUICK_EXIT_MAX_COUNT 10
 
+#define LEXY_DEFAULT_LINK_OPEN_FN "teddy_intl::link_open"
+
 const char *CONTINUATION_STATUS = "continuation-state";
 
 enum match_kind {
@@ -113,7 +115,7 @@ void lexy_init(void) {
 
 	for (int i = 0; i < LEXY_ASSOCIATION_NUMBER; ++i) {
 		lexy_associations[i].extension = NULL;
-		lexy_associations[i].link_fn = "teddy_intl::link_open";
+		lexy_associations[i].link_fn = LEXY_DEFAULT_LINK_OPEN_FN;
 	}
 
 	for (int i = 0; i < 0xff; ++i) {
@@ -644,7 +646,7 @@ static int start_status_for_buffer(buffer_t *buffer) {
 
 const char *lexy_get_link_fn(buffer_t *buffer) {
 	struct lexy_association *a = association_for_buffer(buffer);
-	if (a == NULL) return "";
+	if (a == NULL) return LEXY_DEFAULT_LINK_OPEN_FN;
 	return a->link_fn;
 }
 
