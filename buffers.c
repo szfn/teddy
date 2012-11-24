@@ -6,6 +6,7 @@
 #include "tags.h"
 #include "top.h"
 #include "interp.h"
+#include "lexy.h"
 
 #include "critbit.h"
 
@@ -496,6 +497,12 @@ int teddy_buffer_command(ClientData client_data, Tcl_Interp *interp, int argc, c
 	} else if (strcmp(argv[1], "coc") == 0) {
 		SINGLE_ARGUMENT_BUFFER_SUBCOMMAND("buffer coc");
 		if (editor != NULL) editor_include_cursor(editor, ICM_MID, ICM_MID);
+	} else if (strcmp(argv[1], "lexy") == 0) {
+		ARGNUM((argc != 2), "buffer lexy");
+		for (int i = 0; i < buffers_allocated; ++i) {
+			if (buffers[i] == NULL) continue;
+			lexy_update_starting_at(buffers[i], -1, false);
+		}
 	} else if (strcmp(argv[1], "save") == 0) {
 		SINGLE_ARGUMENT_BUFFER_SUBCOMMAND("buffer save");
 		if (editor != NULL) editor_save_action(editor); else save_to_text_file(buffer);

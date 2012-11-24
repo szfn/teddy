@@ -1062,7 +1062,6 @@ void buffer_config_changed(buffer_t *buffer) {
 	buffer_reload_glyph_info(buffer);
 	buffer_init_font_extents(buffer);
 	buffer_typeset_maybe(buffer, 0.0, true);
-	lexy_update_starting_at(buffer, -1, false);
 }
 
 char *buffer_all_lines_to_text(buffer_t *buffer) {

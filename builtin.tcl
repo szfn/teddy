@@ -231,6 +231,8 @@ proc antique_theme {} {
 	setcfg -global lexy_file [rgbcolor "midnight blue"]
 
 	setcfg -global editor_sel_invert 1
+
+	buffer lexy
 }
 
 proc acme_theme {} {
@@ -257,6 +259,8 @@ proc acme_theme {} {
 
 	setcfg -global editor_sel_color [rgbcolor 238 238 158]
 	setcfg -global editor_sel_invert 0
+
+	buffer lexy
 }
 
 proc zenburn_theme {} {
@@ -283,6 +287,8 @@ proc zenburn_theme {} {
 	setcfg -global lexy_file [rgbcolor cyan]
 
 	setcfg -global editor_sel_invert 0
+
+	buffer lexy
 }
 
 proc solarized_theme {} {
@@ -326,6 +332,8 @@ proc solarized_theme {} {
 	setcfg -global lexy_file [rgbcolor cyan]
 
 	setcfg -global editor_sel_invert 0
+
+	buffer lexy
 }
 
 proc solarized_simple_theme {} {
@@ -369,6 +377,8 @@ proc solarized_simple_theme {} {
 	setcfg -global lexy_file $blue
 
 	setcfg -global editor_sel_invert 0
+
+	buffer lexy
 }
 
 ### IMPLEMENTATION OF USER COMMANDS #######################################

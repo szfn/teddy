@@ -1,5 +1,3 @@
-- store keywords as utf32 not as utf8 for easier checking
-- BUGFIX: setting theme disables it (why doesn't lexy run?)
 - link_open enhancements:
  - if islink -> parse with the current lexer
  - if not islink -> parse with filesearch lexer
