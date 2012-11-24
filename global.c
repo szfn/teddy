@@ -342,7 +342,7 @@ void quick_message(const char *title, const char *msg) {
 
 uint32_t *utf8_to_utf32_string(const char *text, int *dstlen) {
 	int len = strlen(text);
-	uint32_t *r = malloc(len*sizeof(uint32_t));
+	uint32_t *r = malloc((len+1)*sizeof(uint32_t));
 	alloc_assert(r);
 
 	*dstlen = 0;
@@ -350,6 +350,8 @@ uint32_t *utf8_to_utf32_string(const char *text, int *dstlen) {
 		bool valid = true;
 		r[(*dstlen)++] = utf8_to_utf32(text, &i, len, &valid);
 	}
+
+	r[*dstlen] = 0;
 
 	return r;
 }

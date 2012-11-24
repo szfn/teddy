@@ -75,12 +75,12 @@ struct lexy_row {
 	enum match_kind match_kind;
 
 	/* LM_KEYWORDS */
-	size_t kwlen;
-	char *kws;
+	int kwlen;
+	uint32_t *kws;
 	bool kwsp; /* enable special character match */
 
 	/* LM_REGION */
-	char *region_end;
+	uint32_t *region_end;
 	char escape;
 
 	/* LM_REGEXP match */
@@ -377,8 +377,7 @@ int lexy_append_command(ClientData client_data, Tcl_Interp *interp, int argc, co
 		break;
 
 	case LM_KEYWORDS:
-		new_row->kwlen = strlen(pattern);
-		new_row->kws = strdup(pattern);
+		new_row->kws = utf8_to_utf32_string(pattern, &(new_row->kwlen));
 		new_row->kwsp = true;
 		alloc_assert(new_row->kws);
 		for (int i = 0; i < new_row->kwlen; ++i) {
@@ -408,8 +407,7 @@ int lexy_append_command(ClientData client_data, Tcl_Interp *interp, int argc, co
 		}
 
 		new_row->match_kind = LM_KEYWORDS;
-		new_row->kwlen = strlen(start);
-		new_row->kws = strdup(start);
+		new_row->kws = utf8_to_utf32_string(start, &(new_row->kwlen));
 		new_row->kwsp = false;
 		alloc_assert(new_row->kws);
 		new_row->check = false;
@@ -432,7 +430,8 @@ int lexy_append_command(ClientData client_data, Tcl_Interp *interp, int argc, co
 		region_row->next_status = next_status_index;
 		region_row->token_type = token_type;
 		region_row->match_kind = LM_REGION;
-		region_row->region_end = strdup(end);
+		int z;
+		region_row->region_end = utf8_to_utf32_string(end, &z);
 		region_row->escape = escape[0];
 		region_row->check = false;
 		region_row->enabled = true;
@@ -463,35 +462,26 @@ static bool check_file_match(struct lexy_row *row, buffer_t *buffer, int glyph, 
 	return r;
 }
 
-static int bufmatch(buffer_t *buffer, int start, const char *needle, bool special) {
+static int bufmatch(buffer_t *buffer, int start, const uint32_t *needle, bool special) {
 	//printf("Checking %d %s\n", start, needle);
-	int j = 0;
-	uint32_t cur_code;
-	for (int i = 0; i < strlen(needle); ++j) {
-		bool valid;
-		cur_code = utf8_to_utf32(needle, &i, strlen(needle), &valid);
-		if (!valid) return -1;
-
+	int i, j;
+	for (i = 0, j = 0; needle[i] != 0; ++j, ++i) {
 		my_glyph_info_t *cur_glyph = bat(buffer, start + j);
 		if (cur_glyph == NULL) return -1;
 
 		//printf("cur_code %d (%c) cur_glyph %d (%c)\n", cur_code, (char)cur_code, cur_glyph->code, (char)cur_glyph->code);
 
-		if (special)
-			if (cur_code == '>') break;
-		if (cur_code != cur_glyph->code) return -1;
+		if (special) {
+			if (needle[i] == '>') {
+				//printf("Extra check for <%s> is %d (%c)\n", needle, g->code, (char)g->code);
+				if (u_isalnum(cur_glyph->code) || (cur_glyph->code == '_')) return -1;
+				return i;
+			}
+		}
+		if (needle[i] != cur_glyph->code) return -1;
 	}
 
-	if (special && (cur_code == '>')) {
-		my_glyph_info_t *g = bat(buffer, start + j);
-		if (g != NULL) {
-			//printf("Extra check for <%s> is %d (%c)\n", needle, g->code, (char)g->code);
-			if (u_isalnum(g->code) || (g->code == '_')) return -1;
-		}
-		return strlen(needle) - 1;
-	} else {
-		return strlen(needle);
-	}
+	return i;
 }
 
 static void lexy_update_one_token(buffer_t *buffer, int *i, int *status) {
@@ -562,12 +552,20 @@ static void lexy_update_one_token(buffer_t *buffer, int *i, int *status) {
 			break;
 
 		case LM_KEYWORDS:
-			for (int start = 0; start < row->kwlen; start += strlen(row->kws + start)+1) {
+			for (int start = 0; start < row->kwlen; ) {
 				//printf("Matching %d <%s>\n", row->kwlen, row->kws + start);
 				int m = bufmatch(buffer, *i, row->kws + start, row->kwsp);
 				if (m >= 0) {
 					match_len = m;
 					break;
+				} else {
+					// moving to next keyword
+					for (; start < row->kwlen; ++start) {
+						if (row->kws[start] == '\0') {
+							++start;
+							break;
+						}
+					}
 				}
 			}
 			break;

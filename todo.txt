@@ -1,7 +1,13 @@
 - store keywords as utf32 not as utf8 for easier checking
-- link_open should use an external program for binary files
+- BUGFIX: setting theme disables it (why doesn't lexy run?)
+- link_open enhancements:
+ - if islink -> parse with the current lexer
+ - if not islink -> parse with filesearch lexer
+ - try to open as a text file
+ - make buffer open fail on binary files
+ - if it fails call xdg-open
 - save buffer main font too
-- text objects?
+- text objects (double click on parenthesis selects to matching parenthesis)
 - reimplement empty space heuristic
 - optimize code that changes mouse cursor into a hand over links (right now its linear in the size of the buffer)
 - left-right click combo should always eval
