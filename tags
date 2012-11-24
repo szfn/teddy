@@ -10,14 +10,14 @@ ANSI_SEQ_MAX_LEN	jobs.h	14;"	d
 ARGNUM	interp.h	28;"	d
 AUTOCONF_TEDDY	autoconf.h	4;"	d
 AUTOSCROLL_TIMO	editor.h	11;"	d
-AUTOWRAP_INDICATOR_WIDTH	editor.c	1043;"	d	file:
+AUTOWRAP_INDICATOR_WIDTH	editor.c	1035;"	d	file:
 App	test/App.java	/^public class App $/;"	c
 BSIZE	buffer.h	173;"	d
 BST_LINES	buffer.h	/^enum select_type { BST_NORMAL = 0, BST_WORDS, BST_LINES };$/;"	e	enum:select_type
 BST_NORMAL	buffer.h	/^enum select_type { BST_NORMAL = 0, BST_WORDS, BST_LINES };$/;"	e	enum:select_type
 BST_WORDS	buffer.h	/^enum select_type { BST_NORMAL = 0, BST_WORDS, BST_LINES };$/;"	e	enum:select_type
-BUFIDCHECK	buffers.c	425;"	d	file:
-BUFSIZE	buffer.c	265;"	d	file:
+BUFIDCHECK	buffers.c	426;"	d	file:
+BUFSIZE	buffer.c	260;"	d	file:
 BUF_SIZE	tags.c	41;"	d	file:
 BUILTIN_TCL_CODE	builtin.h	4;"	d
 CFG_AUTOCOMPL_POPUP	cfg_auto.h	40;"	d
@@ -56,18 +56,18 @@ CFG_TAG_FONT	cfg_auto.h	29;"	d
 CFG_UNDERLINE_LINKS	cfg_auto.h	10;"	d
 CFG_WARP_MOUSE	cfg_auto.h	13;"	d
 CFLAGS	Makefile	/^CFLAGS=`pkg-config --cflags gtk+-2.0` -g -Wall -D_FORTIFY_SOURCE=2 -D_GNU_SOURCE -I\/usr\/include\/tcl8.5 -std=c99 -pthread$/;"	m
-CLOSING_PARENTHESIS	buffer.c	1032;"	d	file:
+CLOSING_PARENTHESIS	buffer.c	1018;"	d	file:
 COLUMN_MINIMUM_WIDTH	column.c	5;"	d	file:
 CONFIG_NUM	cfg_auto.h	4;"	d
 CONTINUATION_STATUS	lexy.c	/^const char *CONTINUATION_STATUS = "continuation-state";$/;"	v
 CRITBIT_H_	critbit.h	2;"	d
-CURSOR_WIDTH	editor.c	1169;"	d	file:
+CURSOR_WIDTH	editor.c	1157;"	d	file:
 DEFMAIN	gb/gb.c	36;"	d	file:
 DR_CHANGED	buffers.c	/^	DR_CHANGED = 3,$/;"	e	enum:dirty_reason_t	file:
 DR_DIRJOB	buffers.c	/^	DR_DIRJOB = 1,$/;"	e	enum:dirty_reason_t	file:
 DR_JOB	buffers.c	/^	DR_JOB = 2,$/;"	e	enum:dirty_reason_t	file:
 DR_NOT_DIRTY	buffers.c	/^	DR_NOT_DIRTY = 0,$/;"	e	enum:dirty_reason_t	file:
-FDOPEN_ERROR	interp.c	839;"	d	file:
+FDOPEN_ERROR	interp.c	841;"	d	file:
 GBDEF	gb/gb.c	29;"	d	file:
 GBENCL	gb/gb.c	32;"	d	file:
 GFFR_BINARYFILE	buffers.h	/^	GFFR_BINARYFILE,$/;"	e	enum:go_file_failure_reason
@@ -99,12 +99,13 @@ HISTORY_SIZE	history.h	9;"	d
 ICM_BOT	editor.h	/^	ICM_BOT = 2$/;"	e	enum:include_cursor_mode
 ICM_MID	editor.h	/^	ICM_MID = 1,$/;"	e	enum:include_cursor_mode
 ICM_TOP	editor.h	/^	ICM_TOP = 0,$/;"	e	enum:include_cursor_mode
-INOTIFY_BUF_LEN	buffers.c	258;"	d	file:
-INOTIFY_EVENT_SIZE	buffers.c	257;"	d	file:
+INOTIFY_BUF_LEN	buffers.c	259;"	d	file:
+INOTIFY_EVENT_SIZE	buffers.c	258;"	d	file:
 IOPEN_MAX_SENT_RESULTS	iopen.c	20;"	d	file:
 IOPEN_RECURSOR_DEPTH_LIMIT	iopen.c	19;"	d	file:
 JOBS_READ_BUFFER_SIZE	jobs.c	19;"	d	file:
 LEXY_ASSOCIATION_NUMBER	lexy.c	49;"	d	file:
+LEXY_DEFAULT_LINK_OPEN_FN	lexy.c	57;"	d	file:
 LEXY_LINE_LENGTH_LIMIT	lexy.c	52;"	d	file:
 LEXY_LOAD_HOOK_MAX_COUNT	lexy.c	54;"	d	file:
 LEXY_QUICK_EXIT_MAX_COUNT	lexy.c	55;"	d	file:
@@ -127,32 +128,32 @@ MIN	gb/gb.c	14;"	d	file:
 MINIMUM_WORDCOMPL_WORD_LEN	buffer.c	18;"	d	file:
 MIN_EM_COLUMN_SIZE_ATTEMPTED	global.h	28;"	d
 MIN_LINES_HEIGHT_REQUEST	global.h	27;"	d
-MOVE_CURSOR	interp.c	625;"	d	file:
-MOVE_MARK	interp.c	619;"	d	file:
-MOVE_MARK_CURSOR	interp.c	631;"	d	file:
+MOVE_CURSOR	interp.c	627;"	d	file:
+MOVE_MARK	interp.c	621;"	d	file:
+MOVE_MARK_CURSOR	interp.c	633;"	d	file:
 MT_ABS	buffer.h	/^	MT_ABS = 0, \/\/ move to absolute line\/column$/;"	e	enum:movement_type_t
 MT_END	buffer.h	/^	MT_END, \/\/ move to end$/;"	e	enum:movement_type_t
 MT_HOME	buffer.h	/^	MT_HOME, \/\/ toggle between first column and first non-whitespace character (buffer_move_point_glyph only)$/;"	e	enum:movement_type_t
 MT_REL	buffer.h	/^	MT_REL, \/\/ relative move$/;"	e	enum:movement_type_t
 MT_RELW	buffer.h	/^	MT_RELW, \/\/ word based relative move (buffer_move_point_glyph only)$/;"	e	enum:movement_type_t
 MT_START	buffer.h	/^	MT_START, \/\/ move to first non-whitespace character (buffer_move_point_glyph only)$/;"	e	enum:movement_type_t
-NMATCH	lexy.c	534;"	d	file:
-NMATCH	lexy.c	816;"	d	file:
+NMATCH	lexy.c	526;"	d	file:
+NMATCH	lexy.c	821;"	d	file:
 O	builtin.tcl	/^proc O {args} {$/;"	p
 OBJS	Makefile	/^OBJS := obj\/teddy.o obj\/buffer.o obj\/editor.o obj\/buffers.o obj\/columns.o obj\/column.o obj\/interp.o obj\/global.o obj\/undo.o  obj\/history.o obj\/jobs.o obj\/colors.o obj\/cfg_auto.o obj\/cfg.o obj\/research.o obj\/compl.o obj\/lexy.o obj\/treint.o obj\/critbit.o obj\/tframe.o obj\/foundry.o obj\/top.o obj\/iopen.o obj\/tags.o$/;"	m
-OPENING_PARENTHESIS	buffer.c	1031;"	d	file:
+OPENING_PARENTHESIS	buffer.c	1017;"	d	file:
 OS	research.c	98;"	d	file:
 OVECTOR_SIZE	research.c	181;"	d	file:
 P	builtin.tcl	/^proc P {args} {$/;"	p
-PARMATCH_CHAR_LIMIT	buffer.c	999;"	d	file:
+PARMATCH_CHAR_LIMIT	buffer.c	989;"	d	file:
 RATELIMIT_BUCKET_DURATION_SECS	jobs.h	11;"	d
 RATELIMIT_MAX_BYTES	jobs.h	12;"	d
-REGERROR_BUF_SIZE	lexy.c	357;"	d	file:
+REGERROR_BUF_SIZE	lexy.c	359;"	d	file:
 REGERROR_BUF_SIZE	research.c	357;"	d	file:
 REGEXEC_NMATCH	lexy.c	626;"	d	file:
-ROUNDBOXPAD	global.c	519;"	d	file:
+ROUNDBOXPAD	global.c	525;"	d	file:
 SHOWANYWAY_TIMO	jobs.c	20;"	d	file:
-SINGLE_ARGUMENT_BUFFER_SUBCOMMAND	buffers.c	460;"	d	file:
+SINGLE_ARGUMENT_BUFFER_SUBCOMMAND	buffers.c	461;"	d	file:
 SLOP	buffer.c	16;"	d	file:
 SLOP	gb/gb.c	10;"	d	file:
 SM_LITERAL	research.h	/^	SM_LITERAL = 1,$/;"	e	enum:search_mode_t
@@ -304,7 +305,7 @@ buffers_init	buffers.c	/^void buffers_init(void) {$/;"	f
 buffers_make	buffers.c	/^static buffer_t *buffers_make(const char *name) {$/;"	f	file:
 buffers_refresh	buffers.c	/^void buffers_refresh(buffer_t *buffer) {$/;"	f
 buffers_register_tags	buffers.c	/^void buffers_register_tags(const char *tags_file) {$/;"	f
-bufmatch	lexy.c	/^static int bufmatch(buffer_t *buffer, int start, const char *needle, bool special) {$/;"	f	file:
+bufmatch	lexy.c	/^static int bufmatch(buffer_t *buffer, int start, const uint32_t *needle, bool special) {$/;"	f	file:
 button_press_callback	editor.c	/^static gboolean button_press_callback(GtkWidget *widget, GdkEventButton *event, editor_t *editor) {$/;"	f	file:
 button_release_callback	editor.c	/^static gboolean button_release_callback(GtkWidget *widget, GdkEventButton *event, gpointer data) {$/;"	f	file:
 byte	critbit.c	/^uint32 byte;$/;"	m	struct:__anon1	file:
@@ -673,8 +674,8 @@ keyevent_to_string	editor.c	/^static const char *keyevent_to_string(guint keyval
 keyprocessor	buffer.h	/^	char *keyprocessor;$/;"	m	struct:_buffer_t
 kill_line	builtin.tcl	/^proc kill_line {} {$/;"	p
 kind	editor.c	/^	uint16_t kind;$/;"	m	struct:growable_glyph_array	file:
-kwlen	lexy.c	/^	size_t kwlen;$/;"	m	struct:lexy_row	file:
-kws	lexy.c	/^	char *kws;$/;"	m	struct:lexy_row	file:
+kwlen	lexy.c	/^	int kwlen;$/;"	m	struct:lexy_row	file:
+kws	lexy.c	/^	uint32_t *kws;$/;"	m	struct:lexy_row	file:
 kwsp	lexy.c	/^	bool kwsp; \/* enable special character match *\/$/;"	m	struct:lexy_row	file:
 label_button_press_callback	tframe.c	/^static gboolean label_button_press_callback(GtkWidget *widget, GdkEventButton *event, tframe_t *frame) {$/;"	f	file:
 label_button_release_callback	tframe.c	/^static gboolean label_button_release_callback(GtkWidget *widget, GdkEventButton *event, tframe_t *tf) {$/;"	f	file:
@@ -836,11 +837,12 @@ recalc	compl.h	/^	recalc_fn *recalc;$/;"	m	struct:completer
 recalc_fn	compl.h	/^typedef const char *recalc_fn(struct completer *c, const char *prefix);$/;"	t
 refill_word_completer	compl.c	/^static int refill_word_completer(const char *entry, void *p) {$/;"	f	file:
 refresher	lexy.c	/^static gboolean refresher(editor_t *editor) {$/;"	f	file:
+refresher_add	lexy.c	/^static void refresher_add(buffer_t *buffer) {$/;"	f	file:
 regap	buffer.c	/^static void regap(buffer_t *buffer, bool twice) {$/;"	f	file:
 regap	gb/gb.c	/^static void regap(GBENCL *encl) {$/;"	f	file:
 regexp	research.h	/^	regex_t regexp;$/;"	m	struct:research_t
 regexpstr	research.h	/^	char *regexpstr;$/;"	m	struct:research_t
-region_end	lexy.c	/^	char *region_end;$/;"	m	struct:lexy_row	file:
+region_end	lexy.c	/^	uint32_t *region_end;$/;"	m	struct:lexy_row	file:
 regmatch_to_lpoints	research.c	/^static bool regmatch_to_lpoints(struct augmented_lpoint_t *search_point, regmatch_t *m, int *s, int *e) {$/;"	f	file:
 release_command_line	top.c	/^static void release_command_line(editor_t *editor) {$/;"	f	file:
 release_read_lock	buffer.h	/^	volatile bool release_read_lock;$/;"	m	struct:_buffer_t

@@ -36,6 +36,7 @@ typedef struct _buffer_t {
 	time_t mtime;
 	bool stale;
 	bool single_line;
+	int invalid, total; // count of characters
 
 	pthread_rwlock_t rwlock;
 	volatile bool release_read_lock;

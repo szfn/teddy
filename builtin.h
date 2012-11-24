@@ -598,33 +598,35 @@ namespace eval teddy_intl {\n\
 		if {$islink} {\n\
 			set r [lexy-token . $text]\n\
 		} else {\n\
-			set r [list nothing $text \"\" \"\"]\n\
+			set r [lexy-token filesearch/0 $text]\n\
 		}\n\
-\n\
-		if {[regexp \"https?:\" [lindex $r 1]]} {\n\
-			x-www-browser [lindex $r 1]\n\
-			return\n\
-		}\n\
-\n\
-		#puts \"File directory: <[teddy_intl::file_directory]>\\n\"\n\
 \n\
 		set link_text [lindex $r 1]\n\
-		if {[string index $link_text 0] ne \"/\"} {\n\
-			set link_text \"[teddy_intl::file_directory]/$link_text\"\n\
+		if {[lindex $r 0] eq \"nothing\"} {\n\
+			set link_text $text\n\
+		}\n\
+\n\
+		# if it contains a colon assume it's a URL already and don't mess with it\n\
+		if {![regexp \":\" $link_text]} {\n\
+			if {[string index $link_text 0] ne \"/\"} {\n\
+				set link_text \"[teddy_intl::file_directory]/$link_text\"\n\
+			}\n\
 		}\n\
 \n\
 		set b [buffer open $link_text]\n\
 \n\
-		if {$b eq \"\"} { return }\n\
+		if {$b eq \"\"} {\n\
+			xdg-open $link_text\n\
+		} else {\n\
+			set line [lindex $r 2]\n\
+			set col [lindex $r 3]\n\
 \n\
-		set line [lindex $r 2]\n\
-		set col [lindex $r 3]\n\
-\n\
-		if {$line ne \"\"} {\n\
-			if {$col eq \"\"} { set col 1 }\n\
-			buffer eval $b { m nil $line:$col }\n\
+			if {$line ne \"\"} {\n\
+				if {$col eq \"\"} { set col 1 }\n\
+				buffer eval $b { m nil $line:$col }\n\
+			}\n\
+			buffer focus $b\n\
 		}\n\
-		buffer focus $b\n\
 	}\n\
 \n\
 	namespace export man_link_open\n\

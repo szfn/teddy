@@ -151,9 +151,11 @@ static int teddy_setcfg_command(ClientData client_data, Tcl_Interp *interp, int 
 
 	config_set(config, i, (char *)value);
 
-	for (int i = 0; i < buffers_allocated; ++i) {
-		if (buffers[i] == NULL) continue;
-		buffer_config_changed(buffers[i]);
+	if (config == &global_config) {
+		for (int i = 0; i < buffers_allocated; ++i) {
+			if (buffers[i] == NULL) continue;
+			buffer_config_changed(buffers[i]);
+		}
 	}
 
 	if (columnset != NULL)

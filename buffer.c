@@ -105,6 +105,8 @@ buffer_t *buffer_create(void) {
 	buffer->single_line = false;
 	buffer->lexy_running = 0;
 
+	buffer->invalid = buffer->total = 0;
+
 	asprintf(&(buffer->path), "+unnamed");
 	alloc_assert(buffer->path);
 	buffer->has_filename = 0;
@@ -203,6 +205,9 @@ static int buffer_replace_selection_ex(buffer_t *buffer, const char *text, bool 
 		bool valid = false;
 		uint32_t code = utf8_to_utf32(text, &i, len, &valid);
 
+		++(buffer->total);
+		if (!valid) ++(buffer->invalid);
+
 		buffer->buf[buffer->gap].code = code;
 
 		uint8_t fontidx = fontset_fontidx(font, code);
@@ -287,6 +292,8 @@ int load_text_file(buffer_t *buffer, const char *filename) {
 
 	const char *argv[] = { "buffer_loaded_hook", buffer->path };
 	interp_eval_command(NULL, buffer, 2, argv);
+
+	if (buffer->invalid * 1.0 / buffer->total >= 0.3) return -2;
 
 	return 0;
 }
