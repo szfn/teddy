@@ -43,7 +43,7 @@ static char *cut_prompt(job_t *job) {
 	for (start = job->buffer->cursor-1; start > 0; --start) {
 		my_glyph_info_t *g = bat(job->buffer, start);
 		if (g == NULL) return NULL;
-		if (g->code == '\n') break;
+		if (g->code == '\n') return NULL;
 		if (g->code == '\05') break;
 	}
 
@@ -104,6 +104,8 @@ static void job_append(job_t *job, const char *msg, int len, int on_new_line) {
 	alloc_assert(text);
 	strncpy(text, msg, len);
 	text[len] = '\0';
+
+	//printf("jobappending <%s> (%d:%d <%s>)\n", text, buffer->mark, buffer->cursor, prompt_str);
 
 	buffer_replace_selection(buffer, text);
 
@@ -184,9 +186,12 @@ static void ansi_append(job_t *job, const char *msg, int len) {
 			} else if (msg[i] == 0x08) {
 				job_append(job, msg+start, i - start, 0);
 				start = i+1;
-				job->buffer->mark = job->buffer->cursor;
-				buffer_move_point_glyph(buffer, &(job->buffer->mark), MT_REL, -1);
-				buffer_replace_selection(buffer, "");
+				char *p = cut_prompt(job);
+				free(p);
+				if (job->buffer->mark >= 0) {
+					buffer_move_point_glyph(buffer, &(job->buffer->mark), MT_REL, -1);
+					buffer_replace_selection(buffer, "");
+				}
 			} else if (msg[i] == 0x1b) { /* ANSI escape */
 				job_append(job, msg+start, i - start, 0);
 				job->ansi_state = ANSI_ESCAPE;
