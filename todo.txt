@@ -1,4 +1,3 @@
-- BUG: region ignores escape characters
 - text objects
  - make it work with "
 - save buffer main font too

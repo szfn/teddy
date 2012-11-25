@@ -580,6 +580,7 @@ static void lexy_update_one_token(buffer_t *buffer, int *i, int *status) {
 			for (j = *i; j < BSIZE(buffer); ++j) {
 				my_glyph_info_t *g = bat(buffer, j);
 				if (g == NULL) break;
+				if (g->code == row->escape) { ++j; continue; }
 				//printf("\tChecking %d %c\n", g->code, (char)g->code);
 				int m = bufmatch(buffer, j, row->region_end, false);
 				if (m >= 0) {
