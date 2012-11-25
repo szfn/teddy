@@ -9,6 +9,7 @@ cfg_autoindent 1
 cfg_warp_mouse 1
 cfg_interactive_search_case_sensitive 2
 cfg_autowrap 1
+cfg_largeindent 1
 cfg_tab_width 4
 cfg_oldarrow 0
 

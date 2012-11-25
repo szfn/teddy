@@ -1,10 +1,5 @@
-- link_open enhancements:
- - if islink -> parse with the current lexer
- - if not islink -> parse with filesearch lexer
- - try to open as a text file
- - make buffer open fail on binary files
- - if it fails call xdg-open
-- bigger initial spaces should be a configure option (and it should be disabled for man pages)
+- BUG: mangled manpages
+- hide mouse cursor when typing
 - save buffer main font too
 - text objects (double click on parenthesis selects to matching parenthesis)
 - reimplement empty space heuristic

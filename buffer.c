@@ -385,6 +385,7 @@ static void freeze_selection(buffer_t *buffer, selection_t *selection, int start
 }
 
 static void buffer_typeset_from(buffer_t *buffer, int point) {
+	int largeindent = config_intval(&(buffer->config), CFG_LARGEINDENT);
 	my_glyph_info_t *glyph = bat(buffer, point);
 
 	double y, x;
@@ -404,7 +405,9 @@ static void buffer_typeset_from(buffer_t *buffer, int point) {
 	for (int i = point+1; i < BSIZE(buffer); ++i) {
 		glyph = bat(buffer, i);
 		if (glyph->code == 0x20) {
-			if (i == 0) {
+			if (!largeindent) {
+				glyph->x_advance = buffer->space_advance;
+			} else if (i == 0) {
 				glyph->x_advance = buffer->em_advance;
 			} else {
 				my_glyph_info_t *prev = bat(buffer, i - 1);

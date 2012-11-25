@@ -46,6 +46,9 @@ setcfg autowrap 1\n\
 # Set the width of a tabulation as number of characters (on variable width fonts the width of a M character will be used)\n\
 setcfg tab_width 4\n\
 \n\
+# Set the width of indent spaces to be bigger so that $tab_width spaces at the beginning of the line align with a tab, even when using a proportional font\n\
+setcfg largeindent 1\n\
+\n\
 # When oldarrow is set to 1 the arrow cursor is used for editors\n\
 setcfg oldarrow 0\n\
 \n\
