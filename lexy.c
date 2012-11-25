@@ -191,6 +191,7 @@ static const char *deparse_token_type_name(int r) {
 	case CFG_LEXY_COMMENT: return "comment";
 	case CFG_LEXY_STRING: return "string";
 	case CFG_LEXY_LITERAL: return "literal";
+	case CFG_LEXY_FILE: return "file";
 
 	case CFG_LEXY_NOTHING:
 	default:
@@ -862,6 +863,8 @@ int lexy_token_command(ClientData client_data, Tcl_Interp *interp, int argc, con
 		Tcl_AddErrorInfo(interp, "Can not find status");
 		return TCL_ERROR;
 	}
+
+	printf("Token returned: %d (%d)\n", r, CFG_LEXY_NOTHING);
 
 	const char *ret[] = { deparse_token_type_name(r),
 		(file != NULL) ? file : "", (line != NULL) ? line : "", (col != NULL) ? col : ""  };

@@ -182,6 +182,11 @@ namespace eval teddy {\n\
 	namespace export ls_options\n\
 	set ls_options {-F -1 --group-directories-first}\n\
 \n\
+	# name of command to execute when opening a url or a binary file\n\
+	# suggested xdg-open/open/plumb/...\n\
+	namespace export open_cmd\n\
+	set open_cmd xdg-open\n\
+\n\
 	# returns current line number\n\
 	namespace export lineof\n\
 	proc lineof {x} {\n\
@@ -616,7 +621,7 @@ namespace eval teddy_intl {\n\
 		set b [buffer open $link_text]\n\
 \n\
 		if {$b eq \"\"} {\n\
-			xdg-open $link_text\n\
+			$teddy::open_cmd $link_text\n\
 		} else {\n\
 			set line [lindex $r 2]\n\
 			set col [lindex $r 3]\n\

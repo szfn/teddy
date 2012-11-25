@@ -1,4 +1,3 @@
-- BUG: click on links doesn't open them
 - hide mouse cursor when typing
 - save buffer main font too
 - text objects (double click on parenthesis selects to matching parenthesis)
