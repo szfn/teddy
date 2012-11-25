@@ -1,4 +1,6 @@
-- text objects (double click on parenthesis selects to matching parenthesis)
+- BUG: region ignores escape characters
+- text objects
+ - make it work with "
 - save buffer main font too
 - reimplement empty space heuristic
 - optimize code that changes mouse cursor into a hand over links (right now its linear in the size of the buffer)

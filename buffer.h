@@ -165,7 +165,7 @@ void buffer_select_all(buffer_t *buffer);
 void buffer_wordcompl_update_line(int position, critbit0_tree *c);
 char *buffer_get_selection_text(buffer_t *buffer);
 
-int parmatch_find(buffer_t *buffer, int nlines);
+int parmatch_find(buffer_t *buffer, int cursor, int nlines, bool forward_only);
 my_glyph_info_t *buffer_next_glyph(buffer_t *buffer, my_glyph_info_t *glyph);
 
 int buffer_line_of(buffer_t *buffer, int p);

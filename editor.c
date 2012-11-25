@@ -483,7 +483,7 @@ static gboolean key_press_callback(GtkWidget *widget, GdkEventKey *event, editor
 	int alt = event->state & GDK_MOD1_MASK;
 	int super = event->state & GDK_SUPER_MASK;
 
-	gdk_window_set_cursor(gtk_widget_get_window(editor->drar), cursor_blank);	
+	gdk_window_set_cursor(gtk_widget_get_window(editor->drar), cursor_blank);
 
 	if (editor->buffer->stale) {
 		switch (event->keyval) {
@@ -762,6 +762,22 @@ static bool on_file_link(editor_t *editor, double x, double y, int *r) {
 	return false;
 }
 
+static void doubleclick_behaviour(editor_t *editor) {
+	int m = parmatch_find(editor->buffer, editor->buffer->cursor, -1, true);
+	if (m >= 0) {
+		editor->buffer->mark = m+1;
+		return;
+	}
+	m = parmatch_find(editor->buffer, editor->buffer->cursor-1, -1, true);
+	if (m >= 0) {
+		editor->buffer->mark = m;
+		return;
+	}
+	//TODO: if around a parenthesis character select the inside
+	buffer_change_select_type(editor->buffer, BST_WORDS);
+	set_primary_selection(editor);
+}
+
 static gboolean button_press_callback(GtkWidget *widget, GdkEventButton *event, editor_t *editor) {
 	gtk_widget_grab_focus(editor->drar);
 
@@ -775,8 +791,7 @@ static gboolean button_press_callback(GtkWidget *widget, GdkEventButton *event, 
 		editor->buffer->select_type = BST_NORMAL;
 
 		if (event->type == GDK_2BUTTON_PRESS) {
-			buffer_change_select_type(editor->buffer, BST_WORDS);
-			set_primary_selection(editor);
+			doubleclick_behaviour(editor);
 		} else if (event->type == GDK_3BUTTON_PRESS) {
 			buffer_change_select_type(editor->buffer, BST_LINES);
 			set_primary_selection(editor);
@@ -956,7 +971,7 @@ static void draw_selection(editor_t *editor, double width, cairo_t *cr, int sel_
 }
 
 static void draw_parmatch(editor_t *editor, GtkAllocation *allocation, cairo_t *cr) {
-	int match = parmatch_find(editor->buffer, allocation->height / editor->buffer->line_height);
+	int match = parmatch_find(editor->buffer, editor->buffer->cursor, allocation->height / editor->buffer->line_height, false);
 
 	if (match < 0) return;
 

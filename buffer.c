@@ -996,6 +996,7 @@ static uint32_t point_to_char_to_find(uint32_t code, const char *tomatch, const 
 }
 
 static int parmatch_find_ex(buffer_t  *buffer, int start, const char *tomatch, const char *tofind, int direction, int nlines) {
+	bool unlimited = (nlines < 0);
 #define PARMATCH_CHAR_LIMIT 1000
 	if (start < 0) return -1;
 	if (start >= BSIZE(buffer)) return -1;
@@ -1011,8 +1012,10 @@ static int parmatch_find_ex(buffer_t  *buffer, int start, const char *tomatch, c
 		my_glyph_info_t *cur = bat(buffer, i);
 		if (cur == NULL) return -1;
 		if (cur->code == '\n') --nlines;
-		if (nlines < 0) return -1;
-		if (count++ > PARMATCH_CHAR_LIMIT) return -1;
+		if (!unlimited) {
+			if (nlines < 0) return -1;
+			if (count++ > PARMATCH_CHAR_LIMIT) return -1;
+		}
 
 		if (cur->code == cursor_code) ++depth;
 		if (cur->code == match_code) --depth;
@@ -1023,15 +1026,15 @@ static int parmatch_find_ex(buffer_t  *buffer, int start, const char *tomatch, c
 	return -1;
 }
 
-int parmatch_find(buffer_t *buffer, int nlines) {
+int parmatch_find(buffer_t *buffer, int cursor, int nlines, bool forward_only) {
 #define OPENING_PARENTHESIS "([{<"
 #define CLOSING_PARENTHESIS ")]}>"
 	if (buffer->cursor < 0) return -1;
 
-	int r = parmatch_find_ex(buffer, buffer->cursor, OPENING_PARENTHESIS, CLOSING_PARENTHESIS, +1, nlines);
-	if (r >= 0) return r;
+	int r = parmatch_find_ex(buffer, cursor, OPENING_PARENTHESIS, CLOSING_PARENTHESIS, +1, nlines);
+	if (forward_only || (r >= 0)) return r;
 
-	r = parmatch_find_ex(buffer, buffer->cursor-1, CLOSING_PARENTHESIS, OPENING_PARENTHESIS, -1, nlines);
+	r = parmatch_find_ex(buffer, cursor-1, CLOSING_PARENTHESIS, OPENING_PARENTHESIS, -1, nlines);
 	return r;
 }
 
