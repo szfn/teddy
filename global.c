@@ -12,7 +12,7 @@ GtkClipboard *default_clipboard;
 
 char *tied_session;
 
-GdkCursor *cursor_arrow, *cursor_hand, *cursor_xterm, *cursor_fleur, *cursor_top_left_corner;
+GdkCursor *cursor_blank, *cursor_arrow, *cursor_hand, *cursor_xterm, *cursor_fleur, *cursor_top_left_corner;
 
 columns_t *columnset = NULL;
 
@@ -45,6 +45,7 @@ void global_init() {
 
 	keybindings = g_hash_table_new(g_str_hash, streq);
 
+	cursor_blank = gdk_cursor_new(GDK_BLANK_CURSOR);
 	cursor_arrow = gdk_cursor_new(GDK_ARROW);
 	cursor_xterm = gdk_cursor_new(GDK_XTERM);
 	cursor_hand = gdk_cursor_new(GDK_HAND1);

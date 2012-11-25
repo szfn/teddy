@@ -188,10 +188,9 @@ static void ansi_append(job_t *job, const char *msg, int len) {
 				start = i+1;
 				char *p = cut_prompt(job);
 				free(p);
-				if (job->buffer->mark >= 0) {
-					buffer_move_point_glyph(buffer, &(job->buffer->mark), MT_REL, -1);
-					buffer_replace_selection(buffer, "");
-				}
+				if (job->buffer->mark < 0) job->buffer->mark = job->buffer->cursor;
+				buffer_move_point_glyph(buffer, &(job->buffer->mark), MT_REL, -1);
+				buffer_replace_selection(buffer, "");
 			} else if (msg[i] == 0x1b) { /* ANSI escape */
 				job_append(job, msg+start, i - start, 0);
 				job->ansi_state = ANSI_ESCAPE;

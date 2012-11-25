@@ -483,6 +483,8 @@ static gboolean key_press_callback(GtkWidget *widget, GdkEventKey *event, editor
 	int alt = event->state & GDK_MOD1_MASK;
 	int super = event->state & GDK_SUPER_MASK;
 
+	gdk_window_set_cursor(gtk_widget_get_window(editor->drar), cursor_blank);	
+
 	if (editor->buffer->stale) {
 		switch (event->keyval) {
 		case GDK_KEY_y:

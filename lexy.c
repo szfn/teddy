@@ -736,7 +736,6 @@ static void *lexy_update_starting_at_thread(void *varg) {
 
 	buffer->lexy_running = 0;
 	pthread_rwlock_unlock(&(buffer->rwlock));
-
 	refresher_add(buffer);
 	return NULL;
 }
@@ -863,8 +862,6 @@ int lexy_token_command(ClientData client_data, Tcl_Interp *interp, int argc, con
 		Tcl_AddErrorInfo(interp, "Can not find status");
 		return TCL_ERROR;
 	}
-
-	printf("Token returned: %d (%d)\n", r, CFG_LEXY_NOTHING);
 
 	const char *ret[] = { deparse_token_type_name(r),
 		(file != NULL) ? file : "", (line != NULL) ? line : "", (col != NULL) ? col : ""  };
