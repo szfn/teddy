@@ -1026,13 +1026,49 @@ static int parmatch_find_ex(buffer_t  *buffer, int start, const char *tomatch, c
 	return -1;
 }
 
+static int parmatch_find_region(buffer_t *buffer, int start, int nlines) {
+	bool unlimited = (nlines < 0);
+
+	my_glyph_info_t *g = bat(buffer, start);
+	if (g == NULL) return -1;
+
+	if ((g->color != CFG_LEXY_STRING - CFG_LEXY_NOTHING) && (g->color != CFG_LEXY_COMMENT - CFG_LEXY_NOTHING)) return -1;
+
+	my_glyph_info_t *pg = bat(buffer, start-1);
+	int color_before = (pg != NULL) ? pg->color : 0;
+
+	if (g->color == color_before) return -1;
+
+	int count = 0;
+
+	for (int i = start+1; i < BSIZE(buffer); ++i) {
+		my_glyph_info_t *cg = bat(buffer, i);
+		if (cg == NULL) return -1;
+		if (cg->code == '\n') --nlines;
+		if (!unlimited) {
+			if (nlines < 0) return -1;
+			if (count++ > PARMATCH_CHAR_LIMIT) return -1;
+		}
+		if (cg->color != g->color) return i-1;
+	}
+
+	return -1;
+
+	//TODO: look for the end of the region
+}
+
 int parmatch_find(buffer_t *buffer, int cursor, int nlines, bool forward_only) {
 #define OPENING_PARENTHESIS "([{<"
 #define CLOSING_PARENTHESIS ")]}>"
 	if (buffer->cursor < 0) return -1;
 
 	int r = parmatch_find_ex(buffer, cursor, OPENING_PARENTHESIS, CLOSING_PARENTHESIS, +1, nlines);
-	if (forward_only || (r >= 0)) return r;
+	if (r >= 0) return r;
+
+	r = parmatch_find_region(buffer, cursor, nlines);
+	if (r >= 0) return r;
+
+	if (forward_only) return -1;
 
 	r = parmatch_find_ex(buffer, cursor-1, CLOSING_PARENTHESIS, OPENING_PARENTHESIS, -1, nlines);
 	return r;

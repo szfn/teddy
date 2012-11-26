@@ -773,7 +773,6 @@ static void doubleclick_behaviour(editor_t *editor) {
 		editor->buffer->mark = m;
 		return;
 	}
-	//TODO: if around a parenthesis character select the inside
 	buffer_change_select_type(editor->buffer, BST_WORDS);
 	set_primary_selection(editor);
 }
