@@ -668,7 +668,7 @@ GtkWidget *tframe_content(tframe_t *frame) {
 bool tframe_close(tframe_t *tframe, bool resist) {
 	if (GTK_IS_TEDITOR(tframe->content)) {
 		bool was_null_buffer = GTK_TEDITOR(tframe->content)->buffer == null_buffer();
-		bool r = buffers_close(GTK_TEDITOR(tframe->content)->buffer, true);
+		bool r = buffers_close(GTK_TEDITOR(tframe->content)->buffer, true, config_intval(&global_config, CFG_DANGERCLOSE) != 0);
 		if (resist) return was_null_buffer; else return r;
 	} else {
 		return false;

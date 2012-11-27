@@ -201,7 +201,7 @@ static void new_column_mitem_callback(GtkMenuItem *menuitem, gpointer data) {
 }
 
 static void close_mitem_callback(GtkMenuItem *menuitem, gpointer data) {
-	if (!buffers_close_all()) return;
+	if (!buffers_close_all(config_intval(&global_config, CFG_DANGERCLOSE) != 0)) return;
 	gtk_widget_destroy(top_window);
 }
 

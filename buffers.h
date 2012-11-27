@@ -14,8 +14,8 @@ void buffers_free(void);
 buffer_t *null_buffer(void);
 
 // returns non-zero if close was successful, zero if the user cancelled the action
-bool buffers_close(buffer_t *buffer, bool save_critbit);
-bool buffers_close_all(void);
+bool buffers_close(buffer_t *buffer, bool save_critbit, bool force);
+bool buffers_close_all(bool force);
 
 buffer_t *buffers_find_buffer_from_path(const char *path);
 

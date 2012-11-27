@@ -1,4 +1,3 @@
-- configuration to always force close
 - buffer eval for command line
 - in should probably setup stuff so that links are relative to some directory instead of the cwd
 - save buffer main font too

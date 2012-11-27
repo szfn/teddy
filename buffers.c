@@ -144,14 +144,16 @@ static enum dirty_reason_t buffer_dirty_reason(buffer_t *buffer) {
 	return DR_NOT_DIRTY;
 }
 
-static bool buffers_close_set(buffer_t **bufset, int n) {
+static bool buffers_close_set(buffer_t **bufset, int n, bool force) {
 	bool anydirty = false;
-	for (int i = 0; i < n; ++i) {
-		if (bufset[i] == NULL) continue;
+	if (!force) {
+		for (int i = 0; i < n; ++i) {
+			if (bufset[i] == NULL) continue;
 
-		enum dirty_reason_t dr = buffer_dirty_reason(bufset[i]);
+			enum dirty_reason_t dr = buffer_dirty_reason(bufset[i]);
 
-		if ((dr != DR_NOT_DIRTY) && (dr != DR_DIRJOB)) anydirty = true;
+			if ((dr != DR_NOT_DIRTY) && (dr != DR_DIRJOB)) anydirty = true;
+		}
 	}
 
 	if (anydirty) {
@@ -216,8 +218,8 @@ static bool buffers_close_set(buffer_t **bufset, int n) {
 	}
 }
 
-bool buffers_close(buffer_t *buffer, bool save_critbit) {
-	return buffers_close_set(&buffer, 1);
+bool buffers_close(buffer_t *buffer, bool save_critbit, bool force) {
+	return buffers_close_set(&buffer, 1, force);
 }
 
 static void maybe_stale_buffer(int wd) {
@@ -371,8 +373,8 @@ void buffers_free(void) {
 	}
 }
 
-bool buffers_close_all(void) {
-	return buffers_close_set(buffers, buffers_allocated);
+bool buffers_close_all(bool force) {
+	return buffers_close_set(buffers, buffers_allocated, force);
 }
 
 buffer_t *buffers_create_with_name(char *name) {
@@ -621,7 +623,7 @@ int teddy_buffer_command(ClientData client_data, Tcl_Interp *interp, int argc, c
 		if (strcmp(argv[2], "temp") == 0) buffer_free(buffer, false);
 	} else if (strcmp(argv[1], "close") == 0) {
 		SINGLE_ARGUMENT_BUFFER_SUBCOMMAND("buffer close");
-		if (buffers_close_set(&buffer, 1))
+		if (buffers_close_set(&buffer, 1, false))
 			if (buffer == interp_context_buffer())
 				top_context_editor_gone();
 	} else if (strcmp(argv[1], "force-close") == 0) {
@@ -631,7 +633,7 @@ int teddy_buffer_command(ClientData client_data, Tcl_Interp *interp, int argc, c
 			top_context_editor_gone();
 	} else if (strcmp(argv[1], "closeall") == 0) {
 		ARGNUM((argc != 2), "buffer closeall");
-		if (buffers_close_all()) {
+		if (buffers_close_all(false)) {
 			GList *column_list = gtk_container_get_children(GTK_CONTAINER(columnset));
 			for (GList *cur = column_list; cur != NULL; cur = cur->next) {
 				column_close(GTK_COLUMN(cur->data));
@@ -722,7 +724,7 @@ void buffers_refresh(buffer_t *buffer) {
 
 	int cursor = buffer->cursor;
 
-	int r = buffers_close(buffer, false);
+	int r = buffers_close(buffer, false, false);
 	if (r == 0) return;
 
 	enum go_file_failure_reason gffr;
