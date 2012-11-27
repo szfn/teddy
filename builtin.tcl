@@ -86,7 +86,7 @@ namespace eval bindent {
 		if {[lindex [m] 0] ne "nil"} { c $text; return }
 
 		set cursor [m]
-		m +:1 +:$;
+		m +:1 +:$
 		if {![regexp {^(?: |\t)*$} [c]]} {
 			m {*}$cursor
 			c $text

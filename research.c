@@ -260,6 +260,10 @@ void do_regex_noninteractive_search(struct research_t *research) {
 	int cursor = research->buffer->cursor;
 
 	move_regexp_search_forward(research, false, &mark, &cursor);
+	if (research->search_failed) {
+		mark = research->buffer->mark;
+		cursor = research->buffer->cursor;
+	}
 	interp_return_point_pair(research->buffer, mark, cursor);
 	research_free_temp(research);
 }
