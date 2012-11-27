@@ -612,6 +612,8 @@ int teddy_buffer_command(ClientData client_data, Tcl_Interp *interp, int argc, c
 		if (strcmp(argv[2], "temp") == 0) {
 			buffer = buffer_create();
 			load_empty(buffer);
+		} else if (strcmp(argv[2], "cmdline") == 0) {
+			buffer = cmdline_buffer;
 		} else {
 			buffer = buffer_id_to_buffer(argv[2]);
 			find_editor_for_buffer(buffer, NULL, NULL, &editor);

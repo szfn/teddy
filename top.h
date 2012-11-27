@@ -13,4 +13,6 @@ bool top_command_line_focused(void);
 bool top_has_tags(void);
 void top_context_editor_gone(void);
 
+extern buffer_t *cmdline_buffer;
+
 #endif
