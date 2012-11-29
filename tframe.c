@@ -434,11 +434,6 @@ static gboolean label_button_press_callback(GtkWidget *widget, GdkEventButton *e
 		}
 	}
 
-	if ((event->type == GDK_BUTTON_PRESS) && (event->button == 2)) {
-		columns_column_remove(columnset, col, frame, false, true);
-		return TRUE;
-	}
-
 	return FALSE;
 }
 
