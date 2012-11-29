@@ -309,7 +309,11 @@ static gboolean jobs_input_watch_function(GIOChannel *source, GIOCondition condi
 	char buf[JOBS_READ_BUFFER_SIZE];
 	char *msg;
 	gsize bytes_read;
-	GIOStatus r = g_io_channel_read_chars(source, buf, JOBS_READ_BUFFER_SIZE-1, &bytes_read, NULL);
+
+	strcpy(buf, job->utf8annoyance);
+
+	GIOStatus r = g_io_channel_read_chars(source, buf+strlen(job->utf8annoyance), JOBS_READ_BUFFER_SIZE-1-strlen(job->utf8annoyance), &bytes_read, NULL);
+	bytes_read += strlen(job->utf8annoyance);
 
 	buf[bytes_read] = '\0';
 
@@ -319,6 +323,17 @@ static gboolean jobs_input_watch_function(GIOChannel *source, GIOCondition condi
 			job_create_buffer(job);
 		}
 	}
+
+	int k = utf8_excision(buf, bytes_read);
+	int charlen = utf8_first_byte_processing(buf[k]);
+	if ((k+charlen >= bytes_read) && (charlen < 8)) {
+		strcpy(job->utf8annoyance, buf+k);
+		buf[k] = '\0';
+		bytes_read = k;
+	} else {
+		job->utf8annoyance[0] = '\0';
+	}
+
 
 	if (!job->ratelimit_silenced) {
 		ansi_append(job, buf, (size_t)bytes_read);
@@ -386,6 +401,8 @@ int jobs_register(pid_t child_pid, int masterfd, buffer_t *buffer, const char *c
 	jobs[i].masterfd = masterfd;
 	jobs[i].buffer = NULL;
 	jobs[i].terminating = false;
+
+	jobs[i].utf8annoyance[0] = '\0';
 
 	jobs[i].pipe_from_child = g_io_channel_unix_new(masterfd);
 	g_io_channel_set_encoding(jobs[i].pipe_from_child, NULL, NULL);

@@ -268,14 +268,13 @@ int load_text_file(buffer_t *buffer, const char *filename) {
 		int n = fread(text, sizeof(char), BUFSIZE, fin);
 		if (n == 0) continue;
 
-		int charlen = utf8_first_byte_processing(text[n-1]);
+		int k = utf8_excision(text, n);
+		int charlen = utf8_first_byte_processing(text[k]);
 
-		if (charlen < 8) {
-			int i;
-			for (i = 0; i < charlen; ++i) {
-				text[n+i] = fgetc(fin);
+		if ((charlen > 0) && (charlen < 8)) {
+			for (; n < k+charlen+1; ++n) {
+				text[n] = fgetc(fin);
 			}
-			n += i;
 		}
 
 		text[n] = '\0';

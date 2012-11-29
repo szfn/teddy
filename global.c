@@ -229,6 +229,15 @@ uint8_t utf8_first_byte_processing(uint8_t ch) {
 	return 8; // invalid sequence
 }
 
+int utf8_excision(char *buf, int n) {
+	int end = n-8;
+	if (end < 0) end = 0;
+	for (int i = n-1; i >= end; --i) {
+		if (utf8_first_byte_processing(buf[i]) != 8) return i;
+	}
+	return n-1;
+}
+
 uint32_t utf8_to_utf32(const char *text, int *src, int len, bool *valid) {
 	uint32_t code;
 	*valid = true;

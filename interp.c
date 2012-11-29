@@ -1037,7 +1037,7 @@ static int teddy_fd2channel_command(ClientData client_data, Tcl_Interp *interp, 
 }
 
 static int teddy_rehash_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
-	ARGNUM((argc != 1), "teddy:rehash");
+	ARGNUM((argc != 1), "teddy::rehash");
 	cmdcompl_init(true);
 	return TCL_OK;
 }

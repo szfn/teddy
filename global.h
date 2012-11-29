@@ -49,6 +49,7 @@ void place_frame_piece(GtkWidget *table, gboolean horizontal, int positoin, int 
 bool inside_allocation(double x, double y, GtkAllocation *allocation);
 
 uint8_t utf8_first_byte_processing(uint8_t ch);
+int utf8_excision(char *buf, int n);
 void utf32_to_utf8(uint32_t code, char **r, int *cap, int *allocated);
 char *utf32_to_utf8_string(uint32_t *text, int len);
 uint32_t utf8_to_utf32(const char *text, int *src, int len, bool *valid);
