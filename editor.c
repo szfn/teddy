@@ -777,10 +777,43 @@ static void doubleclick_behaviour(editor_t *editor) {
 	set_primary_selection(editor);
 }
 
+static char *get_selection_or_file_link(editor_t *editor, bool *islink) {
+	*islink = false;
+
+	char *r = buffer_get_selection_text(editor->buffer);
+	if (r != NULL) return r;
+
+	my_glyph_info_t *glyph = bat(editor->buffer, editor->buffer->cursor);
+
+	if ((glyph != NULL) && (glyph->color == (CFG_LEXY_FILE - CFG_LEXY_NOTHING))) {
+		char *r = select_file(editor->buffer, editor->buffer->cursor);
+		*islink = true;
+		return r;
+	}
+
+	return NULL;
+}
+
+static void eval_menu_item_callback(GtkMenuItem *menuitem, editor_t *editor) {
+	bool islink;
+	char *selection = get_selection_or_file_link(editor, &islink);
+	if (selection == NULL) return;
+	interp_eval(editor, NULL, selection, true);
+	free(selection);
+}
+
 static gboolean button_press_callback(GtkWidget *widget, GdkEventButton *event, editor_t *editor) {
 	gtk_widget_grab_focus(editor->drar);
 
 	dirty_line_update(editor);
+
+	if (editor->mouse_marking) {
+		if (event->button == 3) {
+			editor->mouse_marking = 0;
+			eval_menu_item_callback(NULL, editor);
+			return TRUE;
+		}
+	}
 
 	if (event->button == 1) {
 		move_cursor_to_mouse(editor, event->x, event->y);
@@ -825,16 +858,16 @@ static gboolean button_press_callback(GtkWidget *widget, GdkEventButton *event, 
 	return TRUE;
 }
 
-static gboolean button_release_callback(GtkWidget *widget, GdkEventButton *event, gpointer data) {
-	editor_t *editor = (editor_t*)data;
+static gboolean button_release_callback(GtkWidget *widget, GdkEventButton *event, editor_t *editor) {
+	if (editor->mouse_marking) {
+		editor->mouse_marking = 0;
 
-	editor->mouse_marking = 0;
-
-	if (editor->buffer->mark == editor->buffer->cursor) {
-		editor->buffer->mark = -1;
-		gtk_widget_queue_draw(editor->drar);
-	} else {
-		freeze_primary_selection(editor);
+		if (editor->buffer->mark == editor->buffer->cursor) {
+			editor->buffer->mark = -1;
+			gtk_widget_queue_draw(editor->drar);
+		} else {
+			freeze_primary_selection(editor);
+		}
 	}
 
 	return TRUE;
@@ -1368,33 +1401,6 @@ static gboolean editor_focusout_callback(GtkWidget *widget, GdkEventFocus *event
 	gtk_widget_queue_draw(editor->drar);
 	end_selection_scroll(editor);
 	return FALSE;
-}
-
-static char *get_selection_or_file_link(editor_t *editor, bool *islink) {
-	*islink = false;
-
-	char *r = buffer_get_selection_text(editor->buffer);
-	if (r != NULL) return r;
-
-	my_glyph_info_t *glyph = bat(editor->buffer, editor->buffer->cursor);
-
-	if ((glyph != NULL) && (glyph->color == (CFG_LEXY_FILE - CFG_LEXY_NOTHING))) {
-		char *r = select_file(editor->buffer, editor->buffer->cursor);
-		*islink = true;
-		return r;
-	}
-
-	return NULL;
-}
-
-static void eval_menu_item_callback(GtkMenuItem *menuitem, editor_t *editor) {
-	bool islink;
-	char *selection = get_selection_or_file_link(editor, &islink);
-	if (selection == NULL) return;
-
-	interp_eval(editor, NULL, selection, true);
-
-	free(selection);
 }
 
 static void search_menu_item_callback(GtkMenuItem *menuitem, editor_t *editor) {

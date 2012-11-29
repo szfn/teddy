@@ -1,6 +1,6 @@
 - save buffer main font too
+- bookmarking system in default
 - optimize code that changes mouse cursor into a hand over links (right now its linear in the size of the buffer)
-- left-right click combo should always eval
 - bold matched text in autocompletions window and iopen window
 - EDITOR and VISUAL setting (needs some IPC implementation)
 - tabs
