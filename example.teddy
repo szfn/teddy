@@ -147,4 +147,12 @@ proc buffer_save_hook {} {
 
 # We override the grep command so that it always shows line numbers of matches, so that we can click on a match and go directly to the matched line on an editor
 proc grep {args} {
-	unknown grep -n {*}$args
+	if {[llength $args] == 1} {
+		unknown grep -nR --exclude=tags {*}$args *.c *.cc *.cpp *.h *.py *.txt *.pl *.tcl *.java *.js *.html
+	} else {
+		unknown grep -n --exclude=tags {*}$args
+	}
+}
+
+bindkey Alt-1 { buffer propset [buffer current] bookmark [m] }
+bindkey Ctrl-1 { m {*}[buffer propget [buffer current] bookmark] }
