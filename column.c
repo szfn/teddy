@@ -326,7 +326,10 @@ void column_expand_frame(column_t *column, tframe_t *frame) {
 
 	if (biggest == NULL) return;
 
-	tframe_fraction_set(biggest, biggest_fraction / 2.0);
-	tframe_fraction_set(frame, biggest_fraction / 2.0);
+	double fraction = 2.0;
+	if (fraction > biggest_fraction) fraction = biggest_fraction / 2.0;
+
+	tframe_fraction_set(biggest, biggest_fraction - fraction);
+	tframe_fraction_set(frame, fraction);
 	gtk_column_size_allocate(GTK_WIDGET(column), &(GTK_WIDGET(column)->allocation));
 }

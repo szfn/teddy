@@ -1,4 +1,3 @@
-- resize all frames of the column instead of just the one before
 - save buffer main font too
 - optimize code that changes mouse cursor into a hand over links (right now its linear in the size of the buffer)
 - left-right click combo should always eval
