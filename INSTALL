@@ -1,0 +1,6 @@
+Dependencies:
+- gtk 2.0
+- libtre
+- tcl (dev)
+- libicu-dev
+- cweb
