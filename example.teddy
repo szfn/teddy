@@ -127,10 +127,12 @@ proc buffer_setup_hook {name} {
 		setcfg tab_width 8
 		# …and set a monospaced font.
 		setcfg main_font $monospaced_font
+		buffer lexy
 	} elseif { [string range $name 0 3] == "+man" } {
 		# For buffers containing manpages we disable autowrapping and set a monospaced font
 		setcfg autowrap 0
 		setcfg main_font $monospaced_font
+		buffer lexy
 	} else {
 		# Otherwise we accept default
 	}
