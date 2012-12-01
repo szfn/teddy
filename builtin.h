@@ -980,6 +980,7 @@ lexydef go 0 {\n\
 		region {/*,*/,} comment\n\
 		region {',',\\\\} string\n\
 		region {\",\",\\\\} string\n\
+		region {`,`,} string\n\
 \n\
 		any \".\" nothing\n\
 	}\n\

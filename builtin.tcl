@@ -977,6 +977,7 @@ lexydef go 0 {
 		region {/*,*/,} comment
 		region {',',\\} string
 		region {",",\\} string
+		region {`,`,} string
 
 		any "." nothing
 	}
