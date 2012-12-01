@@ -524,7 +524,9 @@ proc shellsync {text args} {\n\
 \n\
       teddy::bg -setup\n\
 \n\
-      posixexit [shell [lindex $args 0] {*}[lrange $args 1 end]]\n\
+      set exit 1\n\
+      catch {set exit [shell [lindex $args 0] {*}[lrange $args 1 end]]}\n\
+      posixexit $exit\n\
    } else {\n\
       fdclose [lindex $pipe 0]\n\
       fdclose [lindex $outpipe 1]\n\
