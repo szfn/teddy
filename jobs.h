@@ -13,7 +13,7 @@ struct _buffer_t;
 
 #define ANSI_SEQ_MAX_LEN 32
 
-enum ansi_state { ANSI_NORMAL = 0, ANSI_ESCAPE };
+enum ansi_state { ANSI_NORMAL = 0, ANSI_ESCAPE, ANSI_0D };
 
 typedef struct _job_t {
 	int used;

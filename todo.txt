@@ -1,12 +1,10 @@
-- BUG: in job input \r should clean the line only if it isn't followed immediately by a \n
 - BUG: search and replace doesn't center on cursor after the very first move (subsequent moves are ok)
 - BUG: replacements during search and replace do not update the modified indicator
 - BUG: replace 0x00 bytes from file and process input with something else
 - BUG: teddy called with a single directory as an argument doesn't start
 - BUG: golang has `` for multiline strings
-
+- BUG: bindent extends the selection line by line until it encounters an empty line
 - mechanism to input last command sent to a job (bind it to ctrl-p)
-
 - alias Ctrl-d to Del key in default configuration
 
 - save buffer main font too

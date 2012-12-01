@@ -179,10 +179,7 @@ static void ansi_append(job_t *job, const char *msg, int len) {
 			if (msg[i] == 0x0d) {
 				job_append(job, msg+start, i - start, 0);
 				start = i+1;
-
-				job->buffer->mark = job->buffer->cursor = BSIZE(job->buffer)-1;
-				buffer_move_point_glyph(buffer, &(job->buffer->mark), MT_ABS, 1);
-				buffer_replace_selection(buffer, "");
+				job->ansi_state = ANSI_0D;
 			} else if (msg[i] == 0x08) {
 				job_append(job, msg+start, i - start, 0);
 				start = i+1;
@@ -195,6 +192,17 @@ static void ansi_append(job_t *job, const char *msg, int len) {
 				job_append(job, msg+start, i - start, 0);
 				job->ansi_state = ANSI_ESCAPE;
 				job->ansiseq_cap = 0;
+			}
+			break;
+
+		case ANSI_0D:
+			if (msg[i] == 0x0a) {
+				job->ansi_state = ANSI_NORMAL;
+			} else {
+				job->buffer->mark = job->buffer->cursor = BSIZE(job->buffer)-1;
+				buffer_move_point_glyph(buffer, &(job->buffer->mark), MT_ABS, 1);
+				buffer_replace_selection(buffer, "");
+				job->ansi_state = ANSI_NORMAL;
 			}
 			break;
 
