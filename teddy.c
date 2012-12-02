@@ -42,11 +42,9 @@ static void setup_initial_columns(int argc, char *argv[]) {
 	tframe_t *frame = NULL;
 
 	for (int i = 1; i < argc; ++i) {
-		buffer_t *buffer = buffer_create();
-		if (load_text_file(buffer, argv[i]) < 0) {
-			buffer_free(buffer, false);
-		} else {
-			buffers_add(buffer);
+		enum go_file_failure_reason gffr;
+		buffer_t *buffer = go_file(argv[i], true, true, &gffr);
+		if (buffer != NULL) {
 			tframe_t *f = heuristic_new_frame(columnset, NULL, buffer);
 			if (frame == NULL) frame = f;
 		}

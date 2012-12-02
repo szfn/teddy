@@ -1,4 +1,4 @@
-- BUG: teddy called with a single directory as an argument doesn't start
+- BUG: open teddy with a single argument that doesn't exist -> O command doesn't work
 - BUG: bindent extends the selection line by line until it encounters an empty line
 - mechanism to input last command sent to a job (bind it to ctrl-p)
 - alias Ctrl-d to Del key in default configuration
