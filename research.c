@@ -137,7 +137,6 @@ static bool regmatch_to_lpoints(struct augmented_lpoint_t *search_point, regmatc
 }
 
 static bool move_regexp_search_forward(struct research_t *research, bool execute, int *mark, int *cursor) {
-	//printf("Searching %p %d %d\n", research->buffer, *mark, *cursor);
 	if (execute && (research->cmd != NULL) && (mark >= 0)) {
 		editor_t *editor;
 		find_editor_for_buffer(research->buffer, NULL, NULL, &editor);
@@ -310,7 +309,7 @@ void start_regex_interactive(struct research_t *research, const char *regexp) {
 	asprintf(&msg, "Regexp {%s} {%s}", regexp, (editor->research.cmd != NULL) ? editor->research.cmd : "");
 	alloc_assert(msg);
 	editor_start_search(editor, SM_REGEXP, msg);
-	move_regexp_search_forward(&(editor->research), false, &(research->buffer->mark), &(research->buffer->cursor));
+	//move_regexp_search_forward(&(editor->research), false, &(research->buffer->mark), &(research->buffer->cursor));
 	free(msg);
 }
 

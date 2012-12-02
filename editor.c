@@ -1598,7 +1598,7 @@ void editor_start_search(editor_t *editor, enum search_mode_t search_mode, const
 		}
 	}
 
-	move_search(editor, false, true, false);
+	move_search(editor, true, true, false);
 	editor_grab_focus(editor, false);
 	gtk_widget_queue_draw(GTK_WIDGET(editor));
 }
