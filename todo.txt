@@ -1,4 +1,3 @@
-- BUG: replacements during search and replace do not update the modified indicator
 - BUG: don't ever open buffers containing 0x00 bytes, remove 0x00 bytes from commands output
 - BUG: teddy called with a single directory as an argument doesn't start
 - BUG: bindent extends the selection line by line until it encounters an empty line

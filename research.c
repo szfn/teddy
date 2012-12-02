@@ -143,6 +143,9 @@ static bool move_regexp_search_forward(struct research_t *research, bool execute
 
 		int r = interp_eval(editor, research->buffer, research->cmd, false);
 
+		if (editor != NULL)
+			set_label_text(editor);
+
 		if ((r == TCL_ERROR) || (r == TCL_BREAK)) return false;
 	}
 
