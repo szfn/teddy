@@ -26,9 +26,9 @@ namespace eval bindent {
 	proc incr {} {
 		m line
 		set indentchar [get_indentchar]
-		set saved_mark [m]
+		set sm [m]
 		s {^.*$} { c "$indentchar[c]" }
-		m {*}$saved_mark
+		m "[teddy::lineof [lindex $sm 0]]:1" "[teddy::lineof [lindex $sm 1]]:$"
 	}
 
 	# Removes an indentation level
@@ -36,12 +36,12 @@ namespace eval bindent {
 	proc decr {} {
 		m line
 		set indentchar [get_indentchar]
-		set saved_mark [m]
+		set sm [m]
 		s "^$indentchar" {
 			c ""
 			m +:$
 		}
-		m {*}$saved_mark
+		m "[teddy::lineof [lindex $sm 0]]:1" "[teddy::lineof [lindex $sm 1]]:$"
 	}
 
 	# Guesses indentation, saves the guess as the indentchar buffer property
