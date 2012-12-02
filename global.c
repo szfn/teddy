@@ -83,13 +83,16 @@ char *unrealpath(const char *relative_path, bool empty_too) {
 
 		return rr;
 	} else {
-
 		char *r;
 		asprintf(&r, "%s/%s", top_working_directory(), relative_path);
 		alloc_assert(r);
 		char *rr = realpath(r, NULL);
-		free(r);
-		return rr;
+		if (rr != NULL) {
+			free(r);
+			return rr;
+		} else {
+			return r;
+		}
 	}
 
 	return NULL;
