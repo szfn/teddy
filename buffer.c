@@ -262,6 +262,8 @@ int load_text_file(buffer_t *buffer, const char *filename) {
 
 	buffer_setup_hook(buffer);
 
+	bool forced_invalid = false;
+
 #define BUFSIZE 1024
 	char text[BUFSIZE + 12];
 	while (!feof(fin)) {
@@ -279,6 +281,10 @@ int load_text_file(buffer_t *buffer, const char *filename) {
 
 		text[n] = '\0';
 
+		for (int i = 0; i < n; ++i) {
+			if (text[i] == '\0') forced_invalid = true;
+		}
+
 		buffer_replace_selection_ex(buffer, text, true);
 	}
 
@@ -286,13 +292,13 @@ int load_text_file(buffer_t *buffer, const char *filename) {
 
 	fclose(fin);
 
+	if (forced_invalid || (buffer->invalid * 1.0 / buffer->total >= 0.3)) return -2;
+
 	buffer_wordcompl_update(buffer, &(buffer->cbt), WORDCOMPL_UPDATE_RADIUS);
 	lexy_update_starting_at(buffer, 0, false);
 
 	const char *argv[] = { "buffer_loaded_hook", buffer->path };
 	interp_eval_command(NULL, buffer, 2, argv);
-
-	if (buffer->invalid * 1.0 / buffer->total >= 0.3) return -2;
 
 	return 0;
 }

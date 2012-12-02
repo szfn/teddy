@@ -332,16 +332,21 @@ static gboolean jobs_input_watch_function(GIOChannel *source, GIOCondition condi
 		}
 	}
 
-	int k = utf8_excision(buf, bytes_read);
-	int charlen = utf8_first_byte_processing(buf[k]);
-	if ((k+charlen >= bytes_read) && (charlen < 8)) {
-		strcpy(job->utf8annoyance, buf+k);
-		buf[k] = '\0';
-		bytes_read = k;
-	} else {
-		job->utf8annoyance[0] = '\0';
+	if (bytes_read > 0) {
+		int k = utf8_excision(buf, bytes_read);
+		int charlen = utf8_first_byte_processing(buf[k]);
+		if ((k+charlen >= bytes_read) && (charlen < 8)) {
+			strcpy(job->utf8annoyance, buf+k);
+			buf[k] = '\0';
+			bytes_read = k;
+		} else {
+			job->utf8annoyance[0] = '\0';
+		}
 	}
 
+	for (int i = 0; i < bytes_read; ++i) {
+		buf[i] = (buf[i] == '\0') ? 0x01 : buf[i];
+	}
 
 	if (!job->ratelimit_silenced) {
 		ansi_append(job, buf, (size_t)bytes_read);
