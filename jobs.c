@@ -276,7 +276,14 @@ static void job_attach_to_buffer(job_t *job, const char *command, buffer_t *buff
 
 	if ((command != NULL) && (buffer->path[0] == '+')) {
 		char *msg;
-		asprintf(&msg, "%% %s\n", command);
+#define TRUNCATION 120
+		if (strlen(command) > TRUNCATION) {
+			char *c = strndup(command, TRUNCATION-1);
+			asprintf(&msg, "%% %s…\n", c);
+			free(c);
+		} else {
+			asprintf(&msg, "%% %s\n", command);
+		}
 		job_append(job, msg, strlen(msg), 0);
 		free(msg);
 	}
