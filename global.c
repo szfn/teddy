@@ -166,30 +166,34 @@ char *utf32_to_utf8_string(uint32_t *text, int len) {
 	return r;
 }
 
+static void utf32_to_utf8_sizing(uint32_t code, int *first_byte_pad, int *first_byte_mask, int *inc) {
+	if (code <= 0x7f) {
+		*inc = 0;
+		*first_byte_pad = 0x00;
+		*first_byte_mask = 0x7f;
+	} else if (code <= 0x7ff) {
+		*inc = 1;
+		*first_byte_pad = 0xc0;
+		*first_byte_mask = 0x1f;
+	} else if (code <= 0xffff) {
+		*inc = 2;
+		*first_byte_pad = 0xe0;
+		*first_byte_mask = 0x0f;
+	} else if (code <= 0x1fffff) {
+		*inc = 3;
+		*first_byte_pad = 0xf8;
+		*first_byte_mask = 0x07;
+	} else {
+		*inc = 0;
+		*first_byte_pad = '?';
+		*first_byte_mask = 0x00;
+	}
+}
+
 void utf32_to_utf8(uint32_t code, char **r, int *cap, int *allocated) {
 	int first_byte_pad, first_byte_mask, inc;
 
-	if (code <= 0x7f) {
-		inc = 0;
-		first_byte_pad = 0x00;
-		first_byte_mask = 0x7f;
-	} else if (code <= 0x7ff) {
-		inc = 1;
-		first_byte_pad = 0xc0;
-		first_byte_mask = 0x1f;
-	} else if (code <= 0xffff) {
-		inc = 2;
-		first_byte_pad = 0xe0;
-		first_byte_mask = 0x0f;
-	} else if (code <= 0x1fffff) {
-		inc = 3;
-		first_byte_pad = 0xf8;
-		first_byte_mask = 0x07;
-	} else {
-		inc = 0;
-		first_byte_pad = '?';
-		first_byte_mask = 0x00;
-	}
+	utf32_to_utf8_sizing(code, &first_byte_pad, &first_byte_mask, &inc);
 
 	if (*cap+inc+1 >= *allocated) {
 		*allocated *= 2;
@@ -216,12 +220,14 @@ bool inside_allocation(double x, double y, GtkAllocation *allocation) {
 		&& (y <= allocation->y + allocation->height);
 }
 
-static char first_byte_result_to_mask[] = { 0xff, 0x3f, 0x1f, 0x0f, 0x00, 0x00, 0x00, 0x00, 0x00 };
+static char first_byte_result_to_mask[] = { 0xff, 0x3f, 0x1f, 0x0f, 0x07, 0x03, 0x00, 0x00, 0x00 };
 
 uint8_t utf8_first_byte_processing(uint8_t ch) {
 	if (ch <= 127) return 0;
 
 	if ((ch & 0xF0) == 0xF0) {
+		if ((ch & 0x0C) == 0x0C) return 5;
+		if ((ch & 0x08) == 0x08) return 4;
 		if ((ch & 0x08) == 0x00) return 3;
 		else return 8; // invalid sequence
 	}
@@ -247,34 +253,97 @@ uint32_t utf8_to_utf32(const char *text, int *src, int len, bool *valid) {
 	*valid = true;
 
 	/* get next unicode codepoint in code, advance src */
-	if ((uint8_t)text[*src] > 127) {
-		uint8_t tail_size = utf8_first_byte_processing(text[*src]);
-
-		if (tail_size >= 8) {
-			code = (uint8_t)text[*src];
-			++(*src);
-			*valid = false;
-			return code;
-		}
-
-		code = ((uint8_t)text[*src]) & first_byte_result_to_mask[tail_size];
-		++(*src);
-
-		/*printf("   Next char: %02x (%02x)\n", (uint8_t)text[src], (uint8_t)text[src] & 0xC0);*/
-
-		int i = 0;
-		for (; (((uint8_t)text[*src] & 0xC0) == 0x80) && (*src < len); ++(*src)) {
-			code <<= 6;
-			code += (text[*src] & 0x3F);
-			++i;
-		}
-
-		if (i != tail_size) {
-			*valid = false;
-		}
-	} else {
+	if ((uint8_t)text[*src] <= 127) {
 		code = text[*src];
 		++(*src);
+		return code;
+	}
+
+	uint8_t tail_size = utf8_first_byte_processing(text[*src]);
+
+	if (tail_size >= 8) {
+		// unrecognized first byte, replace with a 0xfffd code
+		//code = (uint8_t)text[*src];
+		code = 0xfffd;
+		++(*src);
+		*valid = false;
+		return code;
+	}
+
+	code = ((uint8_t)text[*src]) & first_byte_result_to_mask[tail_size];
+	++(*src);
+
+	/*printf("   Next char: %02x (%02x)\n", (uint8_t)text[src], (uint8_t)text[src] & 0xC0);*/
+
+	int i = 0;
+	for (; (((uint8_t)text[*src] & 0xC0) == 0x80) && (*src < len); ++(*src)) {
+		code <<= 6;
+		code += (text[*src] & 0x3F);
+		++i;
+	}
+
+	// deconding ends here, following a list of checks for safe utf8 compliance.
+	// while it may appear that some of this checks could be done before decoding that's not the case:
+	// safe unicode compliance requires decoding invalid sequences and then discarding them as a single item
+
+	if (i != tail_size) {
+		// either end of text reached or we resynchronized early on a non continuation character
+		// either way we got crap, replacing with a question mark
+		code = 0xfffd;
+		*valid = false;
+		return code;
+	}
+
+	if (tail_size > 3) {
+		// this was either an overlong sequence (ie. non-minimal representation of a codepoint)
+		// or a representation of a codepoint beyond the last astral plane
+		// either way it's invalid
+		*valid = false;
+		code = 0xfffd;
+		return code;
+	}
+
+	if (((code&0x00ffff) == 0x00ffff) || ((code&0x00ffff) == 0x00fffe)) {
+		// unicode non-characters
+		*valid = false;
+		code = 0xfffd;
+		return code;
+	}
+
+	if ((code >= 0xfdd0) && (code <= 0xfdef)) {
+		// this range of characters contains the "eye of the basilisk" character
+		// this character effect is to instantly kill anyone who may happen to see it
+		// because of this the entire range must be treated as invalid
+		*valid = false;
+		code = 0xfffd;
+		return code;
+	}
+
+	if ((code >= 0xD800) && (code <= 0xDBFF)) {
+		// high surrogates
+		*valid = false;
+		code = 0xfffd;
+		return code;
+	}
+
+	if ((code >= 0xDC00) && (code <= 0xDFFF)) {
+		// low surrogates
+		*valid = false;
+		code = 0xfffd;
+		return code;
+	}
+
+	if (code != 0) {
+		int first_byte_pad, first_byte_mask, inc;
+		utf32_to_utf8_sizing(code, &first_byte_pad, &first_byte_mask, &inc);
+
+		if (tail_size != inc) {
+			// this is a overlong sequence (ie. non-minimal representation of a codepoint)
+			// unicode (after 2.0) says they are unsafe
+			// we only accept overlong sequences for 0x000000 because it is useful to represent 0x000000 non-minimally to simplify manipulation with C code (java calls it modified utf8)
+			*valid = false;
+			code = 0xfffd;
+		}
 	}
 
 	return code;

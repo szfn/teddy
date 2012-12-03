@@ -1,3 +1,4 @@
+- buffer_config_changed -> rerun lexy (and must acquire a write lock first)
 - save buffer main font too with tied sessions
 - optimize code that changes mouse cursor into a hand over links (right now its linear in the size of the buffer)
 - bold matched text in autocompletions window and iopen window
