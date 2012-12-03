@@ -1,6 +1,5 @@
-- invert order of things in window title
-
-- save buffer main font too
+- check that regexp work with non-ascii
+- save buffer main font too with tied sessions
 - optimize code that changes mouse cursor into a hand over links (right now its linear in the size of the buffer)
 - bold matched text in autocompletions window and iopen window
 - EDITOR and VISUAL setting (needs some IPC implementation)
