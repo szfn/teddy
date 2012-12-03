@@ -4,20 +4,21 @@
 !_TAG_PROGRAM_NAME	Exuberant Ctags	//
 !_TAG_PROGRAM_URL	http://ctags.sourceforge.net	/official site/
 !_TAG_PROGRAM_VERSION	5.9~svn20110310	//
-ANSI_ESCAPE	jobs.h	/^enum ansi_state { ANSI_NORMAL = 0, ANSI_ESCAPE };$/;"	e	enum:ansi_state
-ANSI_NORMAL	jobs.h	/^enum ansi_state { ANSI_NORMAL = 0, ANSI_ESCAPE };$/;"	e	enum:ansi_state
+ANSI_0D	jobs.h	/^enum ansi_state { ANSI_NORMAL = 0, ANSI_ESCAPE, ANSI_0D };$/;"	e	enum:ansi_state
+ANSI_ESCAPE	jobs.h	/^enum ansi_state { ANSI_NORMAL = 0, ANSI_ESCAPE, ANSI_0D };$/;"	e	enum:ansi_state
+ANSI_NORMAL	jobs.h	/^enum ansi_state { ANSI_NORMAL = 0, ANSI_ESCAPE, ANSI_0D };$/;"	e	enum:ansi_state
 ANSI_SEQ_MAX_LEN	jobs.h	14;"	d
 ARGNUM	interp.h	28;"	d
 AUTOCONF_TEDDY	autoconf.h	4;"	d
 AUTOSCROLL_TIMO	editor.h	11;"	d
-AUTOWRAP_INDICATOR_WIDTH	editor.c	1051;"	d	file:
+AUTOWRAP_INDICATOR_WIDTH	editor.c	1084;"	d	file:
 App	test/App.java	/^public class App $/;"	c
 BSIZE	buffer.h	174;"	d
 BST_LINES	buffer.h	/^enum select_type { BST_NORMAL = 0, BST_WORDS, BST_LINES };$/;"	e	enum:select_type
 BST_NORMAL	buffer.h	/^enum select_type { BST_NORMAL = 0, BST_WORDS, BST_LINES };$/;"	e	enum:select_type
 BST_WORDS	buffer.h	/^enum select_type { BST_NORMAL = 0, BST_WORDS, BST_LINES };$/;"	e	enum:select_type
 BUFIDCHECK	buffers.c	428;"	d	file:
-BUFSIZE	buffer.c	265;"	d	file:
+BUFSIZE	buffer.c	267;"	d	file:
 BUF_SIZE	tags.c	41;"	d	file:
 BUILTIN_TCL_CODE	builtin.h	4;"	d
 CFG_AUTOCOMPL_POPUP	cfg_auto.h	42;"	d
@@ -58,12 +59,12 @@ CFG_TAG_FONT	cfg_auto.h	31;"	d
 CFG_UNDERLINE_LINKS	cfg_auto.h	10;"	d
 CFG_WARP_MOUSE	cfg_auto.h	13;"	d
 CFLAGS	Makefile	/^CFLAGS=`pkg-config --cflags gtk+-2.0` -g -Wall -D_FORTIFY_SOURCE=2 -D_GNU_SOURCE -I\/usr\/include\/tcl8.5 -std=c99 -pthread$/;"	m
-CLOSING_PARENTHESIS	buffer.c	1062;"	d	file:
+CLOSING_PARENTHESIS	buffer.c	1067;"	d	file:
 COLUMN_MINIMUM_WIDTH	column.c	5;"	d	file:
 CONFIG_NUM	cfg_auto.h	4;"	d
 CONTINUATION_STATUS	lexy.c	/^const char *CONTINUATION_STATUS = "continuation-state";$/;"	v
 CRITBIT_H_	critbit.h	2;"	d
-CURSOR_WIDTH	editor.c	1173;"	d	file:
+CURSOR_WIDTH	editor.c	1206;"	d	file:
 DEFMAIN	gb/gb.c	36;"	d	file:
 DR_CHANGED	buffers.c	/^	DR_CHANGED = 3,$/;"	e	enum:dirty_reason_t	file:
 DR_DIRJOB	buffers.c	/^	DR_DIRJOB = 1,$/;"	e	enum:dirty_reason_t	file:
@@ -124,7 +125,7 @@ LM_SPACE	lexy.c	/^	LM_SPACE,$/;"	e	enum:match_kind	file:
 LM_UNKNOWN	lexy.c	/^	LM_UNKNOWN,$/;"	e	enum:match_kind	file:
 LOCKED_COMMAND_LINE_SIZE	editor.h	10;"	d
 MAX	gb/gb.c	13;"	d	file:
-MAX_JOBS	jobs.h	41;"	d
+MAX_JOBS	jobs.h	43;"	d
 MAX_LINES_HEIGHT_REQUEST	global.h	26;"	d
 MIN	gb/gb.c	14;"	d	file:
 MINIMUM_WORDCOMPL_WORD_LEN	buffer.c	18;"	d	file:
@@ -143,17 +144,17 @@ NMATCH	lexy.c	527;"	d	file:
 NMATCH	lexy.c	822;"	d	file:
 O	builtin.tcl	/^proc O {args} {$/;"	p
 OBJS	Makefile	/^OBJS := obj\/teddy.o obj\/buffer.o obj\/editor.o obj\/buffers.o obj\/columns.o obj\/column.o obj\/interp.o obj\/global.o obj\/undo.o  obj\/history.o obj\/jobs.o obj\/colors.o obj\/cfg_auto.o obj\/cfg.o obj\/research.o obj\/compl.o obj\/lexy.o obj\/treint.o obj\/critbit.o obj\/tframe.o obj\/foundry.o obj\/top.o obj\/iopen.o obj\/tags.o$/;"	m
-OPENING_PARENTHESIS	buffer.c	1061;"	d	file:
+OPENING_PARENTHESIS	buffer.c	1066;"	d	file:
 OS	research.c	98;"	d	file:
-OVECTOR_SIZE	research.c	181;"	d	file:
+OVECTOR_SIZE	research.c	183;"	d	file:
 P	builtin.tcl	/^proc P {args} {$/;"	p
-PARMATCH_CHAR_LIMIT	buffer.c	1000;"	d	file:
+PARMATCH_CHAR_LIMIT	buffer.c	1005;"	d	file:
 RATELIMIT_BUCKET_DURATION_SECS	jobs.h	11;"	d
 RATELIMIT_MAX_BYTES	jobs.h	12;"	d
 REGERROR_BUF_SIZE	lexy.c	360;"	d	file:
-REGERROR_BUF_SIZE	research.c	361;"	d	file:
+REGERROR_BUF_SIZE	research.c	363;"	d	file:
 REGEXEC_NMATCH	lexy.c	628;"	d	file:
-ROUNDBOXPAD	global.c	526;"	d	file:
+ROUNDBOXPAD	global.c	539;"	d	file:
 SHOWANYWAY_TIMO	jobs.c	20;"	d	file:
 SINGLE_ARGUMENT_BUFFER_SUBCOMMAND	buffers.c	463;"	d	file:
 SLOP	buffer.c	16;"	d	file:
@@ -161,6 +162,7 @@ SLOP	gb/gb.c	10;"	d	file:
 SM_LITERAL	research.h	/^	SM_LITERAL = 1,$/;"	e	enum:search_mode_t
 SM_NONE	research.h	/^	SM_NONE = 0,$/;"	e	enum:search_mode_t
 SM_REGEXP	research.h	/^	SM_REGEXP = 2$/;"	e	enum:search_mode_t
+TRUNCATION	jobs.c	280;"	d	file:
 TYPING_FUSION_INTERVAL	undo.h	8;"	d
 WORDCOMPL_UPDATE_RADIUS	buffer.h	176;"	d
 __ACMACS_GLOBAL_H__	gb/global.h	2;"	d
@@ -224,7 +226,7 @@ alty	compl.h	/^	double alty;$/;"	m	struct:completer
 ansi_append	jobs.c	/^static void ansi_append(job_t *job, const char *msg, int len) {$/;"	f	file:
 ansi_append_escape	jobs.c	/^static void ansi_append_escape(job_t *job) {$/;"	f	file:
 ansi_state	jobs.h	/^	enum ansi_state ansi_state;$/;"	m	struct:_job_t	typeref:enum:_job_t::ansi_state
-ansi_state	jobs.h	/^enum ansi_state { ANSI_NORMAL = 0, ANSI_ESCAPE };$/;"	g
+ansi_state	jobs.h	/^enum ansi_state { ANSI_NORMAL = 0, ANSI_ESCAPE, ANSI_0D };$/;"	g
 ansiseq	jobs.h	/^	char ansiseq[ANSI_SEQ_MAX_LEN];$/;"	m	struct:_job_t
 ansiseq_cap	jobs.h	/^	int ansiseq_cap;$/;"	m	struct:_job_t
 antique_theme	builtin.tcl	/^proc antique_theme {} {$/;"	p
@@ -309,7 +311,7 @@ buffers_refresh	buffers.c	/^void buffers_refresh(buffer_t *buffer) {$/;"	f
 buffers_register_tags	buffers.c	/^void buffers_register_tags(const char *tags_file) {$/;"	f
 bufmatch	lexy.c	/^static int bufmatch(buffer_t *buffer, int start, const uint32_t *needle, bool special) {$/;"	f	file:
 button_press_callback	editor.c	/^static gboolean button_press_callback(GtkWidget *widget, GdkEventButton *event, editor_t *editor) {$/;"	f	file:
-button_release_callback	editor.c	/^static gboolean button_release_callback(GtkWidget *widget, GdkEventButton *event, gpointer data) {$/;"	f	file:
+button_release_callback	editor.c	/^static gboolean button_release_callback(GtkWidget *widget, GdkEventButton *event, editor_t *editor) {$/;"	f	file:
 byte	critbit.c	/^uint32 byte;$/;"	m	struct:__anon1	file:
 c	history.h	/^	struct completer c;$/;"	m	struct:history	typeref:struct:history::completer
 cairoface	foundry.c	/^	cairo_font_face_t *cairoface;$/;"	m	struct:_teddy_font_t	file:
@@ -620,6 +622,7 @@ inotify_channel_source_id	buffers.c	/^guint inotify_channel_source_id;$/;"	v
 inotify_fd	buffers.c	/^int inotify_fd;$/;"	v
 inotify_input_watch_function	buffers.c	/^static gboolean inotify_input_watch_function(GIOChannel *source, GIOCondition condition, gpointer data) {$/;"	f	file:
 inotify_wd	buffer.h	/^	int inotify_wd;$/;"	m	struct:_buffer_t
+input_history	global.c	/^struct history input_history;$/;"	v	typeref:struct:history
 inside_allocation	global.c	/^bool inside_allocation(double x, double y, GtkAllocation *allocation) {$/;"	f
 interp	interp.c	/^Tcl_Interp *interp;$/;"	v
 interp_context_buffer	interp.c	/^buffer_t *interp_context_buffer(void) {$/;"	f
@@ -831,6 +834,7 @@ prefix_from_buffer_fn	compl.h	/^typedef char *prefix_from_buffer_fn(buffer_t *bu
 prefix_len	compl.h	/^	size_t prefix_len;$/;"	m	struct:completer
 prev	undo.h	/^	struct _undo_node_t *prev;$/;"	m	struct:_undo_node_t	typeref:struct:_undo_node_t::_undo_node_t
 prev_search_button	editor.h	/^	GtkWidget *prev_search_button, *execute_search_button, *execute_all_search_button;$/;"	m	struct:_editor_t
+previnput	builtin.tcl	/^	proc previnput {} {$/;"	p
 print_to_result	selftest.tcl	/^proc print_to_result {text} {$/;"	p
 process_buffers_counter	buffers.c	/^int process_buffers_counter = 0;$/;"	v
 props	buffer.h	/^	GHashTable *props;$/;"	m	struct:_buffer_t
@@ -895,6 +899,7 @@ search_mode_t	research.h	/^enum search_mode_t {$/;"	g
 search_start_point	research.c	/^static void search_start_point(editor_t *editor, bool ctrl_g_invoked, bool start_at_top, int *start_point) {$/;"	f	file:
 section_delete_test	selftest.tcl	/^proc section_delete_test {} {$/;"	p
 select_file	editor.c	/^static char *select_file(buffer_t *buffer, int p) {$/;"	f	file:
+select_input	builtin.tcl	/^	proc select_input {} {$/;"	p
 select_type	buffer.h	/^	enum select_type select_type;$/;"	m	struct:_buffer_t	typeref:enum:_buffer_t::select_type
 select_type	buffer.h	/^enum select_type { BST_NORMAL = 0, BST_WORDS, BST_LINES };$/;"	g
 selection_autoscroll	editor.c	/^static gboolean selection_autoscroll(editor_t *editor) {$/;"	f	file:
@@ -1088,6 +1093,7 @@ used	jobs.h	/^	int used;$/;"	m	struct:_job_t
 utf32_to_utf8	gb/global.c	/^void utf32_to_utf8(uint32_t code, char **r, int *cap, int *allocated) {$/;"	f
 utf32_to_utf8	global.c	/^void utf32_to_utf8(uint32_t code, char **r, int *cap, int *allocated) {$/;"	f
 utf32_to_utf8_string	global.c	/^char *utf32_to_utf8_string(uint32_t *text, int len) {$/;"	f
+utf8_excision	global.c	/^int utf8_excision(char *buf, int n) {$/;"	f
 utf8_first_byte_processing	gb/global.c	/^static uint8_t utf8_first_byte_processing(uint8_t ch) {$/;"	f	file:
 utf8_first_byte_processing	global.c	/^uint8_t utf8_first_byte_processing(uint8_t ch) {$/;"	f
 utf8_remove_truncated_characters_at_end	gb/global.c	/^void utf8_remove_truncated_characters_at_end(char *text) {$/;"	f
@@ -1096,6 +1102,7 @@ utf8_to_utf32	gb/global.c	/^uint32_t utf8_to_utf32(const char *text, int *src, i
 utf8_to_utf32	global.c	/^uint32_t utf8_to_utf32(const char *text, int *src, int len, bool *valid) {$/;"	f
 utf8_to_utf32_string	gb/global.c	/^uint32_t *utf8_to_utf32_string(const char *text, int *dstlen) {$/;"	f
 utf8_to_utf32_string	global.c	/^uint32_t *utf8_to_utf32_string(const char *text, int *dstlen) {$/;"	f
+utf8annoyance	jobs.h	/^	char utf8annoyance[12];$/;"	m	struct:_job_t
 visible	compl.h	/^	bool visible;$/;"	m	struct:completer
 waitall	interp.c	/^static void waitall(void) {$/;"	f	file:
 warp_mouse_after_next_expose	editor.h	/^	gboolean warp_mouse_after_next_expose;$/;"	m	struct:_editor_t

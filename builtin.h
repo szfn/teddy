@@ -228,6 +228,8 @@ namespace eval teddy {\n\
 		m +:+1 +:$\n\
 	}\n\
 \n\
+	# replaces the current line of input for a job with the last line of input that was sent to the job\n\
+	# it is meant to be bound to ctrl-p, a better version could be written to cycle through the history of input sent to the job\n\
 	proc previnput {} {\n\
 		select_input\n\
 		c [history input 1]\n\
