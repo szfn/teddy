@@ -1113,9 +1113,17 @@ static void buffer_reload_glyph_info(buffer_t *buffer) {
 }
 
 void buffer_config_changed(buffer_t *buffer) {
+	buffer->release_read_lock = true;
+	pthread_rwlock_wrlock(&(buffer->rwlock));
+	buffer->release_read_lock = false;
+
 	buffer_reload_glyph_info(buffer);
 	buffer_init_font_extents(buffer);
 	buffer_typeset_maybe(buffer, 0.0, true);
+
+	lexy_update_starting_at(buffer, -1, false);
+
+	pthread_rwlock_unlock(&(buffer->rwlock));
 }
 
 char *buffer_all_lines_to_text(buffer_t *buffer) {
