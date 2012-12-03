@@ -782,7 +782,7 @@ bool buffer_move_point_line(buffer_t *buffer, int *p, enum movement_type_t type,
 			++(*p);
 
 		} else if (arg > 0) {
-			buffer_aux_findchar(buffer, p, '\n', +1);
+			r = buffer_aux_findchar(buffer, p, '\n', +1);
 			for (; r && (arg > 0); --arg) {
 				r = buffer_aux_findchar(buffer, p, '\n', +1);
 				++(*p);

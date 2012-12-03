@@ -5,7 +5,9 @@
 # Utility commands the user could find interesting\n\
 \n\
 proc kill_line {} {\n\
-   m +0:1 +1:1\n\
+   # this is the same as m +:1 +1:1 except for the last line of the buffer (where it will not select anything)\n\
+   m +0:1 +:$\n\
+   m +:+1\n\
    if {[undo tag] eq \"kill_line\"} {\n\
       undo fusenext\n\
    }\n\
