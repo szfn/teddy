@@ -1,5 +1,4 @@
-- mechanism to input last command sent to a job (bind it to ctrl-p)
-- alias Ctrl-d to Del key in default configuration
+- invert order of things in window title
 
 - save buffer main font too
 - optimize code that changes mouse cursor into a hand over links (right now its linear in the size of the buffer)

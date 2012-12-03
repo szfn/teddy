@@ -90,6 +90,7 @@ int main(int argc, char *argv[]) {
 
 	history_init(&command_history, true);
 	history_init(&search_history, false);
+	history_init(&input_history, false);
 
 	compl_init(&the_word_completer);
 

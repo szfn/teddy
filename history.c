@@ -120,6 +120,8 @@ int teddy_history_command(ClientData client_data, Tcl_Interp*interp, int argc, c
 		h = &command_history;
 	} else if (strcmp(argv[1], "search") == 0) {
 		h = &search_history;
+	} else if (strcmp(argv[1], "input") == 0) {
+		h = &input_history;
 	} else {
 		Tcl_AddErrorInfo(interp, "Wrong first argument for 'teddyhistory' command, must be 'cmd' or 'search'");
 		return TCL_ERROR;

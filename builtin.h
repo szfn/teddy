@@ -218,6 +218,20 @@ namespace eval teddy {\n\
 		}\n\
 		m {*}$saved\n\
 	}\n\
+\n\
+	# on a +bg frame selects the user's input\n\
+	namespace export select_input\n\
+	proc select_input {} {\n\
+		m nil +:1\n\
+		m {*}[s -line \"\\05\"]\n\
+		if {[lindex [m] 0] eq \"nil\"} { return }\n\
+		m +:+1 +:$\n\
+	}\n\
+\n\
+	proc previnput {} {\n\
+		select_input\n\
+		c [history input 1]\n\
+	}\n\
 }\n\
 \n\
 #### THEMES ##################################################################\n\

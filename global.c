@@ -20,6 +20,7 @@ GHashTable *keybindings;
 
 struct history search_history;
 struct history command_history;
+struct history input_history;
 
 struct completer the_word_completer;
 

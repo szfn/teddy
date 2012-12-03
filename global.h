@@ -31,6 +31,7 @@ extern int focus_can_follow_mouse;
 
 extern struct history search_history;
 extern struct history command_history;
+extern struct history input_history;
 
 extern struct completer the_word_completer;
 

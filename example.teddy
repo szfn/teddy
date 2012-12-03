@@ -91,6 +91,9 @@ bindkey Ctrl-a {m +0:^1}
 # Ctrl-e goes to the last character of the line
 bindkey Ctrl-e {m +0:$ }
 
+# Ctrl-p in a +bg buffer replaces the current user input with the last sent user input
+bindkey Ctrl-p teddy::previnput
+
 # Ctrl-left / Ctrl-right moves one word forward/backward
 bindkey Ctrl-Left {m +0:-1w}
 bindkey Ctrl-Right {m +0:+1w}

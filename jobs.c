@@ -136,6 +136,7 @@ void job_send_input(job_t *job) {
 
 	write_all(job->masterfd, input+1);
 	write_all(job->masterfd, "\n");
+	history_add(&input_history, time(NULL), NULL, input+1, true);
 	free(input);
 }
 
