@@ -192,6 +192,11 @@ namespace eval teddy {
 		return [lindex [split $x ":"] 0]
 	}
 
+	namespace export colof
+	proc colof {x} {
+		return [lindex [split $x ":"] 1]
+	}
+
 	# reads a file from disk
 	namespace export slurp
 	proc slurp {path} {
@@ -651,6 +656,20 @@ namespace eval teddy_intl {
 		}
 	}
 
+	namespace export guide_open
+	proc guide_open {islink text} {
+		if {$text ne "@ "} {
+			return [link_open $islink $text]
+		}
+
+		if {[teddy::colof [lindex [m] 1]] > 3} {
+			return [link_open $islink $text]
+		}
+
+		m +:3 +:$
+		eval [c]
+	}
+
 	namespace export man_link_open
 	proc man_link_open {islink text} {
 		if {!$islink} { return }
@@ -1004,6 +1023,7 @@ lexyassoc go/0 {\.go$}
 
 lexydef filesearch 0 {
 		space "" nothing
+		keywords "@ " link
 		match {https?://\S+} link
 		match {([^:[:space:]()]+):(\d+)(?::(\d+))?} file,1,2,3
 		matchspace {File "(.+?)", line (\d+)} file,1,2
@@ -1017,6 +1037,8 @@ lexydef filesearch 0 {
 
 lexyassoc filesearch/0 {^\+bg}
 lexyassoc filesearch/0 {/$}
+lexyassoc filesearch/0 {^\+guide} teddy_intl::guide_open
+lexyassoc filesearch/0 {^guide$} teddy_intl::guide_open
 
 lexydef mansearch 0 {
 		match {\<(\S+)\((\d+)\)} link,1,2

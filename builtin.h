@@ -195,6 +195,11 @@ namespace eval teddy {\n\
 		return [lindex [split $x \":\"] 0]\n\
 	}\n\
 \n\
+	namespace export colof\n\
+	proc colof {x} {\n\
+		return [lindex [split $x \":\"] 1]\n\
+	}\n\
+\n\
 	# reads a file from disk\n\
 	namespace export slurp\n\
 	proc slurp {path} {\n\
@@ -654,6 +659,20 @@ namespace eval teddy_intl {\n\
 		}\n\
 	}\n\
 \n\
+	namespace export guide_open\n\
+	proc guide_open {islink text} {\n\
+		if {$text ne \"@ \"} {\n\
+			return [link_open $islink $text]\n\
+		}\n\
+\n\
+		if {[teddy::colof [lindex [m] 1]] > 3} {\n\
+			return [link_open $islink $text]\n\
+		}\n\
+\n\
+		m +:3 +:$\n\
+		eval [c]\n\
+	}\n\
+\n\
 	namespace export man_link_open\n\
 	proc man_link_open {islink text} {\n\
 		if {!$islink} { return }\n\
@@ -1007,6 +1026,7 @@ lexyassoc go/0 {\\.go$}\n\
 \n\
 lexydef filesearch 0 {\n\
 		space \"\" nothing\n\
+		keywords \"@ \" link\n\
 		match {https?://\\S+} link\n\
 		match {([^:[:space:]()]+):(\\d+)(?::(\\d+))?} file,1,2,3\n\
 		matchspace {File \"(.+?)\", line (\\d+)} file,1,2\n\
@@ -1020,6 +1040,8 @@ lexydef filesearch 0 {\n\
 \n\
 lexyassoc filesearch/0 {^\\+bg}\n\
 lexyassoc filesearch/0 {/$}\n\
+lexyassoc filesearch/0 {^\\+guide} teddy_intl::guide_open\n\
+lexyassoc filesearch/0 {^guide$} teddy_intl::guide_open\n\
 \n\
 lexydef mansearch 0 {\n\
 		match {\\<(\\S+)\\((\\d+)\\)} link,1,2\n\
