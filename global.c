@@ -532,6 +532,7 @@ void save_tied_session(void) {
 
 	fprintf(f, "buffer closeall\n");
 	fprintf(f, "cd %s\n", top_working_directory());
+	fprintf(f, "setcfg -global main_font \"%s\"\n", config_strval(&global_config, CFG_MAIN_FONT));
 	GList *column_list = gtk_container_get_children(GTK_CONTAINER(columnset));
 	for (GList *column_cur = column_list; column_cur != NULL; column_cur = column_cur->next) {
 		fprintf(f, "buffer column-setup %g", column_fraction(GTK_COLUMN(column_cur->data)));
