@@ -29,6 +29,8 @@ int tags_wd = -1;
 
 int process_buffers_counter = 0;
 
+#define MAXIMUM_FILE_SIZE (32 * 1024 * 1024)
+
 buffer_t *null_buffer(void) {
 	return buffers[0];
 }
@@ -779,15 +781,18 @@ buffer_t *go_file(const char *filename, bool create, bool skip_search, enum go_f
 		}
 	}
 
-	buffer = buffer_create();
-
 	if (S_ISDIR(s.st_mode)) {
+		buffer = buffer_create();
 		load_dir(buffer, urp);
 		buffers_add(buffer);
 		const char *cmd[] = { "teddy_intl::dir", urp };
 		interp_eval_command(NULL, NULL, 2, cmd);
 		buffer->mtime = time(NULL);
+	} else if (s.st_size > MAXIMUM_FILE_SIZE) {
+		buffer = NULL;
+		goto go_file_return;
 	} else {
+		buffer = buffer_create();
 		int r = load_text_file(buffer, urp);
 		if (r != 0) {
 			if (r == -2) {
