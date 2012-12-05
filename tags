@@ -11,9 +11,9 @@ ANSI_SEQ_MAX_LEN	jobs.h	14;"	d
 ARGNUM	interp.h	28;"	d
 AUTOCONF_TEDDY	autoconf.h	4;"	d
 AUTOSCROLL_TIMO	editor.h	11;"	d
-AUTOWRAP_INDICATOR_WIDTH	editor.c	1084;"	d	file:
+AUTOWRAP_INDICATOR_WIDTH	editor.c	1086;"	d	file:
 App	test/App.java	/^public class App $/;"	c
-BSIZE	buffer.h	174;"	d
+BSIZE	buffer.h	173;"	d
 BST_LINES	buffer.h	/^enum select_type { BST_NORMAL = 0, BST_WORDS, BST_LINES };$/;"	e	enum:select_type
 BST_NORMAL	buffer.h	/^enum select_type { BST_NORMAL = 0, BST_WORDS, BST_LINES };$/;"	e	enum:select_type
 BST_WORDS	buffer.h	/^enum select_type { BST_NORMAL = 0, BST_WORDS, BST_LINES };$/;"	e	enum:select_type
@@ -59,12 +59,12 @@ CFG_TAG_FONT	cfg_auto.h	31;"	d
 CFG_UNDERLINE_LINKS	cfg_auto.h	10;"	d
 CFG_WARP_MOUSE	cfg_auto.h	13;"	d
 CFLAGS	Makefile	/^CFLAGS=`pkg-config --cflags gtk+-2.0` -g -Wall -D_FORTIFY_SOURCE=2 -D_GNU_SOURCE -I\/usr\/include\/tcl8.5 -std=c99 -pthread$/;"	m
-CLOSING_PARENTHESIS	buffer.c	1067;"	d	file:
+CLOSING_PARENTHESIS	buffer.c	1064;"	d	file:
 COLUMN_MINIMUM_WIDTH	column.c	5;"	d	file:
 CONFIG_NUM	cfg_auto.h	4;"	d
 CONTINUATION_STATUS	lexy.c	/^const char *CONTINUATION_STATUS = "continuation-state";$/;"	v
 CRITBIT_H_	critbit.h	2;"	d
-CURSOR_WIDTH	editor.c	1206;"	d	file:
+CURSOR_WIDTH	editor.c	1214;"	d	file:
 DR_CHANGED	buffers.c	/^	DR_CHANGED = 3,$/;"	e	enum:dirty_reason_t	file:
 DR_DIRJOB	buffers.c	/^	DR_DIRJOB = 1,$/;"	e	enum:dirty_reason_t	file:
 DR_JOB	buffers.c	/^	DR_JOB = 2,$/;"	e	enum:dirty_reason_t	file:
@@ -139,17 +139,17 @@ NMATCH	lexy.c	527;"	d	file:
 NMATCH	lexy.c	822;"	d	file:
 O	builtin.tcl	/^proc O {args} {$/;"	p
 OBJS	Makefile	/^OBJS := obj\/teddy.o obj\/buffer.o obj\/editor.o obj\/buffers.o obj\/columns.o obj\/column.o obj\/interp.o obj\/global.o obj\/undo.o  obj\/history.o obj\/jobs.o obj\/colors.o obj\/cfg_auto.o obj\/cfg.o obj\/research.o obj\/compl.o obj\/lexy.o obj\/treint.o obj\/critbit.o obj\/tframe.o obj\/foundry.o obj\/top.o obj\/iopen.o obj\/tags.o$/;"	m
-OPENING_PARENTHESIS	buffer.c	1066;"	d	file:
+OPENING_PARENTHESIS	buffer.c	1063;"	d	file:
 OS	research.c	98;"	d	file:
 OVECTOR_SIZE	research.c	183;"	d	file:
 P	builtin.tcl	/^proc P {args} {$/;"	p
-PARMATCH_CHAR_LIMIT	buffer.c	1005;"	d	file:
+PARMATCH_CHAR_LIMIT	buffer.c	1002;"	d	file:
 RATELIMIT_BUCKET_DURATION_SECS	jobs.h	11;"	d
 RATELIMIT_MAX_BYTES	jobs.h	12;"	d
 REGERROR_BUF_SIZE	lexy.c	360;"	d	file:
 REGERROR_BUF_SIZE	research.c	363;"	d	file:
 REGEXEC_NMATCH	lexy.c	628;"	d	file:
-ROUNDBOXPAD	global.c	608;"	d	file:
+ROUNDBOXPAD	global.c	609;"	d	file:
 SHOWANYWAY_TIMO	jobs.c	20;"	d	file:
 SINGLE_ARGUMENT_BUFFER_SUBCOMMAND	buffers.c	463;"	d	file:
 SLOP	buffer.c	16;"	d	file:
@@ -158,7 +158,7 @@ SM_NONE	research.h	/^	SM_NONE = 0,$/;"	e	enum:search_mode_t
 SM_REGEXP	research.h	/^	SM_REGEXP = 2$/;"	e	enum:search_mode_t
 TRUNCATION	jobs.c	280;"	d	file:
 TYPING_FUSION_INTERVAL	undo.h	8;"	d
-WORDCOMPL_UPDATE_RADIUS	buffer.h	176;"	d
+WORDCOMPL_UPDATE_RADIUS	buffer.h	175;"	d
 __ACMACS_GLOBAL_H__	global.h	2;"	d
 __AUTOCONF_TEDDY__	autoconf.h	2;"	d
 __BUFFERS_H__	buffers.h	2;"	d
@@ -263,10 +263,9 @@ buffer_init_font_extents	buffer.c	/^static void buffer_init_font_extents(buffer_
 buffer_line_of	buffer.c	/^int buffer_line_of(buffer_t *buffer, int p) {$/;"	f
 buffer_lines_to_text	buffer.c	/^char *buffer_lines_to_text(buffer_t *buffer, int start, int end) {$/;"	f
 buffer_loaded_hook	builtin.tcl	/^proc buffer_loaded_hook {buffer-name} { }$/;"	p
-buffer_move_cursor_to_position	buffer.c	/^void buffer_move_cursor_to_position(buffer_t *buffer, double x, double y) {$/;"	f
 buffer_move_point_glyph	buffer.c	/^bool buffer_move_point_glyph(buffer_t *buffer, int *p, enum movement_type_t type, int arg) {$/;"	f
 buffer_move_point_line	buffer.c	/^bool buffer_move_point_line(buffer_t *buffer, int *p, enum movement_type_t type, int arg) {$/;"	f
-buffer_point_from_position	buffer.c	/^int buffer_point_from_position(buffer_t *buffer, double x, double y) {$/;"	f
+buffer_point_from_position	buffer.c	/^int buffer_point_from_position(buffer_t *buffer, int start, double x, double y) {$/;"	f
 buffer_reload_glyph_info	buffer.c	/^static void buffer_reload_glyph_info(buffer_t *buffer) {$/;"	f	file:
 buffer_replace_selection	buffer.c	/^void buffer_replace_selection(buffer_t *buffer, const char *new_text) {$/;"	f
 buffer_replace_selection_ex	buffer.c	/^static int buffer_replace_selection_ex(buffer_t *buffer, const char *text, bool twice) {$/;"	f	file:
@@ -333,6 +332,7 @@ code	buffer.h	/^	uint32_t code;$/;"	m	struct:_my_glyph_info_t
 cog_icon	top.c	/^static const guint8 cog_icon[] __attribute__ ((__aligned__ (4))) =$/;"	v	file:
 colno	editor.h	/^	int lineno, colno;$/;"	m	struct:_editor_t
 colno_group	lexy.c	/^	uint8_t file_group, lineno_group, colno_group;$/;"	m	struct:lexy_row	file:
+colof	builtin.tcl	/^	proc colof {x} {$/;"	p
 color	buffer.h	/^	uint8_t color;$/;"	m	struct:_my_glyph_info_t
 column_add_after	column.c	/^void column_add_after(column_t *column, tframe_t *before_tf, tframe_t *tf, bool set_fraction) {$/;"	f
 column_append	column.c	/^void column_append(column_t *column, tframe_t *tf, bool set_fraction) {$/;"	f
@@ -508,6 +508,7 @@ find_editor_for_buffer	global.c	/^bool find_editor_for_buffer(buffer_t *buffer, 
 find_motion_frames	tframe.c	/^static void find_motion_frames(tframe_t *tf, tframe_t **prev, tframe_t **cur, bool increasing_prev) {$/;"	f	file:
 find_status	lexy.c	/^static int find_status(const char *name) {$/;"	f	file:
 first_byte_result_to_mask	global.c	/^static char first_byte_result_to_mask[] = { 0xff, 0x3f, 0x1f, 0x0f, 0x07, 0x03, 0x00, 0x00, 0x00 };$/;"	v	file:
+first_exposed	editor.h	/^	int first_exposed;$/;"	m	struct:_editor_t
 focus_can_follow_mouse	global.c	/^int focus_can_follow_mouse = 1;$/;"	v
 font_ctm	foundry.c	/^	cairo_matrix_t font_size_matrix, font_ctm;$/;"	m	struct:_teddy_font_t	file:
 font_options	foundry.c	/^	cairo_font_options_t *font_options;$/;"	m	struct:_teddy_font_t	file:
@@ -573,6 +574,7 @@ gtk_tframe_init	tframe.c	/^static void gtk_tframe_init(tframe_t *tframe) {$/;"	f
 gtk_widget_like_editor	global.c	/^void gtk_widget_like_editor(config_t *config, GtkWidget *w) {$/;"	f
 gtk_widget_modify_bg_all	global.c	/^void gtk_widget_modify_bg_all(GtkWidget *w, GdkColor *c) {$/;"	f
 guess	builtin.tcl	/^	proc guess {} {$/;"	p
+guide_open	builtin.tcl	/^	proc guide_open {islink text} {$/;"	p
 hadjustment	editor.h	/^	GtkObject *adjustment, *hadjustment;$/;"	m	struct:_editor_t
 has_filename	buffer.h	/^	int has_filename;$/;"	m	struct:_buffer_t
 head	undo.h	/^	undo_node_t *head;$/;"	m	struct:_undo_t

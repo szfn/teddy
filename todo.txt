@@ -1,4 +1,4 @@
-- optimize code that changes mouse cursor into a hand over links (right now its linear in the size of the buffer)
+- refuse to open files that are too big and bail early when loading binary files
 - bold matched text in autocompletions window and iopen window
 - EDITOR and VISUAL setting (needs some IPC implementation)
 - tabs

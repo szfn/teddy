@@ -1041,7 +1041,7 @@ lexydef filesearch 0 {\n\
 lexyassoc filesearch/0 {^\\+bg}\n\
 lexyassoc filesearch/0 {/$}\n\
 lexyassoc filesearch/0 {^\\+guide} teddy_intl::guide_open\n\
-lexyassoc filesearch/0 {^guide$} teddy_intl::guide_open\n\
+lexyassoc filesearch/0 {/guide$} teddy_intl::guide_open\n\
 \n\
 lexydef mansearch 0 {\n\
 		match {\\<(\\S+)\\((\\d+)\\)} link,1,2\n\

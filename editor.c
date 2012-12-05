@@ -743,12 +743,14 @@ static gboolean key_release_callback(GtkWidget *widget, GdkEventKey *event, edit
 
 static void move_cursor_to_mouse(editor_t *editor, double x, double y) {
 	absolute_position(editor, &x, &y);
-	buffer_move_cursor_to_position(editor->buffer, x, y);
+	editor->buffer->cursor = buffer_point_from_position(editor->buffer, 0, x, y);
+	buffer_extend_selection_by_select_type(editor->buffer);
+	//buffer_move_cursor_to_position(editor->buffer, x, y);
 }
 
 static bool on_file_link(editor_t *editor, double x, double y, int *r) {
 	absolute_position(editor, &x, &y);
-	int p = buffer_point_from_position(editor->buffer, x, y);
+	int p = buffer_point_from_position(editor->buffer, editor->first_exposed, x, y);
 
 	if (r != NULL) *r = p;
 
@@ -1095,6 +1097,8 @@ static void draw_lines(editor_t *editor, GtkAllocation *allocation, cairo_t *cr,
 	bool do_underline = config_intval(&(editor->buffer->config), CFG_UNDERLINE_LINKS) != 0;
 	bool newline = false;
 
+	editor->first_exposed = -1;
+
 	for  (int i = 0; i < BSIZE(editor->buffer); ++i) {
 		my_glyph_info_t *glyph = bat(editor->buffer, i);
 
@@ -1103,6 +1107,8 @@ static void draw_lines(editor_t *editor, GtkAllocation *allocation, cairo_t *cr,
 			continue;
 		}
 		if (glyph->y - editor->buffer->line_height > endy) break;
+
+		if (editor->first_exposed < 0) editor->first_exposed = i;
 
 		// draws soft wrapping indicators
 		if (glyph->y - cury > 0.001) {
@@ -1183,6 +1189,8 @@ static void draw_lines(editor_t *editor, GtkAllocation *allocation, cairo_t *cr,
 	if (onfile && (gga_current != NULL)) {
 		growable_glyph_array_append_underline(gga_current, filey, filex_start, filex_end);
 	}
+
+	if (editor->first_exposed < 0) editor->first_exposed = 0;	
 }
 
 static void draw_cursorline(cairo_t *cr, editor_t *editor) {
@@ -1461,6 +1469,7 @@ editor_t *new_editor(buffer_t *buffer, bool single_line) {
 	r->completer = &the_word_completer;
 	r->alt_completer = NULL;
 	r->dirty_line = false;
+	r->first_exposed = 0;
 
 	if (buffer != NULL) {
 		r->lineno = buffer_line_of(buffer, buffer->cursor);

@@ -943,10 +943,12 @@ char *buffer_indent_newline(buffer_t *buffer) {
 	return rr;
 }
 
-int buffer_point_from_position(buffer_t *buffer, double x, double y) {
-	int p = buffer->size - buffer->gapsz;
+int buffer_point_from_position(buffer_t *buffer, int start, double x, double y) {
+	int p = BSIZE(buffer);
 
-	for (int i = 0; i < buffer->size-buffer->gapsz; ++i) {
+	if (start < 0) start = 0;
+
+	for (int i = start; i < BSIZE(buffer); ++i) {
 		my_glyph_info_t *g = bat(buffer, i);
 
 		if (g->y < y) continue;
@@ -981,11 +983,6 @@ int buffer_point_from_position(buffer_t *buffer, double x, double y) {
 	}
 
 	return p;
-}
-
-void buffer_move_cursor_to_position(buffer_t *buffer, double x, double y) {
-	buffer->cursor = buffer_point_from_position(buffer, x, y);
-	buffer_extend_selection_by_select_type(buffer);
 }
 
 static uint32_t point_to_char_to_find(uint32_t code, const char *tomatch, const char *tofind) {
