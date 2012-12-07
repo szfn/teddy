@@ -861,6 +861,7 @@ static gboolean button_press_callback(GtkWidget *widget, GdkEventButton *event, 
 }
 
 static gboolean button_release_callback(GtkWidget *widget, GdkEventButton *event, editor_t *editor) {
+	editor->buffer->select_type = BST_NORMAL;
 	if (editor->mouse_marking) {
 		editor->mouse_marking = 0;
 
@@ -1190,7 +1191,7 @@ static void draw_lines(editor_t *editor, GtkAllocation *allocation, cairo_t *cr,
 		growable_glyph_array_append_underline(gga_current, filey, filex_start, filex_end);
 	}
 
-	if (editor->first_exposed < 0) editor->first_exposed = 0;	
+	if (editor->first_exposed < 0) editor->first_exposed = 0;
 }
 
 static void draw_cursorline(cairo_t *cr, editor_t *editor) {
