@@ -350,7 +350,7 @@ void top_cd(const char *newdir) {
 
 	if (tied_session == NULL) {
 		if (strncmp(working_directory, getenv("HOME"), strlen(getenv("HOME"))) == 0) {
-			asprintf(&t, "%s – ~%s", working_directory+strlen(getenv("HOME")), GIT_COMPILATION_DATE);
+			asprintf(&t, "~%s – %s", working_directory+strlen(getenv("HOME")), GIT_COMPILATION_DATE);
 		} else {
 			asprintf(&t, "%s – %s", working_directory, GIT_COMPILATION_DATE);
 		}
