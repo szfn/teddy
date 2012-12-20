@@ -4,6 +4,7 @@
 #include <fcntl.h>
 #include <termios.h>
 #include <sys/ioctl.h>
+#include <sys/stat.h>
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -79,6 +80,7 @@ static void job_destroy(job_t *job) {
 	}
 
 	free(job->command);
+	free(job->directory);
 	job->command = NULL;
 
 	job->used = 0;
@@ -267,7 +269,6 @@ static void jobs_child_watch_function(GPid pid, gint status, job_t *job) {
 	job_destroy(job);
 }
 
-
 static void job_attach_to_buffer(job_t *job, const char *command, buffer_t *buffer) {
 	if (job->buffer != NULL) return;
 	job->buffer = buffer;
@@ -288,6 +289,12 @@ static void job_attach_to_buffer(job_t *job, const char *command, buffer_t *buff
 		job_append(job, msg, strlen(msg), 0);
 		free(msg);
 	}
+
+	// set current directory
+
+	if (buffer->wd != NULL) free(buffer->wd);
+	buffer->wd = strdup(job->directory);
+	alloc_assert(buffer->wd);
 
 	// setting terminal size
 
@@ -416,6 +423,8 @@ int jobs_register(pid_t child_pid, int masterfd, buffer_t *buffer, const char *c
 	}
 
 	if (i >= MAX_JOBS) return 0;
+
+	jobs[i].directory = get_current_dir_name();
 
 	jobs[i].used = 1;
 	jobs[i].child_pid = child_pid;

@@ -36,6 +36,7 @@ typedef struct _job_t {
 	int ansiseq_cap;
 
 	char *command;
+	char *directory;
 
 	char utf8annoyance[12];
 } job_t;

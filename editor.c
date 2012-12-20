@@ -800,8 +800,33 @@ static void eval_menu_item_callback(GtkMenuItem *menuitem, editor_t *editor) {
 	bool islink;
 	char *selection = get_selection_or_file_link(editor, &islink);
 	if (selection == NULL) return;
+
+	char *pdir = get_current_dir_name();
+	char *dir = buffer_directory(editor->buffer);
+	if (dir != NULL) chdir(dir);
+
 	interp_eval(editor, NULL, selection, true);
+
+	chdir(pdir);
+	free(pdir);
+	if (dir != NULL) free(dir);
+
 	free(selection);
+}
+
+static void open_link(editor_t *editor, bool islink, char *text) {
+	const char *cmd = lexy_get_link_fn(editor->buffer);
+	const char *argv[] = { cmd, islink ? "1": "0", text };
+
+	char *pdir = get_current_dir_name();
+	char *dir = buffer_directory(editor->buffer);
+	if (dir != NULL) chdir(dir);
+
+	interp_eval_command(editor, NULL, 3, argv);
+
+	chdir(pdir);
+	free(pdir);
+	if (dir != NULL) free(dir);
 }
 
 static gboolean button_press_callback(GtkWidget *widget, GdkEventButton *event, editor_t *editor) {
@@ -836,9 +861,7 @@ static gboolean button_press_callback(GtkWidget *widget, GdkEventButton *event, 
 		int p;
 		if (on_file_link(editor, event->x, event->y, &p)) {
 			char *text = select_file(editor->buffer, p);
-			const char *cmd = lexy_get_link_fn(editor->buffer);
-			const char *argv[] = { cmd, "1", text };
-			interp_eval_command(editor, NULL, 3, argv);
+			open_link(editor, true, text);
 			free(text);
 			// there was a center on cursor here
 		}
@@ -1427,10 +1450,7 @@ static void open_link_menu_item_callback(GtkMenuItem *menuitem, editor_t *editor
 	char *selection = get_selection_or_file_link(editor, &islink);
 	if (selection == NULL) return;
 
-	const char *cmd = lexy_get_link_fn(editor->buffer);
-	const char *argv[] = { cmd, islink ? "1": "0", selection };
-
-	interp_eval_command(editor, NULL, 3, argv);
+	open_link(editor, islink, selection);
 
 	free(selection);
 }

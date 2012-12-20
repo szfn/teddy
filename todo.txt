@@ -1,10 +1,5 @@
 - rotate history (it slows down startup)
 
-- eval command relative to buffer's base directory (like it was always prefixed with 'in')
- - change interp_eval_command to use buffer_directory
- - change pwd to return buffer->wd when not null, otherwise process filename
- - remove teddy_intl::file_directory
-
 - bold matched text in autocompletions window and iopen window
 - EDITOR and VISUAL setting (needs some IPC implementation)
 - tabs

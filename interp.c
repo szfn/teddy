@@ -1131,9 +1131,7 @@ void interp_free(void) {
 }
 
 static int interp_eval_ex(const char *command, bool show_ret) {
-	int code;
-
-	code = Tcl_Eval(interp, command);
+	int code = Tcl_Eval(interp, command);
 
 	switch (code) {
 	case TCL_OK:
