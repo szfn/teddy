@@ -1,10 +1,12 @@
+- BUG: change directory before focusing a buffer results in directory changed but new current directory isn't opened
+- rotate history (it slows down startup)
+
+- file highlighting relative to buffer's base directory
+- open selected text *always* relative to buffer's base directory (just need to check, it could be already)
+- eval command relative to buffer's base directory (like it was always prefixed with 'in')
+
 - bold matched text in autocompletions window and iopen window
 - EDITOR and VISUAL setting (needs some IPC implementation)
 - tabs
 - macro recording
 
-TRE PROBLEMS
-
-- \s matches newlines too when REG_NEWLINE is enabled, it shouldn't
-- nothing works inside [], \t doesn't work, \x<number> doesn't work etc...
-- match with ^ still tries to match anywhere in the string, then fails

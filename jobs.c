@@ -305,7 +305,7 @@ static void job_attach_to_buffer(job_t *job, const char *command, buffer_t *buff
 			unsigned short ws_ypixel;
 		} ws;
 		ws.ws_row = 100;
-		ws.ws_col = (int)(width / (0.75 * buffer->em_advance));
+		ws.ws_col = (int)(width / (0.50 * buffer->em_advance));
 		if (ws.ws_col > 0) {
 			ioctl(job->masterfd, TIOCSWINSZ, &ws);
 		}

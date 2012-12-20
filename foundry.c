@@ -100,7 +100,7 @@ static bool fontconfig_init_from_pattern(FcPattern *match, teddy_font_t *font, d
 		index = 0;
 	}
 
-	//printf("\t%s %g\n", fontfile, size);
+	//printf("\t%s %g %d\n", fontfile, size, index);
 	return teddy_font_init_ex(font, (const char *)fontfile, size, index);
 }
 
