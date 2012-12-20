@@ -28,6 +28,7 @@ enum select_type { BST_NORMAL = 0, BST_WORDS, BST_LINES };
 
 typedef struct _buffer_t {
 	char *path;
+	char *wd;
 	int has_filename;
 	int modified;
 	int editable;
@@ -107,6 +108,8 @@ void buffer_free(buffer_t *buffer, bool save_critbit);
 int load_text_file(buffer_t *buffer, const char *filename);
 void load_empty(buffer_t *buffer);
 int load_dir(buffer_t *buffer, const char *dirname);
+
+char *buffer_directory(buffer_t *buffer);
 
 // save the buffer to its file (if exists, otherwise fails)
 void save_to_text_file(buffer_t *buffer);

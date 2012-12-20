@@ -4,6 +4,10 @@
 
 #include <tre/tre.h>
 
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+
 #include <unicode/uchar.h>
 
 #include "global.h"
@@ -449,14 +453,15 @@ int lexy_append_command(ClientData client_data, Tcl_Interp *interp, int argc, co
 	return TCL_OK;
 }
 
-static bool check_file_match(struct lexy_row *row, buffer_t *buffer, int glyph, int nmatch, regmatch_t *pmatch) {
+static bool check_file_match(int dirfd, struct lexy_row *row, buffer_t *buffer, int glyph, int nmatch, regmatch_t *pmatch) {
 	//printf("file_group %d nmatch %d (%d)\n", row->file_group, nmatch, tokenizer->verify_file);
 	if (!row->check) return true;
 	if (row->file_group >= nmatch) return false;
+	if (dirfd < 0) return false;
 
 	int start = glyph + pmatch[row->file_group].rm_so, end = glyph + pmatch[row->file_group].rm_eo;
 	char *text = buffer_lines_to_text(buffer, start, end);
-	bool r = (access(text, F_OK) == 0);
+	bool r = (faccessat(dirfd, text, F_OK, 0) == 0);
 	//printf("Check <%s> %d (file_group: %d)\n", text, r, row->file_group);
 	free(text);
 
@@ -485,7 +490,7 @@ static int bufmatch(buffer_t *buffer, int start, const uint32_t *needle, bool sp
 	return i;
 }
 
-static void lexy_update_one_token(buffer_t *buffer, int *i, int *status) {
+static void lexy_update_one_token(int dirfd, buffer_t *buffer, int *i, int *status) {
 	int base = *status;
 
 	//printf("Coloring one token at %p:%d (status %d)\n", buffer, *i, *status);
@@ -536,7 +541,7 @@ static void lexy_update_one_token(buffer_t *buffer, int *i, int *status) {
 				if (row->token_type == CFG_LEXY_FILE - CFG_LEXY_NOTHING) {
 					//printf("Checking match <%s>\n", buffer_lines_to_text(buffer, *i, (*i)+pmatch[0].rm_eo)); // leaky
 					match_len = pmatch[0].rm_eo;
-					if (!check_file_match(row, buffer, *i, NMATCH, pmatch)) {
+					if (!check_file_match(dirfd, row, buffer, *i, NMATCH, pmatch)) {
 						token_type = 0;
 					}
 				} else {
@@ -694,6 +699,15 @@ static void *lexy_update_starting_at_thread(void *varg) {
 		if (status == 0xffff) status = start_status_index;
 	}
 
+	char *dir = buffer_directory(buffer);
+	int dirfd = (dir == NULL) ? -1 : open(dir, O_DIRECTORY);
+	if (dirfd < 0) {
+		if (dir != NULL) free(dir);
+		dir = get_current_dir_name();
+		dirfd = open(dir, O_DIRECTORY);
+	}
+	if (dir != NULL) free(dir);
+
 	//printf("\tActual start %d (status: %d)\n", start, status);
 	//printf("Buffer <%s> status: %d start_status_for_buffer %d\n", buffer->path, status, start_status_index);
 
@@ -712,12 +726,10 @@ static void *lexy_update_starting_at_thread(void *varg) {
 		if (buffer->release_read_lock) {
 			//printf("Lexy preempted\n");
 			buffer->lexy_running = 2;
-			pthread_rwlock_unlock(&(buffer->rwlock));
-			refresher_add(buffer);
-			return NULL;
+			goto lexy_update_starting_at_thread_end;
 		}
 
-		lexy_update_one_token(buffer, &i, &status);
+		lexy_update_one_token(dirfd, buffer, &i, &status);
 
 		if (previ == i) ++i;
 		if (count > LEXY_LOAD_HOOK_MAX_COUNT) break;
@@ -726,9 +738,7 @@ static void *lexy_update_starting_at_thread(void *varg) {
 			if (count > LEXY_QUICK_EXIT_MAX_COUNT) {
 				//printf("Self preemption\n");
 				buffer->lexy_running = 2;
-				pthread_rwlock_unlock(&(buffer->rwlock));
-				refresher_add(buffer);
-				return NULL;
+				goto lexy_update_starting_at_thread_end;
 			}
 		}
 	}
@@ -736,6 +746,9 @@ static void *lexy_update_starting_at_thread(void *varg) {
 	//printf("Lexy finished\n");
 
 	buffer->lexy_running = 0;
+
+lexy_update_starting_at_thread_end:
+	close(dirfd);
 	pthread_rwlock_unlock(&(buffer->rwlock));
 	refresher_add(buffer);
 	return NULL;

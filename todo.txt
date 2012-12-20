@@ -1,9 +1,9 @@
-- BUG: change directory before focusing a buffer results in directory changed but new current directory isn't opened
 - rotate history (it slows down startup)
 
-- file highlighting relative to buffer's base directory
-- open selected text *always* relative to buffer's base directory (just need to check, it could be already)
 - eval command relative to buffer's base directory (like it was always prefixed with 'in')
+ - change interp_eval_command to use buffer_directory
+ - change pwd to return buffer->wd when not null, otherwise process filename
+ - remove teddy_intl::file_directory
 
 - bold matched text in autocompletions window and iopen window
 - EDITOR and VISUAL setting (needs some IPC implementation)

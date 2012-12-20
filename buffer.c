@@ -12,6 +12,7 @@
 #include "lexy.h"
 #include "undo.h"
 #include "compl.h"
+#include "top.h"
 
 #define SLOP 32
 
@@ -104,6 +105,7 @@ buffer_t *buffer_create(void) {
 	buffer->stale = false;
 	buffer->single_line = false;
 	buffer->lexy_running = 0;
+	buffer->wd = NULL;
 
 	buffer->invalid = buffer->total = 0;
 
@@ -1166,4 +1168,15 @@ int buffer_column_of(buffer_t *buffer, int p) {
 	int c = p;
 	buffer_move_point_glyph(buffer, &c, MT_ABS, 1);
 	return p - c + 1;
+}
+
+char *buffer_directory(buffer_t *buffer) {
+	if (buffer == NULL) return strdup(top_working_directory());
+	if (buffer->wd != NULL) return strdup(buffer->wd);
+	if (buffer->path[0] == '+') return strdup(top_working_directory());
+
+	char *last_slash = strrchr(buffer->path, '/');
+	if (last_slash == NULL) return strdup(top_working_directory());
+	char *r = strndup(buffer->path, last_slash-buffer->path);
+	return r;
 }
