@@ -1060,6 +1060,19 @@ static int teddy_rehash_command(ClientData client_data, Tcl_Interp *interp, int 
 	return TCL_OK;
 }
 
+static int teddy_fullscreen_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
+	if (columnset != NULL) {
+		if (at_fullscreen) {
+			gtk_window_unfullscreen(GTK_WINDOW(gtk_widget_get_toplevel(GTK_WIDGET(columnset))));
+		} else {
+			gtk_window_fullscreen(GTK_WINDOW(gtk_widget_get_toplevel(GTK_WIDGET(columnset))));
+		}
+	} else {
+		fullscreen_on_startup = true;
+	}
+	return TCL_OK;
+}
+
 void interp_init(void) {
 	interp = Tcl_CreateInterp();
 	if (interp == NULL) {
@@ -1127,6 +1140,8 @@ void interp_init(void) {
 	Tcl_CreateCommand(interp, "fd2channel", &teddy_fd2channel_command, (ClientData)NULL, NULL);
 
 	Tcl_CreateCommand(interp, "teddy::tags", &teddy_tags_command, (ClientData)NULL, NULL);
+
+	Tcl_CreateCommand(interp, "teddy::fullscreen", &teddy_fullscreen_command, (ClientData)NULL, NULL);
 
 	int code = Tcl_Eval(interp, BUILTIN_TCL_CODE);
 	if (code != TCL_OK) {

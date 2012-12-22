@@ -12,6 +12,9 @@ GtkClipboard *default_clipboard;
 
 char *tied_session;
 
+bool fullscreen_on_startup = false;
+bool at_fullscreen = false;
+
 GdkCursor *cursor_blank, *cursor_arrow, *cursor_hand, *cursor_xterm, *cursor_fleur, *cursor_top_left_corner;
 
 columns_t *columnset = NULL;

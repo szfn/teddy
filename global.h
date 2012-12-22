@@ -36,6 +36,8 @@ extern struct history input_history;
 extern struct completer the_word_completer;
 
 extern char *tied_session;
+extern bool fullscreen_on_startup;
+extern bool at_fullscreen;
 
 void global_init();
 

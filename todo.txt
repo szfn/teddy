@@ -1,5 +1,4 @@
 - faster loading of history
-- fullscreen mode (gtk_window_fullscreen)
 
 - bold matched text in autocompletions window and iopen window
 - EDITOR and VISUAL setting (needs some IPC implementation)

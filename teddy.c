@@ -68,6 +68,11 @@ static void setup_loading_session(const char *session_name) {
 	interp_eval_command(NULL, NULL, 3, sessioncmd);
 }
 
+static gboolean window_state_callback(GtkWidget *window, GdkEventWindowState *ews, gpointer data) {
+	at_fullscreen = ews->new_window_state & GDK_WINDOW_STATE_FULLSCREEN;
+	return FALSE;
+}
+
 int main(int argc, char *argv[]) {
 	GtkWidget *window;
 
@@ -113,6 +118,7 @@ int main(int argc, char *argv[]) {
 	gtk_window_set_default_size(GTK_WINDOW(window), 1024, 680);
 
 	g_signal_connect(G_OBJECT(window), "delete-event", G_CALLBACK(delete_callback), NULL);
+	g_signal_connect(G_OBJECT(window), "window-state-event", G_CALLBACK(window_state_callback), NULL);
 	g_signal_connect_swapped(G_OBJECT(window), "destroy", G_CALLBACK(gtk_main_quit), NULL);
 
 	columnset = columns_new();
@@ -135,6 +141,8 @@ int main(int argc, char *argv[]) {
 	}
 
 	gtk_widget_show_all(window);
+
+	if (fullscreen_on_startup) gtk_window_fullscreen(GTK_WINDOW(window));
 
 	gtk_main();
 
