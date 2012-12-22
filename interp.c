@@ -162,8 +162,20 @@ static int teddy_setcfg_command(ClientData client_data, Tcl_Interp *interp, int 
 		buffer_config_changed(buffers[i]);
 	}
 
-	if (columnset != NULL)
+	top_recoloring();
+
+	if (columnset != NULL) {
+		GList *column_list = gtk_container_get_children(GTK_CONTAINER(columnset));
+		for (GList *column_cur = column_list; column_cur != NULL; column_cur = column_cur->next) {
+			GList *frame_list = gtk_container_get_children(GTK_CONTAINER(column_cur->data));
+			for (GList *frame_cur = frame_list; frame_cur != NULL; frame_cur = frame_cur->next) {
+				tframe_t *frame = GTK_TFRAME(frame_cur->data);
+				tframe_recoloring(frame);
+			}
+		}
+
 		gtk_widget_queue_draw(GTK_WIDGET(columnset));
+	}
 
 	return TCL_OK;
 }

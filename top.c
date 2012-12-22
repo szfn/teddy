@@ -18,6 +18,8 @@ editor_t *cmdline_editor;
 editor_t *the_top_context_editor;
 
 GtkWidget *tools_menu;
+GtkWidget *tools_box = NULL;
+GtkWidget *boxcoloring = NULL;
 
 char *working_directory;
 
@@ -250,7 +252,7 @@ GtkWidget *top_init(GtkWidget *window) {
 
 	if (tools_pixbuf == NULL) tools_pixbuf = gdk_pixbuf_new_from_inline(sizeof(cog_icon), cog_icon, FALSE, NULL);
 
-	GtkWidget *tools_box = gtk_event_box_new();
+	tools_box = gtk_event_box_new();
 	gtk_container_add(GTK_CONTAINER(tools_box), gtk_image_new_from_pixbuf(tools_pixbuf));
 	gtk_widget_like_editor(&global_config, tools_box);
 
@@ -300,11 +302,17 @@ GtkWidget *top_init(GtkWidget *window) {
 	/**** END ****/
 	top_cd(".");
 
-	GtkWidget *boxcoloring = gtk_event_box_new();
+	boxcoloring = gtk_event_box_new();
 	gtk_widget_like_editor(&global_config, boxcoloring);
 	gtk_container_add(GTK_CONTAINER(boxcoloring), top_box);
 
 	return boxcoloring;
+}
+
+void top_recoloring(void) {
+	if (tools_box == NULL) return;
+	gtk_widget_like_editor(&global_config, tools_box);
+	gtk_widget_like_editor(&global_config, boxcoloring);
 }
 
 void top_start_command_line(editor_t *editor, const char *text) {

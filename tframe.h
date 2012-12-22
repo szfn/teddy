@@ -28,4 +28,6 @@ GtkWidget *tframe_content(tframe_t *tframe);
 
 bool tframe_close(tframe_t *tframe, bool resist);
 
+void tframe_recoloring(tframe_t *tframe);
+
 #endif

@@ -12,6 +12,7 @@ void top_cd(const char *newdir);
 bool top_command_line_focused(void);
 bool top_has_tags(void);
 void top_context_editor_gone(void);
+void top_recoloring(void);
 
 extern buffer_t *cmdline_buffer;
 

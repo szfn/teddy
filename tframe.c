@@ -134,6 +134,8 @@ typedef struct _tframe_t {
 	bool column_resize_resistence_overcome;
 	struct _column_t *motion_col, *motion_prev_col;
 	GList *motion_frame_list;
+
+	GtkWidget *colorbox;
 } tframe_t;
 
 typedef struct _tframe_class {
@@ -624,18 +626,29 @@ tframe_t *tframe_new(const char *title, GtkWidget *content, columns_t *columns) 
 	place_frame_piece(GTK_WIDGET(t), TRUE, 0, 2);
 	place_frame_piece(GTK_WIDGET(t), FALSE, 1, 4);
 
-	GtkWidget *colorbox = gtk_event_box_new();
-	gtk_container_add(GTK_CONTAINER(colorbox), r->tag);
-	gtk_widget_modify_bg_all(colorbox, &c);
+	r->colorbox = gtk_event_box_new();
+	gtk_container_add(GTK_CONTAINER(r->colorbox), r->tag);
+	gtk_widget_modify_bg_all(r->colorbox, &c);
 
-	gtk_table_attach(t, colorbox, 0, 1, 1, 2, GTK_EXPAND|GTK_FILL, 0, 0, 0);
-//	gtk_table_attach(t, r->tag, 0, 1, 1, 2, GTK_EXPAND|GTK_FILL, 0, 0, 0);
+	gtk_table_attach(t, r->colorbox, 0, 1, 1, 2, GTK_EXPAND|GTK_FILL, 0, 0, 0);
 
 	place_frame_piece(GTK_WIDGET(t), TRUE, 2, 1);
 
 	gtk_table_attach(t, content, 0, 1, 3, 4, GTK_EXPAND|GTK_FILL, GTK_EXPAND|GTK_FILL, 0, 0);
 
 	return r;
+}
+
+void tframe_recoloring(tframe_t *tframe) {
+	GdkColor c;
+	set_gdk_color_cfg(&global_config, CFG_TAG_BG_COLOR, &c);
+
+	gtk_widget_modify_bg_all(tframe->colorbox, &c);
+	GList *cbc_list = gtk_container_get_children(GTK_CONTAINER(tframe->tag));
+	for (GList *cbc_cur = cbc_list; cbc_cur != NULL; cbc_cur = cbc_cur->next) {
+		gtk_widget_modify_bg_all(cbc_cur->data, &c);
+	}
+	g_list_free(cbc_list);
 }
 
 void tframe_set_title(tframe_t *tframe, const char *title) {
