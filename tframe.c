@@ -449,13 +449,17 @@ static void tag_drag_behaviour(tframe_t *source, tframe_t *target, double y) {
 	if (!columns_find_frame(columnset, source, NULL, &source_col, NULL, &before_tf, NULL)) return;
 
 	buffer_t *sbuf = NULL;
+	editor_t *sed = NULL;
 	if (GTK_IS_TEDITOR(source->content)) {
-		sbuf = GTK_TEDITOR(source->content)->buffer;
+		sed = GTK_TEDITOR(source->content);
+		sbuf = sed->buffer;
 	}
 
 	buffer_t *tbuf = NULL;
+	editor_t *ted = NULL;
 	if (GTK_IS_TEDITOR(target->content)) {
-		tbuf = GTK_TEDITOR(target->content)->buffer;
+		ted = GTK_TEDITOR(target->content);
+		tbuf = ted->buffer;
 	}
 
 	if ((target == source) || (target == before_tf)) {
@@ -485,6 +489,8 @@ static void tag_drag_behaviour(tframe_t *source, tframe_t *target, double y) {
 		gtk_widget_queue_draw(GTK_WIDGET(source));
 
 		columns_column_remove(columnset, source_col, source, false, false);
+
+		sed = NULL;
 	} else {
 		// actually moving source somewhere else
 
@@ -510,6 +516,9 @@ static void tag_drag_behaviour(tframe_t *source, tframe_t *target, double y) {
 			column_add_after(source_col, NULL, nullframe, true);
 		}
 	}
+
+	if (ted != NULL) ted->center_on_cursor_after_next_expose = true;
+	if (sed != NULL) sed->center_on_cursor_after_next_expose = true;
 }
 
 static gboolean label_button_release_callback(GtkWidget *widget, GdkEventButton *event, tframe_t *tf) {
