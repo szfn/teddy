@@ -31,6 +31,7 @@
 Tcl_Interp *interp;
 editor_t *the_context_editor = NULL;
 buffer_t *the_context_buffer = NULL;
+bool change_directory_back_after_eval;
 
 static void interp_context_editor_set(editor_t *editor) {
 	the_context_editor = editor;
@@ -65,6 +66,11 @@ static int teddy_cd_command(ClientData client_data, Tcl_Interp *interp, int argc
 	}
 	g_list_free(column_list);
 
+	return TCL_OK;
+}
+
+static int teddy_stickdir_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
+	change_directory_back_after_eval = false;
 	return TCL_OK;
 }
 
@@ -1062,6 +1068,7 @@ void interp_init(void) {
 	Tcl_CreateCommand(interp, "kill", &teddy_kill_command, (ClientData)NULL, NULL);
 
 	Tcl_CreateCommand(interp, "cd", &teddy_cd_command, (ClientData)NULL, NULL);
+	Tcl_CreateCommand(interp, "teddy::stickdir", &teddy_stickdir_command, (ClientData)NULL, NULL);
 	Tcl_CreateCommand(interp, "in", &teddy_in_command, (ClientData)NULL, NULL);
 
 	Tcl_CreateCommand(interp, "setcfg", &teddy_setcfg_command, (ClientData)NULL, NULL);

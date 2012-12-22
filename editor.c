@@ -805,9 +805,11 @@ static void eval_menu_item_callback(GtkMenuItem *menuitem, editor_t *editor) {
 	char *dir = buffer_directory(editor->buffer);
 	if (dir != NULL) chdir(dir);
 
+	change_directory_back_after_eval = true;
+
 	interp_eval(editor, NULL, selection, true);
 
-	chdir(pdir);
+	if (change_directory_back_after_eval) chdir(pdir);
 	free(pdir);
 	if (dir != NULL) free(dir);
 
@@ -822,9 +824,11 @@ static void open_link(editor_t *editor, bool islink, char *text) {
 	char *dir = buffer_directory(editor->buffer);
 	if (dir != NULL) chdir(dir);
 
+	change_directory_back_after_eval = true;
+
 	interp_eval_command(editor, NULL, 3, argv);
 
-	chdir(pdir);
+	if (change_directory_back_after_eval) chdir(pdir);
 	free(pdir);
 	if (dir != NULL) free(dir);
 }

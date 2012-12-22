@@ -531,6 +531,7 @@ void save_tied_session(void) {
 	fprintf(f, "# %lld\n", (long long)time(NULL));
 
 	fprintf(f, "buffer closeall\n");
+	fprintf(f, "teddy::stickdir\n");
 	fprintf(f, "cd %s\n", top_working_directory());
 	fprintf(f, "setcfg -global main_font \"%s\"\n", config_strval(&global_config, CFG_MAIN_FONT));
 	GList *column_list = gtk_container_get_children(GTK_CONTAINER(columnset));

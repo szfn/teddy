@@ -334,6 +334,8 @@ char *top_working_directory(void) {
 void top_cd(const char *newdir) {
 	free(working_directory);
 
+	change_directory_back_after_eval = false;
+
 	if (newdir[0] == '~') {
 		char *t;
 		asprintf(&t, "%s%s", getenv("HOME"), newdir+1);

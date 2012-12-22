@@ -7,6 +7,7 @@
 #include <tcl.h>
 
 extern Tcl_Interp *interp;
+extern bool change_directory_back_after_eval;
 
 void interp_init(void);
 void interp_free(void);
