@@ -257,17 +257,41 @@ void research_init(struct research_t *r) {
 	r->literal_text = NULL;
 }
 
-void do_regex_noninteractive_search(struct research_t *research) {
+enum research_get_type {
+	DONTGET = 0,
+	GET_BOTH = 1,
+	GET_START = 2,
+	GET_END = 3
+};
+
+int do_regex_noninteractive_search(Tcl_Interp *interp, struct research_t *research, enum research_get_type get) {
 	int mark = research->buffer->mark;
 	int cursor = research->buffer->cursor;
 
+	if (research->start_at_bol)
+		buffer_move_point_glyph(research->buffer, &cursor, MT_ABS, 1);
+
 	move_regexp_search_forward(research, false, &mark, &cursor);
-	if (research->search_failed) {
-		mark = research->buffer->mark;
-		cursor = research->buffer->cursor;
+	if (!research->search_failed) {
+		switch(get) {
+			case GET_START:
+				interp_return_single_point(research->buffer, mark);
+				break;
+			case GET_END:
+				interp_return_single_point(research->buffer, cursor);
+				break;
+			case GET_BOTH:
+			default:
+				interp_return_point_pair(research->buffer, mark, cursor);
+		}
+
+		research_free_temp(research);
+		return TCL_OK;
+	} else {
+		research_free_temp(research);
+		Tcl_AddErrorInfo(interp, "Could not find any match");
+		return TCL_ERROR;
 	}
-	interp_return_point_pair(research->buffer, mark, cursor);
-	research_free_temp(research);
 }
 
 
@@ -305,6 +329,9 @@ void start_regex_interactive(struct research_t *research, const char *regexp) {
 		return;
 	}
 
+	if (research->start_at_bol)
+		buffer_move_point_glyph(research->buffer, &(research->buffer->cursor), MT_ABS, 1);
+
 	editor_t *editor = interp_context_editor();
 	editor->research = *research;
 
@@ -330,24 +357,55 @@ int teddy_research_command(ClientData client_data, Tcl_Interp *interp, int argc,
 
 	research.buffer = interp_context_buffer();
 	research.line_limit = false;
+	research.start_at_bol = false;
 	research.search_failed = false;
 	research.mode = SM_REGEXP;
 	research.literal_text = NULL;
 	research.literal_text_allocated = research.literal_text_cap = 0;
 
 	int flags = 0;
-	bool get = false, literal = false;
+	bool literal = false;
+	enum research_get_type get = DONTGET;
 
 	int i;
 	for (i = 1; i < argc; ++i) {
 		if (argv[i][0] != '-') break;
 		if (strcmp(argv[i], "--") == 0) { ++i; break; }
-		else if (strcmp(argv[i], "-get") == 0) { get = true; }
-		else if (strcmp(argv[i], "-line") == 0) { research.line_limit = true; }
+		else if (strcmp(argv[i], "-get") == 0) { get = GET_BOTH; }
+		else if (strcmp(argv[i], "-line") == 0) {
+			research.line_limit = true;
+			if (get == DONTGET) get = GET_BOTH;
+		}
 		else if (strcmp(argv[i], "-literal") == 0) { literal = true; }
 		else if (strcmp(argv[i], "-nocase") == 0) { flags = flags | REG_ICASE; }
 		else if (strcmp(argv[i], "-right-assoc") == 0) { flags = flags | REG_RIGHT_ASSOC; }
 		else if (strcmp(argv[i], "-ungreedy") == 0) { flags = flags | REG_UNGREEDY; }
+		else { // search for abbreviated commands
+			for (int j = 1; j < strlen(argv[i]); ++j) {
+				switch (argv[i][j]) {
+				case 'a':
+					get = GET_START;
+					break;
+				case 'z':
+					get = GET_END;
+					break;
+				case '1':
+					research.start_at_bol = true;
+					break;
+				case 'g':
+					get = GET_BOTH;
+					break;
+				case 'l':
+					research.line_limit = TRUE;
+					if (get == DONTGET) get = GET_BOTH;
+					break;
+				default:
+					printf("Error at: %c %d %d\n", argv[i][j], i, j);
+					Tcl_AddErrorInfo(interp, "Malformed arguments to 's' command");
+					return TCL_ERROR;
+				}
+			}
+		}
 	}
 
 	if ((i >= argc) || (i+3 < argc)) {
@@ -385,15 +443,14 @@ int teddy_research_command(ClientData client_data, Tcl_Interp *interp, int argc,
 
 	//teddy_frame_debug();
 
-	if (get && (research.cmd != NULL)) {
+	if ((get != DONTGET) && (research.cmd != NULL)) {
 		Tcl_AddErrorInfo(interp, "-get flag not supported when a command is specified");
 		research_free_temp(&research);
 		return TCL_ERROR;
 	}
 
-	if (get) {
-		do_regex_noninteractive_search(&research);
-		return TCL_OK;
+	if (get != DONTGET) {
+		return do_regex_noninteractive_search(interp, &research, get);
 	}
 
 	if (research.cmd != NULL) {
@@ -444,8 +501,7 @@ int teddy_research_command(ClientData client_data, Tcl_Interp *interp, int argc,
 			start_regex_interactive(&research, argv[i]);
 			return TCL_OK;
 		} else {
-			do_regex_noninteractive_search(&research);
-			return TCL_OK;
+			return do_regex_noninteractive_search(interp, &research, get);
 		}
 	}
 	return TCL_OK;

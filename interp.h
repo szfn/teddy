@@ -23,6 +23,7 @@ editor_t *interp_context_editor(void);
 buffer_t *interp_context_buffer(void);
 
 void interp_return_point_pair(buffer_t *buffer, int mark, int cursor);
+void interp_return_single_point(buffer_t *buffer, int p);
 void interp_frame_debug();
 bool interp_toplevel_frame();
 

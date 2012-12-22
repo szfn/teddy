@@ -46,6 +46,16 @@ line-specifier ::= <i>line-number</i> | <tt>+</tt><i>relative-movement</i> | <tt
 column-specifier ::= <i>column-number</i> | <tt>+</tt><i>relative-movement</i> | <tt>-</tt><i>relative-movement</i> | <tt>$</tt> | <tt>^</tt> | <tt>^1</tt>
 			</pre>
 
+			In addition prefixing a cursor position specification with 'm' makes it relative to the mark position (the mark position is always relative to the cursor position). This is particularly useful in conjunction with 's': <tt>m [s -z {:}]  +:+2w</tt> selects two words starting right after the next ':' character.
+
+			<h4>Abbreviations</h4>
+
+			<ul>
+			<li> <tt>m all</tt> selects the entire buffer
+			<li> <tt>m sort</tt> swaps cursor and mark if cursor is before mark
+			<li> <tt>m line</tt> extends selection to entire current line
+			</ul>
+
 			<p>Notes:
 			<ul>
 			<li><tt>nil</tt> passed as the first argument unsets the mark
@@ -72,17 +82,26 @@ column-specifier ::= <i>column-number</i> | <tt>+</tt><i>relative-movement</i> |
 
 			<p>Available options:
 			<ul>
-			<li><tt>-get</tt> returns the first match instead of starting an interactive search
-			<li><tt>-line</tt> limits search to the current line instead of the entire file
+			<li><tt>-get</tt> <tt>-g</tt> returns the first match instead of starting an interactive search
+			<li><tt>-line</tt> <tt>-l</tt> limits search to the current line instead of the entire file
+			<li><tt>-a</tt> like <tt>-get</tt> but only returns the beginning point of the match
+			<li><tt>-z</tt> like <tt>-get</tt> but only returns the end point of the match
+			<li><tt>-1</tt> starts search from the beginning of the line
 			<li><tt>-literal</tt> search for a literal string instead of a regular expression
 			<li><tt>-nocase</tt> enables case insensitive matching
 			<lI><tt>-right-assoc</tt> makes regexp search right-associative
 			<li><tt>-ungreedy</tt> makes regexp operators not greedy by default
 			</ul>
 
+			Multile single character options can be fused together: <tt>-la1</tt> is equivalent to <tt>-l -a -1</tt>.
+
 			<h4>Examples</h4>
 
-			Replacing all occourences of <tt>foo</tt> with <tt>bar</tt> can be done with <tt>s foo { c bar }</tt> as a shorthand the syntax <tt>s foo c bar</tt> is also allowed. More examples can be found in <tt>oneliners.txt</tt>.
+			<p>Replacing all occourences of <tt>foo</tt> with <tt>bar</tt> can be done with <tt>s foo { c bar }</tt> as a shorthand the syntax <tt>s foo c bar</tt> is also allowed.
+
+			<p>Delete from the first occourence of ':' in the current line to the end of the line: <tt>m [s -lz1 {:}] +:$; c ""</tt>
+
+			<p>More examples can be found in <tt>oneliners.txt</tt>.
 		</div>
 
 		<h3>cb</h3>

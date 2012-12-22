@@ -1,4 +1,6 @@
-- better language for movement (ie. m supporting regexps)
+- bugfix: iopen window doesn't get recolored when appropriate
+- bugfix: autocompletions window doesn't get recolored
+- bugfix: heuristic new creates too eager to create new columns
 
 - bold matched text in autocompletions window and iopen window
 - EDITOR and VISUAL setting (needs some IPC implementation)

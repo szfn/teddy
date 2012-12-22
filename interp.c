@@ -641,7 +641,12 @@ static int teddy_move_command(ClientData client_data, Tcl_Interp *interp, int ar
 }
 
 #define MOVE_CURSOR(argument, d) {\
-	if (!move_command_ex(argument, &(interp_context_buffer()->cursor), -1, d)) { \
+	const char *arg = argument;\
+	if (argument[0] == 'm') {\
+		++arg;\
+		if (interp_context_buffer()->mark >= 0) interp_context_buffer()->cursor = interp_context_buffer()->mark;\
+	}\
+	if (!move_command_ex(arg, &(interp_context_buffer()->cursor), -1, d)) { \
 		return TCL_ERROR; \
 	} \
 }
@@ -668,7 +673,20 @@ static int teddy_move_command(ClientData client_data, Tcl_Interp *interp, int ar
 			MOVE_MARK_CURSOR("+0:1", "+0:$");
 		} else {
 			// not a shortcut, actually movement command to execute
-			MOVE_CURSOR(argv[1], MT_START);
+			if (strchr(argv[1], ' ') != NULL) {
+				char *a = strdup(argv[1]);
+				alloc_assert(a);
+
+				char *saveptr;
+				char *one = strtok_r(a, " ", &saveptr);
+				char *two = strtok_r(NULL, " ", &saveptr);
+
+				MOVE_MARK_CURSOR(one, two);
+
+				free(a);
+			} else {
+				MOVE_CURSOR(argv[1], MT_START)
+			}
 		}
 		break;
 	case 3:
@@ -1311,6 +1329,14 @@ editor_t *interp_context_editor(void) {
 
 buffer_t *interp_context_buffer(void) {
 	return the_context_buffer;
+}
+
+void interp_return_single_point(buffer_t *buffer, int p) {
+	char *r;
+	asprintf(&r, "%d:%d", buffer_line_of(buffer, p), buffer_column_of(buffer, p));
+	alloc_assert(r);
+	Tcl_SetResult(interp, r, TCL_VOLATILE);
+	free(r);
 }
 
 void interp_return_point_pair(buffer_t *buffer, int mark, int cursor) {

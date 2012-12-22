@@ -23,6 +23,7 @@ struct research_t {
 	char *cmd;
 	bool line_limit;
 	bool next_will_wrap_around;
+	bool start_at_bol;
 
 	uint32_t *literal_text;
 	int literal_text_cap, literal_text_allocated;
