@@ -558,15 +558,20 @@ void save_tied_session(void) {
 		if (buffers[i]->job !=NULL) {
 			fprintf(f, "teddy::bg [buffer make {%s}] {%s}\n", buffers[i]->path, buffers[i]->job->command);
 		} else if (buffers[i]->path[0] == '+') {
-			fprintf(f, "buffer eval [buffer find {%s}] { ", buffers[i]->path);
 			char *text = buffer_all_lines_to_text(buffers[i]);
 			alloc_assert(text);
-			const char *cargv[] = { "c", text };
-			char *c = Tcl_Merge(2, cargv);
+
+			if (strlen(text) < 2 * 1024 * 1024) {
+				fprintf(f, "buffer eval [buffer find {%s}] { ", buffers[i]->path);
+				const char *cargv[] = { "c", text };
+				char *c = Tcl_Merge(2, cargv);
+				fprintf(f, "%s", c);
+				Tcl_Free(c);
+				fprintf(f, " }\n");
+			}
+
 			free(text);
-			fprintf(f, "%s", c);
-			Tcl_Free(c);
-			fprintf(f, " }\n");
+
 		}
 
 		fprintf(f, "set b [buffer find {%s}]\n", buffers[i]->path);

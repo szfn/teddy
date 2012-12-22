@@ -1,4 +1,7 @@
-- rotate history (it slows down startup)
+- bug: when theme is changed images don't get the background reloaded
+- bug: center on cursor for frames after moving and maximizing
+- faster loading of history
+- fullscreen mode (gtk_window_fullscreen)
 
 - bold matched text in autocompletions window and iopen window
 - EDITOR and VISUAL setting (needs some IPC implementation)
