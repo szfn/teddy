@@ -651,7 +651,26 @@ static gboolean key_press_callback(GtkWidget *widget, GdkEventKey *event, editor
 		}
 		case GDK_KEY_Escape:
 			return TRUE;
-		default: // At least one modifier must be pressed to activate special actions
+
+		// Special keys that can be bound
+		case GDK_KEY_Insert:
+		case GDK_KEY_F1:
+		case GDK_KEY_F2:
+		case GDK_KEY_F3:
+		case GDK_KEY_F4:
+		case GDK_KEY_F5:
+		case GDK_KEY_F6:
+		case GDK_KEY_F7:
+		case GDK_KEY_F8:
+		case GDK_KEY_F9:
+		case GDK_KEY_F10:
+		case GDK_KEY_F11:
+		case GDK_KEY_F12:
+		case GDK_KEY_F13:
+		case GDK_KEY_F14:
+			break;
+
+		default: // At least one modifier must be pressed to activate special actions (unless it's a special key)
 			goto im_context;
 		}
 	}

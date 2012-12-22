@@ -1,4 +1,4 @@
-- faster loading of history
+- better language for movement (ie. m supporting regexps)
 
 - bold matched text in autocompletions window and iopen window
 - EDITOR and VISUAL setting (needs some IPC implementation)
