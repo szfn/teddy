@@ -661,7 +661,7 @@ namespace eval teddy_intl {\n\
 \n\
 	namespace export guide_open\n\
 	proc guide_open {islink text} {\n\
-		if {$text ne \"@ \"} {\n\
+		if {$text ne \"@\"} {\n\
 			return [link_open $islink $text]\n\
 		}\n\
 \n\
@@ -1026,7 +1026,7 @@ lexyassoc go/0 {\\.go$}\n\
 \n\
 lexydef filesearch 0 {\n\
 		space \"\" nothing\n\
-		keywords \"@ \" link\n\
+		keywords \"@\" link\n\
 		match {https?://\\S+} link\n\
 		match {([^:[:space:]()]+):(\\d+)(?::(\\d+))?} file,1,2,3\n\
 		matchspace {File \"(.+?)\", line (\\d+)} file,1,2\n\

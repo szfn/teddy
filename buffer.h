@@ -136,7 +136,7 @@ void buffer_typeset_maybe(buffer_t *buffer, double width, bool force);
 
 // functions to get screen coordinates of things (yes, I have no idea anymore what the hell they do or are used for)
 void line_get_glyph_coordinates(buffer_t *buffer, int point, double *x, double *y);
-int buffer_point_from_position(buffer_t *buffer, int start, double x, double y);
+int buffer_point_from_position(buffer_t *buffer, int start, double x, double y, bool strict);
 
 // informs buffer that the configuration is changed, reload fonts
 void buffer_config_changed(buffer_t *buffer);

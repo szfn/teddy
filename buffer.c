@@ -945,7 +945,7 @@ char *buffer_indent_newline(buffer_t *buffer) {
 	return rr;
 }
 
-int buffer_point_from_position(buffer_t *buffer, int start, double x, double y) {
+int buffer_point_from_position(buffer_t *buffer, int start, double x, double y, bool strict) {
 	int p = BSIZE(buffer);
 
 	if (start < 0) start = 0;
@@ -973,13 +973,18 @@ int buffer_point_from_position(buffer_t *buffer, int start, double x, double y) 
 		}
 
 		if ((x >= glyph_start) && (x <= glyph_end)) {
-			double dist_start = x - glyph_start;
-			double dist_end = glyph_end - x;
-			if (dist_start < dist_end) {
+			if (strict) {
 				p = i;
 			} else {
-				p = i+1;
+				double dist_start = x - glyph_start;
+				double dist_end = glyph_end - x;
+				if (dist_start < dist_end) {
+					p = i;
+				} else {
+					p = i+1;
+				}
 			}
+			
 			break;
 		}
 	}

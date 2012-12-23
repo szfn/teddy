@@ -762,14 +762,14 @@ static gboolean key_release_callback(GtkWidget *widget, GdkEventKey *event, edit
 
 static void move_cursor_to_mouse(editor_t *editor, double x, double y) {
 	absolute_position(editor, &x, &y);
-	editor->buffer->cursor = buffer_point_from_position(editor->buffer, 0, x, y);
+	editor->buffer->cursor = buffer_point_from_position(editor->buffer, 0, x, y, false);
 	buffer_extend_selection_by_select_type(editor->buffer);
 	//buffer_move_cursor_to_position(editor->buffer, x, y);
 }
 
 static bool on_file_link(editor_t *editor, double x, double y, int *r) {
 	absolute_position(editor, &x, &y);
-	int p = buffer_point_from_position(editor->buffer, editor->first_exposed, x, y);
+	int p = buffer_point_from_position(editor->buffer, editor->first_exposed, x, y, true);
 
 	if (r != NULL) *r = p;
 
