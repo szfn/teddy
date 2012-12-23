@@ -5,5 +5,6 @@
 
 void iopen(void);
 void iopen_init(GtkWidget *window);
+void iopen_recoloring(void);
 
 #endif

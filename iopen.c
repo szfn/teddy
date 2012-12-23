@@ -38,6 +38,8 @@ struct iopen_result {
 GAsyncQueue *file_recursor_requests;
 GAsyncQueue *tags_requests;
 
+GtkCellRenderer *crt;
+
 static void iopen_close(void) {
 	g_async_queue_push(file_recursor_requests, strdup(""));
 	g_async_queue_push(tags_requests, strdup(""));
@@ -398,13 +400,9 @@ void iopen_init(GtkWidget *window) {
 	gtk_tree_sortable_set_sort_column_id(GTK_TREE_SORTABLE(results_list), 3, GTK_SORT_ASCENDING);
 	results_tree = gtk_tree_view_new();
 
-	GtkCellRenderer *crt = gtk_cell_renderer_text_new();
+	crt = gtk_cell_renderer_text_new();
 
-	GdkColor fg;
-	set_gdk_color_cfg(&global_config, CFG_EDITOR_FG_COLOR, &fg);
-	g_object_set(crt, "foreground-gdk", &fg, "foreground-set", TRUE, NULL);
-
-	gtk_widget_like_editor(&global_config, results_tree);
+	iopen_recoloring();
 
 	gtk_tree_view_insert_column_with_attributes(GTK_TREE_VIEW(results_tree), -1, "Show", crt, "markup", 0, NULL);
 	gtk_tree_view_set_model(GTK_TREE_VIEW(results_tree), GTK_TREE_MODEL(results_list));
@@ -456,4 +454,12 @@ void iopen(void) {
 
 	gtk_widget_show_all(iopen_window);
 	editor_grab_focus(iopen_editor, false);
+}
+
+void iopen_recoloring(void) {
+	GdkColor fg;
+	set_gdk_color_cfg(&global_config, CFG_EDITOR_FG_COLOR, &fg);
+	g_object_set(crt, "foreground-gdk", &fg, "foreground-set", TRUE, NULL);
+
+	gtk_widget_like_editor(&global_config, results_tree);
 }

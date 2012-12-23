@@ -175,6 +175,13 @@ static int teddy_setcfg_command(ClientData client_data, Tcl_Interp *interp, int 
 		}
 
 		gtk_widget_queue_draw(GTK_WIDGET(columnset));
+
+		iopen_recoloring();
+
+		gtk_widget_like_editor(&global_config, the_word_completer.tree);
+		gtk_widget_like_editor(&global_config, search_history.c.tree);
+		gtk_widget_like_editor(&global_config, command_history.c.tree);
+		gtk_widget_like_editor(&global_config, input_history.c.tree);
 	}
 
 	return TCL_OK;
