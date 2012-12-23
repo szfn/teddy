@@ -1,4 +1,5 @@
-- bugfix: heuristic new creates too eager to create new columns
+- bugfix: link finding has a bug because it relies on the same algorithm as cursor positioning, it shouldn't, as a result '@' in guide files uses another hack to cope, that only creates more problems
+
 
 - bold matched text in autocompletions window and iopen window
 - EDITOR and VISUAL setting (needs some IPC implementation)

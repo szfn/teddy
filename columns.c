@@ -403,10 +403,10 @@ tframe_t *heuristic_new_frame(columns_t *columns, tframe_t *spawning_frame, buff
 		}
 	}
 
-	{ // search for a very large column and split it
-		for (GList *cur = list_cols; cur != NULL; cur = cur->next) {
-			if (!GTK_IS_COLUMN(cur->data)) continue;
-			column_t *col = GTK_COLUMN(cur->data);
+	// if there is only one column and it's large split it (otherwise leave column creation to users)
+	if (columns_column_number(columns) == 1) {
+		if (GTK_IS_COLUMN(list_cols->data)) {
+			column_t *col = GTK_COLUMN(list_cols->data);
 
 			GtkAllocation allocation;
 			gtk_widget_get_allocation(GTK_WIDGET(col), &allocation);
