@@ -85,9 +85,7 @@ namespace eval bindent {\n\
 		return $r\n\
 	}\n\
 \n\
-	# Equalizes indentation for paste\n\
-	namespace export pasteq\n\
-	proc pasteq {text} {\n\
+	proc pasteq_intl {text} {\n\
 		if {[lindex [m] 0] ne \"nil\"} { c $text; return }\n\
 \n\
 		set cursor [m]\n\
@@ -114,6 +112,15 @@ namespace eval bindent {\n\
 		}\n\
 		m +:1\n\
 		c $r\n\
+	}\n\
+\n\
+	# Equalizes indentation for paste\n\
+	namespace export pasteq\n\
+	proc pasteq {text} {\n\
+		if {[catch {pasteq_intl $text}]} {\n\
+			c $text\n\
+			return\n\
+		}\n\
 	}\n\
 \n\
 	namespace ensemble create -subcommands {incr decr guess pasteq}\n\
