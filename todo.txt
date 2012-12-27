@@ -1,3 +1,9 @@
+- when a window is maximized clicking on tag move mouse (so double click can always maximize)
+- nudging frames by clicking on resize handle
+
+
+- command to iterate through all the tokens of some type (make a separate command or shoehorn inside s?)
+
 - bold matched text in autocompletions window and iopen window
 - EDITOR and VISUAL setting (needs some IPC implementation)
 - tabs

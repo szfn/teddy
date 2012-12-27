@@ -692,7 +692,8 @@ static int teddy_move_command(ClientData client_data, Tcl_Interp *interp, int ar
 
 				free(a);
 			} else {
-				MOVE_CURSOR(argv[1], MT_START)
+				MOVE_MARK("nil", MT_START);
+				MOVE_CURSOR(argv[1], MT_START);
 			}
 		}
 		break;

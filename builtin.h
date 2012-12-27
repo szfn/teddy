@@ -7,13 +7,27 @@
 proc kill_line {} {\n\
    # this is the same as m +:1 +1:1 except for the last line of the buffer (where it will not select anything)\n\
    m +0:1 +:$\n\
-   m +:+1\n\
+   m +:+ +:+1\n\
    if {[undo tag] eq \"kill_line\"} {\n\
       undo fusenext\n\
    }\n\
    c \"\"\n\
    undo tag kill_line\n\
    cb put [undo get before]\n\
+}\n\
+\n\
+proc wander {body} {\n\
+	set saved_mark [m]\n\
+	switch -exact [catch {uplevel 1 $body} out] {\n\
+		1 {\n\
+			m $saved_mark\n\
+			error $out\n\
+		}\n\
+		default {\n\
+			m $saved_mark\n\
+			return $out\n\
+		}\n\
+	}\n\
 }\n\
 \n\
 namespace eval bindent {\n\
@@ -77,14 +91,10 @@ namespace eval bindent {\n\
 	}\n\
 \n\
 	proc get_current_line_indent {} {\n\
-		set saved_mark [m]\n\
-		if {[catch {m [s -l1 {^(?: |\\t)+}]}]} {\n\
-			set r \"\"\n\
-		} else {\n\
-			set r [c]\n\
+		wander {\n\
+			m [s -l1k {^(?: |\\t)+}]\n\
+			return [c]\n\
 		}\n\
-		m {*}$saved_mark\n\
-		return $r\n\
 	}\n\
 \n\
 	# Equalizes indentation for paste\n\
@@ -103,18 +113,18 @@ namespace eval bindent {\n\
 		set dst_indent [get_current_line_indent]\n\
 		buffer eval temp {\n\
 			c $text\n\
-			m nil 1:1\n\
+			m 1:1\n\
 			set src_indent [get_current_line_indent]\n\
 			if {$src_indent ne \"\" || $dst_indent ne \"\"} {\n\
 				s \"^$src_indent\" {\n\
 					c $dst_indent\n\
-					m nil +:$\n\
+					m +:$\n\
 				}\n\
 			}\n\
 			m all\n\
 			set r [c]\n\
 		}\n\
-		m +:1\n\
+		m +:1 +:$\n\
 		c $r\n\
 	}\n\
 \n\
@@ -126,8 +136,7 @@ proc man {args} {\n\
 }\n\
 \n\
 proc clear {} {\n\
-	m 1:1 $:$\n\
-	c \"\"\n\
+	m all; c \"\"\n\
 }\n\
 \n\
 proc forlines {args} {\n\
@@ -141,13 +150,13 @@ proc forlines {args} {\n\
 		error \"Wrong number of arguments to forlines [llength $args] expected 1 or 2\"\n\
 	}\n\
 \n\
-	set saved_mark [m]\n\
-	m nil 1:1\n\
-	s $pattern {\n\
-		m line\n\
-		uplevel 1 $body\n\
+	wander {\n\
+		m 1:1\n\
+		s $pattern {\n\
+			m line\n\
+			uplevel 1 $body\n\
+		}\n\
 	}\n\
-	m {*}$saved_mark\n\
 }\n\
 \n\
 proc ss {args} {\n\
@@ -223,13 +232,13 @@ namespace eval teddy {\n\
 				c \"\"\n\
 			}\n\
 		}\n\
-		m {*}$saved\n\
+		m $saved\n\
 	}\n\
 \n\
 	# on a +bg frame selects the user's input\n\
 	namespace export select_input\n\
 	proc select_input {} {\n\
-		m nil +:1\n\
+		m +:1\n\
 		m {*}[s -line \"\\05\"]\n\
 		if {[lindex [m] 0] eq \"nil\"} { return }\n\
 		m +:+1 +:$\n\

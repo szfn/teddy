@@ -36,7 +36,7 @@
 			<p><b>Syntax:</b> <tt>m <b>[</b> <i>mark-position<i> <b>]</b> <b>[</b> <i>cursor-position</i> <b>]</b> </tt>
 			<p>Selections in teddy are specified by the position of the mark (beginning of the selection) and the cursor (the blinking cursor that typed text is inserted at).
 			<p>By calling <tt>m</tt> without arguments the current position of mark and cursor is returned.
-			<p>When called with a single argument the cursor is moved to the specified position.
+			<p>When called with a single argument the cursor is moved to the specified position and the mark is set to nil.
 			<p>When called with to arguments both the cursor and the mark are moved as specified.
 
 			<h4>Grammar for position specifiers</h4>
@@ -87,6 +87,7 @@ column-specifier ::= <i>column-number</i> | <tt>+</tt><i>relative-movement</i> |
 			<li><tt>-a</tt> like <tt>-get</tt> but only returns the beginning point of the match
 			<li><tt>-z</tt> like <tt>-get</tt> but only returns the end point of the match
 			<li><tt>-1</tt> starts search from the beginning of the line
+			<li><tt>-k</tt> returns the string "nil +:+" if no match is found (instead of raising an error), useful in scripts
 			<li><tt>-literal</tt> search for a literal string instead of a regular expression
 			<li><tt>-nocase</tt> enables case insensitive matching
 			<lI><tt>-right-assoc</tt> makes regexp search right-associative
@@ -206,10 +207,10 @@ column-specifier ::= <i>column-number</i> | <tt>+</tt><i>relative-movement</i> |
 			<p>Returns the file of the current buffer.
 		</div>
 
-		<h3>pwd</h3>
+		<h3>wander</h3>
 		<div class="ind">
-			<p><b>Syntax:</b> <tt>pwd</tt>
-			<p>Returns the workding directory.
+			<p><b>Syntax:</b> <tt>wander <i>body</i></tt>
+			<p>Executes <i>body</i>, restores mark and cursor position at the end.
 		</div>
 
 		<h2>Configuration commands</h2>

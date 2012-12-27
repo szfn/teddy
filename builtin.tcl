@@ -4,13 +4,27 @@
 proc kill_line {} {
    # this is the same as m +:1 +1:1 except for the last line of the buffer (where it will not select anything)
    m +0:1 +:$
-   m +:+1
+   m +:+ +:+1
    if {[undo tag] eq "kill_line"} {
       undo fusenext
    }
    c ""
    undo tag kill_line
    cb put [undo get before]
+}
+
+proc wander {body} {
+	set saved_mark [m]
+	switch -exact [catch {uplevel 1 $body} out] {
+		1 {
+			m $saved_mark
+			error $out
+		}
+		default {
+			m $saved_mark
+			return $out
+		}
+	}
 }
 
 namespace eval bindent {
@@ -74,14 +88,10 @@ namespace eval bindent {
 	}
 
 	proc get_current_line_indent {} {
-		set saved_mark [m]
-		if {[catch {m [s -l1 {^(?: |\t)+}]}]} {
-			set r ""
-		} else {
-			set r [c]
+		wander {
+			m [s -l1k {^(?: |\t)+}]
+			return [c]
 		}
-		m {*}$saved_mark
-		return $r
 	}
 
 	# Equalizes indentation for paste
@@ -100,18 +110,18 @@ namespace eval bindent {
 		set dst_indent [get_current_line_indent]
 		buffer eval temp {
 			c $text
-			m nil 1:1
+			m 1:1
 			set src_indent [get_current_line_indent]
 			if {$src_indent ne "" || $dst_indent ne ""} {
 				s "^$src_indent" {
 					c $dst_indent
-					m nil +:$
+					m +:$
 				}
 			}
 			m all
 			set r [c]
 		}
-		m +:1
+		m +:1 +:$
 		c $r
 	}
 
@@ -123,8 +133,7 @@ proc man {args} {
 }
 
 proc clear {} {
-	m 1:1 $:$
-	c ""
+	m all; c ""
 }
 
 proc forlines {args} {
@@ -138,13 +147,13 @@ proc forlines {args} {
 		error "Wrong number of arguments to forlines [llength $args] expected 1 or 2"
 	}
 
-	set saved_mark [m]
-	m nil 1:1
-	s $pattern {
-		m line
-		uplevel 1 $body
+	wander {
+		m 1:1
+		s $pattern {
+			m line
+			uplevel 1 $body
+		}
 	}
-	m {*}$saved_mark
 }
 
 proc ss {args} {
@@ -220,13 +229,13 @@ namespace eval teddy {
 				c ""
 			}
 		}
-		m {*}$saved
+		m $saved
 	}
 
 	# on a +bg frame selects the user's input
 	namespace export select_input
 	proc select_input {} {
-		m nil +:1
+		m +:1
 		m {*}[s -line "\05"]
 		if {[lindex [m] 0] eq "nil"} { return }
 		m +:+1 +:$

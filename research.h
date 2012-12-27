@@ -24,6 +24,7 @@ struct research_t {
 	bool line_limit;
 	bool next_will_wrap_around;
 	bool start_at_bol;
+	bool return_on_failure;
 
 	uint32_t *literal_text;
 	int literal_text_cap, literal_text_allocated;

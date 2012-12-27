@@ -288,9 +288,15 @@ int do_regex_noninteractive_search(Tcl_Interp *interp, struct research_t *resear
 		research_free_temp(research);
 		return TCL_OK;
 	} else {
+		bool r = research->return_on_failure;
 		research_free_temp(research);
-		Tcl_AddErrorInfo(interp, "Could not find any match");
-		return TCL_ERROR;
+		if (r) {
+			Tcl_SetResult(interp, "nil +:+", TCL_VOLATILE);
+			return TCL_OK;
+		} else {
+			Tcl_AddErrorInfo(interp, "Could not find any match");
+			return TCL_ERROR;
+		}
 	}
 }
 
@@ -358,6 +364,7 @@ int teddy_research_command(ClientData client_data, Tcl_Interp *interp, int argc,
 	research.buffer = interp_context_buffer();
 	research.line_limit = false;
 	research.start_at_bol = false;
+	research.return_on_failure = false;
 	research.search_failed = false;
 	research.mode = SM_REGEXP;
 	research.literal_text = NULL;
@@ -398,6 +405,10 @@ int teddy_research_command(ClientData client_data, Tcl_Interp *interp, int argc,
 				case 'l':
 				case 'n':
 					research.line_limit = TRUE;
+					if (get == DONTGET) get = GET_BOTH;
+					break;
+				case 'k':
+					research.return_on_failure = TRUE;
 					if (get == DONTGET) get = GET_BOTH;
 					break;
 				default:
