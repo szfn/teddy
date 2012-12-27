@@ -78,14 +78,16 @@ namespace eval bindent {\n\
 \n\
 	proc get_current_line_indent {} {\n\
 		set saved_mark [m]\n\
-		m nil +:1\n\
-		m {*}[s -line {^(?: |\\t)+}]\n\
-		set r [c]\n\
+		if {[catch {m [s -l1 {^(?: |\\t)+}]}]} {\n\
+			set r \"\"\n\
+		} else {\n\
+			set r [c]\n\
+		}\n\
 		m {*}$saved_mark\n\
 		return $r\n\
 	}\n\
 \n\
-	proc pasteq_intl {text} {\n\
+	proc pasteq {text} {\n\
 		if {[lindex [m] 0] ne \"nil\"} { c $text; return }\n\
 \n\
 		set cursor [m]\n\

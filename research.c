@@ -396,6 +396,7 @@ int teddy_research_command(ClientData client_data, Tcl_Interp *interp, int argc,
 					get = GET_BOTH;
 					break;
 				case 'l':
+				case 'n':
 					research.line_limit = TRUE;
 					if (get == DONTGET) get = GET_BOTH;
 					break;
