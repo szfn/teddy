@@ -168,6 +168,14 @@ int teddy_tags_command(ClientData client_data, Tcl_Interp *interp, int argc, con
 
 	for (int i = 0; i < tag_entries_cap; ++i) {
 		if (strcmp(tag_entries[i].tag, argv[1]) == 0) {
+			if (i > 0) {
+				// skip identical entries
+				if ((strcmp(tag_entries[i].path, tag_entries[i-1].path) == 0) &&
+					(strcmp(tag_entries[i].search, tag_entries[i-1].search) == 0)) {
+					continue;
+				}
+			}
+
 			char *text;
 			asprintf(&text, "%s\t/%s/", tag_entries[i].path, tag_entries[i].search!=NULL ? tag_entries[i].search : "");
 			alloc_assert(text);

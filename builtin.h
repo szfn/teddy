@@ -1058,8 +1058,11 @@ lexydef mansearch 0 {\n\
 lexyassoc mansearch/0 {^\\+man} teddy_intl::man_link_open\n\
 \n\
 lexydef tagsearch 0 {\n\
-		match {(\\S+)\\t/(.+)/$} link,1,2\n\
+		matchspace {(\\S+)\\t/(.+)/} link,1,2\n\
+		any \".\" nothing\n\
 	}\n\
+\n\
+lexyassoc tagsearch/0 {^\\+tags} teddy_intl::tags_link_open\n\
 \n\
 lexydef js 0 {\n\
 		space \"\" nothing\n\
