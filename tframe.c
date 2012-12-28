@@ -9,6 +9,8 @@
 
 #include <math.h>
 
+#define RESHANDLE_SIZE 14
+
 GdkPixbuf *maximize_pixbuf = NULL, *close_pixbuf = NULL;
 
 static const guint8 align_just_icon[] __attribute__ ((__aligned__ (4))) =
@@ -134,6 +136,7 @@ typedef struct _tframe_t {
 	bool column_resize_resistence_overcome;
 	struct _column_t *motion_col, *motion_prev_col;
 	GList *motion_frame_list;
+	guint32 last_label_click;
 
 	GtkWidget *colorbox;
 } tframe_t;
@@ -422,9 +425,28 @@ static gboolean label_map_callback(GtkWidget *widget, GdkEvent *event, tframe_t 
 	return FALSE;
 }
 
+static void cancel_double_click_distance_effect(tframe_t *tf, GdkEventButton *event) {
+	if (event->type != GDK_BUTTON_PRESS) return;
+
+	GtkSettings *s = gtk_settings_get_default();
+	guint32 double_click_time;
+	g_object_get(G_OBJECT(s), "gtk-double-click-time", &double_click_time, NULL);
+
+	if (event->time - tf->last_label_click > double_click_time) {
+		tf->last_label_click = event->time;
+		return;
+	}
+
+	tf->last_label_click = event->time;
+
+	event->type = GDK_2BUTTON_PRESS;
+}
+
 static gboolean label_button_press_callback(GtkWidget *widget, GdkEventButton *event, tframe_t *frame) {
 	column_t *col;
 	if (!columns_find_frame(columnset, frame, NULL, &col, NULL, NULL, NULL)) return TRUE;
+
+	cancel_double_click_distance_effect(frame, event);
 
 	if (event->button == 1) {
 		if (event->type == GDK_2BUTTON_PRESS) {
@@ -528,8 +550,35 @@ static gboolean label_button_release_callback(GtkWidget *widget, GdkEventButton 
 	if (event->button != 1) return FALSE;
 	if (!dragging) {
 		column_t *col;
+		GtkAllocation wa, ta;
+
 		if (!columns_find_frame(tf->columns, tf, NULL, &col, NULL, NULL, NULL)) return FALSE;
+
+		gtk_widget_get_allocation(GTK_WIDGET(tf), &wa);
+
+		double x = event->x + wa.x;
+		double y = event->y + wa.y;
+
 		column_expand_frame(col, tf);
+
+		// move mouse if it isn't inside the tag anymore
+
+		gtk_widget_get_allocation(GTK_WIDGET(tf), &wa);
+		gtk_widget_get_allocation(tf->tag, &ta);
+
+		ta.x = ta.x + wa.x;
+		ta.y = ta.y + wa.y;
+
+		if (!inside_allocation(x, y, &ta)) {
+			GdkDisplay *display = gdk_display_get_default();
+			GdkScreen *screen = gdk_display_get_default_screen(display);
+			gint wpos_x, wpos_y;
+			gdk_window_get_position(gtk_widget_get_window(GTK_WIDGET(columnset)), &wpos_x, &wpos_y);
+			x += wpos_x + RESHANDLE_SIZE;
+			y = ta.y + wpos_y + (ta.height/2);
+			gdk_display_warp_pointer(display, screen, x, y);
+		}
+
 		return FALSE;
 	}
 
@@ -579,6 +628,7 @@ tframe_t *tframe_new(const char *title, GtkWidget *content, columns_t *columns) 
 
 	r->moving = false;
 	r->motion_frame_list = NULL;
+	r->last_label_click = 0;
 
 	gtk_table_set_homogeneous(t, FALSE);
 
@@ -592,7 +642,7 @@ tframe_t *tframe_new(const char *title, GtkWidget *content, columns_t *columns) 
 
 	r->drarla = gtk_drawing_area_new();
 	r->resdr = gtk_drawing_area_new();
-	gtk_widget_set_size_request(r->resdr, 14, 14);
+	gtk_widget_set_size_request(r->resdr, RESHANDLE_SIZE, RESHANDLE_SIZE);
 
 	if (maximize_pixbuf == NULL) maximize_pixbuf = gdk_pixbuf_scale_simple(gdk_pixbuf_new_from_inline(sizeof(align_just_icon), align_just_icon, FALSE, NULL), 14, 14, GDK_INTERP_HYPER);
 	if (close_pixbuf == NULL) close_pixbuf = gdk_pixbuf_scale_simple(gdk_pixbuf_new_from_inline(sizeof(delete_icon), delete_icon, FALSE, NULL), 14, 14, GDK_INTERP_HYPER);
