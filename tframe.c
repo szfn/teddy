@@ -593,7 +593,10 @@ static gboolean label_button_release_callback(GtkWidget *widget, GdkEventButton 
 	bool ontag = false;
 	tframe_t *target = columns_get_frame_from_position(columnset, x, y, &ontag);
 
-	tag_drag_behaviour(tf, target, y);
+	GtkAllocation ta;
+	gtk_widget_get_allocation(tf->tag, &ta);
+
+	tag_drag_behaviour(tf, target, y-ta.height/2);
 
 	return TRUE;
 }
