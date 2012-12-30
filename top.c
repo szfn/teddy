@@ -198,7 +198,22 @@ static gboolean tools_label_popup_callback(GtkWidget *widget, GdkEventButton *ev
 
 static void new_column_mitem_callback(GtkMenuItem *menuitem, gpointer data) {
 	column_t *col = column_new(0);
-	columns_append(columnset, col, true);
+	column_t *tosplit = NULL;
+
+	GList *cols = gtk_container_get_children(GTK_CONTAINER(columnset));
+	for (GList *cur = cols; cur != NULL; cur = cur->next) {
+		column_t *curcol = GTK_COLUMN(cur->data);
+		if ((tosplit == NULL) || (column_fraction(curcol) > column_fraction(tosplit)))
+			tosplit = curcol;
+	}
+	g_list_free(cols);
+
+	if (tosplit != NULL) {
+		columns_add_after(columnset, tosplit, col, true);
+	} else {
+		columns_append(columnset, col, true);
+	}
+
 	heuristic_new_frame(columnset, NULL, null_buffer());
 }
 

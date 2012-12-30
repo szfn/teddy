@@ -1,5 +1,5 @@
-- when a window is maximized clicking on tag move mouse (so double click can always maximize)
 - nudging frames by clicking on resize handle
+- support for <filename>:<regex> format in open_link
 
 
 - command to iterate through all the tokens of some type (make a separate command or shoehorn inside s?)
