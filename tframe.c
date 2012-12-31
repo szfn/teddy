@@ -134,6 +134,7 @@ typedef struct _tframe_t {
 	double origin_x, origin_y;
 	bool moving;
 	bool column_resize_resistence_overcome;
+	double total_vertical_change;
 	struct _column_t *motion_col, *motion_prev_col;
 	GList *motion_frame_list;
 	guint32 last_label_click;
@@ -222,6 +223,7 @@ static gboolean reshandle_button_press_callback(GtkWidget *widget, GdkEventButto
 		tf->origin_y = event->y;
 		tf->moving = true;
 		tf->column_resize_resistence_overcome = false;
+		tf->total_vertical_change = 0.0;
 
 		tf->motion_col = col;
 		tf->motion_prev_col = prev_col;
@@ -275,39 +277,41 @@ static void find_motion_frames(tframe_t *tf, tframe_t **prev, tframe_t **cur, bo
 
 static gboolean reshandle_motion_callback(GtkWidget *widget, GdkEventMotion *event, tframe_t *tf) {
 	if (!tf->moving) return TRUE;
+	if (tf->motion_col == NULL) return TRUE;
 
 	double changey = event->y - tf->origin_y;
 	double changex = event->x - tf->origin_x;
 
-	if (tf->motion_col != NULL) {
-		GtkAllocation allocation;
-		gtk_widget_get_allocation(GTK_WIDGET(tf->motion_col), &allocation);
-		double change_fraction = changey / allocation.height * 10.0;
+	tf->total_vertical_change += changey;
 
-		for (;;) {
-			tframe_t *prevtf = NULL, *curtf = NULL;
-			find_motion_frames(tf, &prevtf, &curtf, change_fraction > 0);
-			if (prevtf == NULL) break;
-			if (curtf == NULL) break;
+	GtkAllocation allocation;
+	gtk_widget_get_allocation(GTK_WIDGET(tf->motion_col), &allocation);
+	double change_fraction = changey / allocation.height * 10.0;
 
-			tframe_fraction_set(curtf, tframe_fraction(curtf) - change_fraction);
-			tframe_fraction_set(prevtf, tframe_fraction(prevtf) + change_fraction);
+	// frame was resized
+	for (;;) {
+		tframe_t *prevtf = NULL, *curtf = NULL;
+		find_motion_frames(tf, &prevtf, &curtf, change_fraction > 0);
+		if (prevtf == NULL) break;
+		if (curtf == NULL) break;
 
-			if (tframe_fraction(curtf) < 0) {
-				change_fraction = -tframe_fraction(curtf);
-				tframe_fraction_set(prevtf, tframe_fraction(prevtf) + tframe_fraction(curtf));
-				tframe_fraction_set(curtf, 0.0);
-			} else if (tframe_fraction(prevtf) < 0) {
-				change_fraction = tframe_fraction(prevtf);
-				tframe_fraction_set(tf, tframe_fraction(curtf) + tframe_fraction(prevtf));
-				tframe_fraction_set(prevtf, 0.0);
-			} else {
-				break;
-			}
+		tframe_fraction_set(curtf, tframe_fraction(curtf) - change_fraction);
+		tframe_fraction_set(prevtf, tframe_fraction(prevtf) + change_fraction);
+
+		if (tframe_fraction(curtf) < 0) {
+			change_fraction = -tframe_fraction(curtf);
+			tframe_fraction_set(prevtf, tframe_fraction(prevtf) + tframe_fraction(curtf));
+			tframe_fraction_set(curtf, 0.0);
+		} else if (tframe_fraction(prevtf) < 0) {
+			change_fraction = tframe_fraction(prevtf);
+			tframe_fraction_set(tf, tframe_fraction(curtf) + tframe_fraction(prevtf));
+			tframe_fraction_set(prevtf, 0.0);
+		} else {
+			break;
 		}
-
-		gtk_column_size_allocate(GTK_WIDGET(tf->motion_col), &(GTK_WIDGET(tf->motion_col)->allocation));
 	}
+
+	gtk_column_size_allocate(GTK_WIDGET(tf->motion_col), &(GTK_WIDGET(tf->motion_col)->allocation));
 
 	if (!tf->column_resize_resistence_overcome) {
 		if ((fabs(changex) > 28) && (tf->motion_prev_col != NULL)) {
@@ -352,8 +356,75 @@ static void column_resize_frame_pair(column_t *column, tframe_t *above, double n
 	gtk_widget_queue_draw(GTK_WIDGET(column));
 }
 
+static void nudge_one(tframe_t *tf, double *want_fraction, tframe_t *otf) {
+	if (otf == NULL) return;
+
+	double remove = tframe_fraction(otf) / 2.0;
+	if (remove < 0.25) remove = 0.25;
+	if (remove > *want_fraction) remove = *want_fraction;
+	if (remove > tframe_fraction(otf)) remove = tframe_fraction(otf);
+
+	tframe_fraction_set(otf, tframe_fraction(otf) - remove);
+	tframe_fraction_set(tf, tframe_fraction(tf) + remove);
+	*want_fraction -= remove;
+}
+
+static void nudge_other_frames(tframe_t *tf) {
+	// It was a click not a resize, click on the resize handle causes the window to grow by 50% its size
+	double want_fraction = tframe_fraction(tf) * 0.5;
+	if (want_fraction < 1.0) want_fraction = 1.0;
+
+	int current = -1;
+	for (int i = 0; i < g_list_length(tf->motion_frame_list); ++i) {
+		tframe_t *cur = GTK_TFRAME(g_list_nth_data(tf->motion_frame_list, i));
+		if (cur == tf) {
+			current = i;
+			break;
+		}
+	}
+
+	if (current < 0) return;
+
+	//printf("want_fraction: %g (%g)\n", want_fraction, tframe_fraction(tf));
+
+	for (int i = 1; i < g_list_length(tf->motion_frame_list); ++i) {
+		gpointer hp = g_list_nth_data(tf->motion_frame_list, current - i);
+		gpointer lp = g_list_nth_data(tf->motion_frame_list, current + i);
+
+		tframe_t *htf = (hp != NULL) ? GTK_TFRAME(hp) : NULL;
+		tframe_t *ltf = (hp != NULL) ? GTK_TFRAME(lp) : NULL;
+
+		nudge_one(tf, &want_fraction, ltf);
+		nudge_one(tf, &want_fraction, htf);
+
+		//printf("want_fraction %g (%g) (%g) (%g) \n", want_fraction, (tf != NULL) ? tframe_fraction(tf) : -1, (htf != NULL) ? tframe_fraction(htf) : -1, (ltf != NULL) ? tframe_fraction(ltf) : -1);
+
+		if (want_fraction < 0.001) break;
+	}
+
+	gtk_column_size_allocate(GTK_WIDGET(tf->motion_col), &(GTK_WIDGET(tf->motion_col)->allocation));
+	gtk_widget_queue_draw(GTK_WIDGET(tf->motion_col));
+
+	/* reposition cursor inside resize handle */
+
+	GtkAllocation wa;
+	gtk_widget_get_allocation(GTK_WIDGET(tf), &wa);
+
+	GdkDisplay *display = gdk_display_get_default();
+	GdkScreen *screen = gdk_display_get_default_screen(display);
+	gint wpos_x, wpos_y;
+	gdk_window_get_position(gtk_widget_get_window(GTK_WIDGET(columnset)), &wpos_x, &wpos_y);
+	double x = wpos_x + wa.x + RESHANDLE_SIZE/2;
+	double y = wpos_y + wa.y + RESHANDLE_SIZE/2;
+	gdk_display_warp_pointer(display, screen, x, y);
+}
+
 static gboolean reshandle_button_release_callback(GtkWidget *widget, GdkEventButton *event, tframe_t *tf) {
 	tf->moving = false;
+
+	if ((fabs(tf->total_vertical_change) < 5) && !(tf->column_resize_resistence_overcome))
+		nudge_other_frames(tf);
+
 	g_list_free(tf->motion_frame_list);
 	tf->motion_frame_list = NULL;
 	return TRUE;
