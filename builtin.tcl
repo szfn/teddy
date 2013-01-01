@@ -661,7 +661,14 @@ namespace eval teddy_intl {
 
 			if {$line ne ""} {
 				if {$col eq ""} { set col 1 }
-				buffer eval $b { m nil $line:$col }
+				if {[string index $line 0] eq "/"} {
+					# it's a regex
+					set line [string range $line 1 end-1]
+					buffer eval $b { m [s $line] }
+				} else {
+					# it's a line number otherwise
+					buffer eval $b { m nil $line:$col }
+				}
 			}
 			buffer focus $b
 		}
@@ -1037,6 +1044,7 @@ lexydef filesearch 0 {
 		keywords "@" link
 		match {https?://\S+} link
 		match {([^:[:space:]()]+):(\d+)(?::(\d+))?} file,1,2,3
+		matchspace {([^:[:space:]()]+):(/(?:[^/]|\\/)*/)} file,1,2
 		matchspace {File "(.+?)", line (\d+)} file,1,2
 		matchspace {\<at (\S+) line (\d+)} file,1,2
 		matchspace {\<in (\S+) on line (\d+)} file,1,2

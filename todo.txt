@@ -1,6 +1,3 @@
-- support for <filename>:<regex> format in open_link
-- draw a dot where the special control character for job input is
-
 - command to iterate through all the tokens of some type (make a separate command or shoehorn inside s?)
 
 - bold matched text in autocompletions window and iopen window
