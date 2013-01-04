@@ -469,16 +469,20 @@ proc shell {args} {\n\
          }\n\
       }\n\
 \n\
+      set pgrp [posixpgrp]\n\
       set pid [posixfork]\n\
       if {$pid < 0} {\n\
          error \"fork failed in 'shell'\"\n\
       }\n\
 \n\
       if {$pid == 0} {\n\
+         posixpgrp $pgrp\n\
          teddy_intl::shell_child_code $special $normal $pipe\n\
       }\n\
 \n\
       # parent code, wait and exit\n\
+\n\
+      posixpgrp $pid $pgrp\n\
 \n\
       if {$pipe ne \"\"} {\n\
          # new default standard input is pipe's input side\n\
@@ -856,6 +860,7 @@ namespace eval teddy_intl {\n\
 \n\
 	   #puts \"message from child code\"\n\
 \n\
+       #puts \"Setting up pipe: <$pipe> <$special>\"\n\
 	   if {$pipe ne \"\"} {\n\
 	      # default ouput of this process will be pipe's output side\n\
 	      fdclose [lindex $pipe 0]\n\

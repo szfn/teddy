@@ -412,8 +412,10 @@ static int teddy_bg_command(ClientData client_data, Tcl_Interp *interp, int argc
 
 	bzero(&term, sizeof(struct termios));
 
-	term.c_iflag = IGNCR | IUTF8;
+	term.c_iflag = ICRNL | IUTF8;
 	term.c_oflag = ONLRET;
+	term.c_cflag = B38400 | CS8 | CREAD;
+	term.c_lflag = ICANON;
 
 	child = forkpty(&masterfd, NULL, &term, NULL);
 	if (child == -1) {
@@ -992,6 +994,46 @@ static int teddy_posixexec_command(ClientData client_data, Tcl_Interp *interp, i
 	return TCL_OK;
 }
 
+static int teddy_posixpgrp_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
+	switch (argc) {
+	case 1: {
+		//printf("[%d] Our pgrp: %d controlling pgrp: %d\n", getpid(), getpgrp(), tcgetpgrp(0));
+		int r = getpgrp();
+		char buf[20];
+		sprintf(buf, "%d", r);
+		Tcl_SetResult(interp, buf, TCL_VOLATILE);
+		break;
+	}
+	case 2: {
+		int pgrp = atoi(argv[1]);
+		int r = setpgid(getpid(), pgrp);
+		if (r == -1) {
+			perror("posixexec error");
+			Tcl_AddErrorInfo(interp, "Error executing posixexec command");
+			return TCL_ERROR;
+		}
+
+		//printf("[%d] Our pgrp: %d controlling pgrp: %d\n", getpid(), getpgrp(), tcgetpgrp(0));
+
+		break;
+	}
+	case 3: {
+		int pid = atoi(argv[1]);
+		int pgrp = atoi(argv[2]);
+		int r = setpgid(pid, pgrp);
+		if (r == -1) {
+			perror("posixexec error");
+			Tcl_AddErrorInfo(interp, "Error executing posixexec command");
+			return TCL_ERROR;
+		}
+
+		//printf("[%d] Our pgrp: %d controlling pgrp: %d\n", getpid(), getpgrp(), tcgetpgrp(0));
+	}
+	}
+
+	return TCL_OK;
+}
+
 static int teddy_posixwaitpid_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
 	int i;
 	int status, options = 0;
@@ -1160,6 +1202,7 @@ void interp_init(void) {
 	Tcl_CreateCommand(interp, "fdpipe", &teddy_fdpipe_command, (ClientData)NULL, NULL);
 	Tcl_CreateCommand(interp, "posixfork", &teddy_posixfork_command, (ClientData)NULL, NULL);
 	Tcl_CreateCommand(interp, "posixexec", &teddy_posixexec_command, (ClientData)NULL, NULL);
+	Tcl_CreateCommand(interp, "posixpgrp", &teddy_posixpgrp_command, (ClientData)NULL, NULL);
 	Tcl_CreateCommand(interp, "posixwaitpid", &teddy_posixwaitpid_command, (ClientData)NULL, NULL);
 	Tcl_CreateCommand(interp, "posixexit", &teddy_posixexit_command, (ClientData)NULL, NULL);
 
