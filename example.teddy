@@ -72,9 +72,9 @@ bindkey Ctrl-x {cb put [c]; c ""}
 # Ctrl-y pastes from primary selection (this is like the middle mouse button)
 bindkey Ctrl-y {bindent pasteq [cb pget]}
 
-# Ctrl-u undoes last action
-bindkey Ctrl-u undo
-bindkey Ctrl-U {undo redo}
+# Ctrl-z undoes last action
+bindkey Ctrl-z undo
+bindkey Ctrl-Z {undo redo}
 
 # Ctrl-s saves (calls teddy::spaceman to delete extra spaces at the end of lines)
 bindkey Ctrl-s {teddy::spaceman; buffer save}
