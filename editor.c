@@ -538,9 +538,16 @@ static gboolean key_press_callback(GtkWidget *widget, GdkEventKey *event, editor
 					return TRUE;
 				case GDK_KEY_Escape:
 					return FALSE;
-				case GDK_KEY_Return:
+				case GDK_KEY_Insert:
 					editor_complete(editor, visible_completer);
 					return TRUE;
+				case GDK_KEY_Return:
+					if (config_intval(&(editor->buffer->config), CFG_AUTOCOMPL_POPUP) == 0) {
+						// only if we don't automatically popup the autocompletions window then return will select the current completion
+						editor_complete(editor, visible_completer);
+						return TRUE;
+					}
+					break;
 			}
 		} else if (editor->buffer->single_line) {
 			if (editor->single_line_other_keys(editor, shift, ctrl, alt, super, event->keyval)) {
