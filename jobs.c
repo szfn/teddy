@@ -301,6 +301,8 @@ static void job_attach_to_buffer(job_t *job, const char *command, buffer_t *buff
 	editor_t *editor;
 	find_editor_for_buffer(buffer, NULL, NULL, &editor);
 	if (editor != NULL) {
+		set_label_text(editor);
+
 		GtkAllocation allocation;
 		gtk_widget_get_allocation(GTK_WIDGET(editor), &allocation);
 		double width = allocation.width;

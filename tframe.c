@@ -127,6 +127,7 @@ typedef struct _tframe_t {
 	GtkWidget *drarla;
 
 	char *title;
+	char *wd;
 
 	double fraction;
 	bool modified;
@@ -437,6 +438,20 @@ static gboolean label_motion_callback(GtkWidget *widget, GdkEventMotion *event, 
 	return FALSE;
 }
 
+static const char *cut_to_working_directory(const char *n) {
+	const char *r;
+	if (strstr(n, top_working_directory()) == n) {
+		r = n + strlen(top_working_directory());
+		if (r[0] == '/') r++;
+	} else {
+		r = n;
+	}
+
+	if (r[0] == '\0') r = ".";
+
+	return r;
+}
+
 static gboolean label_expose_callback(GtkWidget *widget, GdkEventExpose *event, tframe_t *tf) {
 	cairo_t *cr = gdk_cairo_create(widget->window);
 	GtkAllocation allocation;
@@ -460,15 +475,7 @@ static gboolean label_expose_callback(GtkWidget *widget, GdkEventExpose *event, 
 	cairo_text_extents_t titlext, ellipsext;
 	cairo_text_extents(cr, ellipsis, &ellipsext);
 
-	const char *title;
-	if (strstr(tf->title, top_working_directory()) == tf->title) {
-		title = tf->title + strlen(top_working_directory());
-		if (title[0] == '/') title++;
-	} else {
-		title = tf->title;
-	}
-
-	if (title[0] == '\0') title = ".";
+	const char *title = cut_to_working_directory(tf->title);
 
 	do {
 		cairo_text_extents(cr, title+start, &titlext);
@@ -485,6 +492,13 @@ static gboolean label_expose_callback(GtkWidget *widget, GdkEventExpose *event, 
 	cairo_move_to(cr, 4.0, ext.ascent);
 	if (start != 0) cairo_show_text(cr, ellipsis);
 	cairo_show_text(cr, title+start);
+
+	if (tf->wd != NULL) {
+		cairo_show_text(cr, " (");
+		const char *wd = cut_to_working_directory(tf->wd);
+		cairo_show_text(cr, wd);
+		cairo_show_text(cr, ")");
+	}
 
 	cairo_destroy(cr);
 
@@ -707,6 +721,7 @@ tframe_t *tframe_new(const char *title, GtkWidget *content, columns_t *columns) 
 	gtk_table_set_homogeneous(t, FALSE);
 
 	r->title = strdup((title != NULL) ? title : "");
+	r->wd = NULL;
 	alloc_assert(r->title);
 
 	GdkColor c;
@@ -776,6 +791,20 @@ tframe_t *tframe_new(const char *title, GtkWidget *content, columns_t *columns) 
 	gtk_table_attach(t, content, 0, 1, 3, 4, GTK_EXPAND|GTK_FILL, GTK_EXPAND|GTK_FILL, 0, 0);
 
 	return r;
+}
+
+void tframe_set_wd(tframe_t *tf, const char *wd) {
+	if (tf->wd != NULL) {
+		if (strcmp(tf->wd, wd) == 0) return;
+		free(tf->wd);
+	}
+
+	if (wd != NULL) {
+		tf->wd = strdup(wd);
+		alloc_assert(tf->wd);
+	} else {
+		tf->wd = NULL;
+	}
 }
 
 void tframe_recoloring(tframe_t *tframe) {

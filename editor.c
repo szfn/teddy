@@ -58,6 +58,7 @@ void set_label_text(editor_t *editor) {
 
 	if (frame != NULL) {
 		tframe_set_title(frame, editor->buffer->path);
+		tframe_set_wd(frame, editor->buffer->wd);
 		tframe_set_modified(frame, editor->buffer->modified);
 		gtk_widget_queue_draw(GTK_WIDGET(frame));
 	}
