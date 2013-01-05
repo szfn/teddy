@@ -12,6 +12,7 @@ cfg_autowrap 1
 cfg_largeindent 1
 cfg_tab_width 4
 cfg_oldarrow 0
+cfg_quotehack 0
 cfg_dangerclose 0
 
 cfg_editor_bg_color 16777215

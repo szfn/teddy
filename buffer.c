@@ -184,6 +184,39 @@ static void buffer_setup_hook(buffer_t *buffer) {
 	interp_eval_command(NULL, buffer, 2, argv);
 }
 
+static void code_to_glyph(teddy_fontset_t *font, uint32_t code, uint8_t *fontidx, FT_UInt *glyph_index) {
+	uint32_t ccode = code;
+
+	switch (code) {
+	case 0x09:
+	case '\n':
+	case 0x05:
+	case 0xa0: // nbsp
+	case 0x2060: // word joiner
+	case 0xfeff: // zero width nbsp
+	case 0x200b: // zero width space
+	case 0x200c: // zero width joiner
+	case 0x200d: // zero width non-joiner
+		ccode = 0x20;
+		break;
+
+	case '\'':
+		if (config_intval(&global_config, CFG_QUOTEHACK) != 0) ccode = 0x2019;
+		break;
+	case '`':
+		if (config_intval(&global_config, CFG_QUOTEHACK) != 0) ccode = 0x2018;
+		break;
+	}
+
+	/*TODO
+	- other unicode spaces
+	- apostrophe hack
+	*/
+
+	*fontidx = fontset_fontidx(font, ccode);
+	*glyph_index = fontset_glyph_index(font, *fontidx, ccode);
+}
+
 static int buffer_replace_selection_ex(buffer_t *buffer, const char *text, bool twice) {
 	teddy_fontset_t *font = foundry_lookup(config_strval(&(buffer->config), CFG_MAIN_FONT), true);
 
@@ -212,8 +245,9 @@ static int buffer_replace_selection_ex(buffer_t *buffer, const char *text, bool 
 
 		buffer->buf[buffer->gap].code = code;
 
-		uint8_t fontidx = fontset_fontidx(font, code);
-		FT_UInt glyph_index = fontset_glyph_index(font, fontidx, ((code != 0x09) && (code != '\n') && (code != 0x05)) ? code : 0x20);
+		uint8_t fontidx;
+		FT_UInt glyph_index;
+		code_to_glyph(font, code, &fontidx, &glyph_index);
 
 		buffer->buf[buffer->gap].code = code;
 		buffer->buf[buffer->gap].color = buffer->default_color;
@@ -984,7 +1018,7 @@ int buffer_point_from_position(buffer_t *buffer, int start, double x, double y, 
 					p = i+1;
 				}
 			}
-			
+
 			break;
 		}
 	}
@@ -1100,8 +1134,8 @@ static void buffer_reload_glyph_info(buffer_t *buffer) {
 	for (int i = 0; i < BSIZE(buffer); ++i) {
 		my_glyph_info_t *g = bat(buffer, i);
 
-		uint8_t fontidx = fontset_fontidx(font, g->code);
-		g->glyph_index = fontset_glyph_index(font, fontidx, ((g->code != 0x09) && (g->code != 0x0a) && (g->code != 0x05)) ? g->code : 0x20);
+		uint8_t fontidx;
+		code_to_glyph(font, g->code, &fontidx, (FT_UInt *)&(g->glyph_index));
 		g->kerning_correction = (previous_fontidx == fontidx) ? fontset_get_kerning(font, fontidx, previous, g->glyph_index) : 0.0;
 
 		previous = g->glyph_index;
