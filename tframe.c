@@ -795,15 +795,20 @@ tframe_t *tframe_new(const char *title, GtkWidget *content, columns_t *columns) 
 
 void tframe_set_wd(tframe_t *tf, const char *wd) {
 	if (tf->wd != NULL) {
-		if (strcmp(tf->wd, wd) == 0) return;
-		free(tf->wd);
-	}
-
-	if (wd != NULL) {
-		tf->wd = strdup(wd);
-		alloc_assert(tf->wd);
+		if (wd != NULL) {
+			if (strcmp(tf->wd, wd) == 0) return;
+			free(tf->wd);
+		} else {
+			free(tf->wd);
+			tf->wd = NULL;
+		}
 	} else {
-		tf->wd = NULL;
+		if (wd != NULL) {
+			tf->wd = strdup(wd);
+			alloc_assert(tf->wd);
+		} else {
+			tf->wd = NULL;
+		}
 	}
 }
 
