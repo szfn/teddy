@@ -371,6 +371,8 @@ static void nudge_one(tframe_t *tf, double *want_fraction, tframe_t *otf) {
 }
 
 static void nudge_other_frames(tframe_t *tf) {
+	//printf("nudge_other_frames\n");
+
 	// It was a click not a resize, click on the resize handle causes the window to grow by 50% its size
 	double want_fraction = tframe_fraction(tf) * 0.5;
 	if (want_fraction < 1.0) want_fraction = 1.0;
@@ -384,6 +386,8 @@ static void nudge_other_frames(tframe_t *tf) {
 		}
 	}
 
+	//printf("current: %d\n", current);
+
 	if (current < 0) return;
 
 	//printf("want_fraction: %g (%g)\n", want_fraction, tframe_fraction(tf));
@@ -393,7 +397,7 @@ static void nudge_other_frames(tframe_t *tf) {
 		gpointer lp = g_list_nth_data(tf->motion_frame_list, current + i);
 
 		tframe_t *htf = (hp != NULL) ? GTK_TFRAME(hp) : NULL;
-		tframe_t *ltf = (hp != NULL) ? GTK_TFRAME(lp) : NULL;
+		tframe_t *ltf = (lp != NULL) ? GTK_TFRAME(lp) : NULL;
 
 		nudge_one(tf, &want_fraction, ltf);
 		nudge_one(tf, &want_fraction, htf);
