@@ -639,6 +639,8 @@ static gboolean key_press_callback(GtkWidget *widget, GdkEventKey *event, editor
 		}
 
 		case GDK_KEY_Return: {
+			compl_wnd_hide(editor->completer);
+			compl_wnd_hide(editor->alt_completer);
 			if (editor->buffer->single_line) {
 				editor->single_line_return(editor);
 			} else {
