@@ -19,6 +19,7 @@ GType gtk_tframe_get_type(void) G_GNUC_CONST;
 tframe_t *tframe_new(const char *title, GtkWidget *content, struct _columns_t *columns);
 
 void tframe_set_title(tframe_t *tframe, const char *title);
+void tframe_set_wd(tframe_t *tf, const char *wd);
 void tframe_set_modified(tframe_t *tframe, bool modified);
 
 double tframe_fraction(tframe_t *tframe);

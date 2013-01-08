@@ -798,6 +798,8 @@ void tframe_set_wd(tframe_t *tf, const char *wd) {
 		if (wd != NULL) {
 			if (strcmp(tf->wd, wd) == 0) return;
 			free(tf->wd);
+			tf->wd = strdup(wd);
+			alloc_assert(tf->wd);
 		} else {
 			free(tf->wd);
 			tf->wd = NULL;
@@ -807,6 +809,7 @@ void tframe_set_wd(tframe_t *tf, const char *wd) {
 			tf->wd = strdup(wd);
 			alloc_assert(tf->wd);
 		} else {
+			// nothing to do both wd and tf->wd are NULL
 			tf->wd = NULL;
 		}
 	}
