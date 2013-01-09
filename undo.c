@@ -187,6 +187,6 @@ undo_node_t *undo_redo_pop(undo_t *undo) {
 }
 
 undo_node_t *undo_peek(undo_t *undo) {
-	return undo->head;
+	return (undo->head->fake) ? NULL : undo->head;
 }
 

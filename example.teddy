@@ -159,5 +159,9 @@ proc grep {args} {
 	}
 }
 
+# Save and restore a bookmark
 bindkey Alt-1 { buffer propset [buffer current] bookmark [m] }
 bindkey Ctrl-1 { m {*}[buffer propget [buffer current] bookmark] }
+
+# Selects recently typed text
+bindkey Pause {m [undo region after]}

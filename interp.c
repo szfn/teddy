@@ -268,24 +268,37 @@ static int teddy_undo_command(ClientData client_data, Tcl_Interp *interp, int ar
 				return TCL_OK;
 			}
 
+			char *text = NULL;
+
 			if (strcmp(argv[2], "before") == 0) {
-				if (u->before_selection.text != NULL) {
-					Tcl_SetResult(interp, u->before_selection.text, TCL_VOLATILE);
-				} else {
-					Tcl_SetResult(interp, "", TCL_VOLATILE);
-				}
-				return TCL_OK;
+				text = u->before_selection.text;
 			} else if (strcmp(argv[2], "after") == 0) {
-				if (u->after_selection.text != NULL) {
-					Tcl_SetResult(interp, u->after_selection.text, TCL_VOLATILE);
-				} else {
-					Tcl_SetResult(interp, "", TCL_VOLATILE);
-				}
-				return TCL_OK;
+				text = u->after_selection.text;
 			} else {
 				Tcl_AddErrorInfo(interp, "Wrong argument to 'undo get', expected before or after");
 				return TCL_ERROR;
 			}
+
+			Tcl_SetResult(interp, (text != NULL) ? text : "", TCL_VOLATILE);
+			return TCL_OK;
+		} else if (strcmp(argv[1], "region") == 0) {
+			undo_node_t *u = undo_peek(&(interp_context_buffer()->undo));
+			int mark = -1, cursor = interp_context_buffer()->cursor;
+
+			if (u != NULL) {
+				if (strcmp(argv[2], "before") == 0) {
+					mark = u->before_selection.start;
+					cursor = u->before_selection.end;
+				} else if (strcmp(argv[2], "after") == 0) {
+					mark = u->after_selection.start;
+					cursor = u->after_selection.end;
+				} else {
+					Tcl_AddErrorInfo(interp, "Wrong argument to 'undo get', expected before or after");
+					return TCL_ERROR;
+				}
+			}
+
+			interp_return_point_pair(interp_context_buffer(), mark, cursor);
 		} else {
 			Tcl_AddErrorInfo(interp, "Wrong arguments to 'undo', usage; undo [tag [tagname]]");
 			return TCL_ERROR;
@@ -1097,7 +1110,7 @@ static int teddy_posixexit_command(ClientData client_data, Tcl_Interp *interp, i
 static int teddy_fd2channel_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
 	ARGNUM((argc != 3), "fd2channel");
 
-	int fd = atoi(argv[1]);
+	intptr_t fd = atoi(argv[1]);
 	const char *type = argv[2];
 
 	if (fd < 0) {
@@ -1115,9 +1128,9 @@ static int teddy_fd2channel_command(ClientData client_data, Tcl_Interp *interp, 
 		Tcl_AddErrorInfo(interp, "Wrong argument to fd2channel (not read or write)");
 	}
 
-	Tcl_Channel chan = Tcl_MakeFileChannel(fd, readOrWrite);
+	Tcl_Channel chan = Tcl_MakeFileChannel((void *)fd, readOrWrite);
 	Tcl_RegisterChannel(interp, chan);
-	Tcl_SetResult(interp, Tcl_GetChannelName(chan), TCL_VOLATILE);
+	Tcl_SetResult(interp, (char *)Tcl_GetChannelName(chan), TCL_VOLATILE);
 
 	return TCL_OK;
 }

@@ -664,6 +664,7 @@ static gboolean key_press_callback(GtkWidget *widget, GdkEventKey *event, editor
 
 		// Special keys that can be bound
 		case GDK_KEY_Insert:
+		case GDK_KEY_Pause:
 		case GDK_KEY_F1:
 		case GDK_KEY_F2:
 		case GDK_KEY_F3:
