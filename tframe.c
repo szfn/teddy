@@ -9,8 +9,6 @@
 
 #include <math.h>
 
-#define RESHANDLE_SIZE 14
-
 GdkPixbuf *maximize_pixbuf = NULL, *close_pixbuf = NULL;
 
 static const guint8 align_just_icon[] __attribute__ ((__aligned__ (4))) =

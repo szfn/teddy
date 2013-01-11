@@ -12,6 +12,8 @@
 #include <ft2build.h>
 #include FT_FREETYPE_H
 
+#define RESHANDLE_SIZE 14
+
 extern GtkClipboard *selection_clipboard;
 extern GtkClipboard *default_clipboard;
 extern critbit0_tree closed_buffers_critbit;

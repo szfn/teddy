@@ -263,6 +263,7 @@ proc antique_theme {} {\n\
 	setcfg -global posbox_border_color 0\n\
 	setcfg -global posbox_bg_color 15654274\n\
 	setcfg -global posbox_fg_color 0\n\
+	setcfg -global scrollbar_bg_color [rgbcolor black]\n\
 \n\
 	setcfg -global lexy_nothing [rgbcolor black]\n\
 	setcfg -global lexy_keyword [rgbcolor \"midnight blue\"]\n\
@@ -281,6 +282,7 @@ proc acme_theme {} {\n\
 	setcfg -global editor_bg_color [rgbcolor 255 255 234]\n\
 	setcfg -global border_color [rgbcolor black]\n\
 	setcfg -global editor_bg_cursorline [rgbcolor 232 232 212]\n\
+	setcfg -global scrollbar_bg_color [rgbcolor 153 153 76]\n\
 \n\
 	setcfg -global editor_fg_color [rgbcolor black]\n\
 \n\
@@ -312,6 +314,7 @@ proc zenburn_theme {} {\n\
 	setcfg -global editor_sel_color [rgbcolor 47 47 47]\n\
 \n\
 	setcfg -global editor_fg_color [rgbcolor white]\n\
+	setcfg -global scrollbar_bg_color [rgbcolor 46 51 48]\n\
 \n\
 	setcfg -global tag_bg_color [rgbcolor 46 51 48]\n\
 	setcfg -global tag_fg_color [rgbcolor 133 172 141]\n\
@@ -355,6 +358,7 @@ proc solarized_theme {} {\n\
 	setcfg -global border_color $base0\n\
 	setcfg -global editor_bg_cursorline $base02\n\
 	setcfg -global editor_sel_color $base01\n\
+	setcfg -global scrollbar_bg_color $base1\n\
 \n\
 	setcfg -global editor_fg_color $base2\n\
 \n\
@@ -400,6 +404,7 @@ proc solarized_simple_theme {} {\n\
 	setcfg -global border_color $base0\n\
 	setcfg -global editor_bg_cursorline $base02\n\
 	setcfg -global editor_sel_color $base01\n\
+	setcfg -global scrollbar_bg_color $base1\n\
 \n\
 	setcfg -global editor_fg_color $base2\n\
 \n\

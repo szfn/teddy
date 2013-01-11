@@ -260,6 +260,7 @@ proc antique_theme {} {
 	setcfg -global posbox_border_color 0
 	setcfg -global posbox_bg_color 15654274
 	setcfg -global posbox_fg_color 0
+	setcfg -global scrollbar_bg_color [rgbcolor black]
 
 	setcfg -global lexy_nothing [rgbcolor black]
 	setcfg -global lexy_keyword [rgbcolor "midnight blue"]
@@ -278,6 +279,7 @@ proc acme_theme {} {
 	setcfg -global editor_bg_color [rgbcolor 255 255 234]
 	setcfg -global border_color [rgbcolor black]
 	setcfg -global editor_bg_cursorline [rgbcolor 232 232 212]
+	setcfg -global scrollbar_bg_color [rgbcolor 153 153 76]
 
 	setcfg -global editor_fg_color [rgbcolor black]
 
@@ -309,6 +311,7 @@ proc zenburn_theme {} {
 	setcfg -global editor_sel_color [rgbcolor 47 47 47]
 
 	setcfg -global editor_fg_color [rgbcolor white]
+	setcfg -global scrollbar_bg_color [rgbcolor 46 51 48]
 
 	setcfg -global tag_bg_color [rgbcolor 46 51 48]
 	setcfg -global tag_fg_color [rgbcolor 133 172 141]
@@ -352,6 +355,7 @@ proc solarized_theme {} {
 	setcfg -global border_color $base0
 	setcfg -global editor_bg_cursorline $base02
 	setcfg -global editor_sel_color $base01
+	setcfg -global scrollbar_bg_color $base1
 
 	setcfg -global editor_fg_color $base2
 
@@ -397,6 +401,7 @@ proc solarized_simple_theme {} {
 	setcfg -global border_color $base0
 	setcfg -global editor_bg_cursorline $base02
 	setcfg -global editor_sel_color $base01
+	setcfg -global scrollbar_bg_color $base1
 
 	setcfg -global editor_fg_color $base2
 

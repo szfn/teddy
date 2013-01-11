@@ -16,6 +16,7 @@
 #include "lexy.h"
 #include "foundry.h"
 #include "top.h"
+#include "oldscroll.h"
 
 static GtkTargetEntry selection_clipboard_target_entry = { "UTF8_STRING", 0, 0 };
 
@@ -1425,16 +1426,24 @@ static gboolean expose_event_callback(GtkWidget *widget, GdkEventExpose *event, 
 	if (editor->buffer->single_line) {
 		gtk_widget_hide(GTK_WIDGET(editor->drarscroll));
 	} else {
-		gtk_adjustment_set_upper(GTK_ADJUSTMENT(editor->adjustment), editor->buffer->rendered_height + (allocation.height / 2));
-		gtk_adjustment_set_page_size(GTK_ADJUSTMENT(editor->adjustment), allocation.height);
-		gtk_adjustment_set_page_increment(GTK_ADJUSTMENT(editor->adjustment), allocation.height/2);
-		gtk_adjustment_set_step_increment(GTK_ADJUSTMENT(editor->adjustment), editor->buffer->line_height);
+		gtk_adjustment_configure(GTK_ADJUSTMENT(editor->adjustment),
+			gtk_adjustment_get_value(GTK_ADJUSTMENT(editor->adjustment)),
+			0.0, // lower
+			editor->buffer->rendered_height + editor->buffer->line_height*2, // upper
+			editor->buffer->line_height, // step increment
+			allocation.height/2, // page increment
+			allocation.height // page size
+			);
 
 		if ((editor->buffer->rendered_width > allocation.width) && (config_intval(&(editor->buffer->config), CFG_AUTOWRAP) == 0)) {
-			gtk_adjustment_set_upper(GTK_ADJUSTMENT(editor->hadjustment), editor->buffer->left_margin + editor->buffer->rendered_width + editor->buffer->right_margin);
-			gtk_adjustment_set_page_size(GTK_ADJUSTMENT(editor->hadjustment), allocation.width);
-			gtk_adjustment_set_page_increment(GTK_ADJUSTMENT(editor->hadjustment), allocation.width/2);
-			gtk_adjustment_set_step_increment(GTK_ADJUSTMENT(editor->hadjustment), editor->buffer->em_advance);
+			gtk_adjustment_configure(GTK_ADJUSTMENT(editor->hadjustment),
+				gtk_adjustment_get_value(GTK_ADJUSTMENT(editor->hadjustment)),
+				0.0, // lower
+				editor->buffer->left_margin + editor->buffer->rendered_width + editor->buffer->right_margin, // upper
+				editor->buffer->em_advance, // step increment
+				allocation.width/2, // page increment
+				allocation.width // page size
+				);
 		}
 	}
 
@@ -1569,14 +1578,22 @@ editor_t *new_editor(buffer_t *buffer, bool single_line) {
 
 	g_signal_connect(G_OBJECT(r->drarim), "commit", G_CALLBACK(text_entry_callback), r);
 
-
-	r->drarscroll = gtk_vscrollbar_new((GtkAdjustment *)(r->adjustment = gtk_adjustment_new(0.0, 0.0, 1.0, 1.0, 1.0, 1.0)));
+	r->adjustment = gtk_adjustment_new(0.0, 0.0, 1.0, 1.0, 1.0, 1.0);
 	r->hadjustment = gtk_adjustment_new(0.0, 0.0, 1.0, 1.0, 1.0, 1.0);
 
-	gtk_table_attach(GTK_TABLE(r), r->drar, 0, 1, 0, 1, GTK_EXPAND | GTK_FILL, GTK_EXPAND|GTK_FILL, 0, 0);
-	gtk_table_attach(GTK_TABLE(r), r->drarscroll, 1, 2, 0, 1, 0, GTK_EXPAND|GTK_FILL, 0, 0);
+	if (config_intval(&global_config, CFG_OLDSCROLLBAR) != 0) {
+		//TODO: use old-style scrollbar
+		//r->drarscroll = gtk_vscrollbar_new(GTK_ADJUSTMENT(r->adjustment));
+		r->drarscroll = oldscroll_new(GTK_ADJUSTMENT(r->adjustment));
+		gtk_table_attach(GTK_TABLE(r), r->drarscroll, 0, 1, 0, 1, 0, GTK_EXPAND|GTK_FILL, 0, 0);
+		gtk_table_attach(GTK_TABLE(r), r->drar, 1, 2, 0, 1, GTK_EXPAND | GTK_FILL, GTK_EXPAND|GTK_FILL, 0, 0);
+	} else {
+		r->drarscroll = gtk_vscrollbar_new(GTK_ADJUSTMENT(r->adjustment));
+		gtk_table_attach(GTK_TABLE(r), r->drar, 0, 1, 0, 1, GTK_EXPAND | GTK_FILL, GTK_EXPAND|GTK_FILL, 0, 0);
+		gtk_table_attach(GTK_TABLE(r), r->drarscroll, 1, 2, 0, 1, 0, GTK_EXPAND|GTK_FILL, 0, 0);
+	}
 
-	g_signal_connect(G_OBJECT(r->drarscroll), "value_changed", G_CALLBACK(scrolled_callback), (gpointer)r);
+	g_signal_connect(G_OBJECT(r->adjustment), "value_changed", G_CALLBACK(scrolled_callback), (gpointer)r);
 
 	if (single_line) {
 		gtk_widget_set_size_request(r->drar, 1, r->buffer->line_height + config_intval(&(buffer->config), CFG_MAIN_FONT_HEIGHT_REDUCTION));
