@@ -409,6 +409,7 @@ static int teddy_bg_command(ClientData client_data, Tcl_Interp *interp, int argc
 			return TCL_OK;
 		} else {
 			codearg = argv[1];
+			buffer = buffers_get_buffer_for_process(false);
 		}
 	} else if (argc == 3) {
 		buffer = buffer_id_to_buffer(argv[1]);

@@ -1,7 +1,7 @@
 #ifndef __CFG_AUTO__
 #define __CFG_AUTO__
 
-#define CONFIG_NUM 38
+#define CONFIG_NUM 39
 
 #define CFG_MAIN_FONT 0
 #define CFG_MAIN_FONT_HEIGHT_REDUCTION 1
@@ -41,5 +41,6 @@
 #define CFG_TAGS_DISCARD_LINENO 35
 #define CFG_AUTORELOAD 36
 #define CFG_AUTOCOMPL_POPUP 37
+#define CFG_JOBS_APPEND 38
 
 #endif

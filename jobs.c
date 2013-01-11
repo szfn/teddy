@@ -69,7 +69,7 @@ static void job_destroy(job_t *job) {
 		if (p != NULL) free(p);
 		buffer_replace_selection(job->buffer, "");
 
-		job->buffer->cursor = 0;
+		job->buffer->cursor = job->reset_position;
 
 		editor_t *editor;
 		find_editor_for_buffer(job->buffer, NULL, NULL, &editor);
@@ -274,7 +274,14 @@ static void job_attach_to_buffer(job_t *job, const char *command, buffer_t *buff
 	job->buffer = buffer;
 	job->buffer->job = job;
 
-	buffer_aux_clear(buffer);
+	if (config_intval(&global_config, CFG_JOBS_APPEND) == 0) {
+		buffer_aux_clear(buffer);
+	} else {
+		buffer->mark = -1;
+		buffer->cursor = BSIZE(buffer);
+	}
+
+	job->reset_position = buffer->cursor;
 
 	if ((command != NULL) && (buffer->path[0] == '+')) {
 		char *msg;
@@ -325,7 +332,7 @@ static void job_create_buffer(job_t *job) {
 	if (job->buffer != NULL) return;
 	if (job->terminating) return;
 
-	buffer_t *buffer = buffers_get_buffer_for_process();
+	buffer_t *buffer = buffers_get_buffer_for_process(true);
 	job_attach_to_buffer(job, job->command, buffer);
 	go_to_buffer(NULL, buffer, false);
 }
@@ -444,6 +451,8 @@ int jobs_register(pid_t child_pid, int masterfd, buffer_t *buffer, const char *c
 	jobs[i].current_ratelimit_bucket_size = 0;
 
 	jobs[i].ansi_state = ANSI_NORMAL;
+
+	jobs[i].reset_position = 0;
 
 	{
 		GError *error = NULL;

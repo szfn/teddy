@@ -392,7 +392,7 @@ buffer_t *buffers_create_with_name(char *name) {
 	return buffer;
 }
 
-buffer_t *buffers_get_buffer_for_process(void) {
+buffer_t *buffers_get_buffer_for_process(bool create) {
 	buffer_t *buffer;
 	int i;
 	// look for a buffer with a name starting by +bg/ that doesn't have a process
@@ -405,8 +405,11 @@ buffer_t *buffers_get_buffer_for_process(void) {
 	}
 
 	if (i >= buffers_allocated) {
+		if (!create) return NULL;
+
 		char *bufname;
 		asprintf(&bufname, "+bg/%d+", process_buffers_counter);
+		alloc_assert(bufname);
 		++process_buffers_counter;
 
 		buffer = buffers_create_with_name(bufname);
