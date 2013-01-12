@@ -938,14 +938,11 @@ static gboolean scroll_callback(GtkWidget *widget, GdkEventScroll *event, editor
 	switch(event->direction) {
 	case GDK_SCROLL_UP: {
 		double nv = gtk_adjustment_get_value(GTK_ADJUSTMENT(editor->adjustment)) - editor->buffer->line_height;
-		if (nv < 0) nv = 0;
 		gtk_adjustment_set_value(GTK_ADJUSTMENT(editor->adjustment), nv);
 		break;
 	}
 	case GDK_SCROLL_DOWN: {
 		double nv = gtk_adjustment_get_value(GTK_ADJUSTMENT(editor->adjustment)) + editor->buffer->line_height;
-		double mv = gtk_adjustment_get_upper(GTK_ADJUSTMENT(editor->adjustment)) - gtk_adjustment_get_page_size(GTK_ADJUSTMENT(editor->adjustment));
-		if (nv > mv) nv = mv;
 		gtk_adjustment_set_value(GTK_ADJUSTMENT(editor->adjustment), nv);
 		break;
 	}
@@ -1429,7 +1426,7 @@ static gboolean expose_event_callback(GtkWidget *widget, GdkEventExpose *event, 
 		gtk_adjustment_configure(GTK_ADJUSTMENT(editor->adjustment),
 			gtk_adjustment_get_value(GTK_ADJUSTMENT(editor->adjustment)),
 			0.0, // lower
-			editor->buffer->rendered_height + editor->buffer->line_height*2, // upper
+			editor->buffer->rendered_height + allocation.height, // upper
 			editor->buffer->line_height, // step increment
 			allocation.height/2, // page increment
 			allocation.height // page size

@@ -57,8 +57,8 @@ static gboolean expose_event_callback(GtkWidget *widget, GdkEventExpose *event, 
 	cairo_fill(cr);
 
 	double lower = gtk_adjustment_get_lower(os->adj),
-		upper = gtk_adjustment_get_upper(os->adj),
 		page = gtk_adjustment_get_page_size(os->adj),
+		upper = gtk_adjustment_get_upper(os->adj) - page,
 		value = gtk_adjustment_get_value(os->adj);
 
 	double size = upper - lower;
@@ -88,15 +88,11 @@ static void scroll_by_page(oldscroll_t *os, double y, double direction) {
 	GtkAllocation allocation;
 	gtk_widget_get_allocation(GTK_WIDGET(os), &allocation);
 
-	double lower = gtk_adjustment_get_lower(os->adj),
-		upper = gtk_adjustment_get_upper(os->adj),
-		page = gtk_adjustment_get_page_size(os->adj),
+	double page = gtk_adjustment_get_page_size(os->adj),
 		value = gtk_adjustment_get_value(os->adj);
 
 	value += direction * page * (y / allocation.height);
 
-	if (value > (upper - page)) value = upper - page;
-	if (value < lower) value = lower;
 	gtk_adjustment_set_value(GTK_ADJUSTMENT(os->adj), value);
 }
 
@@ -106,13 +102,10 @@ static void scroll_absolute(oldscroll_t *os, double y) {
 
 	double lower = gtk_adjustment_get_lower(os->adj),
 		upper = gtk_adjustment_get_upper(os->adj),
-		page = gtk_adjustment_get_page_size(os->adj),
 		value = gtk_adjustment_get_value(os->adj);
 
 	value = (upper - lower) * (y / allocation.height);
 
-	if (value > (upper - page)) value = upper - page;
-	if (value < lower) value = lower;
 	gtk_adjustment_set_value(GTK_ADJUSTMENT(os->adj), value);
 }
 

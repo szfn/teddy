@@ -12,7 +12,7 @@
 #include <ft2build.h>
 #include FT_FREETYPE_H
 
-#define RESHANDLE_SIZE 14
+#define RESHANDLE_SIZE 12
 
 extern GtkClipboard *selection_clipboard;
 extern GtkClipboard *default_clipboard;

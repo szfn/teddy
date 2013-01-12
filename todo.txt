@@ -1,4 +1,4 @@
-
+- bugfix: sending input to bg process doesn't center on cursor
 - password prompts
 - command to iterate through all the tokens of some type (make a separate command or shoehorn inside s?)
 
