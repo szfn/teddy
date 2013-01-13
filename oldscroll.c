@@ -168,7 +168,7 @@ GtkWidget *oldscroll_new(GtkAdjustment *adjustment) {
 	r->autoscroll = 0;
 	g_signal_connect(G_OBJECT(r), "expose_event", G_CALLBACK(expose_event_callback), r);
 
-	gtk_widget_set_size_request(oldscroll_widget, RESHANDLE_SIZE, 0);
+	gtk_widget_set_size_request(oldscroll_widget, RESHANDLE_SIZE, -1);
 
 	gtk_widget_add_events(oldscroll_widget, GDK_BUTTON_PRESS_MASK | GDK_POINTER_MOTION_MASK | GDK_BUTTON_RELEASE_MASK);
 
