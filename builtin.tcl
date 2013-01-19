@@ -129,7 +129,7 @@ namespace eval bindent {
 }
 
 proc man {args} {
-	teddy::bg "+man/$args+" "shell man $args"
+	teddy::bg [buffer make "+man/$args+"] "shell man $args"
 }
 
 proc clear {} {
