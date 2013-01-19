@@ -658,7 +658,7 @@ static gboolean key_press_callback(GtkWidget *widget, GdkEventKey *event, editor
 					editor_replace_selection(editor, "\n");
 				}
 			}
-			return TRUE;
+			goto key_press_return_true;
 		}
 		case GDK_KEY_Escape:
 			return TRUE;
