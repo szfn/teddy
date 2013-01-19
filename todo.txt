@@ -1,5 +1,3 @@
-- bugfix: ctrl-c on search mode doesn't work (but doesn't stop search mode either)
-
 - password prompts
 - command to iterate through all the tokens of some type (make a separate command or shoehorn inside s?)
 

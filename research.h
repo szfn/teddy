@@ -36,7 +36,7 @@ struct _editor_t editor;
 
 extern void research_init(struct research_t *rs);
 
-extern void quit_search_mode(struct _editor_t *editor);
+extern void quit_search_mode(struct _editor_t *editor, bool clear_selection);
 extern void move_search(struct _editor_t *editor, bool ctrl_g_invoked, bool direction_forward, bool replace);
 
 extern int teddy_research_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]);

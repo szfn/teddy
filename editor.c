@@ -424,7 +424,7 @@ static bool search_key_press_callback(editor_t *editor, GdkEventKey *event) {
 
 	if (!shift && !ctrl && !alt && !super) {
 		if ((event->keyval == GDK_KEY_Escape) || (event->keyval == GDK_KEY_Return)) {
-			quit_search_mode(editor);
+			quit_search_mode(editor, true);
 			return true;
 		}
 	}
@@ -450,7 +450,7 @@ static bool search_key_press_callback(editor_t *editor, GdkEventKey *event) {
 				move_search(editor, true, true, false);
 				break;
 			case GDK_KEY_q:
-				quit_search_mode(editor);
+				quit_search_mode(editor, true);
 				break;
 			case GDK_KEY_A:
 				research_continue_replace_to_end(editor);
@@ -471,6 +471,10 @@ static bool search_key_press_callback(editor_t *editor, GdkEventKey *event) {
 				}
 			}
 		}
+	}
+
+	if (ctrl || alt || super) {
+		quit_search_mode(editor, false);
 	}
 
 	return false;
@@ -508,7 +512,11 @@ static gboolean key_press_callback(GtkWidget *widget, GdkEventKey *event, editor
 		if (search_key_press_callback(editor, event)) {
 			return TRUE;
 		} else {
-			goto im_context;
+			if (editor->research.mode != SM_NONE) {
+				// we are still in search mode, send keypress to im_context
+				// otherwise search mode ended, process key normally
+				goto im_context;
+			}
 		}
 	}
 

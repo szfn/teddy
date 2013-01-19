@@ -31,7 +31,7 @@ static void research_free_temp(struct research_t *r) {
 	}
 }
 
-void quit_search_mode(editor_t *editor) {
+void quit_search_mode(editor_t *editor, bool clear_selection) {
 	research_free_temp(&(editor->research));
 	if (editor->research.mode == SM_LITERAL) {
 		char *x = utf32_to_utf8_string(editor->research.literal_text, editor->research.literal_text_cap);
@@ -41,7 +41,7 @@ void quit_search_mode(editor_t *editor) {
 	editor->research.mode = SM_NONE;
 	editor->ignore_next_entry_keyrelease = TRUE;
 
-	editor->buffer->mark = -1;
+	if (clear_selection) editor->buffer->mark = -1;
 
 	gtk_widget_grab_focus(editor->drar);
 	gtk_widget_queue_draw(GTK_WIDGET(editor));
