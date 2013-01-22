@@ -98,10 +98,11 @@ static void iopen_enter(editor_t *editor) {
 	GtkTreePath *path;
 	gtk_tree_view_get_cursor(GTK_TREE_VIEW(results_tree), &path, NULL);
 
-	if (path != NULL) {
-		iopen_open(GTK_TREE_VIEW(results_tree), path);
-		gtk_tree_path_free(path);
+	if (path == NULL) {
+		path = gtk_tree_path_new_first();
 	}
+	iopen_open(GTK_TREE_VIEW(results_tree), path);
+	gtk_tree_path_free(path);
 }
 
 static void result_activated_callback(GtkTreeView *tree, GtkTreePath *treepath, GtkTreeViewColumn *column, gpointer data) {
