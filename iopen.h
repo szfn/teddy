@@ -3,7 +3,7 @@
 
 #include <gtk/gtk.h>
 
-void iopen(void);
+void iopen(const char *initial_text);
 void iopen_init(GtkWidget *window);
 void iopen_recoloring(void);
 

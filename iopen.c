@@ -432,7 +432,7 @@ void iopen_init(GtkWidget *window) {
 	g_thread_new("tags iteration", iopen_tags_thread, NULL);
 }
 
-void iopen(void) {
+void iopen(const char *initial_text) {
 	gtk_window_set_transient_for(GTK_WINDOW(iopen_window), GTK_WINDOW(parent_window));
 	gtk_window_set_modal(GTK_WINDOW(iopen_window), TRUE);
 	//gtk_window_set_position(GTK_WINDOW(iopen_window), GTK_WIN_POS_CENTER_ON_PARENT);
@@ -442,15 +442,10 @@ void iopen(void) {
 	buffer_aux_clear(iopen_buffer);
 	iopen_buffer->cursor = 0;
 
-	gchar *text = gtk_clipboard_wait_for_text(selection_clipboard);
-	if ((text != NULL) && (strcmp(text, "") != 0)) {
-		if (strstr(text, "\n") == NULL) {
-			buffer_replace_selection(iopen_buffer, text);
-			iopen_buffer->mark = 0;
-		}
+	if (initial_text != NULL) {
+		buffer_replace_selection(iopen_buffer, initial_text);
+		iopen_buffer->mark = 0;
 	}
-
-	if (text != NULL) g_free(text);
 
 	gtk_widget_show_all(iopen_window);
 	editor_grab_focus(iopen_editor, false);

@@ -223,7 +223,7 @@ static void close_mitem_callback(GtkMenuItem *menuitem, gpointer data) {
 }
 
 static void iopen_mitem_callback(GtkMenuItem *menuitem, gpointer data) {
-	iopen();
+	iopen(NULL);
 }
 
 static void open_mitem_callback(GtkMenuItem *menuitem, gpointer data) {

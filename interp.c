@@ -116,7 +116,7 @@ static int teddy_pwf_command(ClientData client_data, Tcl_Interp *interp, int arg
 }
 
 static int teddy_iopen_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
-	iopen();
+	iopen((argc < 2) ? NULL : argv[1]);
 	return TCL_OK;
 }
 

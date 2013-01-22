@@ -1,3 +1,6 @@
+- online help
+- bugfix: iopen: return selects first result when nothing is selected
+- bugfix: autocompletions windows flicker through both its possible positions when displayed at the bottom right
 - password prompts
 - command to iterate through all the tokens of some type (make a separate command or shoehorn inside s?)
 
