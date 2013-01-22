@@ -25,6 +25,7 @@ struct completer {
 	size_t size;
 	size_t prefix_len;
 	double alty;
+	bool moved_once;
 
 	char *common_suffix;
 

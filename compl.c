@@ -15,6 +15,8 @@
 #include <unicode/uchar.h>
 
 static gboolean compl_wnd_expose_callback(GtkWidget *widget, GdkEventExpose *event, struct completer *c) {
+	if (c->moved_once) return FALSE;
+
 	GtkAllocation allocation;
 
 	gtk_widget_get_allocation(c->window, &allocation);
@@ -37,12 +39,20 @@ static gboolean compl_wnd_expose_callback(GtkWidget *widget, GdkEventExpose *eve
 
 	//printf("bottom right corner (%g, %g) screen width: %d height: %d\n", x, y, screen_width, screen_height);
 
+	bool changed = false;
 	if (x > screen_width) {
-		gtk_window_move(GTK_WINDOW(c->window), allocation.x + screen_width - x - 5, allocation.y);
+		changed = true;
+		allocation.x += screen_width - x - 5;
 	}
 
 	if (y > screen_height) {
-		gtk_window_move(GTK_WINDOW(c->window), allocation.x, c->alty - allocation.height);
+		changed = true;
+		allocation.y = c->alty - allocation.height;
+	}
+
+	if (changed) {
+		gtk_window_move(GTK_WINDOW(c->window), allocation.x, allocation.y);
+		c->moved_once = true;
 	}
 
 	return FALSE;
@@ -128,6 +138,7 @@ static int compl_wnd_fill_callback(const char *entry, void *p) {
 void compl_wnd_show(struct completer *c, const char *prefix, double x, double y, double alty, GtkWidget *parent, bool show_empty, bool show_empty_prefix) {
 	if (c == NULL) return;
 	if (c->recalc != NULL) prefix = c->recalc(c, prefix);
+	c->moved_once = FALSE;
 
 	//printf("Completing <%s>\n", prefix);
 
