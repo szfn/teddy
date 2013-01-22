@@ -1681,7 +1681,7 @@ void editor_start_search(editor_t *editor, enum search_mode_t search_mode, const
 	if (editor->research.mode == SM_LITERAL) {
 		if (initial_search_term != NULL) {
 			editor->research.literal_text = utf8_to_utf32_string(initial_search_term, &(editor->research.literal_text_cap));
-			editor->research.literal_text_allocated = strlen(initial_search_term);
+			editor->research.literal_text_allocated = strlen(initial_search_term)+1;
 		} else {
 			editor->research.literal_text = malloc(sizeof(uint32_t) * 5);
 			editor->research.literal_text_allocated = 5;
