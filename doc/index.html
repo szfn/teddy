@@ -24,9 +24,10 @@
 
 		<p>Each teddy window is divided into one or more columns, each column is divided into one or more editing frames. Editing frames (in short "frames") either show the editable contents of a file, the output of a command or the contents of a directory.
 
-		<p>The top line contains the current directory and the "Tools" menu. When &lt;Esc&gt; is pressed the top line is replaced with a command line, typing a command here and pressing enter will execute it.
+		<p>The top line contains the command line. Pressing enter when the cursor is on the command line will execute its contents, any command available on the shell will work along with some teddy specific commands.<br>
+		The command line can be focused by pressing &lt;Esc&gt;.
 
-		<p>You can create a new column by choosing the menu item "New column" from the "Tools" menu. New frames are created as needed when opening files, directories or executing commands. To open a file or a directory specifying its full path press &lt;Esc&gt: key then type <tt>buffer open <i>path-to-file</i></tt>, by picking "Search file" from "Tools" menu you can search for a file recursively.
+		<p>The top line also contains a tools menu, it can be opened by clicking the gear icon.
 
 		<h3>Elements of a frame</h3>
 
@@ -40,15 +41,17 @@
 
 		<li><b>Editing Area</b>: Lets the user edit the buffer associated with this frame.
 		<li><b>Position Box</b>: Shows the current position of the cursor in the editing area, both as absolute position (line number, glyph number) and as percentage of the complete file.
+		<li><b>Windows Buttons</b>: each frame also has two icons, the X closes it, the other icon maximizes it.
+
 		</ul>
 
 		<h2>Output buffers and links</h2>
 
 		<p><center><img src="teddy_link.png"></center>
 
-		<p>By pressing &lt;Esc&gt;, typing an external command (for example <tt>make</tt>) and pressing &gt;Enter&lt; the external command will be executed and its output displayed on an output frame. When teddy finds names of files in the output of an external command it will transform them into hyperlinks.
+		<p>By pressing &lt;Esc&gt;, typing an external command (for example <tt>make</tt>) and pressing &lt;Enter&gt; the external command will be executed and its output displayed on an output frame. When teddy finds names of files in the output of an external command it will transform them into hyperlinks.
 
-		In the example, clicking "editor.c:17:18" will open the file <tt>editor.c</tt> (or focus its frame if it's already open) and go to the 18th column of the 17th line.
+		In the example, clicking "editor.c:17:22" will open the file <tt>editor.c</tt> (or focus its frame if it's already open) and go to the 22nd column of the 17th line.
 
 		<h2>Default keybindings</h2>
 

@@ -1,6 +1,6 @@
 CFLAGS=`pkg-config --cflags gtk+-2.0` -g -Wall -D_FORTIFY_SOURCE=2 -D_GNU_SOURCE -I/usr/include/tcl8.5 -std=c99 -pthread
 LIBS=`pkg-config --libs gtk+-2.0` -ltcl8.5 -lfontconfig -licuuc -lutil -ltre -lm -pthread
-OBJS := obj/teddy.o obj/buffer.o obj/editor.o obj/buffers.o obj/columns.o obj/column.o obj/interp.o obj/global.o obj/undo.o  obj/history.o obj/jobs.o obj/colors.o obj/cfg_auto.o obj/cfg.o obj/research.o obj/compl.o obj/lexy.o obj/treint.o obj/critbit.o obj/tframe.o obj/foundry.o obj/top.o obj/iopen.o obj/tags.o obj/oldscroll.o
+OBJS := obj/teddy.o obj/buffer.o obj/editor.o obj/buffers.o obj/columns.o obj/column.o obj/interp.o obj/global.o obj/undo.o  obj/history.o obj/jobs.o obj/colors.o obj/cfg_auto.o obj/cfg.o obj/research.o obj/compl.o obj/lexy.o obj/treint.o obj/critbit.o obj/tframe.o obj/foundry.o obj/top.o obj/iopen.o obj/tags.o obj/oldscroll.o obj/docs.o
 
 all: bin/teddy
 
@@ -41,6 +41,9 @@ builtin.h: builtin.tcl builtin-create.pl
 
 autoconf.h: example.teddy builtin-create.pl
 	perl builtin-create.pl
+
+docs.c: doc/commands.html doc/index.html doc/keyboard.html doc/mouse.html doc/teddy_frame.png doc/teddy_link.png doc/teddy_window.png
+	perl create-conf.pl
 
 git.date.h: $(OBJS)
 	./make.git.date.sh

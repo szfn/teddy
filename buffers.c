@@ -548,8 +548,11 @@ int teddy_buffer_command(ClientData client_data, Tcl_Interp *interp, int argc, c
 			go_to_buffer(interp_context_editor(), b, false);
 		}
 	} else if (strcmp(argv[1], "current") == 0) {
-		HASBUF("buffer current");
-		buffer_to_buffer_id(interp_context_buffer(), bufferid);
+		if (interp_context_buffer() != NULL) {
+			buffer_to_buffer_id(interp_context_buffer(), bufferid);
+		} else {
+			buffer_to_buffer_id(null_buffer(), bufferid);
+		}
 		Tcl_SetResult(interp, bufferid, TCL_VOLATILE);
 	} else if (strcmp(argv[1], "propget") == 0) {
 		ARGNUM((argc != 4), "buffer propget");

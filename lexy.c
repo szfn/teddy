@@ -856,11 +856,6 @@ static int lexy_parse_token( int state, const char *text, char **file, char **li
 
 int lexy_token_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
 	// lexy-token <starting state> <text>
-	if (interp_context_buffer() == NULL) {
-		Tcl_AddErrorInfo(interp, "Can not execute lexy-token command without an active buffer");
-		return TCL_ERROR;
-	}
-
 	if (argc != 3) {
 		Tcl_AddErrorInfo(interp, "Wrong number of arguments to lexy-token command");
 		return TCL_ERROR;
@@ -869,7 +864,19 @@ int lexy_token_command(ClientData client_data, Tcl_Interp *interp, int argc, con
 	int r = 0;
 	char *file = NULL, *line = NULL, *col = NULL;
 
-	int status = (strcmp(argv[1], ".") == 0) ? start_status_for_buffer(interp_context_buffer()) : find_status(argv[1]);
+	int status;
+
+	if (strcmp(argv[1], ".") == 0) {
+		if (interp_context_buffer() != NULL) {
+			status = start_status_for_buffer(interp_context_buffer());
+		} else {
+			Tcl_AddErrorInfo(interp, "Can not execute lexy-token without specifying a start state and no open buffer");
+			return TCL_ERROR;
+		}
+	} else {
+		status = find_status(argv[1]);
+	}
+
 	if (status >= 0) {
 		r = lexy_parse_token(status, argv[2], &file, &line, &col);
 	} else {

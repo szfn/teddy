@@ -253,7 +253,7 @@ namespace eval teddy {
 # Color themes for teddy
 
 proc antique_theme {} {
-	setcfg -global editor_bg_color [rgbcolor "antique white"]
+	setcfg -global editor_bg_color [rgbcolor "white"]
 	setcfg -global border_color [rgbcolor black]
 
 	setcfg -global editor_fg_color [rgbcolor black]

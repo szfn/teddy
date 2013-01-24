@@ -33,7 +33,7 @@
 
 		<h3>m (move and mark)</h3>
 		<div class="ind">
-			<p><b>Syntax:</b> <tt>m <b>[</b> <i>mark-position<i> <b>]</b> <b>[</b> <i>cursor-position</i> <b>]</b> </tt>
+			<p><b>Syntax:</b> <tt>m <b>[</b> <i>mark-position</i> <b>]</b> <b>[</b> <i>cursor-position</i> <b>]</b> </tt>
 			<p>Selections in teddy are specified by the position of the mark (beginning of the selection) and the cursor (the blinking cursor that typed text is inserted at).
 			<p>By calling <tt>m</tt> without arguments the current position of mark and cursor is returned.
 			<p>When called with a single argument the cursor is moved to the specified position and the mark is set to nil.
@@ -41,12 +41,14 @@
 
 			<h4>Grammar for position specifiers</h4>
 			<p><pre>
-position-specifier ::= <tt>nil</tt> | <i>line-specifier</i><tt>:</tt><i>column-specifier<i>
-line-specifier ::= <i>line-number</i> | <tt>+</tt><i>relative-movement</i> | <tt>-</tt><i>relative-movement</i> | <tt>$</tt>
-column-specifier ::= <i>column-number</i> | <tt>+</tt><i>relative-movement</i> | <tt>-</tt><i>relative-movement</i> | <tt>$</tt> | <tt>^</tt> | <tt>^1</tt>
+position-specifier ::= <tt>nil</tt> | <i>line-specifier</i>:<i>column-specifier</i>
+line-specifier ::= <i>line-number</i> | +<i>relative-movement</i> | -<i>relative-movement</i> | $
+column-specifier ::= <i>column-number</i> | +<i>relative-movement</i> | -<i>relative-movement</i> | $ | ^ | ^1
 			</pre>
 
-			In addition prefixing a cursor position specification with 'm' makes it relative to the mark position (the mark position is always relative to the cursor position). This is particularly useful in conjunction with 's': <tt>m [s -z {:}]  +:+2w</tt> selects two words starting right after the next ':' character.
+			In addition prefixing a cursor position specification with 'm' makes it relative to the mark position (the mark position is always relative to the cursor position). This is particularly useful in conjunction with 's':
+			<pre><tt>m [s -z {:}]  +:+2w</tt></pre>
+			selects two words starting right after the next ':' character.
 
 			<h4>Abbreviations</h4>
 
@@ -75,7 +77,7 @@ column-specifier ::= <i>column-number</i> | <tt>+</tt><i>relative-movement</i> |
 
 		<h3>s (search and replace)</h3>
 		<div class="ind">
-			<p><b>Syntax:</b> <tt>s <b>[</b> <i>options</i> <b>]</b> <i>regexp</i> <b>[</b> <i>code</i> <b>]</b>
+			<p><b>Syntax:</b> <tt>s <b>[</b> <i>options</i> <b>]</b> <i>regexp</i> <b>[</b> <i>code</i> <b>]</b></tt>
 
 			<p>Search for a <i>regexp</i> in the file. If <i>code</i> is specified executes it for every match.
 			<p>When executed on the command line search and execution of <i>code</i> is performed interactively, unless there's an active selection.
@@ -159,7 +161,7 @@ column-specifier ::= <i>column-number</i> | <tt>+</tt><i>relative-movement</i> |
 
 		<h3>shellsync</h3>
 		<div class="ind">
-			<p><b>Syntax: </b> <tt>shellsync <i>input-text</i> <i>external-command-syntax<i></tt>
+			<p><b>Syntax: </b> <tt>shellsync <i>input-text</i> <i>external-command-syntax</i></tt>
 			<p>Prepending an external command with <tt>shellsync</tt> executes the command synchronously, and returns the output text of the command.
 
 			<h4>Example:</h4>

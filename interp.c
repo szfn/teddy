@@ -27,6 +27,7 @@
 #include "top.h"
 #include "iopen.h"
 #include "tags.h"
+#include "docs.h"
 
 Tcl_Interp *interp;
 editor_t *the_context_editor = NULL;
@@ -1155,6 +1156,72 @@ static int teddy_fullscreen_command(ClientData client_data, Tcl_Interp *interp, 
 	return TCL_OK;
 }
 
+static bool write_doc_file(Tcl_Interp *interp, const char *filename, const unsigned char *text, size_t size) {
+	if (access(filename, F_OK) == 0) return true;
+
+	FILE *f = fopen(filename, "wb");
+	size_t r = fwrite(text, sizeof(unsigned char), size, f);
+	if (r != size) {
+		if (interp != NULL) {
+			char *msg;
+			asprintf(&msg, "Could not write documentation file %s\n", filename);
+			alloc_assert(msg);
+			Tcl_AddErrorInfo(interp, msg);
+			free(msg);
+		}
+		return false;
+	}
+	fclose(f);
+	return true;
+}
+
+static bool write_doc_files(void) {
+	int r = mkdir("/dev/shm/teddy/", 0777);
+	if (r != 0) {
+		if (errno != EEXIST) {
+			Tcl_AddErrorInfo(interp, "Could not create /dev/shm/teddy directory");
+			return false;
+		}
+	}
+
+	if (!write_doc_file(interp, "/dev/shm/teddy/index.html", index_doc, index_doc_size)) {
+		return false;
+	}
+	if (!write_doc_file(interp, "/dev/shm/teddy/commands.html", commands_doc, commands_doc_size)) {
+		return false;
+	}
+	if (!write_doc_file(interp, "/dev/shm/teddy/keyboard.html", keyboard_doc, keyboard_doc_size)) {
+		return false;
+	}
+	if (!write_doc_file(interp, "/dev/shm/teddy/mouse.html", mouse_doc, mouse_doc_size)) {
+		return false;
+	}
+	if (!write_doc_file(interp, "/dev/shm/teddy/teddy_frame.png", teddy_frame_png, teddy_frame_png_size)) {
+		return false;
+	}
+	if (!write_doc_file(interp, "/dev/shm/teddy/teddy_link.png", teddy_link_png, teddy_link_png_size)) {
+		return false;
+	}
+	if (!write_doc_file(interp, "/dev/shm/teddy/teddy_window.png", teddy_window_png, teddy_window_png_size)) {
+		return false;
+	}
+
+	return true;
+}
+
+static int teddy_help_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
+	if (argc == 1) {
+		if (!write_doc_files()) {
+			return TCL_ERROR;
+		}
+		interp_eval(NULL, NULL, "$teddy::open_cmd /dev/shm/teddy/index.html", false);
+	} else {
+		Tcl_AddErrorInfo(interp, "Too many arguments to 'help'");
+		return TCL_ERROR;
+	}
+	return TCL_OK;
+}
+
 void interp_init(void) {
 	interp = Tcl_CreateInterp();
 	if (interp == NULL) {
@@ -1225,6 +1292,8 @@ void interp_init(void) {
 	Tcl_CreateCommand(interp, "teddy::tags", &teddy_tags_command, (ClientData)NULL, NULL);
 
 	Tcl_CreateCommand(interp, "teddy::fullscreen", &teddy_fullscreen_command, (ClientData)NULL, NULL);
+
+	Tcl_CreateCommand(interp, "help", &teddy_help_command, (ClientData)NULL, NULL);
 
 	int code = Tcl_Eval(interp, BUILTIN_TCL_CODE);
 	if (code != TCL_OK) {

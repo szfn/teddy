@@ -1,4 +1,6 @@
-- online help
+- should be possible to copy to command line with a keybinding
+- bugfix: doubleclick on oldscrollbar -> faster
+
 - password prompts
 - command to iterate through all the tokens of some type (make a separate command or shoehorn inside s?)
 
