@@ -1222,6 +1222,12 @@ static int teddy_help_command(ClientData client_data, Tcl_Interp *interp, int ar
 	return TCL_OK;
 }
 
+static int teddy_cmdlinefocus_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
+	top_start_command_line(interp_context_editor(), NULL);
+	return TCL_OK;
+}
+
+
 void interp_init(void) {
 	interp = Tcl_CreateInterp();
 	if (interp == NULL) {
@@ -1294,6 +1300,7 @@ void interp_init(void) {
 	Tcl_CreateCommand(interp, "teddy::fullscreen", &teddy_fullscreen_command, (ClientData)NULL, NULL);
 
 	Tcl_CreateCommand(interp, "help", &teddy_help_command, (ClientData)NULL, NULL);
+	Tcl_CreateCommand(interp, "teddy::cmdline-focus", &teddy_cmdlinefocus_command, (ClientData)NULL, NULL);
 
 	int code = Tcl_Eval(interp, BUILTIN_TCL_CODE);
 	if (code != TCL_OK) {
