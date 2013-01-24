@@ -111,7 +111,10 @@ static void scroll_absolute(oldscroll_t *os, double y) {
 
 static gboolean scrollbar_autoscroll(oldscroll_t *os) {
 	switch(os->autoscroll) {
+	case -1:
+		return FALSE;
 	case 0:
+		os->autoscroll = -1;
 		return FALSE;
 	case 1:
 		scroll_by_page(os, os->autoscroll_y, -1.0);
@@ -124,11 +127,12 @@ static gboolean scrollbar_autoscroll(oldscroll_t *os) {
 }
 
 static gboolean button_press_callback(GtkWidget *widget, GdkEventButton *event, oldscroll_t *os) {
+	if (event->type == GDK_2BUTTON_PRESS) return TRUE;
 	switch (event->button) {
 	case 1:
 		scroll_by_page(os, event->y, -1.0);
 		os->autoscroll_y = event->y;
-		if (os->autoscroll == 0) g_timeout_add(2*AUTOSCROLL_TIMO, (GSourceFunc)scrollbar_autoscroll, (gpointer)os);
+		if (os->autoscroll < 0) g_timeout_add(2*AUTOSCROLL_TIMO, (GSourceFunc)scrollbar_autoscroll, (gpointer)os);
 		os->autoscroll = 1;
 		break;
 	case 2:
@@ -138,7 +142,7 @@ static gboolean button_press_callback(GtkWidget *widget, GdkEventButton *event, 
 	case 3:
 		scroll_by_page(os, event->y, +1.0);
 		os->autoscroll_y = event->y;
-		if (os->autoscroll == 0) g_timeout_add(2*AUTOSCROLL_TIMO, (GSourceFunc)scrollbar_autoscroll, (gpointer)os);
+		if (os->autoscroll < 0) g_timeout_add(2*AUTOSCROLL_TIMO, (GSourceFunc)scrollbar_autoscroll, (gpointer)os);
 		os->autoscroll = 3;
 		break;
 	}
@@ -165,7 +169,7 @@ GtkWidget *oldscroll_new(GtkAdjustment *adjustment) {
 
 	r->adj = adjustment;
 	r->drag = false;
-	r->autoscroll = 0;
+	r->autoscroll = -1;
 	g_signal_connect(G_OBJECT(r), "expose_event", G_CALLBACK(expose_event_callback), r);
 
 	gtk_widget_set_size_request(oldscroll_widget, RESHANDLE_SIZE, -1);
