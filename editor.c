@@ -14,7 +14,7 @@
 #include "column.h"
 #include "cfg.h"
 #include "lexy.h"
-#include "foundry.h" asd
+#include "foundry.h"
 #include "top.h"
 #include "oldscroll.h"
 

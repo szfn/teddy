@@ -39,7 +39,7 @@ static void interp_context_editor_set(editor_t *editor) {
 	the_context_buffer = (editor != NULL) ? editor->buffer : NULL;
 }
 
-static void interp_context_buffer_set(buffer_t *buffer) {
+void interp_context_buffer_set(buffer_t *buffer) {
 	the_context_editor = NULL;
 	the_context_buffer = buffer;
 }

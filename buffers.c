@@ -633,9 +633,21 @@ int teddy_buffer_command(ClientData client_data, Tcl_Interp *interp, int argc, c
 		if (strcmp(argv[2], "temp") == 0) buffer_free(buffer, false);
 	} else if (strcmp(argv[1], "close") == 0) {
 		SINGLE_ARGUMENT_BUFFER_SUBCOMMAND("buffer close");
-		if (buffers_close_set(&buffer, 1, false))
-			if (buffer == interp_context_buffer())
-				top_context_editor_gone();
+		tframe_t *tf = NULL;
+		column_t *col = NULL;
+		find_editor_for_buffer(buffer, &col, &tf, NULL);
+		if ((tf != NULL) && (col != NULL)) {
+			columns_column_remove(columnset, col, tf, false, true);
+		} else {
+			if (buffers_close_set(&buffer, 1, false))
+				if (buffer == interp_context_buffer())
+					top_context_editor_gone();
+		}
+
+		if ((buffer != NULL) && (interp_context_buffer() == buffer)) {
+			interp_context_buffer_set(NULL);
+			top_context_editor_gone();
+		}
 	} else if (strcmp(argv[1], "force-close") == 0) {
 		SINGLE_ARGUMENT_BUFFER_SUBCOMMAND("buffer force-close");
 		buffer_close_real(buffer, true);
