@@ -430,10 +430,12 @@ static bool search_key_press_callback(editor_t *editor, GdkEventKey *event) {
 	}
 
 	if (ctrl && !alt && !super) {
-		if (event->keyval == GDK_KEY_g) {
+		switch(event->keyval) {
+		case GDK_KEY_g:
+		case GDK_KEY_f:
 			move_search(editor, true, true, false);
 			return true;
-		} else if (event->keyval == GDK_KEY_G) {
+		case GDK_KEY_G:
 			move_search(editor, true, false, false);
 			return true;
 		}
