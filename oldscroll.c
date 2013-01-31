@@ -160,7 +160,7 @@ static gboolean motion_callback(GtkWidget *widget, GdkEventMotion *event, oldscr
 
 static gboolean button_release_callback(GtkWidget *widget, GdkEventButton *event, oldscroll_t *os) {
 	os->drag = false;
-	os->autoscroll = 0;
+	if (event->button != 2) os->autoscroll = 0;
 	return TRUE;
 }
 
