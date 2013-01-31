@@ -102,9 +102,10 @@ static void scroll_absolute(oldscroll_t *os, double y) {
 
 	double lower = gtk_adjustment_get_lower(os->adj),
 		upper = gtk_adjustment_get_upper(os->adj),
-		value = gtk_adjustment_get_value(os->adj);
+		value = gtk_adjustment_get_value(os->adj),
+		page = gtk_adjustment_get_page_size(os->adj);
 
-	value = (upper - lower) * (y / allocation.height);
+	value = (upper - page - lower) * (y / allocation.height);
 
 	gtk_adjustment_set_value(GTK_ADJUSTMENT(os->adj), value);
 }
