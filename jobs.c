@@ -274,9 +274,15 @@ static void job_attach_to_buffer(job_t *job, const char *command, buffer_t *buff
 	job->buffer = buffer;
 	job->buffer->job = job;
 
-	if (config_intval(&global_config, CFG_JOBS_APPEND) == 0) {
+	int sb = config_intval(&global_config, CFG_JOBS_SCROLLBACK);
+	if (sb == 0) {
 		buffer_aux_clear(buffer);
 	} else {
+		if (BSIZE(buffer) > sb) {
+			buffer->mark = 0;
+			buffer->cursor = BSIZE(buffer) - sb - 1;
+			buffer_replace_selection(buffer, "");
+		}
 		buffer->mark = -1;
 		buffer->cursor = BSIZE(buffer);
 	}

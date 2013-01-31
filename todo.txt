@@ -1,4 +1,3 @@
-
 - command to iterate through all the tokens of some type (make a separate command or shoehorn inside s?)
 
 - bold matched text in autocompletions window and iopen window

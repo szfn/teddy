@@ -43,7 +43,7 @@ const char *config_names[] = {
 	"tags_discard_lineno",
 	"autoreload",
 	"autocompl_popup",
-	"jobs_append",
+	"jobs_scrollback",
 	"oldscrollbar",
 };
 
@@ -88,6 +88,6 @@ void config_init_auto_defaults(void) {
 	config_set(&global_config, CFG_TAGS_DISCARD_LINENO, "1");
 	config_set(&global_config, CFG_AUTORELOAD, "1");
 	config_set(&global_config, CFG_AUTOCOMPL_POPUP, "1");
-	config_set(&global_config, CFG_JOBS_APPEND, "0");
+	config_set(&global_config, CFG_JOBS_SCROLLBACK, "0");
 	config_set(&global_config, CFG_OLDSCROLLBAR, "0");
 }

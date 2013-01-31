@@ -45,5 +45,5 @@ cfg_tags_discard_lineno 1
 
 cfg_autoreload 1
 cfg_autocompl_popup 1
-cfg_jobs_append 0
+cfg_jobs_scrollback 0
 cfg_oldscrollbar 0
