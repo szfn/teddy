@@ -129,7 +129,7 @@ namespace eval bindent {
 }
 
 proc man {args} {
-	teddy::bg [buffer make "+man/$args+"] "shell man $args"
+	shell [buffer make "+man/$args+"] man -a $args
 }
 
 proc clear {} {
@@ -304,7 +304,7 @@ proc acme_theme {} {
 	buffer lexy
 }
 
-proc zenburn_theme {} {
+proc zenburn_theme {simple} {
 	setcfg -global editor_bg_color [rgbcolor 12 12 12]
 	setcfg -global border_color [rgbcolor white]
 	setcfg -global editor_bg_cursorline [rgbcolor 31 31 31]
@@ -320,13 +320,25 @@ proc zenburn_theme {} {
 	setcfg -global posbox_bg_color 15654274
 	setcfg -global posbox_fg_color 0
 
-	setcfg -global lexy_nothing [rgbcolor white]
-	setcfg -global lexy_keyword [rgbcolor 240 223 175]
-	setcfg -global lexy_comment [rgbcolor 127 159 127]
-	setcfg -global lexy_string [rgbcolor 204 147 147]
-	setcfg -global lexy_id [rgbcolor 197 197 183 ]
-	setcfg -global lexy_literal [rgbcolor 220 163 163]
-	setcfg -global lexy_file [rgbcolor cyan]
+	set idc [rgbcolor 197 197 183 ]
+
+	if {$simple} {
+		setcfg -global lexy_nothing [rgbcolor white]
+		setcfg -global lexy_keyword [rgbcolor white]
+		setcfg -global lexy_comment [rgbcolor 127 159 127]
+		setcfg -global lexy_string [rgbcolor 204 147 147]
+		setcfg -global lexy_id [rgbcolor white]
+		setcfg -global lexy_literal [rgbcolor white]
+		setcfg -global lexy_file [rgbcolor cyan]
+	} else {
+		setcfg -global lexy_nothing [rgbcolor white]
+		setcfg -global lexy_keyword [rgbcolor 240 223 175]
+		setcfg -global lexy_comment [rgbcolor 127 159 127]
+		setcfg -global lexy_string [rgbcolor 204 147 147]
+		setcfg -global lexy_id $idc
+		setcfg -global lexy_literal [rgbcolor 220 163 163]
+		setcfg -global lexy_file [rgbcolor cyan]
+	}
 
 	setcfg -global editor_sel_invert 0
 
@@ -453,145 +465,6 @@ proc lexydef {name args} {
 	}
 }
 
-proc shell {args} {
-   global backgrounded
-   if {!$backgrounded} {
-      error "shell called on a non backgrounded interpreter"
-   }
-
-   set i 0
-
-   while {$i < [llength $args]} {
-      set i [teddy_intl::shell_eat $args $i special normal]
-
-      set pipe ""
-      if {$i < [llength $args]} {
-         if {[lindex $args $i] eq "|"} {
-			set pipe [fdpipe]
-         }
-      }
-
-      set pgrp [posixpgrp]
-      set pid [posixfork]
-      if {$pid < 0} {
-         error "fork failed in 'shell'"
-      }
-
-      if {$pid == 0} {
-         posixpgrp $pgrp
-         teddy_intl::shell_child_code $special $normal $pipe
-      }
-
-      # parent code, wait and exit
-
-      posixpgrp $pid $pgrp
-
-      if {$pipe ne ""} {
-         # new default standard input is pipe's input side
-         fdclose [lindex $pipe 1]
-         fddup2 [lindex $pipe 0] 0
-         fdclose [lindex $pipe 0]
-      }
-
-      if {$i >= [llength $args]} {
-         #puts "waiting for $pid"
-         set r [posixwaitpid $pid]
-         #puts "wait ended <$r>"
-         return [lindex $r 1]
-      }
-
-      switch -exact [lindex $args $i] {
-         "&&" {
-			#puts "Processing AND $pid"
-			set r [posixwaitpid $pid]
-			#puts "Child returned [lindex $r 1]"
-			if {[lindex $r 1] != 0} {
-               # can not continue because last execution failed
-               return [lindex $r 1]
-			}
-         }
-         "||" {
-			set r [posixwaitpid $pid]
-			if {[lindex $r 1] == 0} {
-               # should not continue because last execution succeeded
-               return [lindex $r 1]
-			}
-         }
-         "|" {
-			# Nothing to do here
-         }
-      }
-
-      # skipping separator
-      incr i
-   }
-}
-
-proc shellsync {text args} {
-   if {[llength $args] <= 0} {
-      error "shellsync called without arguments"
-   }
-
-   global backgrounded
-   if {$backgrounded} {
-      error "shellpipe called on a backgrounded interpreter"
-   }
-
-   set pipe [fdpipe]
-   set outpipe [fdpipe]
-   set errpipe [fdpipe]
-   set pid [posixfork]
-
-   if {$pid < 0} {
-      error "fork failed in shellpipe command"
-   }
-
-   if {$pid == 0} {
-      # new default standard input is pipe's input side
-      fdclose [lindex $pipe 1]
-      fddup2 [lindex $pipe 0] 0
-      fdclose [lindex $pipe 0]
-
-      # new default standard output is outpipe's output side
-      fdclose [lindex $outpipe 0]
-      fddup2 [lindex $outpipe 1] 1
-      fdclose [lindex $outpipe 1]
-
-      # new default standard error is errpipe's output side
-      fdclose [lindex $errpipe 0]
-      fddup2 [lindex $errpipe 1] 2
-      fdclose [lindex $errpipe 1]
-
-      teddy::bg -setup
-
-      set exit 1
-      catch {set exit [shell [lindex $args 0] {*}[lrange $args 1 end]]}
-      posixexit $exit
-   } else {
-      fdclose [lindex $pipe 0]
-      fdclose [lindex $outpipe 1]
-      fdclose [lindex $errpipe 1]
-
-      set sub_input [fd2channel [lindex $pipe 1] write]
-      set sub_output [fd2channel [lindex $outpipe 0] read]
-      set sub_error [fd2channel [lindex $errpipe 0] read]
-
-      puts $sub_input $text
-      close $sub_input
-
-      set replacement [read $sub_output]
-      set error_text [read $sub_error]
-      set r [posixwaitpid $pid]
-      close $sub_output
-
-      if {[lindex $r 1] == 0} {
-          return $replacement
-      } else {
-          error $error_text
-      }
-   }
-}
-
 proc unknown {args} {
    if {[string index [lindex $args 0] 0] eq "|"} {
       lset args 0 [string range [lindex $args 0] 1 end]
@@ -600,17 +473,11 @@ proc unknown {args} {
       # normal unknown code
 
       if {[teddy_intl::inpath [lindex $args 0]]} {
-	      set margs shell
-	      lappend margs {*}$args
-	      teddy::bg $margs
+          shell {*}$args
 	  } else {
 	      error "Unknown command [lindex $args 0]"
 	  }
    }
-}
-
-proc backgrounded_unknown {args} {
-   shell {*}$args
 }
 
 #### INTERNAL COMMANDS #####################################################
@@ -769,115 +636,6 @@ namespace eval teddy_intl {
 			teddy::history cmd add [lindex $line 0] [lindex $line 1] [lindex $line 2]
 		}
 		close $f
-	}
-
-	namespace export shell_eat
-	proc shell_eat {args i specialVarName normalVarName} {
-	   set special {}
-	   set normal {}
-
-	   for {} {$i < [llength $args]} {incr i} {
-	      set cur [lindex $args $i]
-
-	      if {$cur eq "&&"} { break }
-	      if {$cur eq "||"} { break }
-	      if {$cur eq "|"} { break }
-
-	      set isspecial [regexp {^([0-9]*)(>|>&|<&|<|>>)(.*)$} $cur -> redirected_descriptor open_direction target]
-
-	      if {$isspecial} {
-	         if {$target eq ""} {
-	            incr i
-	            set target [lindex $args $i]
-	         }
-	         lappend special [dict create redirected_descriptor $redirected_descriptor open_direction $open_direction target $target]
-	      } elseif {[string first ! $cur] == 0} {
-	      	lappend normal [string range $cur 1 end]
-	      } else {
-	         if {[string first ~ $cur] == 0} {
-	         	global env
-	         	set cur $env(HOME)/[string range $cur 1 end]
-	         }
-
-	         if {[string first * $cur] >= 0} {
-				# Perform autoglobbing
-				if [catch {lappend normal {*}[glob $cur]}] {
-					lappend normal $cur
-				}
-	         } else {
-				lappend normal $cur
-	         }
-	      }
-	   }
-
-	   upvar $specialVarName specialVar
-	   upvar $normalVarName normalVar
-	   set specialVar $special
-	   set normalVar $normal
-
-	   return $i
-	}
-
-	namespace export shell_perform_redirection
-	proc shell_perform_redirection {redirection} {
-	   set redirected_descriptor [dict get $redirection redirected_descriptor]
-	   set open_direction [dict get $redirection open_direction]
-	   set target [dict get $redirection target]
-
-	   switch -exact $open_direction {
-	      ">" {
-	         if {$redirected_descriptor eq ""} {set redirected_descriptor 1}
-	         if {$target eq ""} { error "Output redirect without filename" }
-	         set fd [fdopen -wronly -trunc -creat $target]
-	         fddup2 $fd $redirected_descriptor
-	         fdclose $fd
-	      }
-	      ">&" {
-	         if {$redirected_descriptor eq ""} {set redirected_descriptor 1}
-	         fddup2 $target $redirected_descriptor
-	      }
-	      "<" {
-	         if {$redirected_descriptor eq ""} {set redirected_descriptor 0}
-	         if {$target eq ""} { error "Input redirect without filename" }
-	         set fd [fdopen -rdonly $target]
-	         fddup2 $fd $redirected_descriptor
-	         fdclose $fd
-	      }
-	      "<&" {
-	         if {$redirected_descriptor eq ""} {set redirected_descriptor 0}
-	         fddup2 $target $redirected_descriptor
-	      }
-	      ">>" {
-	         if {$redirected_descriptor eq ""} {set redirected_descriptor 1}
-	         set fd [fdopen -creat -wronly -append $target]
-	         fddup2 $fd $redirected_descriptor
-	         fdclose $fd
-	      }
-	   }
-	}
-
-	namespace export shell_child_code
-	proc shell_child_code {special normal pipe} {
-	   # child code, make redirects and exec
-
-	   #puts "message from child code"
-
-       #puts "Setting up pipe: <$pipe> <$special>"
-	   if {$pipe ne ""} {
-	      # default ouput of this process will be pipe's output side
-	      fdclose [lindex $pipe 0]
-	      fddup2 [lindex $pipe 1] 1
-	      fdclose [lindex $pipe 1]
-	   }
-
-	   for {set i 0} {$i < [llength $special]} {incr i} {
-	      teddy_intl::shell_perform_redirection [lindex $special $i]
-	   }
-
-	   #puts "Executing $normal"
-	   if {[catch [posixexec {*}$normal]]} {
-		   posixexit -1
-	   }
 	}
 
 	namespace export loadsession

@@ -561,9 +561,9 @@ void save_tied_session(void) {
 
 		if (buffers[i]->job !=NULL) {
 			if (buffers[i]->wd != NULL) {
-				fprintf(f, "in {%s} teddy::bg [buffer make {%s}] {%s}\n", buffers[i]->wd, buffers[i]->path, buffers[i]->job->command);
+				fprintf(f, "in {%s} shell [buffer make {%s}] {%s}\n", buffers[i]->wd, buffers[i]->path, buffers[i]->job->command);
 			} else {
-				fprintf(f, "teddy::bg [buffer make {%s}] {%s}\n", buffers[i]->path, buffers[i]->job->command);
+				fprintf(f, "shell [buffer make {%s}] {%s}\n", buffers[i]->path, buffers[i]->job->command);
 			}
 		} else if (buffers[i]->path[0] == '+') {
 			char *text = buffer_all_lines_to_text(buffers[i]);

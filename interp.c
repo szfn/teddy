@@ -319,112 +319,56 @@ static int teddy_search_command(ClientData client_data, Tcl_Interp *interp, int 
 	return TCL_OK;
 }
 
-static void waitall(void) {
-	for (;;) {
-		int status;
-		pid_t done = wait(&status);
-		if (done == -1) {
-			if (errno == ECHILD) break; // no more child processes
-		} else {
-			if (!WIFEXITED(status) || WEXITSTATUS(status) != 0) {
-				fprintf(stderr, "pid %d failed\n", done);
-				break;
-			}
-		}
+static char *concatarg(int argstart, int argc, const char *argv[]) {
+
+	int arglen = 1;
+
+	for (int i = argstart; i < argc; ++i) {
+		arglen += strlen(argv[i]) + 1;
 	}
+
+	char *argument = malloc(sizeof(char) * arglen);
+	argument[0] = '\0';
+
+	for (int i = argstart; i < argc; ++i) {
+		strcat(argument, argv[i]);
+		strcat(argument, " ");
+	}
+
+	return argument;
 }
 
-static int teddy_backgrounded_bg_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
-	ARGNUM((argc != 2), "bg");
+static void shexec(const char *argument) {
+	const char *sh = getenv("SHELL");
+	if (sh == NULL) sh = "/bin/sh";
+	execl(sh, sh, "-c", argument, (char *)NULL);
+	perror("Error executing inferiror");
+	exit(EXIT_FAILURE);
+}
 
-	pid_t child = fork();
-	if (child == -1) {
-		Tcl_AddErrorInfo(interp, "Fork failed");
+static int teddy_shell_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
+	if (argc < 2) {
+		Tcl_AddErrorInfo(interp, "Not enough arguments passed to 'shell'");
 		return TCL_ERROR;
-	} else if (child != 0) {
-		/* parent code */
-
-		return TCL_OK;
 	}
 
-	int code = Tcl_Eval(interp, argv[1]);
-	if (code != TCL_OK) {
-		Tcl_Obj *options = Tcl_GetReturnOptions(interp, code);
-		Tcl_Obj *key = Tcl_NewStringObj("-errorinfo", -1);
-		Tcl_Obj *stackTrace;
-		Tcl_IncrRefCount(key);
-		Tcl_DictObjGet(NULL, options, key, &stackTrace);
-		Tcl_DecrRefCount(key);
+	int argstart = 1;
 
-		fprintf(stderr, "TCL Exception: %s\n", Tcl_GetString(stackTrace));
-		waitall();
-		exit(EXIT_FAILURE);
+	buffer_t *buffer = buffer_id_to_buffer(argv[argstart]);
+	if (buffer != NULL) {
+		argstart++;
 	} else {
-		waitall();
-		exit(atoi(Tcl_GetStringResult(interp)));
+		buffer = buffers_get_buffer_for_process(false);
 	}
 
-	exit(EXIT_SUCCESS); // the child's life end's here (if we didn't exec something before)
-}
-
-static int teddy_setenv_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
-	ARGNUM((argc != 3), "setenv");
-
-	if (setenv(argv[1], argv[2], 1) == -1) {
-		Tcl_AddErrorInfo(interp, "Error executing 'setenv' command");
+	if (argstart >= argc) {
+		Tcl_AddErrorInfo(interp, "Not enough arguments passed to 'shell'");
 		return TCL_ERROR;
-	} else {
-		return TCL_OK;
 	}
 
-}
+	char *argument = concatarg(argstart, argc, argv);
 
-static void configure_for_bg_execution(Tcl_Interp *interp) {
-	interp_context_editor_set(NULL);
-
-	setenv("TERM", "ansi", 1);
-	setenv("PAGER", "cat", 1);
-
-	Tcl_SetVar(interp, "backgrounded", "1", TCL_GLOBAL_ONLY);
-	Tcl_CreateCommand(interp, "setenv", &teddy_setenv_command, (ClientData)NULL, NULL);
-
-	Tcl_HideCommand(interp, "unknown", "_non_backgrounded_unknown");
-	Tcl_Eval(interp, "rename backgrounded_unknown unknown");
-	Tcl_HideCommand(interp, "bg", "_non_backgrounded_bg");
-	Tcl_CreateCommand(interp, "bg", &teddy_backgrounded_bg_command, (ClientData)NULL, NULL);
-
-	// Without this tcl screws up the newline character on its own output, it tries to output cr + lf and the terminal converts lf again, resulting in an output of cr + cr + lf, other c programs seem to behave correctly
-	Tcl_Eval(interp, "fconfigure stdin -translation binary; fconfigure stdout -translation binary; fconfigure stderr -translation binary");
-}
-
-static int teddy_bg_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
-	pid_t child;
-	int masterfd;
 	struct termios term;
-
-	const char *codearg;
-	buffer_t *buffer = NULL;
-	if (argc == 2) {
-		if (strcmp(argv[1], "-setup") == 0) {
-			configure_for_bg_execution(interp);
-			return TCL_OK;
-		} else {
-			codearg = argv[1];
-			buffer = buffers_get_buffer_for_process(false);
-		}
-	} else if (argc == 3) {
-		buffer = buffer_id_to_buffer(argv[1]);
-		if (buffer == NULL) {
-			buffer = buffers_create_with_name(strdup(argv[1]));
-			if (buffer != NULL) go_to_buffer(interp_context_editor(), buffer, false);
-		}
-		codearg = argv[2];
-	} else {
-		Tcl_AddErrorInfo(interp, "Wrong number of arguments to 'bg' command");
-		return TCL_ERROR;
-	}
-
-
 	bzero(&term, sizeof(struct termios));
 
 	term.c_iflag = ICRNL | IUTF8;
@@ -432,43 +376,189 @@ static int teddy_bg_command(ClientData client_data, Tcl_Interp *interp, int argc
 	term.c_cflag = B38400 | CS8 | CREAD;
 	term.c_lflag = ICANON;
 
-	child = forkpty(&masterfd, NULL, &term, NULL);
+	int masterfd;
+	pid_t child = forkpty(&masterfd, NULL, &term, NULL);
 	if (child == -1) {
 		Tcl_AddErrorInfo(interp, "Fork failed");
 		return TCL_ERROR;
 	} else if (child != 0) {
 		/* parent code */
 
-		if (!jobs_register(child, masterfd, buffer, codearg)) {
+		if (!jobs_register(child, masterfd, buffer, argument)) {
 			Tcl_AddErrorInfo(interp, "Registering job failed, probably exceeded the maximum number of jobs available");
 			return TCL_ERROR;
 		}
 
+		free(argument);
 		return TCL_OK;
+	} else {
+		/* child code */
+		shexec(argument);
+		return TCL_ERROR; // <- this is never executed shexec never returns
+	}
+}
+
+static int closedup(int apipe[2], int jc, int dupfrom, int dupto) {
+	if (close(apipe[jc]) < 0) return -1;
+	if (dup2(apipe[dupfrom], dupto) < 0) return -1;
+	if (close(apipe[dupfrom]) < 0) return -1;
+	return 0;
+}
+
+struct shellsync_writer_args {
+	const char *instr;
+	int fd;
+};
+
+static void *shellsync_writer(void *args) {
+	struct shellsync_writer_args *swa = (struct shellsync_writer_args *)args;
+
+	const char *p = swa->instr;
+
+	while (strlen(p) > 0) {
+		ssize_t n = write(swa->fd, p, sizeof(char)*strlen(p));
+		if (n < 0) break;
+		p += n;
 	}
 
-	/* child code here */
+	close(swa->fd);
 
-	configure_for_bg_execution(interp);
+	return NULL;
+}
 
-	int code = Tcl_Eval(interp, codearg);
-	if (code != TCL_OK) {
-		Tcl_Obj *options = Tcl_GetReturnOptions(interp, code);
-		Tcl_Obj *key = Tcl_NewStringObj("-errorinfo", -1);
-		Tcl_Obj *stackTrace;
-		Tcl_IncrRefCount(key);
-		Tcl_DictObjGet(NULL, options, key, &stackTrace);
-		Tcl_DecrRefCount(key);
+struct shellsync_reader_args {
+	char *outstr;
+	int fd;
+};
 
-		fprintf(stderr, "TCL Exception: %s\n", Tcl_GetString(stackTrace));
-		waitall();
+void *shellsync_reader(void *args) {
+	struct shellsync_reader_args *sra = (struct shellsync_reader_args *)args;
+
+	int allocated = 10;
+	char *p = sra->outstr = malloc(sizeof(char) * allocated);
+	int m = allocated;
+
+	for(;;) {
+		if (m <= 0) {
+			m = allocated;
+			allocated += m;
+			sra->outstr = realloc(sra->outstr, sizeof(char) * allocated);
+			p = sra->outstr + m;
+		}
+
+		ssize_t n = read(sra->fd, p, m);
+		if (n <= 0) break; // error or end of file (we don't care, it's the same to us)
+
+		m -= n;
+		p += n;
+	}
+
+	*p = 0; // terminates string
+
+	close(sra->fd);
+
+	return NULL;
+}
+
+
+static int teddy_shellsync_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
+#define SSERR(f, lbl) { if ((f) < 0) goto lbl; }
+
+	if (argc < 3) {
+		Tcl_AddErrorInfo(interp, "Not enough arguments to shellsync");
+		return TCL_ERROR;
+	}
+
+	const char *instr = argv[1];
+	char *argument = concatarg(2, argc, argv);
+
+	int inpipe[2], outpipe[2], errpipe[2];
+	pid_t child_pid = 1;
+	bool killchild = false;
+
+	SSERR(pipe(inpipe), shellsync_fail);
+	SSERR(pipe(outpipe), shellsync_fail);
+	SSERR(pipe(errpipe), shellsync_fail);
+
+	child_pid = fork();
+	SSERR(child_pid, shellsync_fail);
+
+	if (child_pid == 0) {
+		/* child code */
+		// redirect stdin, stdout and stderr to the pipes (child side)
+		SSERR(closedup(inpipe, 1, 0, 0), shellsync_fail);
+		SSERR(closedup(outpipe, 0, 1, 1), shellsync_fail);
+		SSERR(closedup(errpipe, 0, 1, 2), shellsync_fail);
+
+		shexec(argument);
+	} else {
+		/* parent code */
+
+		killchild = true;
+
+		SSERR(close(inpipe[0]), shellsync_fail);
+		SSERR(close(outpipe[1]), shellsync_fail);
+		SSERR(close(errpipe[1]), shellsync_fail);
+		free(argument); // child uses it, it got it's own copy
+
+		struct shellsync_writer_args shellsync_writer_args;
+		shellsync_writer_args.instr = instr;
+		shellsync_writer_args.fd = inpipe[1];
+
+		struct shellsync_reader_args shellsync_inreader_args, shellsync_errreader_args;
+		shellsync_inreader_args.fd = outpipe[0];
+		shellsync_inreader_args.outstr = NULL;
+		shellsync_errreader_args.fd = errpipe[0];
+		shellsync_errreader_args.outstr = NULL;
+
+		pthread_t outthread, inthread, inerrthread;
+		SSERR(pthread_create(&outthread, NULL, shellsync_writer, &shellsync_writer_args), shellsync_fail);
+		pthread_create(&inthread, NULL, shellsync_reader, &shellsync_inreader_args);
+		pthread_create(&inerrthread, NULL, shellsync_reader, &shellsync_errreader_args);
+
+		pthread_join(outthread, NULL);
+		pthread_join(inthread, NULL);
+		pthread_join(inerrthread, NULL);
+
+		int status;
+		SSERR(waitpid(child_pid, &status, 0), shellsync_fail);
+
+		int r = WEXITSTATUS(status);
+		if (r == 0) {
+			Tcl_SetResult(interp, shellsync_inreader_args.outstr, TCL_VOLATILE);
+			free(shellsync_inreader_args.outstr);
+			free(shellsync_errreader_args.outstr);
+			return TCL_OK;
+		} else {
+			Tcl_AddErrorInfo(interp, shellsync_errreader_args.outstr);
+			free(shellsync_inreader_args.outstr);
+			free(shellsync_errreader_args.outstr);
+			return TCL_ERROR;
+		}
+	}
+
+shellsync_fail: ;
+#define ERRBUFLEN 128
+	char errbuf[ERRBUFLEN];
+	const char *perrbuf;
+	if (strerror_r(errno, errbuf, ERRBUFLEN) == 0) {
+		perrbuf = errbuf;
+	} else {
+		perrbuf = "Error on shellsync";
+
+	}
+	if (child_pid == 0) {
+		fputs(perrbuf, stderr);
 		exit(EXIT_FAILURE);
 	} else {
-		waitall();
-		exit(atoi(Tcl_GetStringResult(interp)));
-	}
+		Tcl_AddErrorInfo(interp, perrbuf);
 
-	exit(EXIT_SUCCESS); // the child's life end's here (if we didn't exec something before)
+		if (killchild) {
+			kill(child_pid, SIGKILL);
+		}
+
+		return TCL_ERROR;
+	}
 }
 
 static int teddy_rgbcolor_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
@@ -841,302 +931,6 @@ static int teddy_session_command(ClientData client_data, Tcl_Interp *interp, int
 	}
 }
 
-static int teddy_fdopen_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
-	int i, intr;
-	int flags = 0;
-	Tcl_Obj *r;
-
-	ARGNUM((argc < 3), "fdopen");
-
-	for (i = 1; i < argc; ++i) {
-		if (argv[i][0] != '-') break;
-		if (strcmp(argv[i], "-append") == 0) {
-			flags |= O_APPEND;
-		} else if (strcmp(argv[i], "-async") == 0) {
-			flags |= O_ASYNC;
-		} else if (strcmp(argv[i], "-cloexec") == 0) {
-			flags |= O_CLOEXEC;
-		} else if (strcmp(argv[i], "-creat") == 0) {
-			flags |= O_CREAT;
-		} else if (strcmp(argv[i], "-direct") == 0) {
-			flags |= O_DIRECT;
-		} else if (strcmp(argv[i], "-directory") == 0) {
-			flags |= O_DIRECTORY;
-		} else if (strcmp(argv[i], "-excl") == 0) {
-			flags |= O_EXCL;
-		} else if (strcmp(argv[i], "-largefile") == 0) {
-			flags |= O_LARGEFILE;
-		} else if (strcmp(argv[i], "-noatime") == 0) {
-			flags |= O_NOATIME;
-		} else if (strcmp(argv[i], "-noctty") == 0) {
-			flags |= O_NOCTTY;
-		} else if (strcmp(argv[i], "-nofollow") == 0) {
-			flags |= O_NOFOLLOW;
-		} else if (strcmp(argv[i], "-nonblock") == 0) {
-			flags |= O_NONBLOCK;
-		} else if (strcmp(argv[i], "-sync") == 0) {
-			flags |= O_SYNC;
-		} else if (strcmp(argv[i], "-trunc") == 0) {
-			flags |= O_TRUNC;
-		} else if (strcmp(argv[i], "-rdonly") == 0) {
-			flags |= O_RDONLY;
-		} else if (strcmp(argv[i], "-wronly") == 0) {
-			flags |= O_WRONLY;
-		} else if (strcmp(argv[i], "-rdwr") == 0) {
-			flags |= O_RDWR;
-		} else {
-			Tcl_AddErrorInfo(interp, "Unknown option passed to 'fdopen' command");
-			return TCL_ERROR;
-		}
-	}
-
-	if (i != argc - 1) {
-		Tcl_AddErrorInfo(interp, "Extraneous arguments given to 'fdopen' command");
-		return TCL_ERROR;
-	}
-
-	intr = open(argv[i], flags, S_IRWXU | S_IRWXG);
-	if (intr == -1) {
-#define FDOPEN_ERROR ": "
-		char *err = strerror(errno);
-		char *e = malloc(sizeof(char) * (strlen(err) + strlen(FDOPEN_ERROR) + strlen(argv[i]) + 1));
-		strcpy(e, argv[i]);
-		strcat(e, FDOPEN_ERROR);
-		strcat(e, err);
-		Tcl_AddErrorInfo(interp, e);
-		free(e);
-		return TCL_ERROR;
-	}
-	r = Tcl_NewIntObj(intr);
-	Tcl_SetObjResult(interp, r);
-
-	return TCL_OK;
-}
-
-static int teddy_fdclose_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
-	Tcl_Obj *r;
-	int intr;
-
-	ARGNUM((argc != 2), "fdclose");
-
-	intr = close(atoi(argv[1]));
-	r = Tcl_NewIntObj(intr);
-	if (intr == -1) {
-		Tcl_AddErrorInfo(interp, "Error executing fdclose");
-		return TCL_ERROR;
-	}
-	Tcl_SetObjResult(interp, r);
-
-	return TCL_OK;
-}
-
-static int teddy_fddup2_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
-	Tcl_Obj *r;
-	int intr;
-
-	ARGNUM((argc != 3), "fddup2");
-
-	intr = dup2(atoi(argv[1]), atoi(argv[2]));
-	r = Tcl_NewIntObj(intr);
-	if (intr == -1) {
-		Tcl_AddErrorInfo(interp, "Error executing fddup2");
-		return TCL_ERROR;
-	}
-	Tcl_SetObjResult(interp, r);
-
-	return TCL_OK;
-}
-
-static int teddy_fdpipe_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
-	int pipefd[2];
-	int ret;
-	Tcl_Obj *pipeobj[2], *retlist;
-
-	ARGNUM((argc != 1), "fdpipe");
-
-	ret = pipe(pipefd);
-
-	if (ret < 0) {
-		Tcl_AddErrorInfo(interp, "Error executing fdpipe command");
-		return TCL_ERROR;
-	}
-
-	pipeobj[0] = Tcl_NewIntObj(pipefd[0]);
-	Tcl_IncrRefCount(pipeobj[0]);
-	pipeobj[1] = Tcl_NewIntObj(pipefd[1]);
-	Tcl_IncrRefCount(pipeobj[1]);
-
-	retlist = Tcl_NewListObj(2, pipeobj);
-	Tcl_DecrRefCount(pipeobj[0]);
-	Tcl_DecrRefCount(pipeobj[1]);
-
-	Tcl_SetObjResult(interp, retlist);
-
-	return TCL_OK;
-}
-
-static int teddy_posixfork_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
-	ARGNUM((argc != 1), "posixfork");
-
-	int intr = fork();
-	if (intr == -1) {
-		Tcl_AddErrorInfo(interp, "Error executing posixfork command");
-		return TCL_ERROR;
-	}
-
-	Tcl_Obj *r = Tcl_NewIntObj(intr);
-	Tcl_SetObjResult(interp, r);
-
-	return TCL_OK;
-}
-
-static int teddy_posixexec_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
-	// first argument passed to this command is the name of this command (i.e. the string "posixexec") this needs to be discarded before calling execvp and a NULL needs to be appended to argv as a terminator
-
-	char ** newargv = malloc(sizeof(char *) * argc);
-
-	for (int i = 1; i < argc; ++i) {
-		newargv[i-1] = (char *)argv[i];
-	}
-	newargv[argc-1] = NULL;
-
-	if (execvp(newargv[0], newargv) == -1) {
-		perror("posixexec error");
-		Tcl_AddErrorInfo(interp, "Error executing posixexec command");
-		return TCL_ERROR;
-	}
-
-	return TCL_OK;
-}
-
-static int teddy_posixpgrp_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
-	switch (argc) {
-	case 1: {
-		//printf("[%d] Our pgrp: %d controlling pgrp: %d\n", getpid(), getpgrp(), tcgetpgrp(0));
-		int r = getpgrp();
-		char buf[20];
-		sprintf(buf, "%d", r);
-		Tcl_SetResult(interp, buf, TCL_VOLATILE);
-		break;
-	}
-	case 2: {
-		int pgrp = atoi(argv[1]);
-		int r = setpgid(getpid(), pgrp);
-		if (r == -1) {
-			perror("posixexec error");
-			Tcl_AddErrorInfo(interp, "Error executing posixexec command");
-			return TCL_ERROR;
-		}
-
-		//printf("[%d] Our pgrp: %d controlling pgrp: %d\n", getpid(), getpgrp(), tcgetpgrp(0));
-
-		break;
-	}
-	case 3: {
-		int pid = atoi(argv[1]);
-		int pgrp = atoi(argv[2]);
-		int r = setpgid(pid, pgrp);
-		if (r == -1) {
-			perror("posixexec error");
-			Tcl_AddErrorInfo(interp, "Error executing posixexec command");
-			return TCL_ERROR;
-		}
-
-		//printf("[%d] Our pgrp: %d controlling pgrp: %d\n", getpid(), getpgrp(), tcgetpgrp(0));
-	}
-	}
-
-	return TCL_OK;
-}
-
-static int teddy_posixwaitpid_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
-	int i;
-	int status, options = 0;
-	pid_t r;
-	pid_t pid;
-	Tcl_Obj *retval[2], *retlist;
-
-	ARGNUM((argc < 2), "posixwaitpid");
-
-	for (i = 1; i < argc; ++i) {
-		if (argv[i][0] != '-') break;
-		if (strcmp(argv[i], "-wexited") == 0) {
-			options |= WEXITED;
-		} else if (strcmp(argv[i], "-wstopped") == 0) {
-			options |= WSTOPPED;
-		} else if (strcmp(argv[i], "-wcontinued") == 0) {
-			options |= WCONTINUED;
-		} else if (strcmp(argv[i], "-wnohang") == 0) {
-			options |= WNOHANG;
-		} else if (strcmp(argv[i], "-wnowait") == 0) {
-			options |= WNOWAIT;
-		} else {
-			Tcl_AddErrorInfo(interp, "Unknown option passed to 'posixwaitpid' command");
-			return TCL_ERROR;
-		}
-	}
-
-	if (i != argc - 1) {
-		Tcl_AddErrorInfo(interp, "Extraneous arguments given to 'posixwaitpid' command");
-		return TCL_ERROR;
-	}
-
-	pid = atoi(argv[i]);
-
-	r = waitpid(pid, &status, options);
-
-	if (r == -1) {
-		Tcl_AddErrorInfo(interp, "Error executing waitpid command");
-		return TCL_ERROR;
-	}
-
-	retval[0] = Tcl_NewIntObj(r);
-	Tcl_IncrRefCount(retval[0]);
-	retval[1] = Tcl_NewIntObj(WEXITSTATUS(status));
-	Tcl_IncrRefCount(retval[1]);
-
-	retlist = Tcl_NewListObj(2, retval);
-	Tcl_SetObjResult(interp, retlist);
-	Tcl_DecrRefCount(retval[0]);
-	Tcl_DecrRefCount(retval[1]);
-
-	return TCL_OK;
-}
-
-static int teddy_posixexit_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
-	ARGNUM((argc != 2), "posixexit");
-	exit(atoi(argv[1]));
-	return TCL_OK;
-}
-
-static int teddy_fd2channel_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
-	ARGNUM((argc != 3), "fd2channel");
-
-	intptr_t fd = atoi(argv[1]);
-	const char *type = argv[2];
-
-	if (fd < 0) {
-		Tcl_AddErrorInfo(interp, "Wrong argument to fd2channel (not a file descriptor)");
-		return TCL_ERROR;
-	}
-
-	int readOrWrite;
-
-	if (strcmp(type, "read") == 0) {
-		readOrWrite = TCL_READABLE;
-	} else if (strcmp(type, "write") == 0) {
-		readOrWrite = TCL_WRITABLE;
-	} else {
-		Tcl_AddErrorInfo(interp, "Wrong argument to fd2channel (not read or write)");
-	}
-
-	Tcl_Channel chan = Tcl_MakeFileChannel((void *)fd, readOrWrite);
-	Tcl_RegisterChannel(interp, chan);
-	Tcl_SetResult(interp, (char *)Tcl_GetChannelName(chan), TCL_VOLATILE);
-
-	return TCL_OK;
-}
-
 static int teddy_rehash_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
 	ARGNUM((argc != 1), "teddy::rehash");
 	cmdcompl_init(true);
@@ -1262,7 +1056,6 @@ void interp_init(void) {
 	Tcl_CreateCommand(interp, "undo", &teddy_undo_command, (ClientData)NULL, NULL);
 	Tcl_CreateCommand(interp, "search", &teddy_search_command, (ClientData)NULL, NULL);
 
-	Tcl_CreateCommand(interp, "teddy::bg", &teddy_bg_command, (ClientData)NULL, NULL);
 	Tcl_CreateCommand(interp, "teddy_intl::inpath", &teddy_inpath_command, (ClientData)NULL, NULL);
 
 	Tcl_CreateCommand(interp, "rgbcolor", &teddy_rgbcolor_command, (ClientData)NULL, NULL);
@@ -1283,24 +1076,14 @@ void interp_init(void) {
 
 	Tcl_CreateCommand(interp, "buffer", &teddy_buffer_command, (ClientData)NULL, NULL);
 
-	Tcl_CreateCommand(interp, "fdopen", &teddy_fdopen_command, (ClientData)NULL, NULL);
-	Tcl_CreateCommand(interp, "fdclose", &teddy_fdclose_command, (ClientData)NULL, NULL);
-	Tcl_CreateCommand(interp, "fddup2", &teddy_fddup2_command, (ClientData)NULL, NULL);
-	Tcl_CreateCommand(interp, "fdpipe", &teddy_fdpipe_command, (ClientData)NULL, NULL);
-	Tcl_CreateCommand(interp, "posixfork", &teddy_posixfork_command, (ClientData)NULL, NULL);
-	Tcl_CreateCommand(interp, "posixexec", &teddy_posixexec_command, (ClientData)NULL, NULL);
-	Tcl_CreateCommand(interp, "posixpgrp", &teddy_posixpgrp_command, (ClientData)NULL, NULL);
-	Tcl_CreateCommand(interp, "posixwaitpid", &teddy_posixwaitpid_command, (ClientData)NULL, NULL);
-	Tcl_CreateCommand(interp, "posixexit", &teddy_posixexit_command, (ClientData)NULL, NULL);
-
-	Tcl_CreateCommand(interp, "fd2channel", &teddy_fd2channel_command, (ClientData)NULL, NULL);
-
 	Tcl_CreateCommand(interp, "teddy::tags", &teddy_tags_command, (ClientData)NULL, NULL);
 
 	Tcl_CreateCommand(interp, "teddy::fullscreen", &teddy_fullscreen_command, (ClientData)NULL, NULL);
 
 	Tcl_CreateCommand(interp, "help", &teddy_help_command, (ClientData)NULL, NULL);
 	Tcl_CreateCommand(interp, "teddy::cmdline-focus", &teddy_cmdlinefocus_command, (ClientData)NULL, NULL);
+	Tcl_CreateCommand(interp, "shell", &teddy_shell_command, (ClientData)NULL, NULL);
+	Tcl_CreateCommand(interp, "shellsync", &teddy_shellsync_command, (ClientData)NULL, NULL);
 
 	int code = Tcl_Eval(interp, BUILTIN_TCL_CODE);
 	if (code != TCL_OK) {

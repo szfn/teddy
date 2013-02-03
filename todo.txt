@@ -1,3 +1,7 @@
+- some way to do IPC
+- bugfix: extend temporary highlighting past the end of the current frame
+- bugfix: a job attaching to a frame should make sure the frame is not minimized
+
 - command to iterate through all the tokens of some type (make a separate command or shoehorn inside s?)
 
 - bold matched text in autocompletions window and iopen window
