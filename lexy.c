@@ -734,8 +734,8 @@ static void *lexy_update_starting_at_thread(void *varg) {
 		if (previ == i) ++i;
 		if (count > LEXY_LOAD_HOOK_MAX_COUNT) break;
 
-		if (buffer->lexy_quick_exit) {
-			if (count > LEXY_QUICK_EXIT_MAX_COUNT) {
+		if (buffer->lexy_quick_exit > 0) {
+			if (count > buffer->lexy_quick_exit) {
 				//printf("Self preemption\n");
 				buffer->lexy_running = 2;
 				goto lexy_update_starting_at_thread_end;
@@ -757,7 +757,7 @@ lexy_update_starting_at_thread_end:
 void lexy_update_resume(buffer_t *buffer) {
 	if (buffer->lexy_running != 2) return;
 	if (config_intval(&(buffer->config), CFG_LEXY_ENABLED) == 0) return;
-	buffer->lexy_quick_exit = false;
+	buffer->lexy_quick_exit = -1;
 	buffer->lexy_running = 1;
 	pthread_t thread;
 	if (pthread_create(&thread, &lexy_thread_attrs, lexy_update_starting_at_thread, buffer) != 0) {
@@ -794,8 +794,17 @@ void lexy_update_starting_at(buffer_t *buffer, int start, bool quick_exit) {
 		}
 	}
 
+	int nlines = LEXY_QUICK_EXIT_MAX_COUNT;
+	GtkAllocation alloc;
+	editor_t *editor = NULL;
+	find_editor_for_buffer(buffer, NULL, NULL, &editor);
+	if (editor != NULL) {
+		gtk_widget_get_allocation(GTK_WIDGET(editor), &alloc);
+		nlines = alloc.height / buffer->line_height + 1;
+	}
+
 	buffer->lexy_running = 1;
-	buffer->lexy_quick_exit = quick_exit;
+	buffer->lexy_quick_exit = quick_exit ? nlines : -1;
 	pthread_t thread;
 	if (pthread_create(&thread, &lexy_thread_attrs, lexy_update_starting_at_thread, buffer) != 0) {
 		buffer->lexy_running = 0;

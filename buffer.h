@@ -44,7 +44,7 @@ typedef struct _buffer_t {
 
 	volatile int lexy_running;
 	volatile int lexy_start;
-	volatile bool lexy_quick_exit;
+	volatile int lexy_quick_exit;
 
 	job_t *job;
 
