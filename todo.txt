@@ -1,5 +1,4 @@
 - some way to do IPC
-- bugfix: a job attaching to a frame should make sure the frame is not minimized
 
 - command to iterate through all the tokens of some type (make a separate command or shoehorn inside s?)
 

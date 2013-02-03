@@ -312,7 +312,9 @@ static void job_attach_to_buffer(job_t *job, const char *command, buffer_t *buff
 	// setting terminal size
 
 	editor_t *editor;
-	find_editor_for_buffer(buffer, NULL, NULL, &editor);
+	column_t *column;
+	tframe_t *frame;
+	find_editor_for_buffer(buffer, &column, &frame, &editor);
 	if (editor != NULL) {
 		set_label_text(editor);
 
@@ -330,6 +332,10 @@ static void job_attach_to_buffer(job_t *job, const char *command, buffer_t *buff
 		ws.ws_col = (int)(width / (0.50 * buffer->em_advance));
 		if (ws.ws_col > 0) {
 			ioctl(job->masterfd, TIOCSWINSZ, &ws);
+		}
+
+		if ((column != NULL) && (frame != NULL)) {
+			column_expand_frame(column, frame);
 		}
 	}
 }
