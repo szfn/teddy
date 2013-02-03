@@ -660,15 +660,13 @@ namespace eval teddy_intl {
 			c "Pick a session to load by evaluating one of this lines:\n\n"
 			set count 0
 			set dir [teddy::session directory none]
+			set sessions [list]
 			foreach filename [glob -directory $dir  *] {
 				if {![regexp {\.session$} $filename]} { continue }
 				set sessioname $filename
 
 				set sessioname [regsub {\.session$} $sessioname ""]
 				set sessioname [ string range $sessioname [expr [string length $dir] + 1] end]
-
-				c "teddy::session load $sessioname\n"
-
 				set sessioninfo [teddy::slurp $filename]
 
 				if {![regexp -lineanchor {^cd (.*?)$} $sessioninfo -> sessiondir]} {
@@ -681,12 +679,21 @@ namespace eval teddy_intl {
 
 				set sessiondate [shellsync "" date -d "@$sessionts" +%Y-%m-%d]
 
-				c "# in $sessiondir last access: $sessiondate\n"
+				lappend sessions [list $sessioname $sessiondir $sessiondate]
 
 				incr count
 			}
 
-			if {$count == 0} { c "No session found\n" }
+			if {$count == 0} {
+				c "No session found\n"
+			} else {
+				set sessions [lsort -index 2 -decreasing $sessions]
+
+				foreach session $sessions {
+					c "teddy::session load [lindex $session 0]\n"
+					c "# in [lindex $session 1] last access: [lindex $session 2]\n"
+				}
+			}
 
 			m nil 1:1
 		}
