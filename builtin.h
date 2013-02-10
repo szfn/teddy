@@ -132,7 +132,7 @@ namespace eval bindent {\n\
 }\n\
 \n\
 proc man {args} {\n\
-	set b [buffer make \"+man/$args+\"\n\
+	set b [buffer make \"+man/$args+\"]\n\
 	buffer eval $b { clear }\n\
 	shell $b man $args\n\
 }\n\
