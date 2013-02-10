@@ -6,6 +6,7 @@
 #include "top.h"
 #include "interp.h"
 #include "buffers.h"
+#include "ipc.h"
 
 GtkClipboard *selection_clipboard;
 GtkClipboard *default_clipboard;
@@ -522,6 +523,8 @@ void save_tied_session(void) {
 	char *sessionfile = tied_session_file();
 	if (sessionfile == NULL) return;
 
+	ipc_link_to(tied_session);
+
 	FILE *f = fopen(sessionfile, "w");
 	if (f == NULL) {
 		free(tied_session);
@@ -600,6 +603,8 @@ void save_tied_session(void) {
 void load_tied_session(void) {
 	char *sessionfile = tied_session_file();
 	if (sessionfile == NULL) return;
+
+	ipc_link_to(tied_session);
 
 	const char *argv[] = { "teddy_intl::loadsession", sessionfile };
 	if (interp_eval_command(NULL, NULL, 2, argv) == NULL) {

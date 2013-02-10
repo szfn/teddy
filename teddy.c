@@ -16,6 +16,7 @@
 #include "iopen.h"
 #include "top.h"
 #include "tags.h"
+#include "ipc.h"
 
 static gboolean delete_callback(GtkWidget *widget, GdkEvent *event, gpointer data) {
 	save_tied_session();
@@ -76,14 +77,18 @@ static gboolean window_state_callback(GtkWidget *window, GdkEventWindowState *ew
 int main(int argc, char *argv[]) {
 	GtkWidget *window;
 
+	if (tepid_check()) {
+		return client_main(argc, argv);
+	}
+
 	gdk_threads_init();
 	gdk_threads_enter();
 	gtk_init(&argc, &argv);
 
 	foundry_init();
 
-
 	global_init();
+	ipc_init();
 	config_init_auto_defaults();
 	init_colors();
 
@@ -148,6 +153,7 @@ int main(int argc, char *argv[]) {
 
 	gdk_threads_leave();
 
+	ipc_finalize();
 	buffers_free();
 	interp_free();
 	compl_free(&the_word_completer);

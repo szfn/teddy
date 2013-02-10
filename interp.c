@@ -339,6 +339,11 @@ static char *concatarg(int argstart, int argc, const char *argv[]) {
 }
 
 static void shexec(const char *argument) {
+	setenv("TERM", "ansi", 1);
+	setenv("PAGER", "", 1);
+	char buf[20];
+	sprintf(buf, "%d", getpid());
+	setenv("TEPID", buf, 1);
 	const char *sh = getenv("SHELL");
 	if (sh == NULL) sh = "/bin/sh";
 	execl(sh, sh, "-c", argument, (char *)NULL);
@@ -1008,7 +1013,7 @@ static int teddy_help_command(ClientData client_data, Tcl_Interp *interp, int ar
 		if (!write_doc_files()) {
 			return TCL_ERROR;
 		}
-		interp_eval(NULL, NULL, "$teddy::open_cmd /dev/shm/teddy/index.html", false);
+		interp_eval(NULL, NULL, "$teddy::open_cmd /dev/shm/teddy/index.html", false, true);
 	} else {
 		Tcl_AddErrorInfo(interp, "Too many arguments to 'help'");
 		return TCL_ERROR;
@@ -1106,7 +1111,7 @@ void interp_free(void) {
 	Tcl_DeleteInterp(interp);
 }
 
-static int interp_eval_ex(const char *command, bool show_ret) {
+static int interp_eval_ex(const char *command, bool show_ret, bool reset_result) {
 	int code = Tcl_Eval(interp, command);
 
 	switch (code) {
@@ -1122,18 +1127,20 @@ static int interp_eval_ex(const char *command, bool show_ret) {
 				}
 			}
 		}
-		Tcl_ResetResult(interp);
+		if (reset_result) Tcl_ResetResult(interp);
 		break;
 
 	case TCL_ERROR: {
-		Tcl_Obj *options = Tcl_GetReturnOptions(interp, code);
-		Tcl_Obj *key = Tcl_NewStringObj("-errorinfo", -1);
-		Tcl_Obj *stackTrace;
-		Tcl_IncrRefCount(key);
-		Tcl_DictObjGet(NULL, options, key, &stackTrace);
-		Tcl_DecrRefCount(key);
-		quick_message("TCL Error", Tcl_GetString(stackTrace));
-		Tcl_ResetResult(interp);
+		if (reset_result) {
+			Tcl_Obj *options = Tcl_GetReturnOptions(interp, code);
+			Tcl_Obj *key = Tcl_NewStringObj("-errorinfo", -1);
+			Tcl_Obj *stackTrace;
+			Tcl_IncrRefCount(key);
+			Tcl_DictObjGet(NULL, options, key, &stackTrace);
+			Tcl_DecrRefCount(key);
+			quick_message("TCL Error", Tcl_GetString(stackTrace));
+			Tcl_ResetResult(interp);
+		}
 		break;
 	}
 
@@ -1146,14 +1153,14 @@ static int interp_eval_ex(const char *command, bool show_ret) {
 	return code;
 }
 
-int interp_eval(editor_t *editor, buffer_t *buffer, const char *command, bool show_ret) {
+int interp_eval(editor_t *editor, buffer_t *buffer, const char *command, bool show_ret, bool reset_result) {
 	editor_t *prev_editor = interp_context_editor();
 	buffer_t *prev_buffer = interp_context_buffer();
 
 	interp_context_buffer_set(buffer);
 	if (editor != NULL) interp_context_editor_set(editor);
 
-	int code = interp_eval_ex(command, show_ret);
+	int code = interp_eval_ex(command, show_ret, reset_result);
 
 	if (prev_editor != NULL) interp_context_editor_set(prev_editor);
 	else interp_context_buffer_set(prev_buffer);

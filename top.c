@@ -80,7 +80,7 @@ static const guint8 cog_icon[] __attribute__ ((__aligned__ (4))) =
 static void execute_command(editor_t *editor) {
 	char *command = buffer_all_lines_to_text(editor->buffer);
 
-	interp_eval(top_context_editor(), NULL, command, false);
+	interp_eval(top_context_editor(), NULL, command, false, true);
 
 	if (top_context_editor() != NULL) {
 		set_label_text(top_context_editor());
@@ -233,11 +233,11 @@ static void open_mitem_callback(GtkMenuItem *menuitem, gpointer data) {
 }
 
 static void save_session_mitem_callback(GtkMenuItem *menuitem, gpointer data) {
-	interp_eval(NULL, NULL, "teddy_intl::savesession_mitem", false);
+	interp_eval(NULL, NULL, "teddy_intl::savesession_mitem", false, true);
 }
 
 static void load_session_mitem_callback(GtkMenuItem *menuitem, gpointer data) {
-	interp_eval(NULL, NULL, "teddy_intl::loadsession_mitem", false);
+	interp_eval(NULL, NULL, "teddy_intl::loadsession_mitem", false, true);
 }
 
 GtkWidget *top_init(GtkWidget *window) {

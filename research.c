@@ -141,7 +141,7 @@ static bool move_regexp_search_forward(struct research_t *research, bool execute
 		editor_t *editor;
 		find_editor_for_buffer(research->buffer, NULL, NULL, &editor);
 
-		int r = interp_eval(editor, research->buffer, research->cmd, false);
+		int r = interp_eval(editor, research->buffer, research->cmd, false, true);
 
 		if (editor != NULL)
 			set_label_text(editor);

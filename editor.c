@@ -728,7 +728,7 @@ static gboolean key_press_callback(GtkWidget *widget, GdkEventKey *event, editor
 	command = g_hash_table_lookup(keybindings, pressed);
 
 	if (command != NULL) {
-		interp_eval(editor, NULL, command, false);
+		interp_eval(editor, NULL, command, false, true);
 		set_label_text(editor);
 		goto key_press_return_true;
 	}
@@ -848,7 +848,7 @@ static void eval_menu_item_callback(GtkMenuItem *menuitem, editor_t *editor) {
 
 	change_directory_back_after_eval = true;
 
-	interp_eval(editor, NULL, selection, true);
+	interp_eval(editor, NULL, selection, true, true);
 
 	if (change_directory_back_after_eval) chdir(pdir);
 	free(pdir);

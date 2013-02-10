@@ -11,7 +11,7 @@ extern bool change_directory_back_after_eval;
 
 void interp_init(void);
 void interp_free(void);
-int interp_eval(editor_t *editor, buffer_t *buffer, const char *command, bool show_ret);
+int interp_eval(editor_t *editor, buffer_t *buffer, const char *command, bool show_ret, bool reset_result);
 void read_conf(void);
 
 const char *interp_eval_command(editor_t *editor, buffer_t *buffer, int count, const char *argv[]);

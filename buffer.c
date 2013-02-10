@@ -13,6 +13,7 @@
 #include "undo.h"
 #include "compl.h"
 #include "top.h"
+#include "ipc.h"
 
 #define SLOP 32
 
@@ -283,6 +284,8 @@ static int buffer_replace_selection_ex(buffer_t *buffer, const char *text, bool 
 int load_text_file(buffer_t *buffer, const char *filename) {
 	buffer->mtime = time(NULL);
 
+	ipc_event(buffer, "fileload", filename);
+
 	if (buffer->has_filename) {
 		return -1;
 	}
@@ -352,6 +355,8 @@ void load_empty(buffer_t *buffer) {
 }
 
 int load_dir(buffer_t *buffer, const char *dirname) {
+	ipc_event(buffer, "dirload", dirname);
+
 	buffer->has_filename = 0;
 	buffer->path = realpath(dirname, NULL);
 	if (buffer->path[strlen(buffer->path)-1] != '/') {
@@ -371,6 +376,8 @@ int load_dir(buffer_t *buffer, const char *dirname) {
 
 void save_to_text_file(buffer_t *buffer) {
 	if (buffer->path[0] == '+') return;
+
+	ipc_event(buffer, "filesave", buffer->path);
 
 	FILE *file = fopen(buffer->path, "w");
 

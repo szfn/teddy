@@ -16,6 +16,7 @@
 #include "top.h"
 #include "global.h"
 #include "buffers.h"
+#include "ipc.h"
 
 #define JOBS_READ_BUFFER_SIZE 2048
 #define SHOWANYWAY_TIMO 500
@@ -481,6 +482,8 @@ int jobs_register(pid_t child_pid, int masterfd, buffer_t *buffer, const char *c
 	} else {
 		g_timeout_add(SHOWANYWAY_TIMO, (GSourceFunc)autoshow_job_buffer, (gpointer)(jobs+i));
 	}
+
+	ipc_event(buffer, "job", command);
 
 	return 1;
 }

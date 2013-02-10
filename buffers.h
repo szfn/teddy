@@ -42,4 +42,6 @@ enum go_file_failure_reason {
 editor_t *go_to_buffer(editor_t *editor, buffer_t *buffer, bool take_over);
 buffer_t *go_file(const char *filename, bool create, bool skip_search, enum go_file_failure_reason *gffr);
 
+void buffer_to_buffer_id(buffer_t *buffer, char *bufferid);
+
 #endif

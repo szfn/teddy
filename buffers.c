@@ -7,6 +7,7 @@
 #include "top.h"
 #include "interp.h"
 #include "lexy.h"
+#include "ipc.h"
 
 #include "critbit.h"
 
@@ -47,7 +48,7 @@ static buffer_t *buffers_find_buffer_with_name(const char *name) {
 	return NULL;
 }
 
-static void buffer_to_buffer_id(buffer_t *buffer, char *bufferid) {
+void buffer_to_buffer_id(buffer_t *buffer, char *bufferid) {
 	strcpy(bufferid, "@b0");
 	if (buffer == NULL) return;
 	for (int i = 0; i < buffers_allocated; ++i) {
@@ -81,6 +82,8 @@ static buffer_t *buffers_make(const char *name) {
 
 static void buffer_close_real(buffer_t *buffer, bool save_critbit) {
 	//printf("Removing buffer: <%s>\n", buffer->path);
+
+	ipc_event(buffer, "bufferclose", NULL);
 
 	if (buffer == null_buffer()) return;
 
@@ -522,8 +525,10 @@ int teddy_buffer_command(ClientData client_data, Tcl_Interp *interp, int argc, c
 		if (b != NULL) {
 			tframe_t *frame;
 			find_editor_for_buffer(b, NULL, &frame, NULL);
-			if ((frame == NULL) && (interp_context_buffer() != NULL)) {
-				find_editor_for_buffer(interp_context_buffer(), NULL, &frame, NULL);
+			if (frame == NULL) {
+				if (interp_context_buffer() != NULL) {
+					find_editor_for_buffer(interp_context_buffer(), NULL, &frame, NULL);
+				}
 				heuristic_new_frame(columnset, frame, b);
 			}
 
@@ -629,8 +634,9 @@ int teddy_buffer_command(ClientData client_data, Tcl_Interp *interp, int argc, c
 
 		BUFIDCHECK(buffer);
 
-		interp_eval(editor, buffer, argv[3], false);
+		int r = interp_eval(editor, buffer, argv[3], false, false);
 		if (strcmp(argv[2], "temp") == 0) buffer_free(buffer, false);
+		return r;
 	} else if (strcmp(argv[1], "close") == 0) {
 		SINGLE_ARGUMENT_BUFFER_SUBCOMMAND("buffer close");
 		tframe_t *tf = NULL;
