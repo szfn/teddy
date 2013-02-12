@@ -1,3 +1,4 @@
 @ ctags -R
 @ git gui
 @ Watch make -s -j4
+@ env TEPID= bin/teddy
