@@ -82,6 +82,9 @@ static gboolean cmdclient_read_and_exec(GIOChannel *source) {
 
 		n += m;
 
+		buf[n] = 0;
+		//printf("Read so far: <%s>\n", buf);
+
 		if (n < 3) continue;
 		if (buf[n-1] != '\n') continue;
 		if (buf[n-2] != '.') continue;
@@ -163,6 +166,8 @@ static gboolean cmd_watch(GIOChannel *source, GIOCondition condition, void *igno
 	case G_IO_PRI: {
 		int clientfd = accept(cmdfd, NULL, NULL);
 		GIOChannel *cmdclient_channel = g_io_channel_unix_new(clientfd);
+		g_io_channel_set_encoding(cmdclient_channel, NULL, NULL);
+		g_io_channel_set_buffered(cmdclient_channel, FALSE);
 		g_io_add_watch(cmdclient_channel, G_IO_IN|G_IO_ERR|G_IO_PRI|G_IO_HUP|G_IO_NVAL, (GIOFunc)cmdclient_watch, NULL);
 		break;
 	}
@@ -242,17 +247,21 @@ void ipc_init() {
 	}
 
 	event_channel = g_io_channel_unix_new(eventfd);
-	event_source = g_io_add_watch(event_channel, G_IO_IN|G_IO_ERR|G_IO_PRI|G_IO_HUP|G_IO_NVAL, (GIOFunc)event_watch, NULL);
 	g_io_channel_set_encoding(event_channel, NULL, NULL);
+	event_source = g_io_add_watch(event_channel, G_IO_IN|G_IO_ERR|G_IO_PRI|G_IO_HUP|G_IO_NVAL, (GIOFunc)event_watch, NULL);
 
 	cmd_channel = g_io_channel_unix_new(cmdfd);
-	cmd_source = g_io_add_watch(cmd_channel, G_IO_IN|G_IO_ERR|G_IO_PRI|G_IO_HUP|G_IO_NVAL, (GIOFunc)cmd_watch, NULL);
 	g_io_channel_set_encoding(cmd_channel, NULL, NULL);
+	cmd_source = g_io_add_watch(cmd_channel, G_IO_IN|G_IO_ERR|G_IO_PRI|G_IO_HUP|G_IO_NVAL, (GIOFunc)cmd_watch, NULL);
+
 
 	for (int i = 0; i < NCLIENTS; ++i) {
 		clients[i] = -1;
 	}
 
+	char tepid[20];
+	sprintf(tepid, "%d", getpid());
+	setenv("TEPID", tepid, 1);
 
 	init_done = true;
 }

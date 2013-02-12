@@ -341,9 +341,8 @@ static char *concatarg(int argstart, int argc, const char *argv[]) {
 static void shexec(const char *argument) {
 	setenv("TERM", "ansi", 1);
 	setenv("PAGER", "", 1);
-	char buf[20];
-	sprintf(buf, "%d", getpid());
-	setenv("TEPID", buf, 1);
+	setenv("EDITOR", "teddy", 1);
+	setenv("VISUAL", "teddy", 1);
 	const char *sh = getenv("SHELL");
 	if (sh == NULL) sh = "/bin/sh";
 	execl(sh, sh, "-c", argument, (char *)NULL);
