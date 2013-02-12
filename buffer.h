@@ -30,7 +30,6 @@ typedef struct _buffer_t {
 	char *path;
 	char *wd;
 	int has_filename;
-	int modified;
 	int editable;
 	uint8_t default_color;
 	int inotify_wd;
@@ -110,6 +109,9 @@ void load_empty(buffer_t *buffer);
 int load_dir(buffer_t *buffer, const char *dirname);
 
 char *buffer_directory(buffer_t *buffer);
+
+// returns true if the buffer was modified since last save
+bool buffer_modified(buffer_t *buffer);
 
 // save the buffer to its file (if exists, otherwise fails)
 void save_to_text_file(buffer_t *buffer);

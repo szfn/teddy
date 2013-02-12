@@ -17,6 +17,7 @@
 #include "top.h"
 #include "tags.h"
 #include "ipc.h"
+#include "client.h"
 
 static gboolean delete_callback(GtkWidget *widget, GdkEvent *event, gpointer data) {
 	save_tied_session();

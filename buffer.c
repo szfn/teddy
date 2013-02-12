@@ -97,7 +97,6 @@ buffer_t *buffer_create(void) {
 	pthread_rwlock_init(&(buffer->rwlock), NULL);
 	buffer->release_read_lock = false;
 
-	buffer->modified = 0;
 	buffer->editable = 1;
 	buffer->job = NULL;
 	buffer->default_color = 0;
@@ -369,7 +368,7 @@ int load_dir(buffer_t *buffer, const char *dirname) {
 
 	buffer_setup_hook(buffer);
 
-	buffer->modified = false;
+	undo_saved(&(buffer->undo));
 
 	return 0;
 }
@@ -412,7 +411,7 @@ void save_to_text_file(buffer_t *buffer) {
 
 	free(r);
 
-	buffer->modified = 0;
+	undo_saved(&(buffer->undo));
 	buffer->mtime = time(NULL)+10;
 }
 
@@ -519,8 +518,6 @@ void buffer_undo(buffer_t *buffer, bool redo) {
 	pthread_rwlock_wrlock(&(buffer->rwlock));
 	buffer->release_read_lock = false;
 
-	buffer->modified = 1;
-
 	buffer->mark = buffer->savedmark = -1;
 
 	int start, end;
@@ -554,8 +551,6 @@ void buffer_replace_selection(buffer_t *buffer, const char *new_text) {
 	buffer->release_read_lock = true;
 	pthread_rwlock_wrlock(&(buffer->rwlock));
 	buffer->release_read_lock = false;
-
-	buffer->modified = true;
 
 	undo_node_t *undo_node = NULL;
 
@@ -1225,4 +1220,9 @@ char *buffer_directory(buffer_t *buffer) {
 	if (last_slash == NULL) return strdup(top_working_directory());
 	char *r = strndup(buffer->path, last_slash-buffer->path);
 	return r;
+}
+
+bool buffer_modified(buffer_t *buffer) {
+	if (buffer->undo.head == NULL) return false;
+	return !(buffer->undo.head->saved);
 }

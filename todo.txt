@@ -1,9 +1,9 @@
-- some way to do IPC
-- EDITOR and VISUAL setting (needs some IPC implementation)
-
 - hide command line when it's not focused (or just use a different text color)
+
+- select pasted text
 - each non-alphanumeric symbol should count as a word?
-- code folding
+- code folding?
+- regexp?
 
 - command to iterate through all the tokens of some type (make a separate command or shoehorn inside s?)
 

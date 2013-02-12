@@ -18,6 +18,7 @@ void undo_init(undo_t *undo) {
 	undo->head = malloc(sizeof(undo_node_t));
 	undo->head->tag = NULL;
 	undo->head->fake = true;
+	undo->head->saved = true; // empty buffer is saved
 	undo->head->prev = NULL;
 	undo->head->next = NULL;
 	undo->please_fuse = false;
@@ -99,6 +100,7 @@ void undo_push(undo_t *undo, undo_node_t *new_node) {
 	undo_drop_redo_info(undo);
 
 	new_node->fake = false;
+	new_node->saved = false;
 
 #ifdef UNDO_DEBUGGING
 	printf("PUSHING (pre):\n");
@@ -190,3 +192,20 @@ undo_node_t *undo_peek(undo_t *undo) {
 	return (undo->head->fake) ? NULL : undo->head;
 }
 
+void undo_saved(undo_t *undo) {
+	for (undo_node_t *n = undo->head; n != NULL; n = n->prev) {
+		if (n->saved) {
+			n->saved = false;
+			break;
+		}
+	}
+
+	for (undo_node_t *n = undo->head; n != NULL; n = n->next) {
+		if (n->saved) {
+			n->saved = false;
+			break;
+		}
+	}
+
+	undo->head->saved = true;
+}

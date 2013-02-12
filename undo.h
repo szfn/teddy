@@ -23,6 +23,8 @@ typedef struct _undo_node_t {
 
 	bool fake;
 	time_t time;
+
+	bool saved;
 } undo_node_t;
 
 typedef struct _undo_t {
@@ -45,5 +47,8 @@ undo_node_t *undo_redo_pop(undo_t *undo);
 
 // peeks at first node in the undo list
 undo_node_t *undo_peek(undo_t *undo);
+
+// marks head as saved (removes every other saved mark)
+void undo_saved(undo_t *undo);
 
 #endif

@@ -140,7 +140,7 @@ static enum dirty_reason_t buffer_dirty_reason(buffer_t *buffer) {
 		}
 	}
 
-	if (buffer->modified) {
+	if (buffer_modified(buffer)) {
 		if (buffer->path[0] == '+') return DR_NOT_DIRTY;
 		if (buffer->path[strlen(buffer->path)-1] == '/') return DR_NOT_DIRTY;
 		return DR_CHANGED;
@@ -247,7 +247,7 @@ static void maybe_stale_buffer(int wd) {
 		if (buffer->path[strlen(buffer->path)-1] == '/') {
 			//printf("Refreshing stale buffer: <%s>\n", buffer->path);
 			buffers_refresh(buffer);
-		} else if (!(buffer->modified) && config_intval(&(buffer->config), CFG_AUTORELOAD)) {
+		} else if (!buffer_modified(buffer) && config_intval(&(buffer->config), CFG_AUTORELOAD)) {
 			buffers_refresh(buffer);
 		} else {
 			buffer->editable = false;
