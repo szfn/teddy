@@ -1,6 +1,5 @@
 - position history?
 - code folding?
-- regexp?
 
 - command to iterate through all the tokens of some type (make a separate command or shoehorn inside s?)
 

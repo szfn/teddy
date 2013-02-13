@@ -920,7 +920,13 @@ static gboolean button_press_callback(GtkWidget *widget, GdkEventButton *event, 
 			g_free(text);
 		}
 	} else if (event->button == 3) {
-		if (editor->buffer->mark >= 0)
+		bool hastarget = editor->buffer->mark >= 0;
+		if (!hastarget) {
+			int p;
+			hastarget = on_file_link(editor, event->x, event->y, &p);
+			if (hastarget) editor->buffer->cursor = p;
+		}
+		if (hastarget)
 			gtk_menu_popup(GTK_MENU(editor->context_menu), NULL, NULL, NULL, NULL, event->button, event->time);
 	}
 
