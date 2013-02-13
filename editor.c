@@ -1608,7 +1608,6 @@ editor_t *new_editor(buffer_t *buffer, bool single_line) {
 	r->hadjustment = gtk_adjustment_new(0.0, 0.0, 1.0, 1.0, 1.0, 1.0);
 
 	if (config_intval(&global_config, CFG_OLDSCROLLBAR) != 0) {
-		//TODO: use old-style scrollbar
 		//r->drarscroll = gtk_vscrollbar_new(GTK_ADJUSTMENT(r->adjustment));
 		r->drarscroll = oldscroll_new(GTK_ADJUSTMENT(r->adjustment));
 		gtk_table_attach(GTK_TABLE(r), r->drarscroll, 0, 1, 0, 1, 0, GTK_EXPAND|GTK_FILL, 0, 0);

@@ -1,4 +1,3 @@
-- each non-alphanumeric symbol should count as a word?
 - position history?
 - code folding?
 - regexp?

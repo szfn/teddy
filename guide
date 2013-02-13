@@ -1,5 +1,5 @@
 @ ctags -R
 @ git gui
 @ Watch make -s -j4
-@ env TEPID= bin/teddy
+@ env TEPID= bin/teddy editor.c
 @ env TEPID= valgrind bin/teddy

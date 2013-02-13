@@ -861,36 +861,46 @@ static UBool u_isalnum_or_underscore(uint32_t code) {
 	return u_isalnum(code) || (code == 0x5f);
 }
 
-/*if it is at the beginning of a word (or inside a word) goes to the end of this word, if it is at the end of a word (or inside a non-word sequence) goes to the beginning of the next one*/
+/*if it is at the beginning of a word (or inside a word) goes to the end of this word, if it is at the end of a word (or inside a non-word sequence) goes to the next character */
 static bool buffer_aux_wnwa_next_ex(buffer_t *buffer, int *point) {
 	if (*point >= BSIZE(buffer)) return false;
 	if (*point < 0) return false;
 
-	UBool searching_alnum = !u_isalnum_or_underscore(bat(buffer, *point)->code);
+	bool first = true;
 
 	for ( ; *point < BSIZE(buffer); ++(*point)) {
 		uint32_t code = bat(buffer, *point)->code;
-		if ((code == '\n') || (u_isalnum_or_underscore(bat(buffer, *point)->code) == searching_alnum)) return true;
+		if (code == '\n') return true;
+		if (!u_isalnum_or_underscore(bat(buffer, *point)->code)) {
+			if (first) ++(*point);
+			return true;
+		}
+		first = false;
 	}
 
 	return false;
 }
 
-/* If it is at the beginning of a word (or inside a non-word sequence) goes to the end of the previous word, if it is at the end of a word (or inside a word) goes to the beginning of the word) */
+/* If it is at the beginning of a word (or inside a non-word sequence) goes to the end of the previous word, if it is at the end of a word (or inside a word) goes to the previous character */
 static bool buffer_aux_wnwa_prev_ex(buffer_t *buffer, int *point) {
 	if (*point <= 0) return false;
 	if (*point > BSIZE(buffer)) return false;
 
-	--(*point);
+	bool first = true;
 
-	UBool searching_alnum = !u_isalnum_or_underscore(bat(buffer, *point)->code);
+	--(*point);
 
 	for ( ; *point >= 0; --(*point)) {
 		uint32_t code = bat(buffer, *point)->code;
-		if ((code == '\n') || (u_isalnum_or_underscore(code) == searching_alnum)) {
+		if (code == '\n') {
 			++(*point);
 			return true;
 		}
+		if (!u_isalnum_or_underscore(code)) {
+			if (!first) ++(*point);
+			return true;
+		}
+		first = false;
 	}
 
 	++(*point);
