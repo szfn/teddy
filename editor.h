@@ -43,6 +43,8 @@ typedef struct _editor_t {
 	bool dirty_line;
 	int lineno, colno;
 
+	bool darken;
+
 	void (*single_line_escape)(struct _editor_t *editor);
 	void (*single_line_return)(struct _editor_t *editor);
 	bool (*single_line_other_keys)(struct _editor_t *editor, bool shift, bool ctrl, bool alt, bool super, guint keyval);

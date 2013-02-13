@@ -1,5 +1,3 @@
-- hide command line when it's not focused (or just use a different text color)
-
 - select pasted text
 - each non-alphanumeric symbol should count as a word?
 - position history?

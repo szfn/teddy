@@ -259,6 +259,7 @@ GtkWidget *top_init(GtkWidget *window) {
 	cmdline_editor->single_line_return = &execute_command;
 	cmdline_editor->single_line_other_keys = &cmdline_other_keys;
 	cmdline_editor->alt_completer = &(command_history.c);
+	cmdline_editor->darken = true;
 
 	working_directory = get_current_dir_name();
 	tags_load(working_directory);

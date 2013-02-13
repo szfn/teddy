@@ -1368,8 +1368,25 @@ static void draw_notices(cairo_t *cr, editor_t *editor, GtkAllocation *allocatio
 	}
 }
 
+static int make_halfway_color(int fgcolor, int bgcolor) {
+	uint8_t fga = (uint8_t)fgcolor;
+	uint8_t fgb = (uint8_t)(fgcolor >> 8);
+	uint8_t fgc = (uint8_t)(fgcolor >> 16);
+
+	uint8_t bga = (uint8_t)bgcolor;
+	uint8_t bgb = (uint8_t)(bgcolor >> 8);
+	uint8_t bgc = (uint8_t)(bgcolor >> 16);
+
+	uint8_t dka = (int)(bga - fga) * 0.50 + fga;
+	uint8_t dkb = (int)(bgb - fgb) * 0.50 + fgb;
+	uint8_t dkc = (int)(bgc - fgc) * 0.50 + fgc;
+
+	return (int)dka + (((int)dkb) << 8) + (((int)dkc) << 16);
+}
+
 static gboolean expose_event_callback(GtkWidget *widget, GdkEventExpose *event, editor_t *editor) {
 	cairo_t *cr = gdk_cairo_create(widget->window);
+	bool darkened = editor->darken && !(editor->cursor_visible);
 
 	GtkAllocation allocation;
 	gtk_widget_get_allocation(widget, &allocation);
@@ -1385,7 +1402,7 @@ static gboolean expose_event_callback(GtkWidget *widget, GdkEventExpose *event, 
 	cairo_translate(cr, -gtk_adjustment_get_value(GTK_ADJUSTMENT(editor->hadjustment)), -gtk_adjustment_get_value(GTK_ADJUSTMENT(editor->adjustment)));
 
 	draw_cursorline(cr, editor);
-	if (!sel_invert) draw_selection(editor, allocation.width, cr, sel_invert);
+	if (!darkened && !sel_invert) draw_selection(editor, allocation.width, cr, sel_invert);
 
 	//editor->buffer->rendered_height = 0.0;
 
@@ -1396,29 +1413,31 @@ static gboolean expose_event_callback(GtkWidget *widget, GdkEventExpose *event, 
 
 	draw_lines(editor, &allocation, cr, ht, gtk_adjustment_get_value(GTK_ADJUSTMENT(editor->adjustment)), gtk_adjustment_get_value(GTK_ADJUSTMENT(editor->adjustment)) + allocation.height);
 
-	{
-		cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
-		GHashTableIter it;
-		g_hash_table_iter_init(&it, ht);
-		uint16_t type;
-		struct growable_glyph_array *gga;
-		while (g_hash_table_iter_next(&it, (gpointer *)&type, (gpointer *)&gga)) {
-			uint8_t color = (uint8_t)type;
-			uint8_t fontidx = (uint8_t)(type >> 8);
-			cairo_set_scaled_font(cr, fontset_get_cairofont_by_name(config_strval(&(editor->buffer->config), CFG_MAIN_FONT), fontidx));
+	int darkened_color = darkened ? make_halfway_color(config_intval(&(editor->buffer->config), CFG_LEXY_NOTHING), config_intval(&(editor->buffer->config), CFG_EDITOR_BG_COLOR)) : 0;
 
-			set_color_cfg(cr, config_intval(&(editor->buffer->config), CFG_LEXY_NOTHING+color));
-			cairo_show_glyphs(cr, gga->glyphs, gga->n);
-			//set_color_cfg(cr, config_intval(&(editor->buffer->config), CFG_LEXY_FILE));
-			draw_underline(editor, cr, gga);
+	cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
+	GHashTableIter it;
+	g_hash_table_iter_init(&it, ht);
+	gpointer key, value;
+	while (g_hash_table_iter_next(&it, &key, &value)) {
+		uint16_t type = (uint16_t)(uintptr_t)key;
+		struct growable_glyph_array *gga = (struct growable_glyph_array *)(value);
+		uint8_t color = (uint8_t)type;
+		uint8_t fontidx = (uint8_t)(type >> 8);
+		cairo_set_scaled_font(cr, fontset_get_cairofont_by_name(config_strval(&(editor->buffer->config), CFG_MAIN_FONT), fontidx));
 
-			growable_glyph_array_free(gga);
-		}
+		set_color_cfg(cr, darkened ? darkened_color : config_intval(&(editor->buffer->config), CFG_LEXY_NOTHING+color));
+
+		cairo_show_glyphs(cr, gga->glyphs, gga->n);
+		//set_color_cfg(cr, config_intval(&(editor->buffer->config), CFG_LEXY_FILE));
+		draw_underline(editor, cr, gga);
+
+		growable_glyph_array_free(gga);
 	}
 
-	g_hash_table_destroy(ht);
+		g_hash_table_destroy(ht);
 
-	if (sel_invert) draw_selection(editor, allocation.width, cr, sel_invert);
+	if (!darkened && sel_invert) draw_selection(editor, allocation.width, cr, sel_invert);
 	draw_parmatch(editor, &allocation, cr);
 
 	draw_cursor(cr, editor);
@@ -1545,6 +1564,7 @@ editor_t *new_editor(buffer_t *buffer, bool single_line) {
 	r->alt_completer = NULL;
 	r->dirty_line = false;
 	r->first_exposed = 0;
+	r->darken = false;
 
 	if (buffer != NULL) {
 		r->lineno = buffer_line_of(buffer, buffer->cursor);
