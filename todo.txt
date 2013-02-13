@@ -1,7 +1,14 @@
+- extend s command to match sequences based on lexical analysis
+ - parsing
+ - matching
+ - insure that lexical analysis is rerun before s command if lexical matches are used
+ - document feature
+- extend s to filter matches through a subpattern (reread structural regexp paper)
+
 - position history?
 - code folding?
 
-- command to iterate through all the tokens of some type (make a separate command or shoehorn inside s?)
+
 
 - bold matched text in autocompletions window and iopen window
 

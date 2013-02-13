@@ -44,8 +44,6 @@ static void tre_point_bridge_rewind(size_t pos, void *context) {
 static int tre_point_bridge_compare(size_t pos, size_t pos2, size_t len, void *context) {
 	struct augmented_lpoint_t *point = (struct augmented_lpoint_t *)context;
 
-	printf("compare\n");
-
 	for (int i = 0; i < len; ++i) {
 		if (point->start_glyph + pos + i >= BSIZE(point->buffer)) return -1;
 		if (point->start_glyph + pos2 + i >= BSIZE(point->buffer)) return -1;
