@@ -185,16 +185,15 @@ static gboolean reshandle_expose_callback(GtkWidget *widget, GdkEventExpose *eve
 	gtk_widget_get_allocation(widget, &allocation);
 
 	set_color_cfg(cr, config_intval(&global_config, CFG_TAG_BG_COLOR));
-	//cairo_set_source_rgb(cr, 1.0, 1.0, 1.0);
 	cairo_rectangle(cr, 0, 0, allocation.width, allocation.height);
 	cairo_fill(cr);
 
 	cairo_set_source_rgb(cr, 136.0/256, 136.0/256, 204.0/256);
 
-	cairo_rectangle(cr, 2, 2, allocation.width-4, allocation.height-4);
+	cairo_rectangle(cr, 0, 0, allocation.width-1, allocation.height);
 	cairo_fill(cr);
 
-	cairo_rectangle(cr, 4, 4, allocation.width - 8, allocation.height - 8);
+	cairo_rectangle(cr, 2, 2, allocation.width-5, allocation.height-4);
 	if (tf->modified) {
 		cairo_set_source_rgb(cr, 0.0, 0.0, 153.0/256);
 	} else {
