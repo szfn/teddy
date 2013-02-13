@@ -350,6 +350,53 @@ proc zenburn_theme {simple} {\n\
 	buffer lexy\n\
 }\n\
 \n\
+proc turbo_theme {simple} {\n\
+	set bg [rgbcolor 0 0 128]\n\
+	set comment [rgbcolor 192 192 192]\n\
+	set string [rgbcolor 0 255 255]\n\
+	set yellow [rgbcolor 255 255 0]\n\
+	set literal [rgbcolor 0 128 128]\n\
+	set kwd [rgbcolor 255 255 255]\n\
+\n\
+	set grey [rgbcolor 192 192 192]\n\
+\n\
+	setcfg -global editor_bg_color $bg\n\
+	setcfg -global border_color $grey\n\
+	setcfg -global editor_bg_cursorline [rgbcolor 0 0 67]\n\
+	setcfg -global editor_sel_color [rgbcolor 0 0 255]\n\
+	setcfg -global scrollbar_bg_color [rgbcolor 0 74 74]\n\
+\n\
+	setcfg -global editor_fg_color $yellow\n\
+\n\
+	setcfg -global tag_bg_color $grey\n\
+	setcfg -global tag_fg_color [rgbcolor 0 0 0]\n\
+\n\
+	setcfg -global posbox_border_color [rgbcolor 0 0 0]\n\
+	setcfg -global posbox_bg_color $grey\n\
+	setcfg -global posbox_fg_color [rgbcolor 0 0 0]\n\
+\n\
+	setcfg -global lexy_nothing $yellow\n\
+	setcfg -global lexy_comment $comment\n\
+	setcfg -global lexy_string $string\n\
+	setcfg -global lexy_id $yellow\n\
+	setcfg -global lexy_file [rgbcolor 226 226 226]\n\
+\n\
+	if {$simple == 0} {\n\
+		setcfg -global lexy_keyword $yellow\n\
+		setcfg -global lexy_literal $yellow\n\
+	} elseif {$simple == 2} {\n\
+		setcfg -global lexy_keyword $kwd\n\
+		setcfg -global lexy_literal $yellow\n\
+	} else {\n\
+		setcfg -global lexy_keyword $kwd\n\
+		setcfg -global lexy_literal $literal\n\
+	}\n\
+\n\
+	setcfg -global editor_sel_invert 0\n\
+\n\
+	buffer lexy\n\
+}\n\
+\n\
 proc solarized_theme {} {\n\
 	set base03    [rgbcolor 0  43  54]\n\
 	set base02    [rgbcolor 7  54  66]\n\

@@ -347,6 +347,53 @@ proc zenburn_theme {simple} {
 	buffer lexy
 }
 
+proc turbo_theme {simple} {
+	set bg [rgbcolor 0 0 128]
+	set comment [rgbcolor 192 192 192]
+	set string [rgbcolor 0 255 255]
+	set yellow [rgbcolor 255 255 0]
+	set literal [rgbcolor 0 128 128]
+	set kwd [rgbcolor 255 255 255]
+
+	set grey [rgbcolor 192 192 192]
+
+	setcfg -global editor_bg_color $bg
+	setcfg -global border_color $grey
+	setcfg -global editor_bg_cursorline [rgbcolor 0 0 67]
+	setcfg -global editor_sel_color [rgbcolor 0 0 255]
+	setcfg -global scrollbar_bg_color [rgbcolor 0 74 74]
+
+	setcfg -global editor_fg_color $yellow
+
+	setcfg -global tag_bg_color $grey
+	setcfg -global tag_fg_color [rgbcolor 0 0 0]
+
+	setcfg -global posbox_border_color [rgbcolor 0 0 0]
+	setcfg -global posbox_bg_color $grey
+	setcfg -global posbox_fg_color [rgbcolor 0 0 0]
+
+	setcfg -global lexy_nothing $yellow
+	setcfg -global lexy_comment $comment
+	setcfg -global lexy_string $string
+	setcfg -global lexy_id $yellow
+	setcfg -global lexy_file [rgbcolor 226 226 226]
+
+	if {$simple == 0} {
+		setcfg -global lexy_keyword $yellow
+		setcfg -global lexy_literal $yellow
+	} elseif {$simple == 2} {
+		setcfg -global lexy_keyword $kwd
+		setcfg -global lexy_literal $yellow
+	} else {
+		setcfg -global lexy_keyword $kwd
+		setcfg -global lexy_literal $literal
+	}
+
+	setcfg -global editor_sel_invert 0
+
+	buffer lexy
+}
+
 proc solarized_theme {} {
 	set base03    [rgbcolor 0  43  54]
 	set base02    [rgbcolor 7  54  66]
