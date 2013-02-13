@@ -94,16 +94,31 @@ namespace eval bindent {
 		}
 	}
 
+	# Like c but marks the printed text
+	namespace export markc
+	proc markc {text} {
+		m sort
+		set start [lindex [m] 0]
+		if {$start eq "nil"} {
+			set start [lindex [m] 1]
+		}
+
+		c $text
+
+		set end [lindex [m] 1]
+		m $start $end
+	}
+
 	# Equalizes indentation for paste
 	namespace export pasteq
 	proc pasteq {text} {
-		if {[lindex [m] 0] ne "nil"} { c $text; return }
+		if {[lindex [m] 0] ne "nil"} { markc $text; return }
 
 		set cursor [m]
 		m +:1 +:$
 		if {![regexp {^(?: |\t)*$} [c]]} {
 			m {*}$cursor
-			c $text
+			markc $text
 			return
 		}
 
@@ -122,7 +137,7 @@ namespace eval bindent {
 			set r [c]
 		}
 		m +:1 +:$
-		c $r
+		markc $r
 	}
 
 	namespace ensemble create -subcommands {incr decr guess pasteq}
