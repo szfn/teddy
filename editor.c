@@ -315,7 +315,7 @@ static void freeze_primary_selection(editor_t *editor) {
 	free(r);
 }
 
-static bool mark_move(editor_t *editor, bool shift) {
+static bool mark_move(editor_t *editor, bool shift, bool lower) {
 	if (editor->buffer->mark < 0) {
 		if (shift) {
 			editor->buffer->savedmark = editor->buffer->mark = editor->buffer->cursor;
@@ -325,6 +325,11 @@ static bool mark_move(editor_t *editor, bool shift) {
 		return true;
 	} else {
 		if (!shift) {
+			if (lower) {
+				editor->buffer->cursor = MIN(editor->buffer->cursor, editor->buffer->mark);
+			} else {
+				editor->buffer->cursor = MAX(editor->buffer->cursor, editor->buffer->mark);
+			}
 			//freeze_primary_selection(editor);
 			editor->buffer->mark = editor->buffer->savedmark = -1;
 			return false;
@@ -588,42 +593,42 @@ static gboolean key_press_callback(GtkWidget *widget, GdkEventKey *event, editor
 
 		case GDK_KEY_Up:
 			dirty_line_update(editor);
-			if (mark_move(editor, shift)) {
+			if (mark_move(editor, shift, true)) {
 				buffer_move_point_line(editor->buffer, &(editor->buffer->cursor), MT_REL, -1);
 				buffer_move_point_glyph(editor->buffer, &(editor->buffer->cursor), MT_START, 0);
 			}
 			goto key_press_return_true;
 		case GDK_KEY_Down:
 			dirty_line_update(editor);
-			if (mark_move(editor, shift)) {
+			if (mark_move(editor, shift, false)) {
 				buffer_move_point_line(editor->buffer, &(editor->buffer->cursor), MT_REL, +1);
 				buffer_move_point_glyph(editor->buffer, &(editor->buffer->cursor), MT_START, 0);
 			}
 			goto key_press_return_true;
 		case GDK_KEY_Right:
-			if (mark_move(editor, shift)) buffer_move_point_glyph(editor->buffer, &(editor->buffer->cursor), MT_REL, +1);
+			if (mark_move(editor, shift, false)) buffer_move_point_glyph(editor->buffer, &(editor->buffer->cursor), MT_REL, +1);
 			goto key_press_return_true;
 		case GDK_KEY_Left:
-			if (mark_move(editor, shift)) buffer_move_point_glyph(editor->buffer, &(editor->buffer->cursor), MT_REL, -1);
+			if (mark_move(editor, shift, true)) buffer_move_point_glyph(editor->buffer, &(editor->buffer->cursor), MT_REL, -1);
 			goto key_press_return_true;
 
 		case GDK_KEY_Page_Up:
 			dirty_line_update(editor);
-			mark_move(editor, shift);
+			mark_move(editor, shift, true);
 			buffer_move_point_line(editor->buffer, &(editor->buffer->cursor), MT_REL, -(allocation.height / editor->buffer->line_height) + 2);
 			goto key_press_return_true;
 		case GDK_KEY_Page_Down:
 			dirty_line_update(editor);
-			mark_move(editor, shift);
+			mark_move(editor, shift, false);
 			buffer_move_point_line(editor->buffer, &(editor->buffer->cursor), MT_REL, +(allocation.height / editor->buffer->line_height) - 2);
 			goto key_press_return_true;
 
 		case GDK_KEY_Home:
-			mark_move(editor, shift);
+			mark_move(editor, shift, true);
 			buffer_move_point_glyph(editor->buffer, &(editor->buffer->cursor), MT_HOME, 0);
 			goto key_press_return_true;
 		case GDK_KEY_End:
-			mark_move(editor, shift);
+			mark_move(editor, shift, false);
 			buffer_move_point_glyph(editor->buffer, &(editor->buffer->cursor), MT_END, 0);
 			goto key_press_return_true;
 		}
