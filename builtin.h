@@ -84,9 +84,9 @@ namespace eval bindent {\n\
 		}\n\
 \n\
 		if {$spaces > $tabs} {\n\
-			buffer propset [buffer current] indentchar \"  \"\n\
+			buffer propset indentchar \"  \"\n\
 		} else {\n\
-			buffer propset [buffer current] indentchar \"\\t\"\n\
+			buffer propset indentchar \"\\t\"\n\
 		}\n\
 	}\n\
 \n\

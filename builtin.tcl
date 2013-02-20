@@ -81,9 +81,9 @@ namespace eval bindent {
 		}
 
 		if {$spaces > $tabs} {
-			buffer propset [buffer current] indentchar "  "
+			buffer propset indentchar "  "
 		} else {
-			buffer propset [buffer current] indentchar "\t"
+			buffer propset indentchar "\t"
 		}
 	}
 

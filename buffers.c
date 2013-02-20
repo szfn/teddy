@@ -572,16 +572,28 @@ int teddy_buffer_command(ClientData client_data, Tcl_Interp *interp, int argc, c
 
 		Tcl_SetResult(interp, (propvalue != NULL) ? propvalue : "", TCL_VOLATILE);
 	} else if (strcmp(argv[1], "propset") == 0) {
-		ARGNUM((argc != 5), "buffer propset");
+		char *propname;
+		char *propvalue;
+		buffer_t *buffer;
 
-		const char *bufferid = argv[2];
-		char *propname = strdup(argv[3]);
-		char *propvalue = strdup(argv[4]);
+		if (argc == 5) {
+			const char *bufferid = argv[2];
+			propname = strdup(argv[3]);
+			propvalue = strdup(argv[4]);
+			buffer = buffer_id_to_buffer(bufferid);
+		} else if (argc == 4) {
+			HASBUF("buffer propset");
+			propname = strdup(argv[2]);
+			propvalue = strdup(argv[3]);
+			buffer = interp_context_buffer();
+		} else {
+			Tcl_AddErrorInfo(interp, "Wrong number of arguments to 'buffer propset'");
+			return TCL_ERROR;
+		}
+
+		BUFIDCHECK(buffer);
 		alloc_assert(propvalue);
 		alloc_assert(propname);
-
-		buffer_t *buffer = buffer_id_to_buffer(bufferid);
-		BUFIDCHECK(buffer);
 
 		g_hash_table_insert(buffer->props, propname, propvalue);
 	} else if (strcmp(argv[1], "ls") == 0) {
