@@ -554,10 +554,14 @@ namespace eval teddy_intl {\n\
 	namespace export iopen_search\n\
 	proc iopen_search {z} {\n\
 		if {$z eq \"\"} { return }\n\
-		set k [s -literal -get $z]\n\
-		#puts \"Searching <$z> -> <$k>\"\n\
-		if {[lindex $k 0] ne \"nil\"} {\n\
-			m nil [lindex $k 0]\n\
+		if {[string index $z 0] eq \":\"} {\n\
+			m nil [string range $z 1 end]\n\
+		} else {\n\
+			set k [s -literal -get $z]\n\
+			#puts \"Searching <$z> -> <$k>\"\n\
+			if {[lindex $k 0] ne \"nil\"} {\n\
+				m nil [lindex $k 0]\n\
+			}\n\
 		}\n\
 	}\n\
 \n\

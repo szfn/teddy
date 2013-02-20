@@ -195,6 +195,7 @@ static gpointer iopen_recursor_thread(gpointer data) {
 	char *request = NULL;
 
 	int count = 0;
+	char *rest = NULL;
 
 	for (;;) {
 		char *new_request;
@@ -215,6 +216,15 @@ static gpointer iopen_recursor_thread(gpointer data) {
 
 			if (request != NULL) free(request);
 			request = new_request;
+
+			char *first_colon = strchr(request, ':');
+			if (first_colon != NULL) {
+				asprintf(&rest, "%s", first_colon);
+				*first_colon = '\0';
+			} else {
+				if (rest != NULL) free(rest);
+				rest = NULL;
+			}
 
 			for (int i = 0; i < top; ++i) {
 				closedir(tovisit[i].dir);
@@ -274,7 +284,7 @@ static gpointer iopen_recursor_thread(gpointer data) {
 				r->show = g_markup_printf_escaped("<big><b>%s%s</b></big>\n%s", cf->cur->d_name, (cf->cur->d_type == DT_DIR) ? "/" : "", r->path);
 				alloc_assert(r->show);
 
-				r->search = NULL;
+				r->search = (rest != NULL) ? strdup(rest) : NULL;
 
 				r->rank = (top + ((cf->cur->d_type == DT_DIR) ? 0 : -1))*1000
 					+ (match_start - cf->cur->d_name)*10
@@ -327,6 +337,9 @@ static gpointer iopen_tags_thread(gpointer data) {
 
 			if (request != NULL) free(request);
 			request = new_request;
+
+			char *first_colon = strchr(request, ':');
+			if (first_colon != NULL) *first_colon = '\0';
 
 			idx = (strcmp(request, "") == 0) ? -1 : 0;
 			count = 0;
