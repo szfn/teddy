@@ -111,18 +111,19 @@ void gtk_column_size_allocate(GtkWidget *widget, GtkAllocation *allocation) {
 	gint y = allocation->y + GTK_CONTAINER(box)->border_width;
 	gint remaining_height = allocation->height;
 
+	GtkWidget *child_frame = NULL;
+	GtkAllocation child_allocation;
+
 	children = box->children;
 	while (children) {
 		GtkBoxChild *child = children->data;
-		GtkWidget *child_frame = child->widget;
+		child_frame = child->widget;
 		children = children->next;
 
 		double fraction = tframe_fraction(GTK_TFRAME(child_frame));
 
 		GtkRequisition child_requisition;
 		gtk_widget_size_request(child_frame, &child_requisition);
-
-		GtkAllocation child_allocation;
 
 		child_allocation.x = allocation->x + GTK_CONTAINER(box)->border_width;
 		child_allocation.width = MAX(1, (gint)allocation->width - (gint)GTK_CONTAINER(box)->border_width * 2);
@@ -149,6 +150,11 @@ void gtk_column_size_allocate(GtkWidget *widget, GtkAllocation *allocation) {
 
 		y += child_allocation.height;
 
+		gtk_widget_size_allocate(child_frame, &child_allocation);
+	}
+
+	if (child_frame != NULL) {
+		child_allocation.height += remaining_height;
 		gtk_widget_size_allocate(child_frame, &child_allocation);
 	}
 }

@@ -117,16 +117,17 @@ void gtk_columns_size_allocate(GtkWidget *widget, GtkAllocation *allocation) {
 
 	//printf("Columns size allocate: ");
 
+	GtkWidget *col = NULL;
+	GtkAllocation child_allocation;
+
 	children = box->children;
 	while (children) {
 		GtkBoxChild *child = children->data;
-		GtkWidget *col = child->widget;
+		col = child->widget;
 		children = children->next;
 
 		GtkRequisition child_requisition;
 		gtk_widget_size_request(col, &child_requisition);
-
-		GtkAllocation child_allocation;
 
 		child_allocation.y = allocation->y + GTK_CONTAINER(box)->border_width;
 		child_allocation.x = x;
@@ -155,6 +156,11 @@ void gtk_columns_size_allocate(GtkWidget *widget, GtkAllocation *allocation) {
 
 		//printf("%d ", child_allocation.width);
 
+		gtk_widget_size_allocate(col, &child_allocation);
+	}
+
+	if (col != NULL) {
+		child_allocation.width += remaining_width;
 		gtk_widget_size_allocate(col, &child_allocation);
 	}
 
