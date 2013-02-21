@@ -9,6 +9,7 @@
 
 #define LOCKED_COMMAND_LINE_SIZE 256
 #define AUTOSCROLL_TIMO 100
+#define MAX_MOUSE_SEQ 128
 
 #define GTK_TYPE_TEDITOR (gtk_teditor_get_type())
 #define GTK_TEDITOR(obj) (G_TYPE_CHECK_INSTANCE_CAST((obj), GTK_TYPE_TEDITOR, editor_t))
@@ -56,6 +57,9 @@ typedef struct _editor_t {
 
 	struct research_t research;
 	GtkWidget *prev_search_button, *execute_search_button, *execute_all_search_button;
+
+	int mouse_sequence;
+	char mouse_sequence_str[MAX_MOUSE_SEQ];
 } editor_t;
 
 typedef struct _editor_class {

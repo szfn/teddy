@@ -496,7 +496,16 @@ static gboolean key_press_callback(GtkWidget *widget, GdkEventKey *event, editor
 	int alt = event->state & GDK_MOD1_MASK;
 	int super = event->state & GDK_SUPER_MASK;
 
-	gdk_window_set_cursor(gtk_widget_get_window(editor->drar), cursor_blank);
+	if (config_intval(&global_config, CFG_HIDE_CURSOR)) {
+		gdk_window_set_cursor(gtk_widget_get_window(editor->drar), cursor_blank);
+	}
+
+	if (editor->mouse_sequence != 0) {
+		full_keyevent_to_string(event->keyval, super, ctrl, alt, shift, pressed);
+		if (strlen(editor->mouse_sequence_str) + strlen(pressed) + 1 >= MAX_MOUSE_SEQ-3) return TRUE;
+		strcat(editor->mouse_sequence_str, pressed);
+		return TRUE;
+	}
 
 	if (editor->buffer->stale) {
 		switch (event->keyval) {
@@ -883,14 +892,6 @@ static gboolean button_press_callback(GtkWidget *widget, GdkEventButton *event, 
 
 	dirty_line_update(editor);
 
-	if (editor->mouse_marking) {
-		if (event->button == 3) {
-			editor->mouse_marking = 0;
-			eval_menu_item_callback(NULL, editor);
-			return TRUE;
-		}
-	}
-
 	if (event->button == 1) {
 		move_cursor_to_mouse(editor, event->x, event->y);
 
@@ -915,6 +916,52 @@ static gboolean button_press_callback(GtkWidget *widget, GdkEventButton *event, 
 			// there was a center on cursor here
 		}
 	} else if (event->button == 2) {
+		editor->mouse_sequence = 2;
+		editor->mouse_sequence_str[0] = '\0';
+	} else if (event->button == 3) {
+		editor->mouse_sequence = 3;
+		editor->mouse_sequence_str[0] = '\0';
+	}
+
+	return TRUE;
+}
+
+static gboolean button_release_callback(GtkWidget *widget, GdkEventButton *event, editor_t *editor) {
+	editor->buffer->select_type = BST_NORMAL;
+	if (event->button == 1) {
+		if (editor->mouse_marking) {
+			editor->mouse_marking = 0;
+
+			if (editor->buffer->mark == editor->buffer->cursor) {
+				editor->buffer->mark = -1;
+				gtk_widget_queue_draw(editor->drar);
+			} else {
+				freeze_primary_selection(editor);
+			}
+			return TRUE;
+		}
+	}
+
+	if (strcmp(editor->mouse_sequence_str, "") != 0) {
+		strcpy(editor->mouse_sequence_str+3, editor->mouse_sequence_str);
+		editor->mouse_sequence_str[0] = 'M';
+		editor->mouse_sequence_str[1] = (editor->mouse_sequence == 2) ? 'm' : 'r';
+		editor->mouse_sequence_str[2] = '-';
+
+		const char *command = g_hash_table_lookup(keybindings, editor->mouse_sequence_str);
+
+		if (command != NULL) {
+			interp_eval(editor, NULL, command, false, true);
+			set_label_text(editor);
+		}
+
+		editor->mouse_sequence = 0;
+		return TRUE;
+	}
+
+	editor->mouse_sequence = 0;
+
+	if (event->button == 2) {
 		move_cursor_to_mouse(editor, event->x, event->y);
 		editor->buffer->mark = editor->buffer->savedmark = -1;
 		editor_complete_move(editor, TRUE);
@@ -925,6 +972,12 @@ static gboolean button_press_callback(GtkWidget *widget, GdkEventButton *event, 
 			g_free(text);
 		}
 	} else if (event->button == 3) {
+		if (editor->mouse_marking) {
+			editor->mouse_marking = 0;
+			eval_menu_item_callback(NULL, editor);
+			return TRUE;
+		}
+
 		bool hastarget = editor->buffer->mark >= 0;
 		if (!hastarget) {
 			int p;
@@ -933,22 +986,6 @@ static gboolean button_press_callback(GtkWidget *widget, GdkEventButton *event, 
 		}
 		if (hastarget)
 			gtk_menu_popup(GTK_MENU(editor->context_menu), NULL, NULL, NULL, NULL, event->button, event->time);
-	}
-
-	return TRUE;
-}
-
-static gboolean button_release_callback(GtkWidget *widget, GdkEventButton *event, editor_t *editor) {
-	editor->buffer->select_type = BST_NORMAL;
-	if (editor->mouse_marking) {
-		editor->mouse_marking = 0;
-
-		if (editor->buffer->mark == editor->buffer->cursor) {
-			editor->buffer->mark = -1;
-			gtk_widget_queue_draw(editor->drar);
-		} else {
-			freeze_primary_selection(editor);
-		}
 	}
 
 	return TRUE;
@@ -1576,6 +1613,9 @@ editor_t *new_editor(buffer_t *buffer, bool single_line) {
 	r->dirty_line = false;
 	r->first_exposed = 0;
 	r->darken = false;
+
+	r->mouse_sequence = 0;
+	r->mouse_sequence_str[0] = '\0';
 
 	if (buffer != NULL) {
 		r->lineno = buffer_line_of(buffer, buffer->cursor);

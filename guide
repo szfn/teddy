@@ -3,6 +3,5 @@
 @ gitk --all
 @ Watch make -s -j4
 
-
 @ env TEPID= bin/teddy
 @ env TEPID= valgrind bin/teddy

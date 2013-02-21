@@ -19,6 +19,7 @@ const char *config_names[] = {
 	"oldarrow",
 	"quotehack",
 	"dangerclose",
+	"hide_cursor",
 	"editor_bg_color",
 	"editor_fg_color",
 	"editor_sel_color",
@@ -64,6 +65,7 @@ void config_init_auto_defaults(void) {
 	config_set(&global_config, CFG_OLDARROW, "0");
 	config_set(&global_config, CFG_QUOTEHACK, "0");
 	config_set(&global_config, CFG_DANGERCLOSE, "0");
+	config_set(&global_config, CFG_HIDE_CURSOR, "1");
 	config_set(&global_config, CFG_EDITOR_BG_COLOR, "16777215");
 	config_set(&global_config, CFG_EDITOR_FG_COLOR, "0");
 	config_set(&global_config, CFG_EDITOR_SEL_COLOR, "16777215");
