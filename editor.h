@@ -92,4 +92,6 @@ void editor_grab_focus(editor_t *editor, bool warp);
 
 void editor_cursor_position(editor_t *editor, double *x, double *y, double *alty);
 
+int teddy_newline_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]);
+
 #endif

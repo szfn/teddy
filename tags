@@ -11,7 +11,7 @@ ANSI_SEQ_MAX_LEN	jobs.h	14;"	d
 ARGNUM	interp.h	32;"	d
 AUTOCONF_TEDDY	autoconf.h	4;"	d
 AUTOSCROLL_TIMO	editor.h	11;"	d
-AUTOWRAP_INDICATOR_WIDTH	editor.c	1199;"	d	file:
+AUTOWRAP_INDICATOR_WIDTH	editor.c	1203;"	d	file:
 App	test/App.java	/^public class App $/;"	c
 BSIZE	buffer.h	178;"	d
 BST_LINES	buffer.h	/^enum select_type { BST_NORMAL = 0, BST_WORDS, BST_LINES };$/;"	e	enum:select_type
@@ -24,45 +24,46 @@ BUFSIZE	buffer.c	305;"	d	file:
 BUFSIZE	ipc.c	58;"	d	file:
 BUF_SIZE	tags.c	41;"	d	file:
 BUILTIN_TCL_CODE	builtin.h	4;"	d
-CFG_AUTOCOMPL_POPUP	cfg_auto.h	44;"	d
+CFG_AUTOCOMPL_POPUP	cfg_auto.h	45;"	d
 CFG_AUTOINDENT	cfg_auto.h	12;"	d
-CFG_AUTORELOAD	cfg_auto.h	43;"	d
+CFG_AUTORELOAD	cfg_auto.h	44;"	d
 CFG_AUTOWRAP	cfg_auto.h	15;"	d
-CFG_BORDER_COLOR	cfg_auto.h	30;"	d
+CFG_BORDER_COLOR	cfg_auto.h	31;"	d
 CFG_DANGERCLOSE	cfg_auto.h	20;"	d
-CFG_EDITOR_BG_COLOR	cfg_auto.h	21;"	d
-CFG_EDITOR_BG_CURSORLINE	cfg_auto.h	25;"	d
-CFG_EDITOR_FG_COLOR	cfg_auto.h	22;"	d
-CFG_EDITOR_SEL_COLOR	cfg_auto.h	23;"	d
-CFG_EDITOR_SEL_INVERT	cfg_auto.h	24;"	d
+CFG_EDITOR_BG_COLOR	cfg_auto.h	22;"	d
+CFG_EDITOR_BG_CURSORLINE	cfg_auto.h	26;"	d
+CFG_EDITOR_FG_COLOR	cfg_auto.h	23;"	d
+CFG_EDITOR_SEL_COLOR	cfg_auto.h	24;"	d
+CFG_EDITOR_SEL_INVERT	cfg_auto.h	25;"	d
 CFG_FOCUS_FOLLOWS_MOUSE	cfg_auto.h	11;"	d
+CFG_HIDE_CURSOR	cfg_auto.h	21;"	d
 CFG_INTERACTIVE_SEARCH_CASE_SENSITIVE	cfg_auto.h	14;"	d
-CFG_JOBS_SCROLLBACK	cfg_auto.h	45;"	d
+CFG_JOBS_SCROLLBACK	cfg_auto.h	46;"	d
 CFG_LARGEINDENT	cfg_auto.h	16;"	d
-CFG_LEXY_COMMENT	cfg_auto.h	38;"	d
-CFG_LEXY_ENABLED	cfg_auto.h	34;"	d
-CFG_LEXY_FILE	cfg_auto.h	41;"	d
-CFG_LEXY_ID	cfg_auto.h	37;"	d
-CFG_LEXY_KEYWORD	cfg_auto.h	36;"	d
-CFG_LEXY_LITERAL	cfg_auto.h	40;"	d
-CFG_LEXY_NOTHING	cfg_auto.h	35;"	d
-CFG_LEXY_STRING	cfg_auto.h	39;"	d
+CFG_LEXY_COMMENT	cfg_auto.h	39;"	d
+CFG_LEXY_ENABLED	cfg_auto.h	35;"	d
+CFG_LEXY_FILE	cfg_auto.h	42;"	d
+CFG_LEXY_ID	cfg_auto.h	38;"	d
+CFG_LEXY_KEYWORD	cfg_auto.h	37;"	d
+CFG_LEXY_LITERAL	cfg_auto.h	41;"	d
+CFG_LEXY_NOTHING	cfg_auto.h	36;"	d
+CFG_LEXY_STRING	cfg_auto.h	40;"	d
 CFG_MAIN_FONT	cfg_auto.h	6;"	d
 CFG_MAIN_FONT_HEIGHT_REDUCTION	cfg_auto.h	7;"	d
 CFG_NOTICE_FONT	cfg_auto.h	9;"	d
 CFG_OLDARROW	cfg_auto.h	18;"	d
-CFG_OLDSCROLLBAR	cfg_auto.h	46;"	d
-CFG_POSBOX_BG_COLOR	cfg_auto.h	28;"	d
-CFG_POSBOX_BORDER_COLOR	cfg_auto.h	27;"	d
-CFG_POSBOX_FG_COLOR	cfg_auto.h	29;"	d
+CFG_OLDSCROLLBAR	cfg_auto.h	47;"	d
+CFG_POSBOX_BG_COLOR	cfg_auto.h	29;"	d
+CFG_POSBOX_BORDER_COLOR	cfg_auto.h	28;"	d
+CFG_POSBOX_FG_COLOR	cfg_auto.h	30;"	d
 CFG_POSBOX_FONT	cfg_auto.h	8;"	d
 CFG_QUOTEHACK	cfg_auto.h	19;"	d
-CFG_SCROLLBAR_BG_COLOR	cfg_auto.h	26;"	d
+CFG_SCROLLBAR_BG_COLOR	cfg_auto.h	27;"	d
 CFG_TAB_WIDTH	cfg_auto.h	17;"	d
-CFG_TAGS_DISCARD_LINENO	cfg_auto.h	42;"	d
-CFG_TAG_BG_COLOR	cfg_auto.h	31;"	d
-CFG_TAG_FG_COLOR	cfg_auto.h	32;"	d
-CFG_TAG_FONT	cfg_auto.h	33;"	d
+CFG_TAGS_DISCARD_LINENO	cfg_auto.h	43;"	d
+CFG_TAG_BG_COLOR	cfg_auto.h	32;"	d
+CFG_TAG_FG_COLOR	cfg_auto.h	33;"	d
+CFG_TAG_FONT	cfg_auto.h	34;"	d
 CFG_UNDERLINE_LINKS	cfg_auto.h	10;"	d
 CFG_WARP_MOUSE	cfg_auto.h	13;"	d
 CFLAGS	Makefile	/^CFLAGS=`pkg-config --cflags gtk+-2.0` -g -Wall -D_FORTIFY_SOURCE=2 -D_GNU_SOURCE -I\/usr\/include\/tcl8.5 -std=c99 -pthread$/;"	m
@@ -71,7 +72,7 @@ COLUMN_MINIMUM_WIDTH	column.c	5;"	d	file:
 CONFIG_NUM	cfg_auto.h	4;"	d
 CONTINUATION_STATUS	lexy.c	/^const char *CONTINUATION_STATUS = "continuation-state";$/;"	v
 CRITBIT_H_	critbit.h	2;"	d
-CURSOR_WIDTH	editor.c	1332;"	d	file:
+CURSOR_WIDTH	editor.c	1336;"	d	file:
 DONTGET	research.c	/^	DONTGET = 0,$/;"	e	enum:research_get_type	file:
 DR_CHANGED	buffers.c	/^	DR_CHANGED = 3,$/;"	e	enum:dirty_reason_t	file:
 DR_DIRJOB	buffers.c	/^	DR_DIRJOB = 1,$/;"	e	enum:dirty_reason_t	file:
@@ -535,6 +536,7 @@ editor_get_primary_selection	editor.c	/^static void editor_get_primary_selection
 editor_grab_focus	editor.c	/^void editor_grab_focus(editor_t *editor, bool warp) {$/;"	f
 editor_include_cursor	editor.c	/^void editor_include_cursor(editor_t *editor, enum include_cursor_mode above, enum include_cursor_mode below) {$/;"	f
 editor_maybe_show_completions	editor.c	/^static bool editor_maybe_show_completions(editor_t *editor, struct completer *completer, bool autoinsert, int min) {$/;"	f	file:
+editor_newline_behaviour	editor.c	/^static void editor_newline_behaviour(editor_t *editor) {$/;"	f	file:
 editor_replace_selection	editor.c	/^static void editor_replace_selection(editor_t *editor, const char *new_text) {$/;"	f	file:
 editor_save_action	editor.c	/^void editor_save_action(editor_t *editor) {$/;"	f
 editor_start_search	editor.c	/^void editor_start_search(editor_t *editor, enum search_mode_t search_mode, const char *initial_search_term) {$/;"	f
@@ -1095,6 +1097,7 @@ teddy_kill_command	interp.c	/^static int teddy_kill_command(ClientData client_da
 teddy_link_png	docs.c	/^const unsigned char teddy_link_png[] = {0x89, $/;"	v
 teddy_link_png_size	docs.c	/^size_t teddy_link_png_size = sizeof(teddy_link_png) \/ sizeof(unsigned char);$/;"	v
 teddy_move_command	interp.c	/^static int teddy_move_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {$/;"	f	file:
+teddy_newline_command	editor.c	/^int teddy_newline_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {$/;"	f
 teddy_pwf_command	interp.c	/^static int teddy_pwf_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {$/;"	f	file:
 teddy_rehash_command	interp.c	/^static int teddy_rehash_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {$/;"	f	file:
 teddy_research_command	research.c	/^int teddy_research_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {$/;"	f

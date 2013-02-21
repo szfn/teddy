@@ -487,6 +487,12 @@ static bool search_key_press_callback(editor_t *editor, GdkEventKey *event) {
 	return false;
 }
 
+static void editor_newline_behaviour(editor_t *editor) {
+	char *r = buffer_indent_newline(editor->buffer);
+	editor_replace_selection(editor, r);
+	free(r);
+}
+
 static gboolean key_press_callback(GtkWidget *widget, GdkEventKey *event, editor_t *editor) {
 	char pressed[40] = "";
 	const char *command;
@@ -674,9 +680,7 @@ static gboolean key_press_callback(GtkWidget *widget, GdkEventKey *event, editor
 					// send input
 					job_send_input(editor->buffer->job);
 				} else if (config_intval(&(editor->buffer->config), CFG_AUTOINDENT)) {
-					char *r = buffer_indent_newline(editor->buffer);
-					editor_replace_selection(editor, r);
-					free(r);
+					editor_newline_behaviour(editor);
 				} else {
 					editor_replace_selection(editor, "\n");
 				}
@@ -1763,4 +1767,10 @@ void editor_start_search(editor_t *editor, enum search_mode_t search_mode, const
 	move_search(editor, true, true, false);
 	editor_grab_focus(editor, false);
 	gtk_widget_queue_draw(GTK_WIDGET(editor));
+}
+
+int teddy_newline_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
+	if (interp_context_editor() == NULL) return TCL_OK;
+	editor_newline_behaviour(interp_context_editor());
+	return TCL_OK;
 }
