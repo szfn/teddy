@@ -382,6 +382,7 @@ bool find_editor_for_buffer(buffer_t *buffer, column_t **columnpp, tframe_t **fr
 	if (framepp != NULL) *framepp = NULL;
 	if (editorpp != NULL) *editorpp = NULL;
 	if (buffer == NULL)  return false;
+	if (columnset == NULL) return false;
 
 	GList *list_cols = gtk_container_get_children(GTK_CONTAINER(columnset));
 	for (GList *cur_col = list_cols; cur_col != NULL; cur_col = cur_col->next) {

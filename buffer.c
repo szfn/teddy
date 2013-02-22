@@ -182,6 +182,7 @@ void buffer_free(buffer_t *buffer, bool save_critbit) {
 static void buffer_setup_hook(buffer_t *buffer) {
 	const char *argv[] = { "buffer_setup_hook", buffer->path };
 	interp_eval_command(NULL, buffer, 2, argv);
+	buffer_config_changed(buffer);
 }
 
 static void code_to_glyph(teddy_fontset_t *font, uint32_t code, uint8_t *fontidx, FT_UInt *glyph_index) {
@@ -207,11 +208,6 @@ static void code_to_glyph(teddy_fontset_t *font, uint32_t code, uint8_t *fontidx
 		if (config_intval(&global_config, CFG_QUOTEHACK) != 0) ccode = 0x2018;
 		break;
 	}
-
-	/*TODO
-	- other unicode spaces
-	- apostrophe hack
-	*/
 
 	*fontidx = fontset_fontidx(font, ccode);
 	*glyph_index = fontset_glyph_index(font, *fontidx, ccode);
@@ -1167,8 +1163,8 @@ void buffer_config_changed(buffer_t *buffer) {
 	pthread_rwlock_wrlock(&(buffer->rwlock));
 	buffer->release_read_lock = false;
 
-	buffer_reload_glyph_info(buffer);
 	buffer_init_font_extents(buffer);
+	buffer_reload_glyph_info(buffer);
 	buffer_typeset_maybe(buffer, 0.0, true);
 
 	lexy_update_starting_at(buffer, -1, false);
