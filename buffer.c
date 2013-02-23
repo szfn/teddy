@@ -294,8 +294,6 @@ int load_text_file(buffer_t *buffer, const char *filename) {
 	free(buffer->path);
 	buffer->path = realpath(filename, NULL);
 
-	buffer_setup_hook(buffer);
-
 	bool forced_invalid = false;
 
 #define BUFSIZE 1024
@@ -333,6 +331,8 @@ int load_text_file(buffer_t *buffer, const char *filename) {
 
 	const char *argv[] = { "buffer_loaded_hook", buffer->path };
 	interp_eval_command(NULL, buffer, 2, argv);
+
+	buffer_setup_hook(buffer);
 
 	return 0;
 }
