@@ -179,7 +179,7 @@ static void ansi_append_escape(job_t *job) {
 		find_editor_for_buffer(buffer, NULL, NULL, &editor);
 		if (editor != NULL) editor_include_cursor(editor, ICM_MID, ICM_MID);
 	} else {
-		job_append(job, "<esc>", strlen("<esc>"), 0);
+		//job_append(job, "<esc>", strlen("<esc>"), 0);
 	}
 }
 
