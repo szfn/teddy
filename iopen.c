@@ -447,6 +447,11 @@ void iopen_init(GtkWidget *window) {
 }
 
 void iopen(const char *initial_text) {
+	if (interp_context_buffer() == iopen_buffer) {
+		iopen_enter(iopen_editor);
+		return;
+	}
+
 	gtk_window_set_transient_for(GTK_WINDOW(iopen_window), GTK_WINDOW(parent_window));
 	gtk_window_set_modal(GTK_WINDOW(iopen_window), TRUE);
 	//gtk_window_set_position(GTK_WINDOW(iopen_window), GTK_WIN_POS_CENTER_ON_PARENT);

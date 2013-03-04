@@ -5,3 +5,4 @@
 
 @ env TEPID= bin/teddy
 @ env TEPID= valgrind bin/teddy
+@ env TEPID= gdb bin/teddy
