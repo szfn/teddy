@@ -1052,7 +1052,9 @@ static int parmatch_find_ex(buffer_t  *buffer, int start, const char *tomatch, c
 	if (start < 0) return -1;
 	if (start >= BSIZE(buffer)) return -1;
 
-	uint32_t cursor_code = bat(buffer, start)->code;
+	my_glyph_info_t *g = bat(buffer, start);
+	int tt = g->color;
+	uint32_t cursor_code = g->code;
 	uint32_t match_code = point_to_char_to_find(cursor_code, tomatch, tofind);
 	if (match_code <= 0) return -1;
 
@@ -1067,6 +1069,8 @@ static int parmatch_find_ex(buffer_t  *buffer, int start, const char *tomatch, c
 			if (nlines < 0) return -1;
 			if (count++ > PARMATCH_CHAR_LIMIT) return -1;
 		}
+
+		if (cur->color != tt) continue;
 
 		if (cur->code == cursor_code) ++depth;
 		if (cur->code == match_code) --depth;
@@ -1104,8 +1108,6 @@ static int parmatch_find_region(buffer_t *buffer, int start, int nlines) {
 	}
 
 	return -1;
-
-	//TODO: look for the end of the region
 }
 
 int parmatch_find(buffer_t *buffer, int cursor, int nlines, bool forward_only) {
