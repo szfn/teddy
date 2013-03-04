@@ -144,6 +144,7 @@ int buffer_point_from_position(buffer_t *buffer, int start, double x, double y, 
 void buffer_config_changed(buffer_t *buffer);
 
 // point motion by lines and glyphs
+void sort_mark_cursor(buffer_t *buffer);
 bool buffer_move_point_line(buffer_t *buffer, int *p, enum movement_type_t type, int arg);
 bool buffer_move_point_glyph(buffer_t *buffer, int *p, enum movement_type_t type, int arg);
 

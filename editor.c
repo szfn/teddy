@@ -837,6 +837,30 @@ static void doubleclick_behaviour(editor_t *editor) {
 	set_primary_selection(editor);
 }
 
+static void tripleclick_behaviour(editor_t *editor) {
+	bool hasnl = false;
+	if (editor->buffer->mark >= 0) {
+		int s = MIN(editor->buffer->mark, editor->buffer->cursor);
+		int e = MAX(editor->buffer->mark, editor->buffer->cursor);
+		for (int i = s; i < e; ++i) {
+			my_glyph_info_t *g = bat(editor->buffer, i);
+			if (g == NULL) break;
+			if (g->code == '\n') {
+				hasnl = true;
+				break;
+			}
+		}
+	}
+
+	if (hasnl) {
+		buffer_move_point_glyph(editor->buffer, &(editor->buffer->cursor), MT_ABS, 1);
+		buffer_move_point_glyph(editor->buffer, &(editor->buffer->mark), MT_END, 0);
+	} else {
+		buffer_change_select_type(editor->buffer, BST_LINES);
+		set_primary_selection(editor);
+	}
+}
+
 static char *get_selection_or_file_link(editor_t *editor, bool *islink) {
 	*islink = false;
 
@@ -897,17 +921,18 @@ static gboolean button_press_callback(GtkWidget *widget, GdkEventButton *event, 
 	dirty_line_update(editor);
 
 	if (event->button == 1) {
-		move_cursor_to_mouse(editor, event->x, event->y);
-
 		editor->mouse_marking = 1;
+
+		move_cursor_to_mouse(editor, event->x, event->y);
 		editor->buffer->savedmark = editor->buffer->mark = editor->buffer->cursor;
 		editor->buffer->select_type = BST_NORMAL;
 
 		if (event->type == GDK_2BUTTON_PRESS) {
 			doubleclick_behaviour(editor);
 		} else if (event->type == GDK_3BUTTON_PRESS) {
-			buffer_change_select_type(editor->buffer, BST_LINES);
-			set_primary_selection(editor);
+			// we need to repeat the call to doubleclick_behaviour because gtk sends a single-click event between the double-click event and the triple-click event
+			doubleclick_behaviour(editor);
+			tripleclick_behaviour(editor);
 		}
 
 		editor_complete_move(editor, TRUE);

@@ -903,6 +903,16 @@ static bool buffer_aux_wnwa_prev_ex(buffer_t *buffer, int *point) {
 	return false;
 }
 
+void sort_mark_cursor(buffer_t *buffer) {
+	if (buffer->mark < 0) return;
+	if (buffer->mark < buffer->cursor) return;
+
+	int swap;
+	swap = buffer->mark;
+	buffer->mark = buffer->cursor;
+	buffer->cursor = swap;
+}
+
 static bool buffer_aux_go_first_nonws(buffer_t *buffer, int *p, bool alternate) {
 	int startp = *p;
 	--(*p);

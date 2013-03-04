@@ -741,16 +741,6 @@ move_command_relative_with_nil: {
 	return false; }
 }
 
-static void sort_mark_cursor(buffer_t *buffer) {
-	if (buffer->mark < 0) return;
-	if (buffer->mark < buffer->cursor) return;
-
-	int swap;
-	swap = buffer->mark;
-	buffer->mark = buffer->cursor;
-	buffer->cursor = swap;
-}
-
 static int teddy_move_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
 #define MOVE_MARK(argument, d) { \
 	if (!move_command_ex(argument, &(interp_context_buffer()->mark), interp_context_buffer()->cursor, d)) { \
