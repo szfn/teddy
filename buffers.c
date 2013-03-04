@@ -732,6 +732,16 @@ int teddy_buffer_command(ClientData client_data, Tcl_Interp *interp, int argc, c
 		SINGLE_ARGUMENT_BUFFER_SUBCOMMAND("buffer name");
 		Tcl_SetResult(interp, buffer->path, TCL_VOLATILE);
 		return TCL_OK;
+	} else if (strcmp(argv[1], "input") == 0) {
+		HASBUF("buffer input");
+		ARGNUM((argc != 3), "buffer input");
+
+		if (interp_context_buffer()->job == NULL) {
+			Tcl_AddErrorInfo(interp, "No job attached to buffer");
+			return TCL_ERROR;
+		}
+
+		job_send_input(interp_context_buffer()->job, argv[2]);
 	} else {
 		Tcl_AddErrorInfo(interp, "Unknown subcommmand of 'buffer' command");
 		return TCL_ERROR;

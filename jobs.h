@@ -49,6 +49,6 @@ job_t jobs[MAX_JOBS];
 
 void jobs_init(void);
 int jobs_register(pid_t child_pid, int masterfd, struct _buffer_t *buffer, const char *command);
-void job_send_input(job_t *job);
+void job_send_input(job_t *job, const char *actual_input);
 
 #endif

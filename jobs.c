@@ -129,18 +129,29 @@ static void job_append(job_t *job, const char *msg, int len, int on_new_line) {
 	}
 }
 
-void job_send_input(job_t *job) {
+void job_send_input(job_t *job, const char *actual_input) {
 	if (job->buffer == NULL) return;
 	char *input = cut_prompt(job);
 	//printf("input <%s>\n", input);
 	job->buffer->mark = -1;
 	buffer_replace_selection(job->buffer, "\n\05");
-	if (input == NULL) return;
 
-	write_all(job->masterfd, input+1);
+	const char *send_input = NULL;
+
+	if (actual_input != NULL) {
+		send_input = actual_input;
+	} else {
+		if (input == NULL) return;
+		send_input = input+1;
+	}
+
+	if (send_input == NULL) return;
+
+	write_all(job->masterfd, send_input);
 	write_all(job->masterfd, "\n");
-	history_add(&input_history, time(NULL), NULL, input+1, true);
-	free(input);
+	history_add(&input_history, time(NULL), NULL, send_input, true);
+	if (input != NULL) free(input);
+	job->ratelimit_silenced = false;
 }
 
 static void ansi_append_escape(job_t *job) {

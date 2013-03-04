@@ -678,7 +678,7 @@ static gboolean key_press_callback(GtkWidget *widget, GdkEventKey *event, editor
 
 				if ((editor->buffer->job != NULL) && (editor->buffer->cursor == BSIZE(editor->buffer))) {
 					// send input
-					job_send_input(editor->buffer->job);
+					job_send_input(editor->buffer->job, NULL);
 				} else if (config_intval(&(editor->buffer->config), CFG_AUTOINDENT)) {
 					editor_newline_behaviour(editor);
 				} else {
