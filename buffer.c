@@ -707,12 +707,10 @@ void line_get_glyph_coordinates(buffer_t *buffer, int point, double *x, double *
 				*x = glyph->x + glyph->x_advance;
 			}
 		}
-
-		return;
+	} else {
+		*y = glyph->y;
+		*x = glyph->x;
 	}
-
-	*y = glyph->y;
-	*x = glyph->x;
 }
 
 char *buffer_get_selection_text(buffer_t *buffer) {

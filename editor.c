@@ -1113,6 +1113,8 @@ static void draw_selection(editor_t *editor, double width, cairo_t *cr, int sel_
 	double selstart_y, selend_y;
 	double selstart_x, selend_x;
 
+	double margins = editor->buffer->left_margin + editor->buffer->right_margin;
+
 	if (editor->buffer->mark < 0) return;
 
 	buffer_get_selection(editor->buffer, &start, &end);
@@ -1122,6 +1124,11 @@ static void draw_selection(editor_t *editor, double width, cairo_t *cr, int sel_
 	line_get_glyph_coordinates(editor->buffer, start, &selstart_x, &selstart_y);
 	line_get_glyph_coordinates(editor->buffer, end, &selend_x, &selend_y);
 
+	if (selend_x <= editor->buffer->left_margin + 0.001) {
+		selend_x = width - editor->buffer->right_margin - editor->buffer->left_margin;
+		selend_y -= editor->buffer->line_height;
+	}
+
 	set_color_cfg(cr, config_intval(&(editor->buffer->config), CFG_EDITOR_SEL_COLOR));
 
 	cairo_set_operator(cr, sel_invert ? CAIRO_OPERATOR_DIFFERENCE : CAIRO_OPERATOR_OVER);
@@ -1130,15 +1137,15 @@ static void draw_selection(editor_t *editor, double width, cairo_t *cr, int sel_
 		cairo_fill(cr);
 	} else {
 		// start of selection
-		cairo_rectangle(cr, selstart_x, selstart_y-editor->buffer->ascent, width - selstart_x, editor->buffer->ascent + editor->buffer->descent);
+		cairo_rectangle(cr, selstart_x, selstart_y-editor->buffer->ascent, width - selstart_x - editor->buffer->right_margin, editor->buffer->ascent + editor->buffer->descent);
 		cairo_fill(cr);
 
 		// middle of selection
-		cairo_rectangle(cr, 0.0, selstart_y + editor->buffer->descent, width, selend_y - editor->buffer->ascent - editor->buffer->descent - selstart_y);
+		cairo_rectangle(cr, editor->buffer->left_margin, selstart_y + editor->buffer->descent, width - margins, selend_y - editor->buffer->ascent - editor->buffer->descent - selstart_y);
 		cairo_fill(cr);
 
 		// end of selection
-		cairo_rectangle(cr, 0.0, selend_y-editor->buffer->ascent, selend_x, editor->buffer->ascent + editor->buffer->descent);
+		cairo_rectangle(cr, editor->buffer->left_margin, selend_y-editor->buffer->ascent, selend_x, editor->buffer->ascent + editor->buffer->descent);
 		cairo_fill(cr);
 	}
 	cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
@@ -1344,6 +1351,7 @@ static void draw_cursorline(cairo_t *cr, editor_t *editor) {
 	if (!(editor->cursor_visible)) return;
 	if (editor->buffer->cursor < 0) return;
 	if (editor->buffer->single_line) return;
+	if (editor->buffer->mark >= 0) return;
 
 	GtkAllocation allocation;
 	gtk_widget_get_allocation(editor->drar, &allocation);
@@ -1363,6 +1371,7 @@ static void draw_cursorline(cairo_t *cr, editor_t *editor) {
 static void draw_cursor(cairo_t *cr, editor_t *editor) {
 	if (!(editor->cursor_visible)) return;
 	if (editor->research.mode != SM_NONE) return;
+	if (editor->buffer->mark >= 0) return;
 
 	double cursor_x, cursor_y;
 	line_get_glyph_coordinates(editor->buffer, editor->buffer->cursor, &cursor_x, &cursor_y);
