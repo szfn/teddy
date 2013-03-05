@@ -397,3 +397,11 @@ bool top_command_line_focused(void) {
 bool top_has_tags(void) {
 	return tags_loaded();
 }
+
+void top_message(const char *m) {
+	buffer_get_extremes(cmdline_buffer, &(cmdline_buffer->mark), &(cmdline_buffer->cursor));
+	buffer_replace_selection(cmdline_buffer, m);
+	buffer_get_extremes(cmdline_buffer, &(cmdline_buffer->mark), &(cmdline_buffer->cursor));
+	gtk_widget_queue_draw(GTK_WIDGET(cmdline_editor));
+	printf("Displayed message: %s\n", m);
+}

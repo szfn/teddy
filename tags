@@ -11,16 +11,16 @@ ANSI_SEQ_MAX_LEN	jobs.h	14;"	d
 ARGNUM	interp.h	32;"	d
 AUTOCONF_TEDDY	autoconf.h	4;"	d
 AUTOSCROLL_TIMO	editor.h	11;"	d
-AUTOWRAP_INDICATOR_WIDTH	editor.c	1203;"	d	file:
+AUTOWRAP_INDICATOR_WIDTH	editor.c	1255;"	d	file:
 App	test/App.java	/^public class App $/;"	c
-BSIZE	buffer.h	178;"	d
+BSIZE	buffer.h	179;"	d
 BST_LINES	buffer.h	/^enum select_type { BST_NORMAL = 0, BST_WORDS, BST_LINES };$/;"	e	enum:select_type
 BST_NORMAL	buffer.h	/^enum select_type { BST_NORMAL = 0, BST_WORDS, BST_LINES };$/;"	e	enum:select_type
 BST_WORDS	buffer.h	/^enum select_type { BST_NORMAL = 0, BST_WORDS, BST_LINES };$/;"	e	enum:select_type
 BUFIDCHECK	buffers.c	436;"	d	file:
 BUFIDSIZE	client.c	14;"	d	file:
 BUFLEN	ipc.c	300;"	d	file:
-BUFSIZE	buffer.c	305;"	d	file:
+BUFSIZE	buffer.c	299;"	d	file:
 BUFSIZE	ipc.c	58;"	d	file:
 BUF_SIZE	tags.c	41;"	d	file:
 BUILTIN_TCL_CODE	builtin.h	4;"	d
@@ -67,12 +67,12 @@ CFG_TAG_FONT	cfg_auto.h	34;"	d
 CFG_UNDERLINE_LINKS	cfg_auto.h	10;"	d
 CFG_WARP_MOUSE	cfg_auto.h	13;"	d
 CFLAGS	Makefile	/^CFLAGS=`pkg-config --cflags gtk+-2.0` -g -Wall -D_FORTIFY_SOURCE=2 -D_GNU_SOURCE -I\/usr\/include\/tcl8.5 -std=c99 -pthread$/;"	m
-CLOSING_PARENTHESIS	buffer.c	1117;"	d	file:
+CLOSING_PARENTHESIS	buffer.c	1124;"	d	file:
 COLUMN_MINIMUM_WIDTH	column.c	5;"	d	file:
 CONFIG_NUM	cfg_auto.h	4;"	d
 CONTINUATION_STATUS	lexy.c	/^const char *CONTINUATION_STATUS = "continuation-state";$/;"	v
 CRITBIT_H_	critbit.h	2;"	d
-CURSOR_WIDTH	editor.c	1336;"	d	file:
+CURSOR_WIDTH	editor.c	1389;"	d	file:
 DONTGET	research.c	/^	DONTGET = 0,$/;"	e	enum:research_get_type	file:
 DR_CHANGED	buffers.c	/^	DR_CHANGED = 3,$/;"	e	enum:dirty_reason_t	file:
 DR_DIRJOB	buffers.c	/^	DR_DIRJOB = 1,$/;"	e	enum:dirty_reason_t	file:
@@ -146,9 +146,9 @@ MAX_MOUSE_SEQ	editor.h	12;"	d
 MINIMUM_WORDCOMPL_WORD_LEN	buffer.c	20;"	d	file:
 MIN_EM_COLUMN_SIZE_ATTEMPTED	global.h	30;"	d
 MIN_LINES_HEIGHT_REQUEST	global.h	29;"	d
-MOVE_CURSOR	interp.c	761;"	d	file:
-MOVE_MARK	interp.c	755;"	d	file:
-MOVE_MARK_CURSOR	interp.c	772;"	d	file:
+MOVE_CURSOR	interp.c	751;"	d	file:
+MOVE_MARK	interp.c	745;"	d	file:
+MOVE_MARK_CURSOR	interp.c	762;"	d	file:
 MT_ABS	buffer.h	/^	MT_ABS = 0, \/\/ move to absolute line\/column$/;"	e	enum:movement_type_t
 MT_END	buffer.h	/^	MT_END, \/\/ move to end$/;"	e	enum:movement_type_t
 MT_HOME	buffer.h	/^	MT_HOME, \/\/ toggle between first column and first non-whitespace character (buffer_move_point_glyph only)$/;"	e	enum:movement_type_t
@@ -160,18 +160,18 @@ NMATCH	lexy.c	532;"	d	file:
 NMATCH	lexy.c	844;"	d	file:
 O	builtin.tcl	/^proc O {args} {$/;"	p
 OBJS	Makefile	/^OBJS := obj\/teddy.o obj\/buffer.o obj\/editor.o obj\/buffers.o obj\/columns.o obj\/column.o obj\/interp.o obj\/global.o obj\/undo.o  obj\/history.o obj\/jobs.o obj\/colors.o obj\/cfg_auto.o obj\/cfg.o obj\/research.o obj\/compl.o obj\/lexy.o obj\/treint.o obj\/critbit.o obj\/tframe.o obj\/foundry.o obj\/top.o obj\/iopen.o obj\/tags.o obj\/oldscroll.o obj\/docs.o obj\/ipc.o obj\/client.o$/;"	m
-OPENING_PARENTHESIS	buffer.c	1116;"	d	file:
+OPENING_PARENTHESIS	buffer.c	1123;"	d	file:
 OS	research.c	98;"	d	file:
 OVECTOR_SIZE	research.c	183;"	d	file:
 P	builtin.tcl	/^proc P {args} {$/;"	p
-PARMATCH_CHAR_LIMIT	buffer.c	1055;"	d	file:
+PARMATCH_CHAR_LIMIT	buffer.c	1060;"	d	file:
 RATELIMIT_BUCKET_DURATION_SECS	jobs.h	11;"	d
 RATELIMIT_MAX_BYTES	jobs.h	12;"	d
 REGERROR_BUF_SIZE	lexy.c	364;"	d	file:
 REGERROR_BUF_SIZE	research.c	433;"	d	file:
 REGEXEC_NMATCH	lexy.c	633;"	d	file:
 RESHANDLE_SIZE	global.h	15;"	d
-ROUNDBOXPAD	global.c	627;"	d	file:
+ROUNDBOXPAD	global.c	628;"	d	file:
 SHOWANYWAY_TIMO	jobs.c	22;"	d	file:
 SINGLE_ARGUMENT_BUFFER_SUBCOMMAND	buffers.c	471;"	d	file:
 SLOP	buffer.c	18;"	d	file:
@@ -179,9 +179,9 @@ SM_LITERAL	research.h	/^	SM_LITERAL = 1,$/;"	e	enum:search_mode_t
 SM_NONE	research.h	/^	SM_NONE = 0,$/;"	e	enum:search_mode_t
 SM_REGEXP	research.h	/^	SM_REGEXP = 2$/;"	e	enum:search_mode_t
 SSERR	interp.c	469;"	d	file:
-TRUNCATION	jobs.c	295;"	d	file:
+TRUNCATION	jobs.c	306;"	d	file:
 TYPING_FUSION_INTERVAL	undo.h	8;"	d
-WORDCOMPL_UPDATE_RADIUS	buffer.h	180;"	d
+WORDCOMPL_UPDATE_RADIUS	buffer.h	181;"	d
 __ACMACS_GLOBAL_H__	global.h	2;"	d
 __AUTOCONF_TEDDY__	autoconf.h	2;"	d
 __BUFFERS_H__	buffers.h	2;"	d
@@ -740,7 +740,7 @@ job_attach_to_buffer	jobs.c	/^static void job_attach_to_buffer(job_t *job, const
 job_create_buffer	jobs.c	/^static void job_create_buffer(job_t *job) {$/;"	f	file:
 job_destroy	jobs.c	/^static void job_destroy(job_t *job) {$/;"	f	file:
 job_lexy_refresh	jobs.c	/^static void job_lexy_refresh(job_t *job) {$/;"	f	file:
-job_send_input	jobs.c	/^void job_send_input(job_t *job) {$/;"	f
+job_send_input	jobs.c	/^void job_send_input(job_t *job, const char *actual_input) {$/;"	f
 job_t	jobs.h	/^} job_t;$/;"	t	typeref:struct:_job_t
 jobs	jobs.h	/^job_t jobs[MAX_JOBS];$/;"	v
 jobs_child_watch_function	jobs.c	/^static void jobs_child_watch_function(GPid pid, gint status, job_t *job) {$/;"	f	file:
@@ -852,6 +852,7 @@ mouse_doc	docs.c	/^const unsigned char mouse_doc[] = "<html>\\n\\$/;"	v
 mouse_doc_size	docs.c	/^size_t mouse_doc_size = sizeof(mouse_doc) \/ sizeof(unsigned char) - 1;$/;"	v
 mouse_marking	editor.h	/^	int mouse_marking;$/;"	m	struct:_editor_t
 mouse_sequence	editor.h	/^	int mouse_sequence;$/;"	m	struct:_editor_t
+mouse_sequence_feedback	editor.c	/^static void mouse_sequence_feedback(editor_t *editor, bool final) {$/;"	f	file:
 mouse_sequence_str	editor.h	/^	char mouse_sequence_str[MAX_MOUSE_SEQ];$/;"	m	struct:_editor_t
 move_command_ex	interp.c	/^static bool move_command_ex(const char *sin, int *p, int ref, enum movement_type_t default_glyph_motion) {$/;"	f	file:
 move_cursor_to_mouse	editor.c	/^static void move_cursor_to_mouse(editor_t *editor, double x, double y) {$/;"	f	file:
@@ -1037,7 +1038,7 @@ size	compl.h	/^	size_t size;$/;"	m	struct:completer
 slurp	builtin.tcl	/^	proc slurp {path} {$/;"	p
 solarized_simple_theme	builtin.tcl	/^proc solarized_simple_theme {} {$/;"	p
 solarized_theme	builtin.tcl	/^proc solarized_theme {} {$/;"	p
-sort_mark_cursor	interp.c	/^static void sort_mark_cursor(buffer_t *buffer) {$/;"	f	file:
+sort_mark_cursor	buffer.c	/^void sort_mark_cursor(buffer_t *buffer) {$/;"	f
 space_advance	buffer.h	/^	double space_advance;$/;"	m	struct:_buffer_t
 spaceman	builtin.tcl	/^	proc spaceman {} {$/;"	p
 ss	builtin.tcl	/^proc ss {args} {$/;"	p
@@ -1172,6 +1173,7 @@ tre_point_bridge_rewind	treint.c	/^static void tre_point_bridge_rewind(size_t po
 tree	compl.h	/^	GtkWidget *tree;$/;"	m	struct:completer
 trim	colors-compile.pl	/^sub trim {$/;"	s
 trim_prefix	compl.c	/^static const char *trim_prefix(const char *prefix) {$/;"	f	file:
+tripleclick_behaviour	editor.c	/^static void tripleclick_behaviour(editor_t *editor) {$/;"	f	file:
 turbo_theme	builtin.tcl	/^proc turbo_theme {simple} {$/;"	p
 u_isalnum_or_underscore	buffer.c	/^static UBool u_isalnum_or_underscore(uint32_t code) {$/;"	f	file:
 uchar_match_case_insensitive	research.c	/^static bool uchar_match_case_insensitive(uint32_t a, uint32_t b) {$/;"	f	file:

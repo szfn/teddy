@@ -493,6 +493,24 @@ static void editor_newline_behaviour(editor_t *editor) {
 	free(r);
 }
 
+static void mouse_sequence_feedback(editor_t *editor, bool final) {
+	const char *command = g_hash_table_lookup(keybindings, editor->mouse_sequence_str);
+	char *msg;
+	asprintf(&msg, "%s%s%s %c",
+		editor->mouse_sequence_str,
+		(command != NULL) ? ": " : "",
+		(command != NULL) ? command : "",
+		final ? '!' : '?');
+	alloc_assert(msg);
+	for (int i = 0; i < strlen(msg); ++i) {
+		if (msg[i] == '\n') msg[i] = ' ';
+		if (msg[i] == '\t') msg[i] = ' ';
+	}
+
+	top_message(msg);
+	free(msg);
+}
+
 static gboolean key_press_callback(GtkWidget *widget, GdkEventKey *event, editor_t *editor) {
 	char pressed[40] = "";
 	const char *command;
@@ -510,6 +528,7 @@ static gboolean key_press_callback(GtkWidget *widget, GdkEventKey *event, editor
 		full_keyevent_to_string(event->keyval, super, ctrl, alt, shift, pressed);
 		if (strlen(editor->mouse_sequence_str) + strlen(pressed) + 1 >= MAX_MOUSE_SEQ-3) return TRUE;
 		strcat(editor->mouse_sequence_str, pressed);
+		mouse_sequence_feedback(editor, false);
 		return TRUE;
 	}
 
@@ -896,6 +915,8 @@ static void eval_menu_item_callback(GtkMenuItem *menuitem, editor_t *editor) {
 	if (dir != NULL) free(dir);
 
 	free(selection);
+
+	top_message("Eval");
 }
 
 static void open_link(editor_t *editor, bool islink, char *text) {
@@ -946,10 +967,16 @@ static gboolean button_press_callback(GtkWidget *widget, GdkEventButton *event, 
 		}
 	} else if (event->button == 2) {
 		editor->mouse_sequence = 2;
-		editor->mouse_sequence_str[0] = '\0';
+		editor->mouse_sequence_str[0] = 'M';
+		editor->mouse_sequence_str[1] = 'm';
+		editor->mouse_sequence_str[2] = '-';
+		editor->mouse_sequence_str[3] = '\0';
 	} else if (event->button == 3) {
 		editor->mouse_sequence = 3;
-		editor->mouse_sequence_str[0] = '\0';
+		editor->mouse_sequence_str[0] = 'M';
+		editor->mouse_sequence_str[1] = 'r';
+		editor->mouse_sequence_str[2] = '-';
+		editor->mouse_sequence_str[3] = '\0';
 	}
 
 	return TRUE;
@@ -971,15 +998,11 @@ static gboolean button_release_callback(GtkWidget *widget, GdkEventButton *event
 		}
 	}
 
-	if (strcmp(editor->mouse_sequence_str, "") != 0) {
-		strcpy(editor->mouse_sequence_str+3, editor->mouse_sequence_str);
-		editor->mouse_sequence_str[0] = 'M';
-		editor->mouse_sequence_str[1] = (editor->mouse_sequence == 2) ? 'm' : 'r';
-		editor->mouse_sequence_str[2] = '-';
-
+	if (strlen(editor->mouse_sequence_str) > 3) {
 		const char *command = g_hash_table_lookup(keybindings, editor->mouse_sequence_str);
 
 		if (command != NULL) {
+			mouse_sequence_feedback(editor, true);
 			interp_eval(editor, NULL, command, false, true);
 			set_label_text(editor);
 		}
