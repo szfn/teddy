@@ -37,12 +37,14 @@ struct iopen_result {
 
 GAsyncQueue *file_recursor_requests;
 GAsyncQueue *tags_requests;
+GAsyncQueue *buffers_requests;
 
 GtkCellRenderer *crt;
 
 static void iopen_close(void) {
 	g_async_queue_push(file_recursor_requests, strdup(""));
 	g_async_queue_push(tags_requests, strdup(""));
+	g_async_queue_push(buffers_requests, strdup(""));
 	gtk_widget_hide(iopen_window);
 }
 
@@ -176,12 +178,9 @@ static gboolean iopen_add_result(struct iopen_result *r) {
 }
 
 static void iopen_buffer_onchange(buffer_t *buffer) {
-	char *text = buffer_all_lines_to_text(buffer);
-	alloc_assert(text);
-	char *text2 = strdup(text);
-	alloc_assert(text2);
-	g_async_queue_push(file_recursor_requests, text);
-	g_async_queue_push(tags_requests, text2);
+	g_async_queue_push(file_recursor_requests, buffer_all_lines_to_text(buffer));
+	g_async_queue_push(tags_requests, buffer_all_lines_to_text(buffer));
+	g_async_queue_push(buffers_requests, buffer_all_lines_to_text(buffer));
 	gtk_list_store_clear(results_list);
 	gtk_widget_queue_draw(results_tree);
 }
@@ -384,6 +383,139 @@ static gpointer iopen_tags_thread(gpointer data) {
 	return NULL;
 }
 
+// Returns 0 if no indentation, 1 if there is only one tab or at most 4 spaces, -1 otherwise
+static int too_much_indent(const char *line) {
+	if (line[0] == '\t') {
+		if (line[1] == ' ') return -1;
+		if (line[1] == '\t') return -1;
+		return 1;
+	} else if (line[0] == ' ') {
+		for (int i = 1; line[i] != '\0'; ++i) {
+			if (i > 4) return -1;
+			if (line[i] != ' ') return 1;
+		}
+		return 1;
+	} else {
+		return 0;
+	}
+}
+
+static gpointer iopen_buffer_thread(gpointer data) {
+	char *request = NULL;
+	uint32_t *urequest = NULL;
+	int ureqlen = 0;
+	int bufidx = -1;
+	int count;
+
+	for (;;) {
+		char *new_request;
+
+		if (bufidx < 0) {
+			//printf("Waiting\n");
+			new_request = g_async_queue_pop(buffers_requests);
+		} else {
+			new_request = g_async_queue_try_pop(buffers_requests);
+		}
+
+		if (new_request != NULL) {
+			if (request != NULL) {
+				free(request);
+				free(urequest);
+			}
+			if (strlen(new_request) >= 3) {
+				request = new_request;
+			} else {
+				request = strdup("");
+			}
+
+			char *first_colon = strchr(request, ':');
+			if (first_colon != NULL) *first_colon = '\0';
+
+			bufidx = (strcmp(request, "") == 0) ? -1 : 0;
+			count = 0;
+
+			urequest = utf8_to_utf32_string(request, &ureqlen);
+		}
+
+		if (bufidx < 0) continue;
+
+		buffer_t *buf = NULL;
+
+		for (; bufidx < buffers_allocated; ++bufidx) {
+			if (buffers[bufidx] != NULL) {
+				buf = buffers[bufidx];
+				break;
+			}
+		}
+
+		if (buf == NULL) {
+			bufidx = -1;
+			count = 0;
+			continue;
+		}
+
+		for (int p = 0; p+ureqlen < MIN(100000, BSIZE(buf)); ++p) {
+			int i;
+			for (i = 0; i < ureqlen; ++i) {
+				my_glyph_info_t *g = bat(buf, p+i);
+				if (urequest[i] != g->code) break;
+			}
+			if (i == ureqlen) {
+				// match found
+				int s = p, e = p;
+				buffer_move_point_glyph(buf, &s, MT_ABS, 1);
+				buffer_move_point_glyph(buf, &e, MT_END, 0);
+
+				char *line = buffer_lines_to_text(buf, s, e);
+
+				int indentation_depth = too_much_indent(line);
+				if (indentation_depth >= 0) {
+					int lineno = buffer_line_of(buf, p);
+					struct iopen_result *r = malloc(sizeof(struct iopen_result));
+
+					int c = strncmp(buf->path, top_working_directory(), strlen(top_working_directory()));
+					if (c == 0) {
+						r->path = strdup(buf->path + strlen(top_working_directory()) + 1);
+					} else {
+						r->path = strdup(buf->path);
+					}
+					alloc_assert(r->path);
+
+					r->show = g_markup_printf_escaped("<big><b>%s</b></big>\n%s:%d", line, r->path, lineno);
+					free(line);
+
+					asprintf(&(r->search), ":%d", lineno);
+					alloc_assert(r->search);
+					r->rank = 10000 + indentation_depth * 100 + (p - s);
+					g_idle_add((GSourceFunc)iopen_add_result, r);
+
+					//printf("\t<%s>\n", tag_entries[idx].tag);
+
+					if (count++ > IOPEN_MAX_SENT_RESULTS) {
+						bufidx = -1;
+						count = 0;
+						break;
+					}
+				} else {
+					free(line);
+				}
+
+				p = e+1;
+			}
+		}
+
+		if (count++ > IOPEN_MAX_SENT_RESULTS) {
+			bufidx = -1;
+			count = 0;
+			continue;
+		}
+
+		++bufidx;
+	}
+
+	return NULL;
+}
+
 static gboolean map_callback(GtkWidget *widget, GdkEvent *event, gpointer d) {
 	editor_grab_focus(iopen_editor, false);
 	return FALSE;
@@ -442,8 +574,10 @@ void iopen_init(GtkWidget *window) {
 
 	file_recursor_requests = g_async_queue_new();
 	tags_requests = g_async_queue_new();
+	buffers_requests = g_async_queue_new();
 	g_thread_new("iopen file recursion", iopen_recursor_thread, NULL);
 	g_thread_new("tags iteration", iopen_tags_thread, NULL);
+	g_thread_new("buffer iteration", iopen_buffer_thread, NULL);
 }
 
 void iopen(const char *initial_text) {
