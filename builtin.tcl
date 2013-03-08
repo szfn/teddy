@@ -15,13 +15,16 @@ proc kill_line {} {
 
 proc wander {body} {
 	set saved_mark [m]
+	teddy_intl::wandercount +1
 	switch -exact [catch {uplevel 1 $body} out] {
 		1 {
 			m $saved_mark
+			teddy_intl::wandercount -1
 			error $out
 		}
 		default {
 			m $saved_mark
+			teddy_intl::wandercount -1
 			return $out
 		}
 	}
@@ -42,9 +45,11 @@ namespace eval bindent {
 	proc incr {} {
 		m line
 		set indentchar [get_indentchar]
+		teddy_intl::wandercount +1
 		set sm [m]
 		s {^.*$} { c "$indentchar[c]" }
 		m "[teddy::lineof [lindex $sm 0]]:1" "[teddy::lineof [lindex $sm 1]]:$"
+		teddy_intl::wandercount -1
 	}
 
 	# Removes an indentation level
@@ -52,12 +57,14 @@ namespace eval bindent {
 	proc decr {} {
 		m line
 		set indentchar [get_indentchar]
+		teddy_intl::wandercount +1
 		set sm [m]
 		s "^$indentchar" {
 			c ""
 			m +:$
 		}
 		m "[teddy::lineof [lindex $sm 0]]:1" "[teddy::lineof [lindex $sm 1]]:$"
+		teddy_intl::wandercount -1
 	}
 
 	# Guesses indentation, saves the guess as the indentchar buffer property
@@ -239,23 +246,22 @@ namespace eval teddy {
 	namespace export spaceman
 	proc spaceman {} {
 		set saved [m]
-		# delete empty spaces from the end of lines
-		m nil 1:1
-		s {(?: |\t)+$} {
-			if {[teddy::lineof [lindex [m] 1]] ne [teddy::lineof [lindex $saved 1]]} {
-				c ""
+		wander {
+			# delete empty spaces from the end of lines
+			m nil 1:1
+			s {(?: |\t)+$} {
+				if {[teddy::lineof [lindex [m] 1]] ne [teddy::lineof [lindex $saved 1]]} {
+					c ""
+				}
 			}
 		}
-		m $saved
+
 	}
 
 	# on a +bg frame selects the user's input
 	namespace export select_input
 	proc select_input {} {
-		m +:1
-		m {*}[s -line "\05"]
-		if {[lindex [m] 0] eq "nil"} { return }
-		m +:+1 +:$
+		m [buffer appjumps 0] $:$
 	}
 
 	# replaces the current line of input for a job with the last line of input that was sent to the job

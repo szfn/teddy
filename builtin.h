@@ -18,13 +18,16 @@ proc kill_line {} {\n\
 \n\
 proc wander {body} {\n\
 	set saved_mark [m]\n\
+	teddy_intl::wandercount +1\n\
 	switch -exact [catch {uplevel 1 $body} out] {\n\
 		1 {\n\
 			m $saved_mark\n\
+			teddy_intl::wandercount -1\n\
 			error $out\n\
 		}\n\
 		default {\n\
 			m $saved_mark\n\
+			teddy_intl::wandercount -1\n\
 			return $out\n\
 		}\n\
 	}\n\
@@ -45,9 +48,11 @@ namespace eval bindent {\n\
 	proc incr {} {\n\
 		m line\n\
 		set indentchar [get_indentchar]\n\
+		teddy_intl::wandercount +1\n\
 		set sm [m]\n\
 		s {^.*$} { c \"$indentchar[c]\" }\n\
 		m \"[teddy::lineof [lindex $sm 0]]:1\" \"[teddy::lineof [lindex $sm 1]]:$\"\n\
+		teddy_intl::wandercount -1\n\
 	}\n\
 \n\
 	# Removes an indentation level\n\
@@ -55,12 +60,14 @@ namespace eval bindent {\n\
 	proc decr {} {\n\
 		m line\n\
 		set indentchar [get_indentchar]\n\
+		teddy_intl::wandercount +1\n\
 		set sm [m]\n\
 		s \"^$indentchar\" {\n\
 			c \"\"\n\
 			m +:$\n\
 		}\n\
 		m \"[teddy::lineof [lindex $sm 0]]:1\" \"[teddy::lineof [lindex $sm 1]]:$\"\n\
+		teddy_intl::wandercount -1\n\
 	}\n\
 \n\
 	# Guesses indentation, saves the guess as the indentchar buffer property\n\
@@ -242,23 +249,22 @@ namespace eval teddy {\n\
 	namespace export spaceman\n\
 	proc spaceman {} {\n\
 		set saved [m]\n\
-		# delete empty spaces from the end of lines\n\
-		m nil 1:1\n\
-		s {(?: |\\t)+$} {\n\
-			if {[teddy::lineof [lindex [m] 1]] ne [teddy::lineof [lindex $saved 1]]} {\n\
-				c \"\"\n\
+		wander {\n\
+			# delete empty spaces from the end of lines\n\
+			m nil 1:1\n\
+			s {(?: |\\t)+$} {\n\
+				if {[teddy::lineof [lindex [m] 1]] ne [teddy::lineof [lindex $saved 1]]} {\n\
+					c \"\"\n\
+				}\n\
 			}\n\
 		}\n\
-		m $saved\n\
+\n\
 	}\n\
 \n\
 	# on a +bg frame selects the user's input\n\
 	namespace export select_input\n\
 	proc select_input {} {\n\
-		m +:1\n\
-		m {*}[s -line \"\\05\"]\n\
-		if {[lindex [m] 0] eq \"nil\"} { return }\n\
-		m +:+1 +:$\n\
+		m [buffer appjumps 0] $:$\n\
 	}\n\
 \n\
 	# replaces the current line of input for a job with the last line of input that was sent to the job\n\

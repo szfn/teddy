@@ -742,6 +742,21 @@ int teddy_buffer_command(ClientData client_data, Tcl_Interp *interp, int argc, c
 		}
 
 		job_send_input(interp_context_buffer()->job, argv[2]);
+	} else if (strcmp(argv[1], "appjumps") == 0) {
+		HASBUF("buffer appjumps");
+		ARGNUM((argc != 3), "buffer appjumps");
+
+		int i = atoi(argv[2]);
+		if (i < APPJUMP_LEN) {
+			char *r;
+			asprintf(&r, "=%d", interp_context_buffer()->appjumps[i]);
+			Tcl_SetResult(interp, r, TCL_VOLATILE);
+			free(r);
+			return TCL_OK;
+		} else {
+			Tcl_AddErrorInfo(interp, "Unknown appjump");
+			return TCL_ERROR;
+		}
 	} else {
 		Tcl_AddErrorInfo(interp, "Unknown subcommmand of 'buffer' command");
 		return TCL_ERROR;

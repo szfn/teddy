@@ -8,19 +8,21 @@ ANSI_0D	jobs.h	/^enum ansi_state { ANSI_NORMAL = 0, ANSI_ESCAPE, ANSI_0D };$/;"	
 ANSI_ESCAPE	jobs.h	/^enum ansi_state { ANSI_NORMAL = 0, ANSI_ESCAPE, ANSI_0D };$/;"	e	enum:ansi_state
 ANSI_NORMAL	jobs.h	/^enum ansi_state { ANSI_NORMAL = 0, ANSI_ESCAPE, ANSI_0D };$/;"	e	enum:ansi_state
 ANSI_SEQ_MAX_LEN	jobs.h	14;"	d
+APPJUMP_INPUT	buffer.h	/^enum appjumps { APPJUMP_INPUT = 0, APPJUMP_LEN };$/;"	e	enum:appjumps
+APPJUMP_LEN	buffer.h	/^enum appjumps { APPJUMP_INPUT = 0, APPJUMP_LEN };$/;"	e	enum:appjumps
 ARGNUM	interp.h	32;"	d
 AUTOCONF_TEDDY	autoconf.h	4;"	d
 AUTOSCROLL_TIMO	editor.h	11;"	d
-AUTOWRAP_INDICATOR_WIDTH	editor.c	1255;"	d	file:
+AUTOWRAP_INDICATOR_WIDTH	editor.c	1258;"	d	file:
 App	test/App.java	/^public class App $/;"	c
-BSIZE	buffer.h	179;"	d
+BSIZE	buffer.h	185;"	d
 BST_LINES	buffer.h	/^enum select_type { BST_NORMAL = 0, BST_WORDS, BST_LINES };$/;"	e	enum:select_type
 BST_NORMAL	buffer.h	/^enum select_type { BST_NORMAL = 0, BST_WORDS, BST_LINES };$/;"	e	enum:select_type
 BST_WORDS	buffer.h	/^enum select_type { BST_NORMAL = 0, BST_WORDS, BST_LINES };$/;"	e	enum:select_type
 BUFIDCHECK	buffers.c	436;"	d	file:
 BUFIDSIZE	client.c	14;"	d	file:
 BUFLEN	ipc.c	300;"	d	file:
-BUFSIZE	buffer.c	299;"	d	file:
+BUFSIZE	buffer.c	324;"	d	file:
 BUFSIZE	ipc.c	58;"	d	file:
 BUF_SIZE	tags.c	41;"	d	file:
 BUILTIN_TCL_CODE	builtin.h	4;"	d
@@ -67,12 +69,12 @@ CFG_TAG_FONT	cfg_auto.h	34;"	d
 CFG_UNDERLINE_LINKS	cfg_auto.h	10;"	d
 CFG_WARP_MOUSE	cfg_auto.h	13;"	d
 CFLAGS	Makefile	/^CFLAGS=`pkg-config --cflags gtk+-2.0` -g -Wall -D_FORTIFY_SOURCE=2 -D_GNU_SOURCE -I\/usr\/include\/tcl8.5 -std=c99 -pthread$/;"	m
-CLOSING_PARENTHESIS	buffer.c	1124;"	d	file:
+CLOSING_PARENTHESIS	buffer.c	1149;"	d	file:
 COLUMN_MINIMUM_WIDTH	column.c	5;"	d	file:
 CONFIG_NUM	cfg_auto.h	4;"	d
 CONTINUATION_STATUS	lexy.c	/^const char *CONTINUATION_STATUS = "continuation-state";$/;"	v
 CRITBIT_H_	critbit.h	2;"	d
-CURSOR_WIDTH	editor.c	1389;"	d	file:
+CURSOR_WIDTH	editor.c	1392;"	d	file:
 DONTGET	research.c	/^	DONTGET = 0,$/;"	e	enum:research_get_type	file:
 DR_CHANGED	buffers.c	/^	DR_CHANGED = 3,$/;"	e	enum:dirty_reason_t	file:
 DR_DIRJOB	buffers.c	/^	DR_DIRJOB = 1,$/;"	e	enum:dirty_reason_t	file:
@@ -160,11 +162,11 @@ NMATCH	lexy.c	532;"	d	file:
 NMATCH	lexy.c	844;"	d	file:
 O	builtin.tcl	/^proc O {args} {$/;"	p
 OBJS	Makefile	/^OBJS := obj\/teddy.o obj\/buffer.o obj\/editor.o obj\/buffers.o obj\/columns.o obj\/column.o obj\/interp.o obj\/global.o obj\/undo.o  obj\/history.o obj\/jobs.o obj\/colors.o obj\/cfg_auto.o obj\/cfg.o obj\/research.o obj\/compl.o obj\/lexy.o obj\/treint.o obj\/critbit.o obj\/tframe.o obj\/foundry.o obj\/top.o obj\/iopen.o obj\/tags.o obj\/oldscroll.o obj\/docs.o obj\/ipc.o obj\/client.o$/;"	m
-OPENING_PARENTHESIS	buffer.c	1123;"	d	file:
+OPENING_PARENTHESIS	buffer.c	1148;"	d	file:
 OS	research.c	98;"	d	file:
 OVECTOR_SIZE	research.c	183;"	d	file:
 P	builtin.tcl	/^proc P {args} {$/;"	p
-PARMATCH_CHAR_LIMIT	buffer.c	1060;"	d	file:
+PARMATCH_CHAR_LIMIT	buffer.c	1085;"	d	file:
 RATELIMIT_BUCKET_DURATION_SECS	jobs.h	11;"	d
 RATELIMIT_MAX_BYTES	jobs.h	12;"	d
 REGERROR_BUF_SIZE	lexy.c	364;"	d	file:
@@ -179,9 +181,9 @@ SM_LITERAL	research.h	/^	SM_LITERAL = 1,$/;"	e	enum:search_mode_t
 SM_NONE	research.h	/^	SM_NONE = 0,$/;"	e	enum:search_mode_t
 SM_REGEXP	research.h	/^	SM_REGEXP = 2$/;"	e	enum:search_mode_t
 SSERR	interp.c	469;"	d	file:
-TRUNCATION	jobs.c	306;"	d	file:
+TRUNCATION	jobs.c	297;"	d	file:
 TYPING_FUSION_INTERVAL	undo.h	8;"	d
-WORDCOMPL_UPDATE_RADIUS	buffer.h	181;"	d
+WORDCOMPL_UPDATE_RADIUS	buffer.h	187;"	d
 __ACMACS_GLOBAL_H__	global.h	2;"	d
 __AUTOCONF_TEDDY__	autoconf.h	2;"	d
 __BUFFERS_H__	buffers.h	2;"	d
@@ -252,6 +254,8 @@ ansi_state	jobs.h	/^enum ansi_state { ANSI_NORMAL = 0, ANSI_ESCAPE, ANSI_0D };$/
 ansiseq	jobs.h	/^	char ansiseq[ANSI_SEQ_MAX_LEN];$/;"	m	struct:_job_t
 ansiseq_cap	jobs.h	/^	int ansiseq_cap;$/;"	m	struct:_job_t
 antique_theme	builtin.tcl	/^proc antique_theme {} {$/;"	p
+appjumps	buffer.h	/^	int appjumps[APPJUMP_LEN];$/;"	m	struct:_buffer_t
+appjumps	buffer.h	/^enum appjumps { APPJUMP_INPUT = 0, APPJUMP_LEN };$/;"	g
 ascent	buffer.h	/^	double ascent, descent;$/;"	m	struct:_buffer_t
 assert_result	selftest.tcl	/^proc assert_result {target_file} {$/;"	p
 association_for_buffer	lexy.c	/^static struct lexy_association *association_for_buffer(buffer_t *buffer) {$/;"	f	file:
@@ -313,6 +317,7 @@ buffer_to_buffer_id	buffers.c	/^void buffer_to_buffer_id(buffer_t *buffer, char 
 buffer_typeset_from	buffer.c	/^static void buffer_typeset_from(buffer_t *buffer, int point) {$/;"	f	file:
 buffer_typeset_maybe	buffer.c	/^void buffer_typeset_maybe(buffer_t *buffer, double width, bool force) {$/;"	f
 buffer_undo	buffer.c	/^void buffer_undo(buffer_t *buffer, bool redo) {$/;"	f
+buffer_update_jumplist	buffer.c	/^static void buffer_update_jumplist(int *jumps, int len, int start, int delta) {$/;"	f	file:
 buffer_wordcompl_init_charset	buffer.c	/^void buffer_wordcompl_init_charset(void) {$/;"	f
 buffer_wordcompl_update	buffer.c	/^void buffer_wordcompl_update(buffer_t *buffer, critbit0_tree *cbt, int radius) {$/;"	f
 buffer_wordcompl_update_word	buffer.c	/^static void buffer_wordcompl_update_word(buffer_t *buffer, int start, int end, critbit0_tree *c) {$/;"	f	file:
@@ -333,6 +338,7 @@ buffers_init	buffers.c	/^void buffers_init(void) {$/;"	f
 buffers_make	buffers.c	/^static buffer_t *buffers_make(const char *name) {$/;"	f	file:
 buffers_refresh	buffers.c	/^void buffers_refresh(buffer_t *buffer) {$/;"	f
 buffers_register_tags	buffers.c	/^void buffers_register_tags(const char *tags_file) {$/;"	f
+buffers_requests	iopen.c	/^GAsyncQueue *buffers_requests;$/;"	v
 bufid_bufferclose_found	client.c	/^bool bufid_bufferclose_found = false;$/;"	v
 bufid_check	client.c	/^char bufid_check[BUFIDSIZE];$/;"	v
 bufid_check_cond	client.c	/^pthread_cond_t bufid_check_cond = PTHREAD_COND_INITIALIZER;$/;"	v
@@ -713,6 +719,7 @@ iopen	iopen.c	/^void iopen(const char *initial_text) {$/;"	f
 iopen_add_result	iopen.c	/^static gboolean iopen_add_result(struct iopen_result *r) {$/;"	f	file:
 iopen_buffer	iopen.c	/^buffer_t *iopen_buffer;$/;"	v
 iopen_buffer_onchange	iopen.c	/^static void iopen_buffer_onchange(buffer_t *buffer) {$/;"	f	file:
+iopen_buffer_thread	iopen.c	/^static gpointer iopen_buffer_thread(gpointer data) {$/;"	f	file:
 iopen_close	iopen.c	/^static void iopen_close(void) {$/;"	f	file:
 iopen_editor	iopen.c	/^editor_t *iopen_editor;$/;"	v
 iopen_enter	iopen.c	/^static void iopen_enter(editor_t *editor) {$/;"	f	file:
@@ -1111,6 +1118,7 @@ teddy_shellsync_command	interp.c	/^static int teddy_shellsync_command(ClientData
 teddy_stickdir_command	interp.c	/^static int teddy_stickdir_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {$/;"	f	file:
 teddy_tags_command	tags.c	/^int teddy_tags_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {$/;"	f
 teddy_undo_command	interp.c	/^static int teddy_undo_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {$/;"	f	file:
+teddy_wandercount_command	interp.c	/^static int teddy_wandercount_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {$/;"	f	file:
 teddy_window_png	docs.c	/^const unsigned char teddy_window_png[] = {0x89, $/;"	v
 teddy_window_png_size	docs.c	/^size_t teddy_window_png_size = sizeof(teddy_window_png) \/ sizeof(unsigned char);$/;"	v
 tepid_check	client.c	/^bool tepid_check(void) {$/;"	f
@@ -1146,6 +1154,7 @@ tmpdata	compl.h	/^	void *tmpdata;$/;"	m	struct:completer
 to_closed_buffers_critbit	buffer.c	/^static int to_closed_buffers_critbit(const char *entry, void *p) {$/;"	f	file:
 todos_test	selftest.tcl	/^proc todos_test {} {$/;"	p
 token_type	lexy.c	/^	uint8_t token_type;$/;"	m	struct:lexy_row	file:
+too_much_indent	iopen.c	/^static int too_much_indent(const char *line) {$/;"	f	file:
 tools_box	top.c	/^GtkWidget *tools_box = NULL;$/;"	v
 tools_label_map_callback	top.c	/^static gboolean tools_label_map_callback(GtkWidget *widget, GdkEvent *event, gpointer data) {$/;"	f	file:
 tools_label_popup_callback	top.c	/^static gboolean tools_label_popup_callback(GtkWidget *widget, GdkEventButton *event, gpointer data) {$/;"	f	file:
@@ -1158,6 +1167,7 @@ top_context_editor	top.c	/^editor_t *top_context_editor(void) {$/;"	f
 top_context_editor_gone	top.c	/^void top_context_editor_gone(void) {$/;"	f
 top_has_tags	top.c	/^bool top_has_tags(void) {$/;"	f
 top_init	top.c	/^GtkWidget *top_init(GtkWidget *window) {$/;"	f
+top_message	top.c	/^void top_message(const char *m) {$/;"	f
 top_recoloring	top.c	/^void top_recoloring(void) {$/;"	f
 top_start_command_line	top.c	/^void top_start_command_line(editor_t *editor, const char *text) {$/;"	f
 top_window	top.c	/^GtkWidget *top_window;$/;"	v
@@ -1214,6 +1224,7 @@ utf8_to_utf32_string	global.c	/^uint32_t *utf8_to_utf32_string(const char *text,
 utf8annoyance	jobs.h	/^	char utf8annoyance[12];$/;"	m	struct:_job_t
 visible	compl.h	/^	bool visible;$/;"	m	struct:completer
 wander	builtin.tcl	/^proc wander {body} {$/;"	p
+wandercount	buffer.h	/^	int wandercount;$/;"	m	struct:_buffer_t
 warp_mouse_after_next_expose	editor.h	/^	gboolean warp_mouse_after_next_expose;$/;"	m	struct:_editor_t
 wd	buffer.h	/^	char *wd;$/;"	m	struct:_buffer_t
 wd	history.h	/^	char *wd;$/;"	m	struct:history_item

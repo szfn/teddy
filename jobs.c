@@ -38,22 +38,13 @@ static int write_all(int fd, const char *str) {
 }
 
 static char *cut_prompt(job_t *job) {
-	int start;
-
+	if (job->buffer == NULL) return NULL;
 	job->buffer->cursor = BSIZE(job->buffer);
-
-	for (start = job->buffer->cursor-1; start > 0; --start) {
-		my_glyph_info_t *g = bat(job->buffer, start);
-		if (g == NULL) return NULL;
-		if (g->code == '\n') return NULL;
-		if (g->code == '\05') break;
-	}
-
-	if (start < 0) return NULL;
-
-	job->buffer->mark = start;
-
-	return buffer_lines_to_text(job->buffer, start, job->buffer->cursor);
+	job->buffer->mark = job->buffer->appjumps[APPJUMP_INPUT];
+	if (job->buffer->mark < 0) return NULL;
+	char *r = buffer_lines_to_text(job->buffer, job->buffer->mark, job->buffer->cursor);
+	//printf("Cut prompt: <%s> %d\n", r, strlen(r));
+	return r;
 }
 
 static void job_destroy(job_t *job) {
@@ -65,10 +56,6 @@ static void job_destroy(job_t *job) {
 
 	if (job->buffer != NULL) {
 		job->buffer->job = NULL;
-
-		char *p = cut_prompt(job);
-		if (p != NULL) free(p);
-		buffer_replace_selection(job->buffer, "");
 
 		job->buffer->cursor = job->reset_position;
 
@@ -117,9 +104,9 @@ static void job_append(job_t *job, const char *msg, int len, int on_new_line) {
 	if (prompt_str != NULL) {
 		buffer_replace_selection(buffer, prompt_str);
 		free(prompt_str);
-	} else {
-		buffer_replace_selection(buffer, "\05");
 	}
+
+	buffer->appjumps[APPJUMP_INPUT] = buffer->cursor;
 
 	editor_t *editor;
 	find_editor_for_buffer(job->buffer, NULL, NULL, &editor);
@@ -134,7 +121,8 @@ void job_send_input(job_t *job, const char *actual_input) {
 	char *input = cut_prompt(job);
 	//printf("input <%s>\n", input);
 	job->buffer->mark = -1;
-	buffer_replace_selection(job->buffer, "\n\05");
+	buffer_replace_selection(job->buffer, "\n");
+	job->buffer->appjumps[APPJUMP_INPUT] = job->buffer->cursor;
 
 	const char *send_input = NULL;
 
@@ -142,16 +130,19 @@ void job_send_input(job_t *job, const char *actual_input) {
 		send_input = actual_input;
 	} else {
 		if (input == NULL) return;
-		send_input = input+1;
+		send_input = input;
 	}
 
 	if (send_input == NULL) return;
+
+	//printf("Sending input <%s>\n", send_input);
 
 	write_all(job->masterfd, send_input);
 	write_all(job->masterfd, "\n");
 	history_add(&input_history, time(NULL), NULL, send_input, true);
 	if (input != NULL) free(input);
 	job->ratelimit_silenced = false;
+
 }
 
 static void ansi_append_escape(job_t *job) {
@@ -199,7 +190,7 @@ static void ansi_append(job_t *job, const char *msg, int len) {
 				job_append(job, msg+start, i - start, 0);
 				start = i+1;
 				char *p = cut_prompt(job);
-				free(p);
+				if (p != NULL) free(p);
 				if (job->buffer->mark < 0) job->buffer->mark = job->buffer->cursor;
 				buffer_move_point_glyph(buffer, &(job->buffer->mark), MT_REL, -1);
 				buffer_replace_selection(buffer, "");

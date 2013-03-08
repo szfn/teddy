@@ -24,6 +24,8 @@ typedef struct _my_glyph_info_t {
 	double y;
 } my_glyph_info_t;
 
+enum appjumps { APPJUMP_INPUT = 0, APPJUMP_LEN };
+
 enum select_type { BST_NORMAL = 0, BST_WORDS, BST_LINES };
 
 typedef struct _buffer_t {
@@ -79,6 +81,10 @@ typedef struct _buffer_t {
 	GHashTable *props;
 	char *keyprocessor;
 	void (*onchange)(struct _buffer_t *buffer);
+
+	/* Jumplists */
+	int wandercount;
+	int appjumps[APPJUMP_LEN];
 
 	/* autocompletion */
 	critbit0_tree cbt;

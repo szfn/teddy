@@ -1356,11 +1356,6 @@ static void draw_lines(editor_t *editor, GtkAllocation *allocation, cairo_t *cr,
 		g.y = glyph->y;
 
 		growable_glyph_array_append(gga_current, g);
-
-		if (glyph->code == '\05') {
-			cairo_arc(cr, g.x + glyph->x_advance/2, g.y - editor->buffer->line_height/2, 1, 0, 2*M_PI);
-			cairo_fill(cr);
-		}
 	}
 
 	if (onfile && (gga_current != NULL)) {

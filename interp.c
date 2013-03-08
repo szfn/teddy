@@ -619,7 +619,8 @@ static bool move_command_ex(const char *sin, int *p, int ref, enum movement_type
 		// exact positioning
 		int arg = atoi(sin+1);
 
-		bool r = buffer_move_point_glyph(interp_context_buffer(), p, MT_ABS, arg);
+		*p = 0;
+		bool r = buffer_move_point_glyph(interp_context_buffer(), p, MT_ABS, arg+1);
 
 		Tcl_SetResult(interp, r ? "true" : "false", TCL_VOLATILE);
 
@@ -1021,6 +1022,19 @@ static int teddy_cmdlinefocus_command(ClientData client_data, Tcl_Interp *interp
 	return TCL_OK;
 }
 
+static int teddy_wandercount_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
+	if (argc != 2) {
+		Tcl_AddErrorInfo(interp, "Wrong number of arguments to 'teddy_intl::wandercount");
+		return TCL_ERROR;
+	}
+
+	int wca = atoi(argv[1]);
+
+	if (interp_context_buffer() != NULL) {
+		interp_context_buffer()->wandercount += wca;
+	}
+	return TCL_OK;
+}
 
 void interp_init(void) {
 	interp = Tcl_CreateInterp();
@@ -1057,6 +1071,7 @@ void interp_init(void) {
 	Tcl_CreateCommand(interp, "search", &teddy_search_command, (ClientData)NULL, NULL);
 
 	Tcl_CreateCommand(interp, "teddy_intl::inpath", &teddy_inpath_command, (ClientData)NULL, NULL);
+	Tcl_CreateCommand(interp, "teddy_intl::wandercount", &teddy_wandercount_command, (ClientData)NULL, NULL);
 
 	Tcl_CreateCommand(interp, "rgbcolor", &teddy_rgbcolor_command, (ClientData)NULL, NULL);
 

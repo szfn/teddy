@@ -141,6 +141,12 @@ buffer_t *buffer_create(void) {
 
 	buffer->onchange = NULL;
 
+	buffer->wandercount = 0;
+
+	for (int i = 0; i < APPJUMP_LEN; ++i) {
+		buffer->appjumps[i] = -1;
+	}
+
 	return buffer;
 }
 
@@ -213,12 +219,27 @@ static void code_to_glyph(teddy_fontset_t *font, uint32_t code, uint8_t *fontidx
 	*glyph_index = fontset_glyph_index(font, *fontidx, ccode);
 }
 
+static void buffer_update_jumplist(int *jumps, int len, int start, int delta) {
+	int end = (delta < 0) ? (start - delta) : -1;
+
+	for (int i = 0; i < len; ++i) {
+		if (jumps[i] < 0) continue;
+		if ((jumps[i] >= start) && (jumps[i] < end)) {
+			// only happens when we are deleting a chunk of text
+			jumps[i] = start;
+		} else if (jumps[i] > start) {
+			jumps[i] += delta;
+		}
+	}
+}
+
 static int buffer_replace_selection_ex(buffer_t *buffer, const char *text, bool twice) {
 	teddy_fontset_t *font = foundry_lookup(config_strval(&(buffer->config), CFG_MAIN_FONT), true);
 
 	// there is a mark, delete
 	if (buffer->mark >= 0) {
 		int region_size = MAX(buffer->mark, buffer->cursor) - MIN(buffer->mark, buffer->cursor);
+		buffer_update_jumplist(buffer->appjumps, APPJUMP_LEN, MIN(buffer->mark, buffer->cursor), -region_size);
 		movegap(buffer, MIN(buffer->mark, buffer->cursor));
 		buffer->gapsz += region_size;
 		buffer->cursor = MIN(buffer->mark, buffer->cursor);
@@ -229,6 +250,7 @@ static int buffer_replace_selection_ex(buffer_t *buffer, const char *text, bool 
 
 	int start_cursor = buffer->cursor;
 
+	int count = 0;
 	int len = strlen(text);
 	for (int i = 0; i < len; ) {
 		if (buffer->gapsz <= 0) regap(buffer, twice);
@@ -263,7 +285,10 @@ static int buffer_replace_selection_ex(buffer_t *buffer, const char *text, bool 
 		++(buffer->cursor);
 		++(buffer->gap);
 		--(buffer->gapsz);
+		++count;
 	}
+
+	buffer_update_jumplist(buffer->appjumps, APPJUMP_LEN, start_cursor, count);
 
 	my_glyph_info_t *last_char = bat(buffer, buffer->cursor);
 	my_glyph_info_t *next_char = bat(buffer, buffer->cursor+1);
