@@ -191,10 +191,38 @@ static int teddy_setcfg_command(ClientData client_data, Tcl_Interp *interp, int 
 static int teddy_bindkey_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
 	ARGNUM((argc != 3), "bindkey")
 
-	char *key = malloc(sizeof(char) * (strlen(argv[1]) + 1));
-	strcpy(key, argv[1]);
-	char *value = malloc(sizeof(char) * (strlen(argv[2]) + 1));
-	strcpy(value, argv[2]);
+	char *key = strdup(argv[1]);
+
+	if (argv[1][0] != 'M') {
+		char *base = strrchr(argv[1], '-');
+		if (base != NULL) {
+			key[base - argv[1]] = '\0';
+			++base;
+
+			bool super = false, ctrl = false, alt = false, shift = false;
+			char *tok, *s;
+			for (tok = strtok_r(key, "-", &s); tok != NULL; tok = strtok_r(NULL, "-", &s)) {
+				if (strcasecmp(tok, "super") == 0) {
+					super = true;
+				} else if (strcasecmp(tok, "ctrl") == 0) {
+					ctrl = true;
+				} else if (strcasecmp(tok, "alt") == 0) {
+					alt = true;
+				} else if (strcasecmp(tok, "shift") == 0) {
+					shift = true;
+				}
+			}
+
+			key[0] = '\0';
+			if (super) strcat(key, "Super-");
+			if (ctrl) strcat(key, "Ctrl-");
+			if (alt) strcat(key, "Alt-");
+			if (shift) strcat(key, "Shift-");
+			strcat(key, base);
+		}
+	}
+
+	char *value = strdup(argv[2]);
 
 	g_hash_table_replace(keybindings, key, value);
 
