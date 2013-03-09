@@ -41,6 +41,8 @@ void quit_search_mode(editor_t *editor, bool clear_selection) {
 	editor->research.mode = SM_NONE;
 	editor->ignore_next_entry_keyrelease = TRUE;
 
+	buffer_record_jump(editor->buffer);
+
 	if (clear_selection) editor->buffer->mark = -1;
 
 	gtk_widget_grab_focus(editor->drar);

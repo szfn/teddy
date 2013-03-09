@@ -147,6 +147,11 @@ buffer_t *buffer_create(void) {
 		buffer->appjumps[i] = -1;
 	}
 
+	for (int i = 0; i < JUMPRING_LEN; ++i) {
+		buffer->jumpring[i] = -1;
+	}
+	buffer->curjump = buffer->newjump = 0;
+
 	return buffer;
 }
 
@@ -240,6 +245,7 @@ static int buffer_replace_selection_ex(buffer_t *buffer, const char *text, bool 
 	if (buffer->mark >= 0) {
 		int region_size = MAX(buffer->mark, buffer->cursor) - MIN(buffer->mark, buffer->cursor);
 		buffer_update_jumplist(buffer->appjumps, APPJUMP_LEN, MIN(buffer->mark, buffer->cursor), -region_size);
+		buffer_update_jumplist(buffer->jumpring, JUMPRING_LEN, MIN(buffer->mark, buffer->cursor), -region_size);
 		movegap(buffer, MIN(buffer->mark, buffer->cursor));
 		buffer->gapsz += region_size;
 		buffer->cursor = MIN(buffer->mark, buffer->cursor);
@@ -289,6 +295,7 @@ static int buffer_replace_selection_ex(buffer_t *buffer, const char *text, bool 
 	}
 
 	buffer_update_jumplist(buffer->appjumps, APPJUMP_LEN, start_cursor, count);
+	buffer_update_jumplist(buffer->jumpring, JUMPRING_LEN, start_cursor, count);
 
 	my_glyph_info_t *last_char = bat(buffer, buffer->cursor);
 	my_glyph_info_t *next_char = bat(buffer, buffer->cursor+1);
@@ -1267,4 +1274,26 @@ char *buffer_directory(buffer_t *buffer) {
 bool buffer_modified(buffer_t *buffer) {
 	if (buffer->undo.head == NULL) return false;
 	return !(buffer->undo.head->saved);
+}
+
+void buffer_record_jump(buffer_t *buffer) {
+	buffer->jumpring[buffer->newjump] = buffer->cursor;
+	buffer->newjump = (buffer->newjump + 1) % JUMPRING_LEN;
+	buffer->curjump = buffer->newjump;
+}
+
+void buffer_jump_to(buffer_t *buffer, int dir) {
+	if (buffer->cursor != buffer->jumpring[buffer->curjump]) {
+		buffer_record_jump(buffer);
+	}
+	for (int i = buffer->curjump+dir, count = 0; count < JUMPRING_LEN; ++count, i = (i+dir) % JUMPRING_LEN) {
+		if (i < 0) i = JUMPRING_LEN-1;
+		if (buffer->jumpring[i] >= 0) {
+			buffer->curjump = i;
+			buffer->cursor = buffer->jumpring[i];
+			if (buffer->cursor < 0) buffer->cursor = 0;
+			if (buffer->cursor > BSIZE(buffer)) buffer->cursor = BSIZE(buffer);
+			return;
+		}
+	}
 }

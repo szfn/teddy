@@ -10,6 +10,8 @@
 #include "critbit.h"
 #include "undo.h"
 
+#define JUMPRING_LEN 16
+
 typedef struct _my_glyph_info_t {
 	uint32_t code;
 	uint8_t color;
@@ -85,6 +87,8 @@ typedef struct _buffer_t {
 	/* Jumplists */
 	int wandercount;
 	int appjumps[APPJUMP_LEN];
+	int curjump, newjump;
+	int jumpring[JUMPRING_LEN];
 
 	/* autocompletion */
 	critbit0_tree cbt;
@@ -181,6 +185,10 @@ my_glyph_info_t *buffer_next_glyph(buffer_t *buffer, my_glyph_info_t *glyph);
 
 int buffer_line_of(buffer_t *buffer, int p);
 int buffer_column_of(buffer_t *buffer, int p);
+
+/* Jump ring management functions */
+void buffer_record_jump(buffer_t *buffer);
+void buffer_jump_to(buffer_t *buffer, int dir);
 
 #define BSIZE(x) ((x)->size - (x)->gapsz)
 

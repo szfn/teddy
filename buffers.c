@@ -757,6 +757,18 @@ int teddy_buffer_command(ClientData client_data, Tcl_Interp *interp, int argc, c
 			Tcl_AddErrorInfo(interp, "Unknown appjump");
 			return TCL_ERROR;
 		}
+	} else if (strcmp(argv[1], "jumpring") == 0) {
+		HASBUF("buffer appjumps");
+		ARGNUM((argc != 3), "buffer appjumps");
+
+		if (strcmp(argv[2], "prev") == 0) {
+			buffer_jump_to(interp_context_buffer(), -1);
+		} else if (strcmp(argv[2], "next") == 0) {
+			buffer_jump_to(interp_context_buffer(), +1);
+		} else {
+			Tcl_AddErrorInfo(interp, "Unknown jumpring");
+			return TCL_ERROR;
+		}
 	} else {
 		Tcl_AddErrorInfo(interp, "Unknown subcommmand of 'buffer' command");
 		return TCL_ERROR;

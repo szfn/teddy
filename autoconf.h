@@ -121,6 +121,10 @@ bindkey Ctrl-. {bindent incr}\n\
 # Ctrl-Delete kills attached process (if any)\n\
 bindkey Ctrl-Delete kill\n\
 \n\
+# Ctrl-b jumps to the previous cursor positions, Ctrl-B undoes one Ctrl-b\n\
+bindkey Ctrl-b { buffer jumpring prev }\n\
+bindkey Ctrl-B { buffer jumpring next }\n\
+\n\
 ### BUFFER HOOKS ###\n\
 \n\
 # This procedure gets called every time a new buffer is created, it allows you to do some customization of how buffers are displayed\n\
@@ -161,10 +165,6 @@ proc grep {args} {\n\
 		unknown grep -n --exclude=tags {*}$args\n\
 	}\n\
 }\n\
-\n\
-# Save and restore a bookmark\n\
-bindkey Alt-1 { buffer propset [buffer current] bookmark [m] }\n\
-bindkey Ctrl-1 { m {*}[buffer propget [buffer current] bookmark] }\n\
 \n\
 # Selects recently typed text\n\
 bindkey Pause {m [undo region after]}\n\
