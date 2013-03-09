@@ -64,7 +64,7 @@ setcfg autocompl_popup 1\n\
 ### KEYBINDINGS ###\n\
 \n\
 # Ctrl-c copy to clipboard\n\
-bindkey Ctrl-c {cb put [c]; m nil +0:+0}\n\
+bindkey Ctrl-c {cb put [c]}\n\
 \n\
 # Ctrl-v paste from clipboard (bindent pasteq equalizes indentation levels)\n\
 bindkey Ctrl-v {bindent pasteq [cb get]}\n\
