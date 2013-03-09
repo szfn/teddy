@@ -15,14 +15,14 @@ AUTOCONF_TEDDY	autoconf.h	4;"	d
 AUTOSCROLL_TIMO	editor.h	11;"	d
 AUTOWRAP_INDICATOR_WIDTH	editor.c	1258;"	d	file:
 App	test/App.java	/^public class App $/;"	c
-BSIZE	buffer.h	185;"	d
+BSIZE	buffer.h	193;"	d
 BST_LINES	buffer.h	/^enum select_type { BST_NORMAL = 0, BST_WORDS, BST_LINES };$/;"	e	enum:select_type
 BST_NORMAL	buffer.h	/^enum select_type { BST_NORMAL = 0, BST_WORDS, BST_LINES };$/;"	e	enum:select_type
 BST_WORDS	buffer.h	/^enum select_type { BST_NORMAL = 0, BST_WORDS, BST_LINES };$/;"	e	enum:select_type
 BUFIDCHECK	buffers.c	436;"	d	file:
 BUFIDSIZE	client.c	14;"	d	file:
 BUFLEN	ipc.c	300;"	d	file:
-BUFSIZE	buffer.c	324;"	d	file:
+BUFSIZE	buffer.c	331;"	d	file:
 BUFSIZE	ipc.c	58;"	d	file:
 BUF_SIZE	tags.c	41;"	d	file:
 BUILTIN_TCL_CODE	builtin.h	4;"	d
@@ -69,18 +69,18 @@ CFG_TAG_FONT	cfg_auto.h	34;"	d
 CFG_UNDERLINE_LINKS	cfg_auto.h	10;"	d
 CFG_WARP_MOUSE	cfg_auto.h	13;"	d
 CFLAGS	Makefile	/^CFLAGS=`pkg-config --cflags gtk+-2.0` -g -Wall -D_FORTIFY_SOURCE=2 -D_GNU_SOURCE -I\/usr\/include\/tcl8.5 -std=c99 -pthread$/;"	m
-CLOSING_PARENTHESIS	buffer.c	1149;"	d	file:
+CLOSING_PARENTHESIS	buffer.c	1156;"	d	file:
 COLUMN_MINIMUM_WIDTH	column.c	5;"	d	file:
 CONFIG_NUM	cfg_auto.h	4;"	d
 CONTINUATION_STATUS	lexy.c	/^const char *CONTINUATION_STATUS = "continuation-state";$/;"	v
 CRITBIT_H_	critbit.h	2;"	d
-CURSOR_WIDTH	editor.c	1392;"	d	file:
+CURSOR_WIDTH	editor.c	1387;"	d	file:
 DONTGET	research.c	/^	DONTGET = 0,$/;"	e	enum:research_get_type	file:
 DR_CHANGED	buffers.c	/^	DR_CHANGED = 3,$/;"	e	enum:dirty_reason_t	file:
 DR_DIRJOB	buffers.c	/^	DR_DIRJOB = 1,$/;"	e	enum:dirty_reason_t	file:
 DR_JOB	buffers.c	/^	DR_JOB = 2,$/;"	e	enum:dirty_reason_t	file:
 DR_NOT_DIRTY	buffers.c	/^	DR_NOT_DIRTY = 0,$/;"	e	enum:dirty_reason_t	file:
-ERRBUFLEN	interp.c	545;"	d	file:
+ERRBUFLEN	interp.c	573;"	d	file:
 EVENTSIZE	client.c	40;"	d	file:
 GET_BOTH	research.c	/^	GET_BOTH = 1,$/;"	e	enum:research_get_type	file:
 GET_END	research.c	/^	GET_END = 3$/;"	e	enum:research_get_type	file:
@@ -124,6 +124,7 @@ INOTIFY_EVENT_SIZE	buffers.c	265;"	d	file:
 IOPEN_MAX_SENT_RESULTS	iopen.c	20;"	d	file:
 IOPEN_RECURSOR_DEPTH_LIMIT	iopen.c	19;"	d	file:
 JOBS_READ_BUFFER_SIZE	jobs.c	21;"	d	file:
+JUMPRING_LEN	buffer.h	13;"	d
 LEXY_ASSOCIATION_NUMBER	lexy.c	53;"	d	file:
 LEXY_DEFAULT_LINK_OPEN_FN	lexy.c	61;"	d	file:
 LEXY_LINE_LENGTH_LIMIT	lexy.c	56;"	d	file:
@@ -148,9 +149,9 @@ MAX_MOUSE_SEQ	editor.h	12;"	d
 MINIMUM_WORDCOMPL_WORD_LEN	buffer.c	20;"	d	file:
 MIN_EM_COLUMN_SIZE_ATTEMPTED	global.h	30;"	d
 MIN_LINES_HEIGHT_REQUEST	global.h	29;"	d
-MOVE_CURSOR	interp.c	751;"	d	file:
-MOVE_MARK	interp.c	745;"	d	file:
-MOVE_MARK_CURSOR	interp.c	762;"	d	file:
+MOVE_CURSOR	interp.c	784;"	d	file:
+MOVE_MARK	interp.c	778;"	d	file:
+MOVE_MARK_CURSOR	interp.c	795;"	d	file:
 MT_ABS	buffer.h	/^	MT_ABS = 0, \/\/ move to absolute line\/column$/;"	e	enum:movement_type_t
 MT_END	buffer.h	/^	MT_END, \/\/ move to end$/;"	e	enum:movement_type_t
 MT_HOME	buffer.h	/^	MT_HOME, \/\/ toggle between first column and first non-whitespace character (buffer_move_point_glyph only)$/;"	e	enum:movement_type_t
@@ -162,15 +163,15 @@ NMATCH	lexy.c	532;"	d	file:
 NMATCH	lexy.c	844;"	d	file:
 O	builtin.tcl	/^proc O {args} {$/;"	p
 OBJS	Makefile	/^OBJS := obj\/teddy.o obj\/buffer.o obj\/editor.o obj\/buffers.o obj\/columns.o obj\/column.o obj\/interp.o obj\/global.o obj\/undo.o  obj\/history.o obj\/jobs.o obj\/colors.o obj\/cfg_auto.o obj\/cfg.o obj\/research.o obj\/compl.o obj\/lexy.o obj\/treint.o obj\/critbit.o obj\/tframe.o obj\/foundry.o obj\/top.o obj\/iopen.o obj\/tags.o obj\/oldscroll.o obj\/docs.o obj\/ipc.o obj\/client.o$/;"	m
-OPENING_PARENTHESIS	buffer.c	1148;"	d	file:
-OS	research.c	98;"	d	file:
-OVECTOR_SIZE	research.c	183;"	d	file:
+OPENING_PARENTHESIS	buffer.c	1155;"	d	file:
+OS	research.c	100;"	d	file:
+OVECTOR_SIZE	research.c	185;"	d	file:
 P	builtin.tcl	/^proc P {args} {$/;"	p
-PARMATCH_CHAR_LIMIT	buffer.c	1085;"	d	file:
+PARMATCH_CHAR_LIMIT	buffer.c	1092;"	d	file:
 RATELIMIT_BUCKET_DURATION_SECS	jobs.h	11;"	d
 RATELIMIT_MAX_BYTES	jobs.h	12;"	d
 REGERROR_BUF_SIZE	lexy.c	364;"	d	file:
-REGERROR_BUF_SIZE	research.c	433;"	d	file:
+REGERROR_BUF_SIZE	research.c	435;"	d	file:
 REGEXEC_NMATCH	lexy.c	633;"	d	file:
 RESHANDLE_SIZE	global.h	15;"	d
 ROUNDBOXPAD	global.c	628;"	d	file:
@@ -180,10 +181,10 @@ SLOP	buffer.c	18;"	d	file:
 SM_LITERAL	research.h	/^	SM_LITERAL = 1,$/;"	e	enum:search_mode_t
 SM_NONE	research.h	/^	SM_NONE = 0,$/;"	e	enum:search_mode_t
 SM_REGEXP	research.h	/^	SM_REGEXP = 2$/;"	e	enum:search_mode_t
-SSERR	interp.c	469;"	d	file:
+SSERR	interp.c	497;"	d	file:
 TRUNCATION	jobs.c	297;"	d	file:
 TYPING_FUSION_INTERVAL	undo.h	8;"	d
-WORDCOMPL_UPDATE_RADIUS	buffer.h	187;"	d
+WORDCOMPL_UPDATE_RADIUS	buffer.h	195;"	d
 __ACMACS_GLOBAL_H__	global.h	2;"	d
 __AUTOCONF_TEDDY__	autoconf.h	2;"	d
 __BUFFERS_H__	buffers.h	2;"	d
@@ -299,6 +300,7 @@ buffer_historycompl_word_at_cursor	buffer.c	/^char *buffer_historycompl_word_at_
 buffer_id_to_buffer	buffers.c	/^buffer_t *buffer_id_to_buffer(const char *bufferid) {$/;"	f
 buffer_indent_newline	buffer.c	/^char *buffer_indent_newline(buffer_t *buffer) {$/;"	f
 buffer_init_font_extents	buffer.c	/^static void buffer_init_font_extents(buffer_t *buffer) {$/;"	f	file:
+buffer_jump_to	buffer.c	/^void buffer_jump_to(buffer_t *buffer, int dir) {$/;"	f
 buffer_line_of	buffer.c	/^int buffer_line_of(buffer_t *buffer, int p) {$/;"	f
 buffer_lines_to_text	buffer.c	/^char *buffer_lines_to_text(buffer_t *buffer, int start, int end) {$/;"	f
 buffer_loaded_hook	builtin.tcl	/^proc buffer_loaded_hook {buffer-name} { }$/;"	p
@@ -306,6 +308,7 @@ buffer_modified	buffer.c	/^bool buffer_modified(buffer_t *buffer) {$/;"	f
 buffer_move_point_glyph	buffer.c	/^bool buffer_move_point_glyph(buffer_t *buffer, int *p, enum movement_type_t type, int arg) {$/;"	f
 buffer_move_point_line	buffer.c	/^bool buffer_move_point_line(buffer_t *buffer, int *p, enum movement_type_t type, int arg) {$/;"	f
 buffer_point_from_position	buffer.c	/^int buffer_point_from_position(buffer_t *buffer, int start, double x, double y, bool strict) {$/;"	f
+buffer_record_jump	buffer.c	/^void buffer_record_jump(buffer_t *buffer) {$/;"	f
 buffer_reload_glyph_info	buffer.c	/^static void buffer_reload_glyph_info(buffer_t *buffer) {$/;"	f	file:
 buffer_replace_selection	buffer.c	/^void buffer_replace_selection(buffer_t *buffer, const char *new_text) {$/;"	f
 buffer_replace_selection_ex	buffer.c	/^static int buffer_replace_selection_ex(buffer_t *buffer, const char *text, bool twice) {$/;"	f	file:
@@ -483,6 +486,7 @@ critbit0_node	critbit.c	/^}critbit0_node;$/;"	t	typeref:struct:__anon1	file:
 critbit0_tree	critbit.c	/^}critbit0_tree;$/;"	t	typeref:struct:__anon2	file:
 critbit0_tree	critbit.h	/^} critbit0_tree;$/;"	t	typeref:struct:__anon3
 crt	iopen.c	/^GtkCellRenderer *crt;$/;"	v
+curjump	buffer.h	/^	int curjump, newjump;$/;"	m	struct:_buffer_t
 current_entry_handler_id	editor.h	/^	gulong current_entry_handler_id;$/;"	m	struct:_editor_t
 current_ratelimit_bucket_size	jobs.h	/^	long current_ratelimit_bucket_size;$/;"	m	struct:_job_t
 current_ratelimit_bucket_start	jobs.h	/^	time_t current_ratelimit_bucket_start;$/;"	m	struct:_job_t
@@ -755,6 +759,7 @@ jobs_init	jobs.c	/^void jobs_init(void) {$/;"	f
 jobs_input_watch_function	jobs.c	/^static gboolean jobs_input_watch_function(GIOChannel *source, GIOCondition condition, job_t *job) {$/;"	f	file:
 jobs_register	jobs.c	/^int jobs_register(pid_t child_pid, int masterfd, buffer_t *buffer, const char *command) {$/;"	f
 jump	lexy.c	/^	bool jump;$/;"	m	struct:lexy_row	file:
+jumpring	buffer.h	/^	int jumpring[JUMPRING_LEN];$/;"	m	struct:_buffer_t
 kerning_correction	buffer.h	/^	double kerning_correction;$/;"	m	struct:_my_glyph_info_t
 key_press_callback	editor.c	/^static gboolean key_press_callback(GtkWidget *widget, GdkEventKey *event, editor_t *editor) {$/;"	f	file:
 key_release_callback	editor.c	/^static gboolean key_release_callback(GtkWidget *widget, GdkEventKey *event, editor_t *editor) {$/;"	f	file:
@@ -861,7 +866,7 @@ mouse_marking	editor.h	/^	int mouse_marking;$/;"	m	struct:_editor_t
 mouse_sequence	editor.h	/^	int mouse_sequence;$/;"	m	struct:_editor_t
 mouse_sequence_feedback	editor.c	/^static void mouse_sequence_feedback(editor_t *editor, bool final) {$/;"	f	file:
 mouse_sequence_str	editor.h	/^	char mouse_sequence_str[MAX_MOUSE_SEQ];$/;"	m	struct:_editor_t
-move_command_ex	interp.c	/^static bool move_command_ex(const char *sin, int *p, int ref, enum movement_type_t default_glyph_motion) {$/;"	f	file:
+move_command_ex	interp.c	/^static bool move_command_ex(const char *sin, int *p, int ref, enum movement_type_t default_glyph_motion, bool set_jump) {$/;"	f	file:
 move_cursor_to_mouse	editor.c	/^static void move_cursor_to_mouse(editor_t *editor, double x, double y) {$/;"	f	file:
 move_incremental_search	research.c	/^static void move_incremental_search(editor_t *editor, bool ctrl_g_invoked, bool direction_forward, bool restart) {$/;"	f	file:
 move_regexp_search_forward	research.c	/^static bool move_regexp_search_forward(struct research_t *research, bool execute, int *mark, int *cursor) {$/;"	f	file:
@@ -878,6 +883,7 @@ new_column_mitem_callback	top.c	/^static void new_column_mitem_callback(GtkMenuI
 new_editor	editor.c	/^editor_t *new_editor(buffer_t *buffer, bool single_line) {$/;"	f
 new_in_column	columns.c	/^tframe_t *new_in_column(columns_t *columns, column_t *column, buffer_t *buffer) {$/;"	f
 new_row_for_state	lexy.c	/^static struct lexy_row *new_row_for_state(int state) {$/;"	f	file:
+newjump	buffer.h	/^	int curjump, newjump;$/;"	m	struct:_buffer_t
 next	undo.h	/^	struct _undo_node_t *next;$/;"	m	struct:_undo_node_t	typeref:struct:_undo_node_t::_undo_node_t
 next_status	lexy.c	/^	uint16_t next_status;$/;"	m	struct:lexy_row	file:
 next_will_wrap_around	research.h	/^	bool next_will_wrap_around;$/;"	m	struct:research_t

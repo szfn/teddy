@@ -647,10 +647,13 @@ static bool move_command_ex(const char *sin, int *p, int ref, enum movement_type
 		// exact positioning
 		int arg = atoi(sin+1);
 
-		*p = 0;
-		bool r = buffer_move_point_glyph(interp_context_buffer(), p, MT_ABS, arg+1);
-
-		Tcl_SetResult(interp, r ? "true" : "false", TCL_VOLATILE);
+		if (arg == -1) {
+			*p = -1;
+		} else {
+			*p = 0;
+			bool r = buffer_move_point_glyph(interp_context_buffer(), p, MT_ABS, arg+1);
+			Tcl_SetResult(interp, r ? "true" : "false", TCL_VOLATILE);
+		}
 
 		return true;
 	}
