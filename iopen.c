@@ -471,7 +471,7 @@ static gpointer iopen_buffer_thread(gpointer data) {
 
 				int indentation_depth = too_much_indent(line);
 				if (indentation_depth >= 0) {
-					int lineno = buffer_line_of(buf, p);
+					int lineno = buffer_line_of(buf, p, false);
 					struct iopen_result *r = malloc(sizeof(struct iopen_result));
 
 					int c = strncmp(buf->path, top_working_directory(), strlen(top_working_directory()));

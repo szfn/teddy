@@ -1310,7 +1310,7 @@ buffer_t *interp_context_buffer(void) {
 
 void interp_return_single_point(buffer_t *buffer, int p) {
 	char *r;
-	asprintf(&r, "%d:%d", buffer_line_of(buffer, p), buffer_column_of(buffer, p));
+	asprintf(&r, "%d:%d", buffer_line_of(buffer, p, false), buffer_column_of(buffer, p));
 	alloc_assert(r);
 	Tcl_SetResult(interp, r, TCL_VOLATILE);
 	free(r);
@@ -1320,11 +1320,11 @@ void interp_return_point_pair(buffer_t *buffer, int mark, int cursor) {
 	char *r;
 	if (mark < 0) {
 		asprintf(&r, "nil %d:%d",
-			buffer_line_of(buffer, cursor), buffer_column_of(buffer, cursor));
+			buffer_line_of(buffer, cursor, false), buffer_column_of(buffer, cursor));
 	} else {
 		asprintf(&r, "%d:%d %d:%d",
-			buffer_line_of(buffer, mark), buffer_column_of(buffer, mark),
-			buffer_line_of(buffer, cursor), buffer_column_of(buffer, cursor));
+			buffer_line_of(buffer, mark, false), buffer_column_of(buffer, mark),
+			buffer_line_of(buffer, cursor, false), buffer_column_of(buffer, cursor));
 	}
 	alloc_assert(r);
 	Tcl_SetResult(interp, r, TCL_VOLATILE);

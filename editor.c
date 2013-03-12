@@ -97,7 +97,7 @@ static void editor_replace_selection(editor_t *editor, const char *new_text) {
 	}
 
 	editor_include_cursor(editor, ICM_TOP, ICM_BOT);
-	editor->lineno = buffer_line_of(editor->buffer, editor->buffer->cursor);
+	editor->lineno = buffer_line_of(editor->buffer, editor->buffer->cursor, true);
 	editor->colno = buffer_column_of(editor->buffer, editor->buffer->cursor);
 }
 
@@ -213,7 +213,7 @@ void editor_complete_move(editor_t *editor, gboolean should_move_origin) {
 	if (should_move_origin) {
 		editor_include_cursor(editor, ICM_MID, ICM_MID);
 	}
-	editor->lineno = buffer_line_of(editor->buffer, editor->buffer->cursor);
+	editor->lineno = buffer_line_of(editor->buffer, editor->buffer->cursor, true);
 	editor->colno = buffer_column_of(editor->buffer, editor->buffer->cursor);
 }
 
@@ -251,7 +251,7 @@ void editor_switch_buffer(editor_t *editor, buffer_t *buffer) {
 		buffer_typeset_maybe(editor->buffer, allocation.width, false);
 	}
 
-	editor->lineno = buffer_line_of(buffer, buffer->cursor);
+	editor->lineno = buffer_line_of(buffer, buffer->cursor, true);
 	editor->colno = buffer_column_of(buffer, buffer->cursor);
 	editor->center_on_cursor_after_next_expose = TRUE;
 	gtk_widget_queue_draw(GTK_WIDGET(editor));
@@ -820,7 +820,7 @@ static gboolean key_release_callback(GtkWidget *widget, GdkEventKey *event, edit
 
 static void move_cursor_to_mouse(editor_t *editor, double x, double y) {
 	absolute_position(editor, &x, &y);
-	editor->buffer->cursor = buffer_point_from_position(editor->buffer, 0, x, y, false);
+	editor->buffer->cursor = buffer_point_from_position(editor->buffer, editor->first_exposed, x, y, false);
 	buffer_extend_selection_by_select_type(editor->buffer);
 	//buffer_move_cursor_to_position(editor->buffer, x, y);
 }
@@ -1416,7 +1416,11 @@ static void draw_posbox(cairo_t *cr, editor_t *editor, GtkAllocation *allocation
 	cairo_text_extents_t posbox_ext;
 	double x, y;
 
-	asprintf(&posbox_text, "=%d %d:%d %0.0f%%", editor->buffer->cursor, editor->lineno, editor->colno, (100.0 * editor->buffer->cursor / BSIZE(editor->buffer)));
+	if (editor->lineno < 0) {
+		asprintf(&posbox_text, "=%d ???:%d %0.0f%%", editor->buffer->cursor, editor->colno, (100.0 * editor->buffer->cursor / BSIZE(editor->buffer)));
+	} else {
+		asprintf(&posbox_text, "=%d %d:%d %0.0f%%", editor->buffer->cursor, editor->lineno, editor->colno, (100.0 * editor->buffer->cursor / BSIZE(editor->buffer)));
+	}
 
 	cairo_set_scaled_font(cr, fontset_get_cairofont_by_name(config_strval(&(editor->buffer->config), CFG_POSBOX_FONT), 0));
 
@@ -1675,7 +1679,7 @@ editor_t *new_editor(buffer_t *buffer, bool single_line) {
 	r->mouse_sequence_str[0] = '\0';
 
 	if (buffer != NULL) {
-		r->lineno = buffer_line_of(buffer, buffer->cursor);
+		r->lineno = buffer_line_of(buffer, buffer->cursor, true);
 		r->colno = buffer_column_of(buffer, buffer->cursor);
 	} else {
 		r->lineno = 1; r->colno = 1;

@@ -1244,12 +1244,16 @@ void buffer_set_onchange(buffer_t *buffer, void (*fn)(buffer_t *buffer)) {
 	buffer->onchange = fn;
 }
 
-int buffer_line_of(buffer_t *buffer, int p) {
+int buffer_line_of(buffer_t *buffer, int p, bool fastbail) {
 	int line = 1;
 	for (int c = 0; c < p; ++c) {
 		my_glyph_info_t *g = bat(buffer, c);
 		if (g == NULL) return line;
 		if (g->code == '\n') ++line;
+		if (fastbail && (line > 2000)) {
+			printf("fastbail\n");
+			return -1;
+		}
 	}
 	return line;
 }
