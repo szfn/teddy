@@ -998,7 +998,7 @@ static gboolean button_release_callback(GtkWidget *widget, GdkEventButton *event
 		}
 	}
 
-	if (strlen(editor->mouse_sequence_str) > 3) {
+	if ((editor->mouse_sequence != 0) && (strlen(editor->mouse_sequence_str) > 3)) {
 		const char *command = g_hash_table_lookup(keybindings, editor->mouse_sequence_str);
 
 		if (command != NULL) {
@@ -1008,6 +1008,7 @@ static gboolean button_release_callback(GtkWidget *widget, GdkEventButton *event
 		}
 
 		editor->mouse_sequence = 0;
+		editor->mouse_sequence_str[0] = '0';
 		return TRUE;
 	}
 
