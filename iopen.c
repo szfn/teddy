@@ -443,7 +443,7 @@ static gpointer iopen_buffer_thread(gpointer data) {
 		buffer_t *buf = NULL;
 
 		for (; bufidx < buffers_allocated; ++bufidx) {
-			if (buffers[bufidx] != NULL) {
+			if ((buffers[bufidx] != NULL) && (buffers[bufidx]->path[0] != '+') && (buffers[bufidx]->path[strlen(buffers[bufidx]->path)-1] != '/')) {
 				buf = buffers[bufidx];
 				break;
 			}
