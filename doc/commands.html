@@ -27,7 +27,7 @@
 
 		<p>By pressing &lt;Esc&gt; you will enter teddy's command line, text typed here will be executed as when &lt;Enter&gt; is pressed.
 
-		<p>The scripting language of teddy is tcl. Some commands have been disabled, some commands have a different meaning and quite a few commands have been added for buffer manipulation. In addition unknown commands are interpreted "shell like" as external commands, for those commands shell-style auto-globbing is performed and the resulting command line is executed in background.
+		<p>The scripting language of teddy is tcl. Some commands have been disabled, some commands have a different meaning and quite a few commands have been added for buffer manipulation.
 
 		<h2>Editing</h2>
 
@@ -146,31 +146,18 @@ column-specifier ::= <i>column-number</i> | +<i>relative-movement</i> | -<i>rela
 
 		<h3>Executing external commands</h3>
 		<div class="ind">
-			<p>Simply specify an external command as you would at any other shell command name: input and output of external commands can be redirected in a similar way than in bash and commands can be piped one into another using <tt>|</tt>.
-			<p>External commands are executed automatically in background.
-
-			<h4>Examples:</h4>
-
-			<ul>
-			<li><tt>make</tt> executes make in background.
-			<li><tt>perl ascript.pl > /dev/null</tt> executes a perl script in background, redirects output to <tt>/dev/null</tt>
-			<li><tt>sort somefile | uniq > output.txt</tt> sorts a file, removes duplicate lines and directs the output to <tt>output.txt</tt>
-			<li><tt>python anotherscript.py [c]</tt> Executes a python script passing the selected text as the first argument
-			</ul>
+			<p><b>Syntax:</b> <tt>shell <b>[</b> <i>buffer_id</i> <b>]</b> <i>command...</i></tt>
+			<p>Runs the specified command with the default shell. The command is executed in background, its output will be displayed in a background buffer, either automatically picked or manually specified through <i>buffer_id</i>.
+			<p>As a special case, for things typed in the command line at the top, if the first word isn't a command known to TCL it will be run through the system shell.
 		</div>
 
-		<h3>shellsync</h3>
 		<div class="ind">
-			<p><b>Syntax: </b> <tt>shellsync <i>input-text</i> <i>external-command-syntax</i></tt>
-			<p>Prepending an external command with <tt>shellsync</tt> executes the command synchronously, and returns the output text of the command.
-
-			<h4>Example:</h4>
-			<p><tt>c [shellsync {} date]</tt> inserts the current time in the buffer.
-		</div>
-
-		<h3>Pipes</h3>
-		<div class="ind">
-			<p>Prepending an external command with the pipe character is equivalent to: <tt>c [shellsync <i>external-command</i> [c]]</tt>.
+			<p><b>Syntax:</b> <tt>shellsync <i>text</i> <i>command...</i></tt>
+			<p>Runs the specific command through the shell piping <i>text</i> to it. Returns whatever the command printed to stdout.
+			<p>A common usage of shellsync is:
+			<p><tt>c [shellsync [c] indent]</tt>
+			<p>This will replace the selected text in the current buffer with the output of the command "indent" run over it. Since this usage is so common it can be abbreviated with:
+			<p><tt>| indent</tt>.
 		</div>
 
 		<h2>Buffer and editing frames</h2>

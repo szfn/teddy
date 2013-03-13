@@ -76,11 +76,9 @@ static const guint8 cog_icon[] __attribute__ ((__aligned__ (4))) =
   "\0\0\0\3\3\3\20\2\2\2\277\2\2\2\377\2\2\2\200\0\0\0\0\0\0\0\0\2\2\2\200"
   "\2\2\2\377\2\2\2\277\3\3\3\20\0\0\0\0\0\0\0\0\0\0\0\0"};
 
-
 static void execute_command(editor_t *editor) {
 	char *command = buffer_all_lines_to_text(editor->buffer);
-
-	interp_eval(top_context_editor(), NULL, command, false, true);
+	interp_shell_or_eval(top_context_editor(), NULL, command, false, true);
 
 	if (top_context_editor() != NULL) {
 		set_label_text(top_context_editor());

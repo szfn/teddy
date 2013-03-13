@@ -908,7 +908,7 @@ static void eval_menu_item_callback(GtkMenuItem *menuitem, editor_t *editor) {
 
 	change_directory_back_after_eval = true;
 
-	interp_eval(editor, NULL, selection, true, true);
+	interp_shell_or_eval(editor, NULL, selection, true, true);
 
 	if (change_directory_back_after_eval) chdir(pdir);
 	free(pdir);

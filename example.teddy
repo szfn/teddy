@@ -157,9 +157,9 @@ proc buffer_save_hook {} {
 # We override the grep command so that it always shows line numbers of matches, so that we can click on a match and go directly to the matched line on an editor
 proc grep {args} {
 	if {[llength $args] == 1} {
-		unknown grep -nR --exclude=tags {*}$args {*}[glob *.c *.cc *.cpp *.h *.py *.txt *.pl *.tcl *.java *.js *.html]
+		shell grep -nR --exclude=tags {*}$args {*}[glob *.c *.cc *.cpp *.h *.py *.txt *.pl *.tcl *.java *.js *.html]
 	} else {
-		unknown grep -n --exclude=tags {*}$args
+		shell grep -n --exclude=tags {*}$args
 	}
 }
 

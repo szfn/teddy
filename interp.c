@@ -378,27 +378,13 @@ static void shexec(const char *argument) {
 	exit(EXIT_FAILURE);
 }
 
-static int teddy_shell_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
-	if (argc < 2) {
-		Tcl_AddErrorInfo(interp, "Not enough arguments passed to 'shell'");
-		return TCL_ERROR;
-	}
+int shell_command_ex(const char *buffer_name, const char *argument) {
+	buffer_t *buffer = NULL;
 
-	int argstart = 1;
-
-	buffer_t *buffer = buffer_id_to_buffer(argv[argstart]);
-	if (buffer != NULL) {
-		argstart++;
-	} else {
+	if (buffer_name != NULL)
+		buffer = buffer_id_to_buffer(buffer_name);
+	if (buffer == NULL)
 		buffer = buffers_get_buffer_for_process(false);
-	}
-
-	if (argstart >= argc) {
-		Tcl_AddErrorInfo(interp, "Not enough arguments passed to 'shell'");
-		return TCL_ERROR;
-	}
-
-	char *argument = concatarg(argstart, argc, argv);
 
 	struct termios term;
 	bzero(&term, sizeof(struct termios));
@@ -421,13 +407,45 @@ static int teddy_shell_command(ClientData client_data, Tcl_Interp *interp, int a
 			return TCL_ERROR;
 		}
 
-		free(argument);
 		return TCL_OK;
 	} else {
 		/* child code */
 		shexec(argument);
 		return TCL_ERROR; // <- this is never executed shexec never returns
 	}
+}
+
+static int teddy_shell_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
+	if (argc < 2) {
+		Tcl_AddErrorInfo(interp, "Not enough arguments passed to 'shell'");
+		return TCL_ERROR;
+	}
+
+	int argstart = 1;
+	const char *buffer_name = NULL;
+
+	if (argv[argstart][0] == '@') {
+		buffer_name = argv[argstart];
+		++argstart;
+	}
+
+	if (argstart >= argc) {
+		Tcl_AddErrorInfo(interp, "Not enough arguments passed to 'shell'");
+		return TCL_ERROR;
+	}
+
+	char *argument = concatarg(argstart, argc, argv);
+
+	int r = shell_command_ex(buffer_name, argument);
+	free(argument);
+	return r;
+}
+
+static int teddy_shelloreval_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
+	char *argument = concatarg(1, argc, argv);
+	int r = interp_shell_or_eval(interp_context_editor(), interp_context_buffer(), argument, false, false);
+	free(argument);
+	return r;
 }
 
 static int closedup(int apipe[2], int jc, int dupfrom, int dupto) {
@@ -1135,6 +1153,7 @@ void interp_init(void) {
 	Tcl_CreateCommand(interp, "teddy::cmdline-focus", &teddy_cmdlinefocus_command, (ClientData)NULL, NULL);
 	Tcl_CreateCommand(interp, "shell", &teddy_shell_command, (ClientData)NULL, NULL);
 	Tcl_CreateCommand(interp, "shellsync", &teddy_shellsync_command, (ClientData)NULL, NULL);
+	Tcl_CreateCommand(interp, "shelloreval", &teddy_shelloreval_command, (ClientData)NULL, NULL);
 
 	int code = Tcl_Eval(interp, BUILTIN_TCL_CODE);
 	if (code != TCL_OK) {
@@ -1197,6 +1216,20 @@ static int interp_eval_ex(const char *command, bool show_ret, bool reset_result)
 	}
 
 	return code;
+}
+
+int interp_shell_or_eval(editor_t *editor, buffer_t *buffer, const char *command, bool show_ret, bool reset_result) {
+	char *spc = strchr(command, ' ');
+
+	if (spc != NULL) *spc = '\0';
+	bool isint = is_internal_command(command);
+	if (spc != NULL) *spc = ' ';
+
+	if (isint) {
+		return interp_eval(editor, buffer, command, show_ret, reset_result);
+	} else {
+		return shell_command_ex(NULL, command);
+	}
 }
 
 int interp_eval(editor_t *editor, buffer_t *buffer, const char *command, bool show_ret, bool reset_result) {
@@ -1352,4 +1385,9 @@ bool interp_toplevel_frame() {
 	int n = atoi(interp_eval_command_ex(2, info_frame));
 
 	return n <= 2;
+}
+
+bool is_internal_command(const char *c) {
+	const char *info_commands[] = { "info", "commands", c };
+	return interp_eval_command_ex(3, info_commands)[0] != '\0';
 }

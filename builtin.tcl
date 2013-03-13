@@ -535,19 +535,8 @@ proc lexydef {name args} {
 	}
 }
 
-proc unknown {args} {
-   if {[string index [lindex $args 0] 0] eq "|"} {
-      lset args 0 [string range [lindex $args 0] 1 end]
-      c [shellsync [c] {*}$args]
-   } else {
-      # normal unknown code
-
-      if {[teddy_intl::inpath [lindex $args 0]]} {
-          shell {*}$args
-	  } else {
-	      error "Unknown command [lindex $args 0]"
-	  }
-   }
+proc | {args} {
+	c [shellsync [c] {*}$args]
 }
 
 #### INTERNAL COMMANDS #####################################################
@@ -635,7 +624,7 @@ namespace eval teddy_intl {
 		}
 
 		m +:3 +:$
-		eval [c]
+		shelloreval [c]
 	}
 
 	namespace export man_link_open
