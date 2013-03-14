@@ -5,6 +5,7 @@
 #include <termios.h>
 #include <sys/ioctl.h>
 #include <sys/stat.h>
+#include <sys/param.h>
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -67,6 +68,11 @@ static void job_destroy(job_t *job) {
 		}
 	}
 
+	if ((job->directory != NULL) && (job->buffer != NULL)) {
+		if (job->buffer->wd != NULL) free(job->buffer->wd);
+		job->buffer->wd = strdup(job->directory);
+	}
+
 	free(job->command);
 	free(job->directory);
 	job->command = NULL;
@@ -116,6 +122,48 @@ static void job_append(job_t *job, const char *msg, int len, int on_new_line) {
 	}
 }
 
+static gboolean job_update_directory(job_t  *job) {
+	if (job->buffer == NULL) return FALSE;
+	pid_t pid = tcgetpgrp(job->masterfd);
+	if (pid < 0) {
+		pid = job->child_pid;
+	}
+	if (pid < 0) return FALSE;
+
+	char *cwdf;
+	asprintf(&cwdf, "/proc/%d/cwd", pid);
+	alloc_assert(cwdf);
+
+	char dest[MAXPATHLEN];
+	alloc_assert(dest);
+
+	int r = readlink(cwdf, dest, MAXPATHLEN-1);
+	if (r < 0) {
+		free(cwdf);
+		return FALSE;
+	}
+
+	dest[r] = '\0';
+
+	free(cwdf);
+
+	if (job->directory != NULL) free(job->directory);
+	job->directory = strdup(dest);
+
+	if (job->buffer->wd != NULL) free(job->buffer->wd);
+	job->buffer->wd = strdup(job->directory);
+	alloc_assert(job->buffer->wd);
+
+	tframe_t *frame;
+	find_editor_for_buffer(job->buffer, NULL, &frame, NULL);
+	if (frame != NULL) {
+		tframe_set_wd(frame, job->directory);
+		gtk_widget_queue_draw(GTK_WIDGET(frame));
+	}
+
+	return FALSE;
+}
+
 void job_send_input(job_t *job, const char *actual_input) {
 	if (job->buffer == NULL) return;
 	char *input = cut_prompt(job);
@@ -143,6 +191,7 @@ void job_send_input(job_t *job, const char *actual_input) {
 	if (input != NULL) free(input);
 	job->ratelimit_silenced = false;
 
+	g_timeout_add(SHOWANYWAY_TIMO*2, (GSourceFunc)job_update_directory, job);
 }
 
 static void ansi_append_escape(job_t *job) {

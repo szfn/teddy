@@ -106,7 +106,7 @@ bindkey Ctrl-Backspace {m +0:-1w +0:+0; c \"\"}\n\
 \n\
 # Ctrl-home/Ctrl-end moves to the first/last line\n\
 bindkey Ctrl-Home {m 1:0}\n\
-bindkey Ctrl-End {m $:0}\n\
+bindkey Ctrl-End {m $:$}\n\
 \n\
 # Ctrl-l starts interactive file search\n\
 bindkey Ctrl-l iopen\n\
