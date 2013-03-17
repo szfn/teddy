@@ -596,7 +596,7 @@ namespace eval teddy_intl {\n\
 		set b [buffer open $link_text]\n\
 \n\
 		if {$b eq \"\"} {\n\
-			$teddy::open_cmd $link_text\n\
+			shell $teddy::open_cmd {$link_text}\n\
 		} else {\n\
 			set line [lindex $r 2]\n\
 			set col [lindex $r 3]\n\
