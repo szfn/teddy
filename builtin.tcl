@@ -301,7 +301,7 @@ proc antique_theme {} {
 proc acme_theme {} {
 	setcfg -global editor_bg_color [rgbcolor 255 255 234]
 	setcfg -global border_color [rgbcolor black]
-	setcfg -global editor_bg_cursorline [rgbcolor 232 232 212]
+	setcfg -global editor_bg_cursorline [rgbcolor 255 255 234]
 	setcfg -global scrollbar_bg_color [rgbcolor 153 153 76]
 
 	setcfg -global editor_fg_color [rgbcolor black]
@@ -593,7 +593,7 @@ namespace eval teddy_intl {
 		set b [buffer open $link_text]
 
 		if {$b eq ""} {
-			shell $teddy::open_cmd {$link_text}
+			shell $teddy::open_cmd $link_text
 		} else {
 			set line [lindex $r 2]
 			set col [lindex $r 3]
