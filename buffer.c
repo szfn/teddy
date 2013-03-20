@@ -472,7 +472,7 @@ static void buffer_typeset_from(buffer_t *buffer, int point) {
 			x = buffer->left_margin;
 		}
 	} else {
-		y = buffer->single_line ? buffer->ascent : buffer->line_height + (buffer->ex_height / 2);
+		y = buffer->single_line ? buffer->ascent : buffer->line_height;
 		x = buffer->left_margin;
 	}
 
@@ -1301,3 +1301,12 @@ void buffer_jump_to(buffer_t *buffer, int dir) {
 		}
 	}
 }
+
+double round_to_line(buffer_t *buffer, double v) {
+	if (buffer != NULL) {
+		int lh = buffer->line_height;
+		v = floor(v / lh) * lh;
+	}
+	return v;
+}
+

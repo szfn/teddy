@@ -189,6 +189,7 @@ int buffer_column_of(buffer_t *buffer, int p);
 /* Jump ring management functions */
 void buffer_record_jump(buffer_t *buffer);
 void buffer_jump_to(buffer_t *buffer, int dir);
+double round_to_line(buffer_t *buffer, double v);
 
 #define BSIZE(x) ((x)->size - (x)->gapsz)
 

@@ -1,5 +1,7 @@
 #include "oldscroll.h"
 
+#include <math.h>
+
 #include "global.h"
 
 typedef struct _oldscroll_t {
@@ -8,6 +10,7 @@ typedef struct _oldscroll_t {
 	bool drag;
 	int autoscroll;
 	double autoscroll_y;
+	editor_t *editor;
 } oldscroll_t;
 
 typedef struct _oldscroll_class {
@@ -91,7 +94,7 @@ static void scroll_by_page(oldscroll_t *os, double y, double direction) {
 	double page = gtk_adjustment_get_page_size(os->adj),
 		value = gtk_adjustment_get_value(os->adj);
 
-	value += direction * page * (y / allocation.height);
+	value += direction * round_to_line(os->editor->buffer, page * (y / allocation.height));
 
 	gtk_adjustment_set_value(GTK_ADJUSTMENT(os->adj), value);
 }
@@ -105,7 +108,7 @@ static void scroll_absolute(oldscroll_t *os, double y) {
 		value = gtk_adjustment_get_value(os->adj),
 		page = gtk_adjustment_get_page_size(os->adj);
 
-	value = (upper - page - lower) * (y / allocation.height);
+	value = round_to_line(os->editor->buffer, (upper - page - lower) * (y / allocation.height));
 
 	gtk_adjustment_set_value(GTK_ADJUSTMENT(os->adj), value);
 }
@@ -164,13 +167,14 @@ static gboolean button_release_callback(GtkWidget *widget, GdkEventButton *event
 	return TRUE;
 }
 
-GtkWidget *oldscroll_new(GtkAdjustment *adjustment) {
+GtkWidget *oldscroll_new(GtkAdjustment *adjustment, editor_t *editor) {
 	GtkWidget *oldscroll_widget = g_object_new(GTK_TYPE_OLDSCROLL, NULL);
 	oldscroll_t *r = GTK_OLDSCROLL(oldscroll_widget);
 
 	r->adj = adjustment;
 	r->drag = false;
 	r->autoscroll = -1;
+	r->editor = editor;
 	g_signal_connect(G_OBJECT(r), "expose_event", G_CALLBACK(expose_event_callback), r);
 
 	gtk_widget_set_size_request(oldscroll_widget, RESHANDLE_SIZE-1, -1);

@@ -190,9 +190,9 @@ void editor_include_cursor(editor_t *editor, enum include_cursor_mode above, enu
 		gtk_adjustment_set_value(GTK_ADJUSTMENT(editor->adjustment), 0);
 	} else {
 		if ((ty - editor->buffer->line_height) < 0) {
-			gtk_adjustment_set_value(GTK_ADJUSTMENT(editor->adjustment), y - pos_off[above]);
+			gtk_adjustment_set_value(GTK_ADJUSTMENT(editor->adjustment), round_to_line(editor->buffer, y - pos_off[above]));
 		} else if (ty > allocation.height)  {
-			gtk_adjustment_set_value(GTK_ADJUSTMENT(editor->adjustment), y - pos_off[below]);
+			gtk_adjustment_set_value(GTK_ADJUSTMENT(editor->adjustment), round_to_line(editor->buffer, y - pos_off[below]));
 		}
 	}
 }
@@ -1721,7 +1721,7 @@ editor_t *new_editor(buffer_t *buffer, bool single_line) {
 
 	if (config_intval(&global_config, CFG_OLDSCROLLBAR) != 0) {
 		//r->drarscroll = gtk_vscrollbar_new(GTK_ADJUSTMENT(r->adjustment));
-		r->drarscroll = oldscroll_new(GTK_ADJUSTMENT(r->adjustment));
+		r->drarscroll = oldscroll_new(GTK_ADJUSTMENT(r->adjustment), r);
 		gtk_table_attach(GTK_TABLE(r), r->drarscroll, 0, 1, 0, 1, 0, GTK_EXPAND|GTK_FILL, 0, 0);
 		gtk_table_attach(GTK_TABLE(r), r->drar, 1, 2, 0, 1, GTK_EXPAND | GTK_FILL, GTK_EXPAND|GTK_FILL, 0, 0);
 	} else {
