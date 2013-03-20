@@ -462,7 +462,15 @@ int null_strcmp(const char *a, const char *b) {
 void gtk_widget_like_editor(config_t *config, GtkWidget *w) {
 	GdkColor fg, bg, bg_selected;
 	set_gdk_color_cfg(config, CFG_EDITOR_BG_COLOR, &bg);
-	set_gdk_color_cfg(config, CFG_EDITOR_BG_CURSORLINE, &bg_selected);
+
+	int bgc = config_intval(config, CFG_EDITOR_BG_COLOR);
+	int clc = config_intval(config, CFG_EDITOR_BG_CURSORLINE);
+	int selected_name = CFG_EDITOR_BG_CURSORLINE;
+	if (bgc == clc) {
+		selected_name = CFG_EDITOR_SEL_COLOR;
+	}
+
+	set_gdk_color_cfg(config, selected_name, &bg_selected);
 	set_gdk_color_cfg(config, CFG_EDITOR_FG_COLOR, &fg);
 
 	gtk_widget_modify_base(w, GTK_STATE_NORMAL, &bg);
