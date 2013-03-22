@@ -122,6 +122,45 @@ bindkey Ctrl-Delete kill
 bindkey Ctrl-b { buffer jumpring prev }
 bindkey Ctrl-B { buffer jumpring next }
 
+### OPEN COMMANDS ###
+
+teddy::plumb addrule {
+	type is link
+	bufname match ^\+man
+} do {
+	man $line $linkfile
+}
+
+teddy::plumb addrule {
+	text match ^@
+} do {
+	if {[teddy::colof [lindex [m] 1]] > 3} {
+		error "Wrong position"
+	}
+
+	m +:3 +:$
+	shelloreval [c]
+}
+
+teddy::plumb addrule { } do {
+	set b [buffer open [teddy_intl::file_directory] $linkfile]
+	if {$line ne ""} {
+		if {$col eq ""} { set col 1 }
+		if {[string index $line 0] eq "/"} {
+			# it's a regex
+			set line [string range $line 1 end-1]
+			buffer eval $b { m [s -k $line] }
+		} else {
+			# it's a line number otherwise
+			buffer eval $b { m nil $line:$col }
+		}
+	}
+	buffer focus $b
+}
+
+teddy::plumb addrule { } do { shell $teddy::open_cmd $linkfile }
+
+
 ### BUFFER HOOKS ###
 
 # This procedure gets called every time a new buffer is created, it allows you to do some customization of how buffers are displayed
@@ -165,3 +204,4 @@ proc grep {args} {
 
 # Selects recently typed text
 bindkey Pause {m [undo region after]}
+

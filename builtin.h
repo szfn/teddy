@@ -573,73 +573,6 @@ namespace eval teddy_intl {\n\
 		}\n\
 	}\n\
 \n\
-	namespace export link_open\n\
-	proc link_open {islink text} {\n\
-		if {$islink} {\n\
-			set r [lexy-token . $text]\n\
-		} else {\n\
-			set r [lexy-token filesearch/0 $text]\n\
-		}\n\
-\n\
-		set link_text [lindex $r 1]\n\
-		if {[lindex $r 0] eq \"nothing\"} {\n\
-			set link_text $text\n\
-		}\n\
-\n\
-		# if it contains a colon assume it's a URL already and don't mess with it\n\
-		if {![regexp \":\" $link_text]} {\n\
-			if {[string index $link_text 0] ne \"/\"} {\n\
-				set link_text \"[teddy_intl::file_directory]/$link_text\"\n\
-			}\n\
-		}\n\
-\n\
-		set b [buffer open $link_text]\n\
-\n\
-		if {$b eq \"\"} {\n\
-			shell $teddy::open_cmd $link_text\n\
-		} else {\n\
-			set line [lindex $r 2]\n\
-			set col [lindex $r 3]\n\
-\n\
-			if {$line ne \"\"} {\n\
-				if {$col eq \"\"} { set col 1 }\n\
-				if {[string index $line 0] eq \"/\"} {\n\
-					# it's a regex\n\
-					set line [string range $line 1 end-1]\n\
-					buffer eval $b { m [s $line] }\n\
-				} else {\n\
-					# it's a line number otherwise\n\
-					buffer eval $b { m nil $line:$col }\n\
-				}\n\
-			}\n\
-			buffer focus $b\n\
-		}\n\
-	}\n\
-\n\
-	namespace export guide_open\n\
-	proc guide_open {islink text} {\n\
-		if {$text ne \"@\"} {\n\
-			return [link_open $islink $text]\n\
-		}\n\
-\n\
-		if {[teddy::colof [lindex [m] 1]] > 3} {\n\
-			return [link_open $islink $text]\n\
-		}\n\
-\n\
-		m +:3 +:$\n\
-		shelloreval [c]\n\
-	}\n\
-\n\
-	namespace export man_link_open\n\
-	proc man_link_open {islink text} {\n\
-		if {!$islink} { return }\n\
-\n\
-		set r [lexy-token . $text]\n\
-		if {[lindex $r 2] eq \"\"} { return }\n\
-\n\
-		man [lindex $r 2] [lindex $r 1]\n\
-	}\n\
-\n\
 	namespace export tags_search_menu_command\n\
 	proc tags_search_menu_command {text} {\n\
 		set tagout [teddy::tags $text]\n\
@@ -897,22 +830,22 @@ lexydef filesearch 0 {\n\
 \n\
 lexyassoc filesearch/0 {^\\+bg}\n\
 lexyassoc filesearch/0 {/$}\n\
-lexyassoc filesearch/0 {^\\+guide} teddy_intl::guide_open\n\
-lexyassoc filesearch/0 {/guide$} teddy_intl::guide_open\n\
+lexyassoc filesearch/0 {^\\+guide}\n\
+lexyassoc filesearch/0 {/guide$}\n\
 \n\
 lexydef mansearch 0 {\n\
 		match {\\<(\\S+)\\((\\d+)\\)} link,1,2\n\
 		any \".\" nothing\n\
 	}\n\
 \n\
-lexyassoc mansearch/0 {^\\+man} teddy_intl::man_link_open\n\
+lexyassoc mansearch/0 {^\\+man}\n\
 \n\
 lexydef tagsearch 0 {\n\
 		matchspace {(\\S+)\\t/(.+)/} link,1,2\n\
 		any \".\" nothing\n\
 	}\n\
 \n\
-lexyassoc tagsearch/0 {^\\+tags} teddy_intl::tags_link_open\n\
+lexyassoc tagsearch/0 {^\\+tags}\n\
 \n\
 lexydef js 0 {\n\
 		space \"\" nothing\n\

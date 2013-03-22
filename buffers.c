@@ -517,11 +517,17 @@ int teddy_buffer_command(ClientData client_data, Tcl_Interp *interp, int argc, c
 		SINGLE_ARGUMENT_BUFFER_SUBCOMMAND("buffer save");
 		if (editor != NULL) editor_save_action(editor); else save_to_text_file(buffer);
 	} else if (strcmp(argv[1], "open") == 0) {
-		ARGNUM((argc != 3), "buffer open");
+		ARGNUM(((argc != 3) && (argc != 4)), "buffer open");
 		//HASBUF("buffer open");
 
 		enum go_file_failure_reason gffr;
-		buffer_t *b = go_file(argv[2], false, false, &gffr);
+		buffer_t *b;
+		if (argc == 4) {
+			b = go_file(argv[2], argv[3], false, false, &gffr);
+		} else {
+			b = go_file(top_working_directory(), argv[2], false, false, &gffr);
+		}
+
 		if (b != NULL) {
 			tframe_t *frame;
 			find_editor_for_buffer(b, NULL, &frame, NULL);
@@ -535,7 +541,8 @@ int teddy_buffer_command(ClientData client_data, Tcl_Interp *interp, int argc, c
 			buffer_to_buffer_id(b, bufferid);
 			Tcl_SetResult(interp, bufferid, TCL_VOLATILE);
 		} else {
-			Tcl_SetResult(interp, "", TCL_VOLATILE);
+			Tcl_AddErrorInfo(interp, "Could not find file");
+			return TCL_ERROR;
 		}
 	} else if (strcmp(argv[1], "focus") == 0) {
 		SINGLE_ARGUMENT_BUFFER_SUBCOMMAND("buffer focus");
@@ -549,7 +556,7 @@ int teddy_buffer_command(ClientData client_data, Tcl_Interp *interp, int argc, c
 			// create new buffer, copy text over
 		} else {
 			enum go_file_failure_reason gffr;
-			buffer_t *b = go_file(interp_context_buffer()->path, false, true, &gffr);
+			buffer_t *b = go_file(top_working_directory(), interp_context_buffer()->path, false, true, &gffr);
 			go_to_buffer(interp_context_editor(), b, false);
 		}
 	} else if (strcmp(argv[1], "current") == 0) {
@@ -705,7 +712,7 @@ int teddy_buffer_command(ClientData client_data, Tcl_Interp *interp, int argc, c
 			if (argv[i+1][0] == '+') {
 				buffer = buffers_create_with_name(strdup(argv[i+1]));
 			} else {
-				buffer = go_file(argv[i+1], false, false, &gffr);
+				buffer = go_file(top_working_directory(), argv[i+1], false, false, &gffr);
 			}
 
 			if (buffer != NULL) go_to_buffer(editor, buffer, true);
@@ -805,7 +812,7 @@ void buffers_refresh(buffer_t *buffer) {
 	if (r == 0) return;
 
 	enum go_file_failure_reason gffr;
-	buffer_t *new_buffer = go_file(path, false, true, &gffr);
+	buffer_t *new_buffer = go_file(top_working_directory(), path, false, true, &gffr);
 	if (new_buffer != NULL) {
 		if (cursor < BSIZE(new_buffer)) new_buffer->cursor = cursor;
 		editor_switch_buffer(editor, new_buffer);
@@ -819,8 +826,8 @@ void buffers_register_tags(const char *tags_file) {
 	tags_wd = inotify_add_watch(inotify_fd, tags_file, IN_CLOSE_WRITE);
 }
 
-buffer_t *go_file(const char *filename, bool create, bool skip_search, enum go_file_failure_reason *gffr) {
-	char *urp = unrealpath(filename, false);
+buffer_t *go_file(const char *basedir, const char *filename, bool create, bool skip_search, enum go_file_failure_reason *gffr) {
+	char *urp = unrealpath(basedir, filename, false);
 
 	*gffr = GFFR_OTHER;
 

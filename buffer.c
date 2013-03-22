@@ -1294,6 +1294,7 @@ void buffer_jump_to(buffer_t *buffer, int dir) {
 		if (i < 0) i = JUMPRING_LEN-1;
 		if (buffer->jumpring[i] >= 0) {
 			buffer->curjump = i;
+			buffer->mark = -1;
 			buffer->cursor = buffer->jumpring[i];
 			if (buffer->cursor < 0) buffer->cursor = 0;
 			if (buffer->cursor > BSIZE(buffer)) buffer->cursor = BSIZE(buffer);

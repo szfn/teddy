@@ -99,7 +99,6 @@ struct lexy_row {
 struct lexy_association {
 	char *extension;
 	int start_status_index;
-	const char *link_fn;
 };
 
 struct lexy_status_pointer {
@@ -119,7 +118,6 @@ void lexy_init(void) {
 
 	for (int i = 0; i < LEXY_ASSOCIATION_NUMBER; ++i) {
 		lexy_associations[i].extension = NULL;
-		lexy_associations[i].link_fn = LEXY_DEFAULT_LINK_OPEN_FN;
 	}
 
 	for (int i = 0; i < 0xff; ++i) {
@@ -130,7 +128,7 @@ void lexy_init(void) {
 	pthread_attr_setdetachstate(&lexy_thread_attrs, PTHREAD_CREATE_DETACHED);
 }
 
-static int find_status(const char *name) {
+int lexy_find_status(const char *name) {
 	for (int i = 0; i < LEXY_STATUS_NUMBER; ++i) {
 		if (lexy_status_pointers[i].name == NULL) continue;
 		if (strcmp(lexy_status_pointers[i].name, name) == 0) return lexy_status_pointers[i].start_status_index;
@@ -158,15 +156,15 @@ static int create_new_status(const char *name) {
 }
 
 int lexy_assoc_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
-	if (argc < 3) {
-		Tcl_AddErrorInfo(interp, "Wrong number of arguments to 'lexyassoc': usage 'lexyassoc <lexy-name> <extension> [<link function>]");
+	if (argc != 3) {
+		Tcl_AddErrorInfo(interp, "Wrong number of arguments to 'lexyassoc': usage 'lexyassoc <lexy-name> <extension>");
 		return TCL_ERROR;
 	}
 
 	const char *status_name = argv[1];
 	const char *extension = argv[2];
 
-	int start_status_index = find_status(status_name);
+	int start_status_index = lexy_find_status(status_name);
 	if (start_status_index < 0) {
 		Tcl_AddErrorInfo(interp, "Cannot find lexy status");
 		return TCL_ERROR;
@@ -176,9 +174,6 @@ int lexy_assoc_command(ClientData client_data, Tcl_Interp *interp, int argc, con
 		if (lexy_associations[i].extension == NULL) {
 			lexy_associations[i].extension = strdup(extension);
 			lexy_associations[i].start_status_index = start_status_index;
-			if (argc == 4) {
-				lexy_associations[i].link_fn = strdup(argv[3]);
-			}
 			return TCL_OK;
 		}
 	}
@@ -187,7 +182,7 @@ int lexy_assoc_command(ClientData client_data, Tcl_Interp *interp, int argc, con
 	return TCL_ERROR;
 }
 
-static const char *deparse_token_type_name(int r) {
+const char *deparse_token_type_name(int r) {
 	int x = r + CFG_LEXY_NOTHING;
 	switch(x) {
 	case CFG_LEXY_KEYWORD: return "keyword";
@@ -316,14 +311,14 @@ int lexy_append_command(ClientData client_data, Tcl_Interp *interp, int argc, co
 
 	//printf("Lexy append: %s %s %s %s\n", status_name, pattern, next_status_name, token_type_name);
 
-	int status_index = find_status(status_name);
+	int status_index = lexy_find_status(status_name);
 	if (status_index < 0) status_index = create_new_status(status_name);
 	if (status_index < 0) {
 		Tcl_AddErrorInfo(interp, "Out of status space");
 		return TCL_ERROR;
 	}
 
-	int next_status_index = find_status(next_status_name);
+	int next_status_index = lexy_find_status(next_status_name);
 	if (next_status_index < 0) next_status_index = create_new_status(next_status_name);
 	if (next_status_index < 0) {
 		Tcl_AddErrorInfo(interp, "Out of status space");
@@ -358,12 +353,11 @@ int lexy_append_command(ClientData client_data, Tcl_Interp *interp, int argc, co
 		char *fixed_pattern;
 		asprintf(&fixed_pattern, "^(?:%s)", pattern);
 		alloc_assert(fixed_pattern);
-		regex_t compiled_pattern;
 		int r = tre_regcomp(&(new_row->pattern), fixed_pattern, REG_EXTENDED);
 		if (r != REG_OK) {
 #define REGERROR_BUF_SIZE 512
 			char buf[REGERROR_BUF_SIZE];
-			tre_regerror(r, &compiled_pattern, buf, REGERROR_BUF_SIZE);
+			tre_regerror(r, &(new_row->pattern), buf, REGERROR_BUF_SIZE);
 			char *msg;
 			asprintf(&msg, "Syntax error in regular expression [%s]: %s\n", fixed_pattern, buf);
 			alloc_assert(msg);
@@ -643,16 +637,10 @@ static struct lexy_association *association_for_buffer(buffer_t *buffer) {
 	return NULL;
 }
 
-static int start_status_for_buffer(buffer_t *buffer) {
+int lexy_start_status_for_buffer(buffer_t *buffer) {
 	struct lexy_association *a = association_for_buffer(buffer);
 	if (a == NULL) return -1;
 	return a->start_status_index;
-}
-
-const char *lexy_get_link_fn(buffer_t *buffer) {
-	struct lexy_association *a = association_for_buffer(buffer);
-	if (a == NULL) return LEXY_DEFAULT_LINK_OPEN_FN;
-	return a->link_fn;
 }
 
 static gboolean refresher(editor_t *editor) {
@@ -669,7 +657,7 @@ static void refresher_add(buffer_t *buffer) {
 static void *lexy_update_starting_at_thread(void *varg) {
 	buffer_t *buffer = (buffer_t *)varg;
 
-	int start_status_index = start_status_for_buffer(buffer);
+	int start_status_index = lexy_start_status_for_buffer(buffer);
 	if (start_status_index < 0) {
 		buffer->lexy_running = 0;
 		return NULL;
@@ -709,7 +697,7 @@ static void *lexy_update_starting_at_thread(void *varg) {
 	if (dir != NULL) free(dir);
 
 	//printf("\tActual start %d (status: %d)\n", start, status);
-	//printf("Buffer <%s> status: %d start_status_for_buffer %d\n", buffer->path, status, start_status_index);
+	//printf("Buffer <%s> status: %d lexy_start_status_for_buffer %d\n", buffer->path, status, start_status_index);
 
 	int count = 0;
 
@@ -822,7 +810,7 @@ int lexy_dump_command(ClientData client_data, Tcl_Interp *interp, int argc, cons
 	return TCL_ERROR;
 }
 
-static int lexy_parse_token( int state, const char *text, char **file, char **line, char **col) {
+int lexy_parse_token(int state, const char *text, char **file, char **line, char **col) {
 	//printf("Starting match\n");
 
 	int base = state;
@@ -877,13 +865,13 @@ int lexy_token_command(ClientData client_data, Tcl_Interp *interp, int argc, con
 
 	if (strcmp(argv[1], ".") == 0) {
 		if (interp_context_buffer() != NULL) {
-			status = start_status_for_buffer(interp_context_buffer());
+			status = lexy_start_status_for_buffer(interp_context_buffer());
 		} else {
 			Tcl_AddErrorInfo(interp, "Can not execute lexy-token without specifying a start state and no open buffer");
 			return TCL_ERROR;
 		}
 	} else {
-		status = find_status(argv[1]);
+		status = lexy_find_status(argv[1]);
 	}
 
 	if (status >= 0) {

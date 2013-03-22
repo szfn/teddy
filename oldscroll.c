@@ -1,7 +1,5 @@
 #include "oldscroll.h"
 
-#include <math.h>
-
 #include "global.h"
 
 typedef struct _oldscroll_t {

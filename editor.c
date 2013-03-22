@@ -17,6 +17,7 @@
 #include "foundry.h"
 #include "top.h"
 #include "oldscroll.h"
+#include "plumb.h"
 
 static GtkTargetEntry selection_clipboard_target_entry = { "UTF8_STRING", 0, 0 };
 
@@ -920,16 +921,11 @@ static void eval_menu_item_callback(GtkMenuItem *menuitem, editor_t *editor) {
 }
 
 static void open_link(editor_t *editor, bool islink, char *text) {
-	const char *cmd = lexy_get_link_fn(editor->buffer);
-	const char *argv[] = { cmd, islink ? "1": "0", text };
-
 	char *pdir = get_current_dir_name();
 	char *dir = buffer_directory(editor->buffer);
 	if (dir != NULL) chdir(dir);
 
-	change_directory_back_after_eval = true;
-
-	interp_eval_command(editor, NULL, 3, argv);
+	plumb(editor->buffer, islink, text);
 
 	if (change_directory_back_after_eval) chdir(pdir);
 	free(pdir);

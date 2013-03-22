@@ -28,6 +28,7 @@
 #include "iopen.h"
 #include "tags.h"
 #include "docs.h"
+#include "plumb.h"
 
 Tcl_Interp *interp;
 editor_t *the_context_editor = NULL;
@@ -1132,6 +1133,7 @@ void interp_init(void) {
 	Tcl_CreateCommand(interp, "teddy::session", &teddy_session_command, (ClientData)NULL, NULL);
 	Tcl_CreateCommand(interp, "teddy::rehash", &teddy_rehash_command, (ClientData)NULL, NULL);
 	Tcl_CreateCommand(interp, "teddy::newline", &teddy_newline_command, (ClientData)NULL, NULL);
+	Tcl_CreateCommand(interp, "teddy::plumb", &teddy_plumb_command, (ClientData)NULL, NULL);
 
 	Tcl_CreateCommand(interp, "s", &teddy_research_command, (ClientData)NULL, NULL);
 	Tcl_CreateCommand(interp, "c", &teddy_change_command, (ClientData)NULL, NULL);

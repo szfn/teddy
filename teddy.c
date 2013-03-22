@@ -33,7 +33,7 @@ static void setup_initial_columns(int argc, char *argv[]) {
 	heuristic_new_frame(columnset, NULL, null_buffer());
 
 	enum go_file_failure_reason gffr;
-	buffer_t *cur_dir_buffer = go_file(".", false, false, &gffr);
+	buffer_t *cur_dir_buffer = go_file(top_working_directory(), ".", false, false, &gffr);
 
 	tframe_t *dirframe = NULL;
 	if (argc == 1) {
@@ -46,7 +46,7 @@ static void setup_initial_columns(int argc, char *argv[]) {
 
 	for (int i = 1; i < argc; ++i) {
 		enum go_file_failure_reason gffr;
-		buffer_t *buffer = go_file(argv[i], true, true, &gffr);
+		buffer_t *buffer = go_file(top_working_directory(), argv[i], true, true, &gffr);
 		if (buffer != NULL) {
 			tframe_t *f = heuristic_new_frame(columnset, NULL, buffer);
 			if (frame == NULL) frame = f;

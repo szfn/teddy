@@ -45,7 +45,7 @@ void global_init();
 
 bool find_editor_for_buffer(buffer_t *buffer, column_t **columnpp, tframe_t **framepp, editor_t **editorpp);
 
-char *unrealpath(const char *relative_path, bool empty_too);
+char *unrealpath(const char *basedir, const char *relative_path, bool empty_too);
 gboolean streq(gconstpointer a, gconstpointer b);
 
 void set_color_cfg(cairo_t *cr, int color);

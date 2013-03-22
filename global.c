@@ -62,7 +62,7 @@ void global_free() {
 	FcFini();
 }
 
-char *unrealpath(const char *relative_path, bool empty_too) {
+char *unrealpath(const char *basedir, const char *relative_path, bool empty_too) {
 	if (!empty_too) {
 		if (strlen(relative_path) == 0) {
 			char *r = strdup(relative_path);
@@ -89,7 +89,7 @@ char *unrealpath(const char *relative_path, bool empty_too) {
 		return rr;
 	} else {
 		char *r;
-		asprintf(&r, "%s/%s", top_working_directory(), relative_path);
+		asprintf(&r, "%s/%s", basedir, relative_path);
 		alloc_assert(r);
 		char *rr = realpath(r, NULL);
 		if (rr != NULL) {

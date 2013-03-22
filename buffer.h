@@ -94,7 +94,6 @@ typedef struct _buffer_t {
 	critbit0_tree cbt;
 } buffer_t;
 
-
 enum movement_type_t {
 	MT_ABS = 0, // move to absolute line/column
 	MT_REL, // relative move
@@ -103,8 +102,6 @@ enum movement_type_t {
 	MT_HOME, // toggle between first column and first non-whitespace character (buffer_move_point_glyph only)
 	MT_RELW, // word based relative move (buffer_move_point_glyph only)
 };
-
-
 
 buffer_t *buffer_create(void);
 void buffer_free(buffer_t *buffer, bool save_critbit);
