@@ -43,7 +43,7 @@ namespace eval bindent {
 	# Adds an indentation level
 	namespace export incr
 	proc incr {} {
-		m line
+		if {[lindex [m] 0] eq "nil"} { m line }
 		set indentchar [get_indentchar]
 		teddy_intl::wandercount +1
 		set sm [m]
@@ -55,7 +55,7 @@ namespace eval bindent {
 	# Removes an indentation level
 	namespace export descr
 	proc decr {} {
-		m line
+		if {[lindex [m] 0] eq "nil"} { m line }
 		set indentchar [get_indentchar]
 		teddy_intl::wandercount +1
 		set sm [m]
@@ -883,3 +883,14 @@ lexydef html 0 {
 	}
 
 lexyassoc html/0 {\.html$}
+lexyassoc js/0 {\.js$}
+
+lexydef clj 0 {
+		space "" nothing
+		region ";,\n," comment
+		region {",",\\} string
+		any "." nothing
+	}
+
+lexyassoc clj/0 {\.clj$}
+
