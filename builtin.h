@@ -4,6 +4,7 @@
 #define BUILTIN_TCL_CODE "#### UTILITIES ##################################################################\n\
 # Utility commands the user could find interesting\n\
 \n\
+# Cuts cursor line\n\
 proc kill_line {} {\n\
    # this is the same as m +:1 +1:1 except for the last line of the buffer (where it will not select anything)\n\
    m +0:1 +:$\n\
@@ -16,6 +17,7 @@ proc kill_line {} {\n\
    cb put [undo get before]\n\
 }\n\
 \n\
+# Saves mark and cursor, executes body, then restores mark and cursor (like emacs' save-excursion)\n\
 proc wander {body} {\n\
 	set saved_mark [m]\n\
 	teddy_intl::wandercount +1\n\
@@ -104,31 +106,16 @@ namespace eval bindent {\n\
 		}\n\
 	}\n\
 \n\
-	# Like c but marks the printed text\n\
-	namespace export markc\n\
-	proc markc {text} {\n\
-		m sort\n\
-		set start [lindex [m] 0]\n\
-		if {$start eq \"nil\"} {\n\
-			set start [lindex [m] 1]\n\
-		}\n\
-\n\
-		c $text\n\
-\n\
-		set end [lindex [m] 1]\n\
-		m $start $end\n\
-	}\n\
-\n\
 	# Equalizes indentation for paste\n\
 	namespace export pasteq\n\
 	proc pasteq {text} {\n\
-		if {[lindex [m] 0] ne \"nil\"} { markc $text; return }\n\
+		if {[lindex [m] 0] ne \"nil\"} { c $text; return }\n\
 \n\
 		set cursor [m]\n\
 		m +:1 +:$\n\
 		if {![regexp {^(?: |\\t)*$} [c]]} {\n\
 			m {*}$cursor\n\
-			markc $text\n\
+			c $text\n\
 			return\n\
 		}\n\
 \n\
@@ -147,22 +134,25 @@ namespace eval bindent {\n\
 			set r [c]\n\
 		}\n\
 		m +:1 +:$\n\
-		markc $r\n\
+		c $r\n\
 	}\n\
 \n\
 	namespace ensemble create -subcommands {incr decr guess pasteq}\n\
 }\n\
 \n\
+# Opens man page in a new buffer\n\
 proc man {args} {\n\
 	set b [buffer make \"+man/$args+\"]\n\
 	buffer eval $b { clear }\n\
 	shell $b man $args\n\
 }\n\
 \n\
+# Clears buffers contents\n\
 proc clear {} {\n\
 	m all; c \"\"\n\
 }\n\
 \n\
+# Executes some commands for every line in the selection. If the selection is empty runs it uses the entire buffer\n\
 proc forlines {args} {\n\
 	if {[llength $args] == 1} {\n\
 		set pattern {^.*$}\n\
@@ -183,6 +173,7 @@ proc forlines {args} {\n\
 	}\n\
 }\n\
 \n\
+# Like 's' but running on a text argument instead\n\
 proc ss {args} {\n\
 	buffer eval temp {\n\
 		c [lindex $args 0]\n\
@@ -194,10 +185,12 @@ proc ss {args} {\n\
 	return $text\n\
 }\n\
 \n\
+# Shortcut command to open a text file (creates it if it doesn't exist)\n\
 proc O {args} {\n\
 	teddy::open {*}$args\n\
 }\n\
 \n\
+# Pins a background buffer\n\
 proc P {args} {\n\
 	if {[string first \"+bg/\" [buffer name]] == 0} {\n\
 		buffer rename \"+bg![string range [buffer name] 4 end]\"\n\
@@ -207,6 +200,7 @@ proc P {args} {\n\
 }\n\
 \n\
 namespace eval teddy {\n\
+	# Opens a text file creates it if it doesn't exist\n\
 	namespace export open\n\
 	proc open {path} {\n\
 		if {![file exists $path]} {\n\
@@ -224,18 +218,19 @@ namespace eval teddy {\n\
 	namespace export open_cmd\n\
 	set open_cmd xdg-open\n\
 \n\
-	# returns current line number\n\
+	# Extracts line number from the output of [m]\n\
 	namespace export lineof\n\
 	proc lineof {x} {\n\
 		return [lindex [split $x \":\"] 0]\n\
 	}\n\
 \n\
+	# Extracts column number from the output of [m]\n\
 	namespace export colof\n\
 	proc colof {x} {\n\
 		return [lindex [split $x \":\"] 1]\n\
 	}\n\
 \n\
-	# reads a file from disk\n\
+	# Reads a file from disk\n\
 	namespace export slurp\n\
 	proc slurp {path} {\n\
 		set thefile [::open $path]\n\
@@ -245,7 +240,7 @@ namespace eval teddy {\n\
 		return $r\n\
 	}\n\
 \n\
-	# deletes irrelevant spaces from the end of lines, and empty lines from the end of file\n\
+	# Deletes irrelevant spaces from the end of lines, and empty lines from the end of file\n\
 	namespace export spaceman\n\
 	proc spaceman {} {\n\
 		set saved [m]\n\
@@ -261,7 +256,7 @@ namespace eval teddy {\n\
 \n\
 	}\n\
 \n\
-	# on a +bg frame selects the user's input\n\
+	# On a +bg frame selects the user's input\n\
 	namespace export select_input\n\
 	proc select_input {} {\n\
 		m [buffer appjumps 0] $:$\n\
@@ -513,7 +508,7 @@ proc solarized_simple_theme {} {\n\
 ### IMPLEMENTATION OF USER COMMANDS #######################################\n\
 # Implementations of commands useful to the user\n\
 \n\
-proc lexydef {name args} {\n\
+proc lexy::def {name args} {\n\
 	for {set i 0} {$i < [llength $args]} {set i [expr $i + 2]} {\n\
 		set start_state [lindex $args $i]\n\
 		set transitions [lindex $args [expr $i + 1]]\n\
@@ -533,7 +528,7 @@ proc lexydef {name args} {\n\
 				set type [lindex $state_and_token_type 0]\n\
 			}\n\
 \n\
-			lexydef-append \"$name/$start_state\" $match_kind $pattern $next_state $type\n\
+			lexy::append \"$name/$start_state\" $match_kind $pattern $next_state $type\n\
 		}\n\
 	}\n\
 }\n\
@@ -590,7 +585,7 @@ namespace eval teddy_intl {\n\
 \n\
 	namespace export tags_link_open\n\
 	proc tags_link_open {islink text} {\n\
-		set r [lexy-token tagsearch/0 $text]\n\
+		set r [lexy::token tagsearch/0 $text]\n\
 \n\
 		set b [buffer open [lindex $r 1]]\n\
 \n\
@@ -710,7 +705,7 @@ proc buffer_loaded_hook {buffer-name} { }\n\
 # Definitions of lexy state machines to syntax highlight source code\n\
 \n\
 \n\
-lexydef c 0 {\n\
+lexy::def c 0 {\n\
 		space \"\" nothing\n\
 		keywords {auto>|_Bool>|break>|case>|char>|_Complex>|const>|continue>|default>|do>|double>|else>|enum>|extern>|float>|for>|goto>|if>|_Imaginary>|inline>|int>|long>|register>|restrict>|return>|short>|signed>|sizeof>|static>|struct>|switch>|typedef>|union>|unsigned>|void>|volatile>|while>|int8_t>|uint8_t>|int16_t>|uint16_t>|int32_t>|uint32_t>|int64_t>|uint64_t>|size_t>|time_t>|bool>} keyword\n\
 		keywords {NULL>|true>|false>} literal\n\
@@ -730,12 +725,10 @@ lexydef c 0 {\n\
 		any \".\" nothing\n\
 	}\n\
 \n\
-lexyassoc c/0 {\\.c$}\n\
-lexyassoc c/0 {\\.h$}\n\
+lexy::assoc c/0 {\\.c$}\n\
+lexy::assoc c/0 {\\.h$}\n\
 \n\
-# 		keywords {} keyword\n\
-\n\
-lexydef tcl 0 {\n\
+lexy::def tcl 0 {\n\
  		space \"\" nothing\n\
  		keywords {after>|error>|lappend>|platform>|tcl_findLibrary>|append>|eval>|lassign>|platform::shell>|tcl_startOfNextWord>|apply>|exec>|lindex>|proc>|tcl_startOfPreviousWord>|array>|exit>|linsert>|puts>|tcl_wordBreakAfter>|auto_execok>|expr>|list>|pwd>|tcl_wordBreakBefore>|auto_import>|fblocked>|llength>|re_syntax>|tcltest>|auto_load>|fconfigure>|load>|read>|tclvars>|auto_mkindex>|fcopy>|lrange>|refchan>|tell>|auto_mkindex_old>|file>|lrepeat>|regexp>|time>|auto_qualify>|fileevent>|lreplace>|registry>|tm>|auto_reset>|filename>|lreverse>|regsub>|trace>|bgerror>|flush>|lsearch>|rename>|unknown>|binary>|for>|lset>|return>|unload>|break>|foreach>|lsort>|unset>|catch>|format>|mathfunc>|scan>|update>|cd>|gets>|mathop>|seek>|uplevel>|chan>|glob>|memory>|set>|upvar>|clock>|global>|msgcat>|socket>|variable>|close>|history>|namespace>|source>|vwait>|concat>|http>|open>|split>|while>|continue>|if>|else>|package>|string>|dde>|incr>|parray>|subst>|dict>|info>|pid>|switch>|encoding>|interp>|pkg::create>|eof>|join>|pkg_mkIndex>|tcl_endOfWord>|{*}} keyword\n\
 		region \"#,\\n,\" comment\n\
@@ -748,9 +741,9 @@ lexydef tcl 0 {\n\
 		any \".\" nothing\n\
 	}\n\
 \n\
-lexyassoc tcl/0 {\\.tcl$}\n\
+lexy::assoc tcl/0 {\\.tcl$}\n\
 \n\
-lexydef python 0 {\n\
+lexy::def python 0 {\n\
 		space \"\" nothing\n\
 		keywords {and>|del>|from>|not>|while>|as>|elif>|global>|or>|with>|assert>|else>|if>|pass>|yield>|break>|except>|import>|print>|class>|exec>|in>|raise>|continue>|finally>|is>|return>|def>|for>|lambda>|try>} keyword\n\
 		keywords {None>|True>|False>} literal\n\
@@ -770,9 +763,9 @@ lexydef python 0 {\n\
 		any \".\" nothing\n\
 	}\n\
 \n\
-lexyassoc python/0 {\\.py$}\n\
+lexy::assoc python/0 {\\.py$}\n\
 \n\
-lexydef java 0 {\n\
+lexy::def java 0 {\n\
 		space \"\" nothing\n\
 		keywords {abstract>|continue>|for>|new>|switch>|assert>|default>|goto>|package>|synchronized>|boolean>|do>|if>|private>|this>|break>|double>|implements>|protected>|throw>|byte>|else>|import>|public>|throws>|case>|enum>|instanceof>|return>|transient>|catch>|extends>|int>|short>|try>|char>|final>|interface>|static>|void>|class>|finally>|long>|strictfp>|volatile>|const>|float>|native>|super>|while>|null>} keyword\n\
 		keywords {null>|true>|false>} literal\n\
@@ -790,9 +783,9 @@ lexydef java 0 {\n\
 		any \".\" nothing\n\
 	}\n\
 \n\
-lexyassoc java/0 {\\.java$}\n\
+lexy::assoc java/0 {\\.java$}\n\
 \n\
-lexydef go 0 {\n\
+lexy::def go 0 {\n\
 		space \"\" nothing\n\
 		keywords {break>|default>|func>|interface>|select>|case>|defer>|go>|map>|struct>|chan>|else>|goto>|package>|switch>|const>|fallthrough>|if>|range>|type>|continue>|for>|import>|return>|var>|nil>|true>} keyword\n\
 		keywords {nil>|true>|false>} literal\n\
@@ -811,9 +804,9 @@ lexydef go 0 {\n\
 		any \".\" nothing\n\
 	}\n\
 \n\
-lexyassoc go/0 {\\.go$}\n\
+lexy::assoc go/0 {\\.go$}\n\
 \n\
-lexydef filesearch 0 {\n\
+lexy::def filesearch 0 {\n\
 		space \"\" nothing\n\
 		keywords \"@\" link\n\
 		match {https?://\\S+} link\n\
@@ -828,26 +821,26 @@ lexydef filesearch 0 {\n\
 		any \".\" nothing\n\
 	}\n\
 \n\
-lexyassoc filesearch/0 {^\\+bg}\n\
-lexyassoc filesearch/0 {/$}\n\
-lexyassoc filesearch/0 {^\\+guide}\n\
-lexyassoc filesearch/0 {/guide$}\n\
+lexy::assoc filesearch/0 {^\\+bg}\n\
+lexy::assoc filesearch/0 {/$}\n\
+lexy::assoc filesearch/0 {^\\+guide}\n\
+lexy::assoc filesearch/0 {/guide$}\n\
 \n\
-lexydef mansearch 0 {\n\
+lexy::def mansearch 0 {\n\
 		match {\\<(\\S+)\\((\\d+)\\)} link,1,2\n\
 		any \".\" nothing\n\
 	}\n\
 \n\
-lexyassoc mansearch/0 {^\\+man}\n\
+lexy::assoc mansearch/0 {^\\+man}\n\
 \n\
-lexydef tagsearch 0 {\n\
+lexy::def tagsearch 0 {\n\
 		matchspace {(\\S+)\\t/(.+)/} link,1,2\n\
 		any \".\" nothing\n\
 	}\n\
 \n\
-lexyassoc tagsearch/0 {^\\+tags}\n\
+lexy::assoc tagsearch/0 {^\\+tags}\n\
 \n\
-lexydef js 0 {\n\
+lexy::def js 0 {\n\
 		space \"\" nothing\n\
 		match {</script>} html/0:keyword\n\
 		keywords {break>|const>|continue>|delete>|do>|while>|export>|for>|in>|function>|if>|else>|instanceOf>|label>|let>|new>|return>|switch>|this>|throw>|try>|catch>|typeof>|var>|void>|while>|with>|yield>} keyword\n\
@@ -864,7 +857,7 @@ lexydef js 0 {\n\
 		any \".\" nothing\n\
 	}\n\
 \n\
-lexydef html 0 {\n\
+lexy::def html 0 {\n\
 		space \"\" nothing\n\
 		region {<!--,-->,} comment\n\
 		keywords {<} html-tag-start:keyword\n\
@@ -885,17 +878,17 @@ lexydef html 0 {\n\
 		any \".\" nothing\n\
 	}\n\
 \n\
-lexyassoc html/0 {\\.html$}\n\
-lexyassoc js/0 {\\.js$}\n\
+lexy::assoc html/0 {\\.html$}\n\
+lexy::assoc js/0 {\\.js$}\n\
 \n\
-lexydef clj 0 {\n\
+lexy::def clj 0 {\n\
 		space \"\" nothing\n\
 		region \";,\\n,\" comment\n\
 		region {\",\",\\\\} string\n\
 		any \".\" nothing\n\
 	}\n\
 \n\
-lexyassoc clj/0 {\\.clj$}\n\
+lexy::assoc clj/0 {\\.clj$}\n\
 \n\
 "
 #endif

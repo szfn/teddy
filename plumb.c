@@ -20,16 +20,6 @@ enum cond_subject {
 	CS_MAX,
 };
 
-const char *subject_table[] = {
-	/*CS_TYPE*/ "type",
-	/*CS_OBUF_NAME*/ "bufname",
-	/*CS_TEXT*/ "text",
-	/*CS_TOKEN_TYPE*/ "toktype",
-	/*CS_FILE*/ "file",
-	/*CS_LINENO*/ "line",
-	/*CS_COLNO*/ "col",
-};
-
 enum cond_op {
 	CO_NONE = 0,
 	CO_IS,
@@ -64,6 +54,21 @@ struct plumb_target_t {
 	char *colno;
 };
 
+struct subject_t {
+	const char *name;
+	size_t off;
+};
+
+const struct subject_t subject_table[] = {
+	/*CS_TYPE*/ { "type", offsetof(struct plumb_target_t, type) },
+	/*CS_OBUF_NAME*/ { "bufname", offsetof(struct plumb_target_t, bufname) },
+	/*CS_TEXT*/ { "text", offsetof(struct plumb_target_t, text) },
+	/*CS_TOKEN_TYPE*/ { "toktype", offsetof(struct plumb_target_t, toktype) },
+	/*CS_FILE*/ { "file", offsetof(struct plumb_target_t, file) },
+	/*CS_LINENO*/ { "line", offsetof(struct plumb_target_t, lineno) },
+	/*CS_COLNO*/ { "col", offsetof(struct plumb_target_t, colno) },
+	/*CS_ACTION*/ { NULL, offsetof(struct plumb_target_t, type) },
+};
 
 static int num_plumb_rules = 0;
 
@@ -73,33 +78,16 @@ enum plumb_resolve_state {
 };
 
 static bool precond_match(struct plumb_target_t *tgt, struct plumb_rule_t *rule) {
-	const char *fld = NULL;
-
-	switch (rule->subject) {
-	case CS_TYPE:
-		fld = tgt->type;
-		break;
-	case CS_OBUF_NAME:
-		fld = tgt->bufname;
-		break;
-	case CS_TEXT:
-		fld = tgt->text;
-		break;
-	case CS_TOKEN_TYPE:
-		fld = tgt->toktype;
-		break;
-	case CS_FILE:
-		fld = tgt->file;
-		break;
-	case CS_LINENO:
-		fld = tgt->lineno;
-		break;
-	case CS_COLNO:
-		fld = tgt->colno;
-		break;
-	default:
+	if (rule->subject >= CS_MAX) {
 		return false;
 	}
+
+	const struct subject_t *subj = subject_table + rule->subject;
+	if (subj->name == NULL) {
+		return false;
+	}
+
+	char *fld = *((char **)(((char *)tgt) + subj->off));
 
 	if (fld == NULL) return false;
 
@@ -237,7 +225,8 @@ static bool add_precondition(char *precln) {
 
 	enum cond_subject subj;
 	for (subj = 0; subj < CS_MAX; ++subj) {
-		if (strcmp(subjstr, subject_table[subj]) == 0) break;
+		if (subject_table[subj].name == NULL) continue;
+		if (strcmp(subjstr, subject_table[subj].name) == 0) break;
 	}
 	if (subj >= CS_MAX) return false;
 

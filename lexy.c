@@ -800,16 +800,6 @@ void lexy_update_starting_at(buffer_t *buffer, int start, bool quick_exit) {
 	}
 }
 
-int lexy_create_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
-	Tcl_AddErrorInfo(interp, "Not implemented anymore");
-	return TCL_ERROR;
-}
-
-int lexy_dump_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
-	Tcl_AddErrorInfo(interp, "Not implemented");
-	return TCL_ERROR;
-}
-
 int lexy_parse_token(int state, const char *text, char **file, char **line, char **col) {
 	//printf("Starting match\n");
 
