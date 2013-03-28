@@ -76,6 +76,25 @@ static int teddy_stickdir_command(ClientData client_data, Tcl_Interp *interp, in
 	return TCL_OK;
 }
 
+static char *concatarg(int argstart, int argc, const char *argv[]) {
+
+	int arglen = 1;
+
+	for (int i = argstart; i < argc; ++i) {
+		arglen += strlen(argv[i]) + 1;
+	}
+
+	char *argument = malloc(sizeof(char) * arglen);
+	argument[0] = '\0';
+
+	for (int i = argstart; i < argc; ++i) {
+		strcat(argument, argv[i]);
+		strcat(argument, " ");
+	}
+
+	return argument;
+}
+
 static int teddy_in_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
 	ARGNUM((argc < 3), "in");
 
@@ -100,9 +119,8 @@ static int teddy_in_command(ClientData client_data, Tcl_Interp *interp, int argc
 		chdir(argv[1]);
 	}
 
-	char *cmd = Tcl_Merge(argc-2, argv+2);
-	int code = Tcl_Eval(interp, cmd);
-	Tcl_Free(cmd);
+	char *argument = concatarg(2, argc, argv);
+	int code = shell_command_ex(NULL, argument);
 
 	chdir(wd);
 	free(wd);
@@ -346,25 +364,6 @@ static int teddy_search_command(ClientData client_data, Tcl_Interp *interp, int 
 	editor_start_search(interp_context_editor(), SM_LITERAL, (argc == 1) ? NULL : argv[1]);
 
 	return TCL_OK;
-}
-
-static char *concatarg(int argstart, int argc, const char *argv[]) {
-
-	int arglen = 1;
-
-	for (int i = argstart; i < argc; ++i) {
-		arglen += strlen(argv[i]) + 1;
-	}
-
-	char *argument = malloc(sizeof(char) * arglen);
-	argument[0] = '\0';
-
-	for (int i = argstart; i < argc; ++i) {
-		strcat(argument, argv[i]);
-		strcat(argument, " ");
-	}
-
-	return argument;
 }
 
 static void shexec(const char *argument) {
@@ -947,16 +946,6 @@ static int teddy_kill_command(ClientData client_data, Tcl_Interp *interp, int ar
 	return TCL_OK;
 }
 
-static int teddy_inpath_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
-	if (argc != 2) {
-		Tcl_AddErrorInfo(interp, "Wrong number of arguments to teddy_intl::inpath");
-		return TCL_ERROR;
-	}
-
-	Tcl_SetResult(interp, in_external_commands(argv[1]) ? "true" : "false", TCL_VOLATILE);
-	return TCL_OK;
-}
-
 static int teddy_session_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
 	if (argc < 3) {
 		Tcl_AddErrorInfo(interp, "Wrong number of arguments to session command");
@@ -989,19 +978,6 @@ static int teddy_session_command(ClientData client_data, Tcl_Interp *interp, int
 static int teddy_rehash_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
 	ARGNUM((argc != 1), "teddy::rehash");
 	cmdcompl_init(true);
-	return TCL_OK;
-}
-
-static int teddy_fullscreen_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
-	if (columnset != NULL) {
-		if (at_fullscreen) {
-			gtk_window_unfullscreen(GTK_WINDOW(gtk_widget_get_toplevel(GTK_WIDGET(columnset))));
-		} else {
-			gtk_window_fullscreen(GTK_WINDOW(gtk_widget_get_toplevel(GTK_WIDGET(columnset))));
-		}
-	} else {
-		fullscreen_on_startup = true;
-	}
 	return TCL_OK;
 }
 
@@ -1097,7 +1073,6 @@ void interp_init(void) {
 		exit(EXIT_FAILURE);
 	}
 
-	Tcl_SetVar(interp, "backgrounded", "0", 0);
 	Tcl_HideCommand(interp, "after", "hidden_after");
 	Tcl_HideCommand(interp, "cd", "hidden_cd");
 	Tcl_HideCommand(interp, "tcl_endOfWord", "hidden_tcl_endOfWord");
@@ -1124,7 +1099,6 @@ void interp_init(void) {
 	Tcl_CreateCommand(interp, "undo", &teddy_undo_command, (ClientData)NULL, NULL);
 	Tcl_CreateCommand(interp, "search", &teddy_search_command, (ClientData)NULL, NULL);
 
-	Tcl_CreateCommand(interp, "teddy_intl::inpath", &teddy_inpath_command, (ClientData)NULL, NULL);
 	Tcl_CreateCommand(interp, "teddy_intl::wandercount", &teddy_wandercount_command, (ClientData)NULL, NULL);
 
 	Tcl_CreateCommand(interp, "rgbcolor", &teddy_rgbcolor_command, (ClientData)NULL, NULL);
@@ -1139,17 +1113,13 @@ void interp_init(void) {
 	Tcl_CreateCommand(interp, "c", &teddy_change_command, (ClientData)NULL, NULL);
 	Tcl_CreateCommand(interp, "m", &teddy_move_command, (ClientData)NULL, NULL);
 
-	Tcl_CreateCommand(interp, "lexydef-create", &lexy_create_command, (ClientData)NULL, NULL);
-	Tcl_CreateCommand(interp, "lexydef-append", &lexy_append_command, (ClientData)NULL, NULL);
-	Tcl_CreateCommand(interp, "lexyassoc", &lexy_assoc_command, (ClientData)NULL, NULL);
-	Tcl_CreateCommand(interp, "lexy_dump", &lexy_dump_command, (ClientData)NULL, NULL);
-	Tcl_CreateCommand(interp, "lexy-token", &lexy_token_command, (ClientData)NULL, NULL);
+	Tcl_CreateCommand(interp, "lexy::append", &lexy_append_command, (ClientData)NULL, NULL);
+	Tcl_CreateCommand(interp, "lexy::assoc", &lexy_assoc_command, (ClientData)NULL, NULL);
+	Tcl_CreateCommand(interp, "lexy::token", &lexy_token_command, (ClientData)NULL, NULL);
 
 	Tcl_CreateCommand(interp, "buffer", &teddy_buffer_command, (ClientData)NULL, NULL);
 
 	Tcl_CreateCommand(interp, "teddy::tags", &teddy_tags_command, (ClientData)NULL, NULL);
-
-	Tcl_CreateCommand(interp, "teddy::fullscreen", &teddy_fullscreen_command, (ClientData)NULL, NULL);
 
 	Tcl_CreateCommand(interp, "help", &teddy_help_command, (ClientData)NULL, NULL);
 	Tcl_CreateCommand(interp, "teddy::cmdline-focus", &teddy_cmdlinefocus_command, (ClientData)NULL, NULL);
