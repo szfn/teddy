@@ -925,6 +925,8 @@ static void open_link(editor_t *editor, bool islink, char *text) {
 	char *dir = buffer_directory(editor->buffer);
 	if (dir != NULL) chdir(dir);
 
+	change_directory_back_after_eval = true;
+
 	plumb(editor->buffer, islink, text);
 
 	if (change_directory_back_after_eval) chdir(pdir);
