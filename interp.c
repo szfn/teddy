@@ -120,7 +120,8 @@ static int teddy_in_command(ClientData client_data, Tcl_Interp *interp, int argc
 	}
 
 	char *argument = concatarg(2, argc, argv);
-	int code = shell_command_ex(NULL, argument);
+
+	int code = interp_shell_or_eval(interp_context_editor(), interp_context_buffer(), argument, false, false);
 
 	chdir(wd);
 	free(wd);
