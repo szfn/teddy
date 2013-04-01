@@ -873,8 +873,8 @@ static void tripleclick_behaviour(editor_t *editor) {
 	}
 
 	if (hasnl) {
-		buffer_move_point_glyph(editor->buffer, &(editor->buffer->cursor), MT_ABS, 1);
-		buffer_move_point_glyph(editor->buffer, &(editor->buffer->mark), MT_END, 0);
+		buffer_move_point_glyph(editor->buffer, &(editor->buffer->mark), MT_ABS, 1);
+		buffer_move_point_glyph(editor->buffer, &(editor->buffer->cursor), MT_END, 0);
 	} else {
 		buffer_change_select_type(editor->buffer, BST_LINES);
 		set_primary_selection(editor);

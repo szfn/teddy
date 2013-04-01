@@ -48,7 +48,7 @@ namespace eval bindent {\n\
 	# Adds an indentation level\n\
 	namespace export incr\n\
 	proc incr {} {\n\
-		if {[lindex [m] 0] eq \"nil\"} { m line }\n\
+		m line\n\
 		set indentchar [get_indentchar]\n\
 		teddy_intl::wandercount +1\n\
 		set sm [m]\n\
@@ -60,7 +60,7 @@ namespace eval bindent {\n\
 	# Removes an indentation level\n\
 	namespace export descr\n\
 	proc decr {} {\n\
-		if {[lindex [m] 0] eq \"nil\"} { m line }\n\
+		m line\n\
 		set indentchar [get_indentchar]\n\
 		teddy_intl::wandercount +1\n\
 		set sm [m]\n\

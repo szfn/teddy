@@ -784,7 +784,6 @@ void buffer_extend_selection_by_select_type(buffer_t *buffer) {
 	case BST_LINES:
 		buffer_move_point_glyph(buffer, start, MT_ABS, 1);
 		buffer_move_point_glyph(buffer, end, MT_END, 0);
-		buffer_move_point_glyph(buffer, end, MT_REL, +1);
 		break;
 	case BST_WORDS:
 		buffer_move_point_glyph(buffer, start, MT_RELW, -1);
