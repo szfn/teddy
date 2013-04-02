@@ -23,6 +23,8 @@ GtkWidget *boxcoloring = NULL;
 
 char *working_directory;
 
+char *saved_cmdline = NULL;
+
 GdkPixbuf *tools_pixbuf = NULL;
 static const guint8 cog_icon[] __attribute__ ((__aligned__ (4))) =
 { ""
@@ -337,6 +339,11 @@ void top_start_command_line(editor_t *editor, const char *text) {
 		buffer_replace_selection(cmdline_editor->buffer, text);
 		buffer_replace_selection(cmdline_editor->buffer, "}");
 		cmdline_editor->buffer->cursor = 0;
+	} else if (saved_cmdline != NULL) {
+		buffer_replace_selection(cmdline_editor->buffer, saved_cmdline);
+		free(saved_cmdline);
+		saved_cmdline = NULL;
+		buffer_get_extremes(cmdline_editor->buffer, &(cmdline_editor->buffer->mark), &(cmdline_editor->buffer->cursor));
 	}
 	editor_grab_focus(cmdline_editor, false);
 }
@@ -398,6 +405,10 @@ bool top_has_tags(void) {
 
 void top_message(const char *m) {
 	buffer_get_extremes(cmdline_buffer, &(cmdline_buffer->mark), &(cmdline_buffer->cursor));
+	if (saved_cmdline == NULL) {
+		saved_cmdline = buffer_get_selection_text(cmdline_buffer);
+	}
+
 	buffer_replace_selection(cmdline_buffer, m);
 	buffer_get_extremes(cmdline_buffer, &(cmdline_buffer->mark), &(cmdline_buffer->cursor));
 	gtk_widget_queue_draw(GTK_WIDGET(cmdline_editor));
