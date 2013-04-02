@@ -786,7 +786,7 @@ void buffer_extend_selection_by_select_type(buffer_t *buffer) {
 		buffer_move_point_glyph(buffer, end, MT_END, 0);
 		break;
 	case BST_WORDS:
-		buffer_move_point_glyph(buffer, start, MT_RELW, -1);
+		buffer_move_point_glyph(buffer, start, MT_RELW2, -1);
 		buffer_move_point_glyph(buffer, end, MT_RELW, +1);
 		break;
 	default:
@@ -908,13 +908,13 @@ static bool buffer_aux_wnwa_next_ex(buffer_t *buffer, int *point) {
 }
 
 /* If it is at the beginning of a word (or inside a non-word sequence) goes to the end of the previous word, if it is at the end of a word (or inside a word) goes to the previous character */
-static bool buffer_aux_wnwa_prev_ex(buffer_t *buffer, int *point) {
+static bool buffer_aux_wnwa_prev_ex(buffer_t *buffer, int *point, bool at_least_one) {
 	if (*point <= 0) return false;
 	if (*point > BSIZE(buffer)) return false;
 
 	bool first = true;
 
-	--(*point);
+	if (at_least_one) --(*point);
 
 	for ( ; *point >= 0; --(*point)) {
 		uint32_t code = bat(buffer, *point)->code;
@@ -971,8 +971,10 @@ bool buffer_move_point_glyph(buffer_t *buffer, int *p, enum movement_type_t type
 		break;
 
 	case MT_RELW:
+	case MT_RELW2: {
+		bool at_least_one = (type == MT_RELW) ? true : false;
 		while (arg < 0) {
-			r = buffer_aux_wnwa_prev_ex(buffer, p);
+			r = buffer_aux_wnwa_prev_ex(buffer, p, at_least_one);
 			if (!r) break;
 			++arg;
 		}
@@ -983,6 +985,7 @@ bool buffer_move_point_glyph(buffer_t *buffer, int *p, enum movement_type_t type
 			--arg;
 		}
 		break;
+	}
 
 	case MT_END:
 		if (!buffer_aux_findchar(buffer, p, '\n', +1)) {
@@ -1027,7 +1030,7 @@ char *buffer_indent_newline(buffer_t *buffer) {
 	return rr;
 }
 
-int buffer_point_from_position(buffer_t *buffer, int start, double x, double y, bool strict) {
+int buffer_point_from_position(buffer_t *buffer, int start, double x, double y) {
 	int p = BSIZE(buffer);
 
 	if (start < 0) start = 0;
@@ -1055,18 +1058,7 @@ int buffer_point_from_position(buffer_t *buffer, int start, double x, double y, 
 		}
 
 		if ((x >= glyph_start) && (x <= glyph_end)) {
-			if (strict) {
-				p = i;
-			} else {
-				double dist_start = x - glyph_start;
-				double dist_end = glyph_end - x;
-				if (dist_start < dist_end) {
-					p = i;
-				} else {
-					p = i+1;
-				}
-			}
-
+			p = i;
 			break;
 		}
 	}

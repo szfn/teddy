@@ -821,14 +821,14 @@ static gboolean key_release_callback(GtkWidget *widget, GdkEventKey *event, edit
 
 static void move_cursor_to_mouse(editor_t *editor, double x, double y) {
 	absolute_position(editor, &x, &y);
-	editor->buffer->cursor = buffer_point_from_position(editor->buffer, editor->first_exposed, x, y, false);
+	editor->buffer->cursor = buffer_point_from_position(editor->buffer, editor->first_exposed, x, y);
 	buffer_extend_selection_by_select_type(editor->buffer);
 	//buffer_move_cursor_to_position(editor->buffer, x, y);
 }
 
 static bool on_file_link(editor_t *editor, double x, double y, int *r) {
 	absolute_position(editor, &x, &y);
-	int p = buffer_point_from_position(editor->buffer, editor->first_exposed, x, y, true);
+	int p = buffer_point_from_position(editor->buffer, editor->first_exposed, x, y);
 
 	if (r != NULL) *r = p;
 
@@ -873,8 +873,8 @@ static void tripleclick_behaviour(editor_t *editor) {
 	}
 
 	if (hasnl) {
-		buffer_move_point_glyph(editor->buffer, &(editor->buffer->mark), MT_ABS, 1);
-		buffer_move_point_glyph(editor->buffer, &(editor->buffer->cursor), MT_END, 0);
+		buffer_move_point_glyph(editor->buffer, &(editor->buffer->cursor), MT_ABS, 1);
+		buffer_move_point_glyph(editor->buffer, &(editor->buffer->mark), MT_END, 0);
 	} else {
 		buffer_change_select_type(editor->buffer, BST_LINES);
 		set_primary_selection(editor);
