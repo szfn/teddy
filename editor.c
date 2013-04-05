@@ -853,7 +853,9 @@ static void doubleclick_behaviour(editor_t *editor) {
 		editor->buffer->mark = m;
 		return;
 	}
-	buffer_change_select_type(editor->buffer, BST_WORDS);
+	my_glyph_info_t *g = bat(editor->buffer, editor->buffer->cursor);
+	if ((g != NULL) && (g->code != '\n'))
+		buffer_change_select_type(editor->buffer, BST_WORDS);
 	set_primary_selection(editor);
 }
 
@@ -862,12 +864,14 @@ static void tripleclick_behaviour(editor_t *editor) {
 	if (editor->buffer->mark >= 0) {
 		int s = MIN(editor->buffer->mark, editor->buffer->cursor);
 		int e = MAX(editor->buffer->mark, editor->buffer->cursor);
-		for (int i = s; i < e; ++i) {
-			my_glyph_info_t *g = bat(editor->buffer, i);
-			if (g == NULL) break;
-			if (g->code == '\n') {
-				hasnl = true;
-				break;
+		if ((e - s) > 1) {
+			for (int i = s; i < e; ++i) {
+				my_glyph_info_t *g = bat(editor->buffer, i);
+				if (g == NULL) break;
+				if (g->code == '\n') {
+					hasnl = true;
+					break;
+				}
 			}
 		}
 	}
@@ -1688,6 +1692,7 @@ editor_t *new_editor(buffer_t *buffer, bool single_line) {
 
 	r->drar = gtk_drawing_area_new();
 	r->drarim = gtk_im_multicontext_new();
+	gtk_im_context_set_client_window(r->drarim, gtk_widget_get_window(gtk_widget_get_toplevel(GTK_WIDGET(columnset))));
 
 	r->selection_scroll_timer = -1;
 
