@@ -193,4 +193,6 @@ double round_to_line(buffer_t *buffer, double v);
 
 #define WORDCOMPL_UPDATE_RADIUS 50000
 
+pid_t buffer_get_child_pid(buffer_t *buffer);
+
 #endif

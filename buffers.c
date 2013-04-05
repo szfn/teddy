@@ -88,7 +88,8 @@ static void buffer_close_real(buffer_t *buffer, bool save_critbit) {
 	if (buffer == null_buffer()) return;
 
 	if (buffer->job != NULL) {
-		kill(buffer->job->child_pid, SIGTERM);
+		pid_t pid = buffer_get_child_pid(buffer);
+		if (pid >= 0) kill(pid, SIGHUP);
 		buffer->job->terminating = true;
 		buffer->job->buffer = NULL;
 	}

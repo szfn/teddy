@@ -1302,3 +1302,13 @@ double round_to_line(buffer_t *buffer, double v) {
 	return v;
 }
 
+pid_t buffer_get_child_pid(buffer_t *buffer) {
+	if (buffer == NULL) return -1;
+	if (buffer->job == NULL) return -1;
+	// by default we send the signal to the controlling group of the job's terminal
+	// it may not be the same as the process we spawned
+	// NOTE: I'm not sure why the call to tcgetpgrp works, it shouldn't according to the man page but it seems deliberate in the kernel code (https://github.com/mirrors/linux/blob/637704cbc95c02d18741b4a6e7a5d2397f8b28ce/drivers/tty/tty_io.c)
+	pid_t pid = tcgetpgrp(buffer->job->masterfd);
+	if (pid < 0) pid = buffer->job->child_pid;
+	return pid;
+}

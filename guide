@@ -3,6 +3,6 @@
 @ gitk --all
 @ Watch make -s -j4
 
-@ env TEPID= GTK_IM_CONTEXT=xim bin/teddy
+@ env TEPID= bin/teddy
 @ env TEPID= valgrind bin/teddy
 @ env TEPID= gdb bin/teddy

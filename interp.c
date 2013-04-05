@@ -930,21 +930,16 @@ static int teddy_kill_command(ClientData client_data, Tcl_Interp *interp, int ar
 		}
 	}
 
-	if (!pid_specified) {
-		if (interp_context_buffer() == NULL) return TCL_OK;
-		if (interp_context_buffer()->job == NULL) return TCL_OK;
-		// by default we send the signal to the controlling group of the job's terminal
-		// it may not be the same as the process we spawned
-		// NOTE: I'm not sure why the call to tcgetpgrp works, it shouldn't according to the man page but it seems deliberate in the kernel code (https://github.com/mirrors/linux/blob/637704cbc95c02d18741b4a6e7a5d2397f8b28ce/drivers/tty/tty_io.c)
-		pid = tcgetpgrp(interp_context_buffer()->job->masterfd);
-		if (pid < 0) {
-			pid = interp_context_buffer()->job->child_pid;
-		}
+	if (!pid_specified)
+		pid = buffer_get_child_pid(interp_context_buffer());
+
+	if (pid >= 0) {
+		kill(pid, signum);
+		return TCL_OK;
+	} else {
+		Tcl_AddErrorInfo(interp, "Can not get pid of buffer\n");
+		return TCL_ERROR;
 	}
-
-	kill(pid, signum);
-
-	return TCL_OK;
 }
 
 static int teddy_session_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {

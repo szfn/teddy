@@ -538,3 +538,4 @@ int jobs_register(pid_t child_pid, int masterfd, buffer_t *buffer, const char *c
 
 	return 1;
 }
+
