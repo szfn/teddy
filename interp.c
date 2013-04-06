@@ -116,7 +116,9 @@ static int teddy_in_command(ClientData client_data, Tcl_Interp *interp, int argc
 			free(r);
 		}
 	} else {
-		chdir(argv[1]);
+		char *w = unrealpath(".", argv[1], true);
+		chdir(w);
+		free(w);
 	}
 
 	char *argument = concatarg(2, argc, argv);
