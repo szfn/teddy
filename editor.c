@@ -1392,7 +1392,7 @@ static void draw_cursorline(cairo_t *cr, editor_t *editor) {
 static void draw_cursor(cairo_t *cr, editor_t *editor) {
 	if (!(editor->cursor_visible)) return;
 	if (editor->research.mode != SM_NONE) return;
-	if (editor->buffer->mark >= 0) return;
+	if ((editor->buffer->mark >= 0) && (editor->buffer->mark != editor->buffer->cursor)) return;
 
 	double cursor_x, cursor_y;
 	line_get_glyph_coordinates(editor->buffer, editor->buffer->cursor, &cursor_x, &cursor_y);
