@@ -92,6 +92,7 @@ static void undo_drop_redo_info(undo_t *undo) {
 		undo_node_free(node);
 		node = next;
 	}
+	undo->head->next = NULL;
 }
 
 void undo_push(undo_t *undo, undo_node_t *new_node) {
