@@ -59,7 +59,32 @@ void set_label_text(editor_t *editor) {
 	find_editor_for_buffer(editor->buffer, NULL, &frame, NULL);
 
 	if (frame != NULL) {
-		tframe_set_title(frame, editor->buffer->path);
+		if ((editor->buffer->job != NULL) && (editor->buffer->job->command != NULL)) {
+			char *cmd = editor->buffer->job->command;
+			int i;
+			for (i = 0; ; ++i) {
+				if (cmd[i] == '\0') break;
+				if (cmd[i] == ' ') break;
+			}
+
+			if (cmd[i] == ' ') {
+				cmd[i] = '\0';
+				char *m;
+				asprintf(&m, "%s %s", editor->buffer->path, cmd);
+				alloc_assert(m);
+				cmd[i] = ' ';
+				tframe_set_title(frame, m);
+				free(m);
+			} else {
+				char *m;
+				asprintf(&m, "%s %s", editor->buffer->path, cmd);
+				alloc_assert(m);
+				tframe_set_title(frame, m);
+				free(m);
+			}
+		} else {
+			tframe_set_title(frame, editor->buffer->path);
+		}
 		tframe_set_wd(frame, editor->buffer->wd);
 		tframe_set_modified(frame, buffer_modified(editor->buffer));
 		gtk_widget_queue_draw(GTK_WIDGET(frame));
