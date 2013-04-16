@@ -346,7 +346,7 @@ static void job_attach_to_buffer(job_t *job, const char *command, buffer_t *buff
 #define TRUNCATION 120
 		if (strlen(command) > TRUNCATION) {
 			char *c = strndup(command, TRUNCATION-1);
-			asprintf(&msg, "%% %s…\n", c);
+			asprintf(&msg, "%% %s...\n", c);
 			free(c);
 		} else {
 			asprintf(&msg, "%% %s\n", command);
