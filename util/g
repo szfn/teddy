@@ -1,0 +1,29 @@
+#!/bin/bash
+
+function buffer_find {
+	for i in /tmp/teddy.$TEPID/*/; do
+		name=$(< $i/name)
+		if [ $name = $1 ]; then
+			buffer=$i
+		fi
+	done
+}
+
+buffer=nil
+buffer_find +grep
+
+if [ $buffer = "nil" ]; then
+	echo buffer make +grep > /tmp/teddy.$TEPID/cmd
+	buffer_find +grep
+fi
+
+echo -e "\01all\02grep $*" > $buffer/c
+echo -e '$:$' > $buffer/m
+
+if [ $# -eq 1 ]; then
+	find ./ -name '*.c' -or -name '*.cc' -or -name '*.cpp' -or -name '*.h' -or -name '*.py' -or -name '*.txt' -or -name '*.pl' -or -name '*.tcl' -or -name '*.java' -or -name '*.js' -or -name '*.html' -or -name '*.go' -or -name '*.clj' | xargs grep -n $1 > $buffer/c
+else
+	grep -n $*
+fi
+
+echo -e '1:1' > $buffer/m

@@ -196,15 +196,6 @@ proc buffer_save_hook {} {\n\
 \n\
 ### OTHER ###\n\
 \n\
-# We override the grep command so that it always shows line numbers of matches, so that we can click on a match and go directly to the matched line on an editor\n\
-proc grep {args} {\n\
-	if {[llength $args] == 1} {\n\
-		shell grep -nR --exclude=tags {*}$args {*}[glob *.c *.cc *.cpp *.h *.py *.txt *.pl *.tcl *.java *.js *.html]\n\
-	} else {\n\
-		shell grep -n --exclude=tags {*}$args\n\
-	}\n\
-}\n\
-\n\
 # Selects recently typed text\n\
 bindkey Pause {m [undo region after]}\n\
 \n\
