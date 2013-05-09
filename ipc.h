@@ -4,8 +4,9 @@
 #include "buffer.h"
 
 void ipc_init(void);
-void ipc_link_to(const char *session_name);
-void ipc_event(buffer_t *buffer, const char *description, const char *arg1);
 void ipc_finalize(void);
+void ipc_link_to(const char *session_name);
+
+void ipc_event(struct multiqueue *mq, buffer_t *buffer, const char *type, const char *detail);
 
 #endif

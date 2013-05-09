@@ -9,6 +9,7 @@
 #include "cfg.h"
 #include "critbit.h"
 #include "undo.h"
+#include "mq.h"
 
 #define JUMPRING_LEN 16
 
@@ -92,6 +93,9 @@ typedef struct _buffer_t {
 
 	/* autocompletion */
 	critbit0_tree cbt;
+
+	/* event watchers */
+	struct multiqueue watchers;
 } buffer_t;
 
 enum movement_type_t {
@@ -194,5 +198,7 @@ double round_to_line(buffer_t *buffer, double v);
 #define WORDCOMPL_UPDATE_RADIUS 50000
 
 pid_t buffer_get_child_pid(buffer_t *buffer);
+
+bool buffer_move_command(buffer_t *buffer, const char *arg1, const char *arg2, bool seterr);
 
 #endif

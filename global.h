@@ -41,6 +41,8 @@ extern char *tied_session;
 extern bool fullscreen_on_startup;
 extern bool at_fullscreen;
 
+extern struct multiqueue global_event_watchers;
+
 void global_init();
 
 bool find_editor_for_buffer(buffer_t *buffer, column_t **columnpp, tframe_t **framepp, editor_t **editorpp);

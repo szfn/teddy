@@ -374,6 +374,7 @@ static void shexec(const char *argument) {
 	setenv("PAGER", "", 1);
 	setenv("EDITOR", "teddy", 1);
 	setenv("VISUAL", "teddy", 1);
+
 	const char *sh = getenv("SHELL");
 	if (sh == NULL) sh = "/bin/sh";
 	execl(sh, sh, "-c", argument, (char *)NULL);
@@ -388,6 +389,26 @@ int shell_command_ex(const char *buffer_name, const char *argument) {
 		buffer = buffer_id_to_buffer(buffer_name);
 	if (buffer == NULL)
 		buffer = buffers_get_buffer_for_process(false);
+
+	char tepid[10];
+	char bufid[10];
+
+	sprintf(tepid, "%d", getpid());
+
+	if (interp_context_buffer() != NULL) {
+		strcpy(bufid, "0");
+		for (int i = 0; i < buffers_allocated; ++i) {
+			if (buffers[i] == interp_context_buffer()) {
+				sprintf(bufid, "%d", i);
+				break;
+			}
+		}
+	} else {
+		strcpy(bufid, "0");
+	}
+
+	setenv("TEPID", tepid, 1);
+	setenv("BUFID", bufid, 1);
 
 	struct termios term;
 	bzero(&term, sizeof(struct termios));
@@ -653,217 +674,24 @@ static int teddy_change_command(ClientData client_data, Tcl_Interp *interp, int 
 	}
 }
 
-static bool move_command_ex(const char *sin, int *p, int ref, enum movement_type_t default_glyph_motion, bool set_jump) {
-	if (strcmp(sin, "nil") == 0) {
-		if (ref < 0) {
-			Tcl_AddErrorInfo(interp, "Attempted to null cursor in 'm' command");
-			return false;
-		} else {
-			*p = -1;
-			return true;
-		}
-	}
 
-	if (sin[0] == '=') {
-		// exact positioning
-		int arg = atoi(sin+1);
-
-		if (arg == -1) {
-			*p = -1;
-		} else {
-			*p = 0;
-			bool r = buffer_move_point_glyph(interp_context_buffer(), p, MT_ABS, arg+1);
-			Tcl_SetResult(interp, r ? "true" : "false", TCL_VOLATILE);
-		}
-
-		return true;
-	}
-
-	char *s = strdup(sin);
-	alloc_assert(s);
-
-	char *saveptr;
-	char *first = strtok_r(s, ":", &saveptr);
-	char *second = strtok_r(NULL, ":", &saveptr);
-	char *expectfailure = (second != NULL) ? strtok_r(NULL, ":", &saveptr) : NULL;
-
-	if (first == NULL) goto move_command_ex_bad_argument;
-	if (expectfailure != NULL) goto move_command_ex_bad_argument;
-
-	enum movement_type_t lineflag = MT_ABS, colflag = MT_ABS;
-	int lineno = 0, colno = 0;
-
-	if (strcmp(first, "$") == 0) {
-		lineflag = MT_END;
-	} else {
-		bool forward = true;
-		switch (first[0]) {
-		case '+':
-			lineflag = MT_REL;
-			++first;
-			break;
-		case '-':
-			lineflag = MT_REL;
-			forward = false;
-			++first;
-			break;
-		default:
-			lineflag = MT_ABS;
-			break;
-		}
-
-		lineno = atoi(first);
-		if (lineno < 0) goto move_command_ex_bad_argument;
-		if (!forward) lineno = -lineno;
-	}
-
-	if (second == NULL) {
-		colflag = default_glyph_motion;
-		colno = 0;
-	} else if (strcmp(second, "$") == 0) {
-		colflag = MT_END;
-	} else if (strcmp(second, "^") == 0) {
-		colflag = MT_START;
-	} else if ((strcmp(second, "^1") == 0) || (strcmp(second, "1^") == 0)) {
-		colflag = MT_HOME;
-	} else if (strlen(second) == 0) {
-		goto move_command_ex_bad_argument;
-	} else {
-		bool words = false, forward = true;
-		if (second[strlen(second)-1] == 'w') {
-			words = true;
-			second[strlen(second)-1] = '\0';
-		}
-		switch (second[0]) {
-		case '+':
-			colflag = words ? MT_RELW : MT_REL;
-			++second;
-			break;
-		case '-':
-			colflag = words ? MT_RELW : MT_REL;
-			forward = false;
-			++second;
-			break;
-		default:
-			if (words) goto move_command_ex_bad_argument;
-			colflag = MT_ABS;
-			break;
-		}
-
-		colno = atoi(second);
-		if (colno < 0) goto move_command_ex_bad_argument;
-		if (!forward) colno = -colno;
-	}
-
-	if (*p < 0) {
-		if (ref >= 0) {
-			*p = ref;
-		}
-	}
-
-	if (*p < 0) {
-		if (lineflag == MT_REL) goto move_command_relative_with_nil;
-		if (colflag == MT_REL) goto move_command_relative_with_nil;
-	}
-
-	if ((lineflag != MT_REL) && set_jump) {
-		buffer_record_jump(interp_context_buffer());
-	}
-
-	bool rl = buffer_move_point_line(interp_context_buffer(), p, lineflag, lineno);
-	bool rc = buffer_move_point_glyph(interp_context_buffer(), p, colflag, colno);
-
-	free(s);
-
-	Tcl_SetResult(interp, (rl && rc) ? "true" : "false", TCL_VOLATILE);
-
-	return true;
-
-move_command_ex_bad_argument: {
-	char *msg;
-	asprintf(&msg, "Malformed argument passed to 'm' command: '%s'", sin);
-	alloc_assert(msg);
-	Tcl_AddErrorInfo(interp, msg);
-	free(msg);
-	free(s);
-	return false; }
-
-move_command_relative_with_nil: {
-	char *msg;
-	asprintf(&msg, "Argument passed to 'm' specifies relative movement but cursor isn't set: '%s'", sin);
-	alloc_assert(msg);
-	Tcl_AddErrorInfo(interp, msg);
-	free(msg);
-	free(s);
-	return false; }
-}
 
 static int teddy_move_command(ClientData client_data, Tcl_Interp *interp, int argc, const char *argv[]) {
-#define MOVE_MARK(argument, d) { \
-	if (!move_command_ex(argument, &(interp_context_buffer()->mark), interp_context_buffer()->cursor, d, false)) { \
-		return TCL_ERROR; \
-	} \
-}
-
-#define MOVE_CURSOR(argument, d, set_jump) {\
-	const char *arg = argument;\
-	if (argument[0] == 'm') {\
-		++arg;\
-		if (interp_context_buffer()->mark >= 0) interp_context_buffer()->cursor = interp_context_buffer()->mark;\
-	}\
-	if (!move_command_ex(arg, &(interp_context_buffer()->cursor), -1, d, set_jump)) { \
-		return TCL_ERROR; \
-	} \
-}
-
-#define MOVE_MARK_CURSOR(mark_argument, cursor_argument, set_jump) {\
-	MOVE_MARK(mark_argument, MT_START);\
-	MOVE_CURSOR(cursor_argument, MT_END, set_jump);\
-	interp_context_buffer()->savedmark = interp_context_buffer()->mark;\
-}
-
 	HASBUF("move");
-
 	switch (argc) {
 	case 1:
 		interp_return_point_pair(interp_context_buffer(), interp_context_buffer()->mark, interp_context_buffer()->cursor);
 		return TCL_OK;
 	case 2:
-		if (strcmp(argv[1], "all") == 0) {
-			MOVE_MARK_CURSOR("1:1", "$:$", false);
-		} else if (strcmp(argv[1], "sort") == 0) {
-			sort_mark_cursor(interp_context_buffer());
-		} else if (strcmp(argv[1], "line") == 0) {
-			sort_mark_cursor(interp_context_buffer());
-			MOVE_MARK_CURSOR("+0:1", "+0:$", false);
-		} else {
-			// not a shortcut, actually movement command to execute
-			if (strchr(argv[1], ' ') != NULL) {
-				char *a = strdup(argv[1]);
-				alloc_assert(a);
-
-				char *saveptr;
-				char *one = strtok_r(a, " ", &saveptr);
-				char *two = strtok_r(NULL, " ", &saveptr);
-
-				MOVE_MARK_CURSOR(one, two, true);
-
-				free(a);
-			} else {
-				MOVE_MARK("nil", MT_START);
-				MOVE_CURSOR(argv[1], MT_START, true);
-			}
-		}
-		break;
+		return (buffer_move_command(interp_context_buffer(), argv[1], NULL, true)) ?
+			TCL_OK : TCL_ERROR;
 	case 3:
-		MOVE_MARK_CURSOR(argv[1], argv[2], true);
-		break;
+		return (buffer_move_command(interp_context_buffer(), argv[1], argv[2], true)) ?
+			TCL_OK : TCL_ERROR;
 	default:
 		Tcl_AddErrorInfo(interp, "Wrong number of arguments to 'move' command");
 		return TCL_ERROR;
 	}
-
-	return TCL_OK;
 }
 
 static int parse_signum(const char *sigspec) {
@@ -1198,7 +1026,17 @@ int interp_shell_or_eval(editor_t *editor, buffer_t *buffer, const char *command
 	if (isint) {
 		return interp_eval(editor, buffer, command, show_ret, reset_result);
 	} else {
-		return shell_command_ex(NULL, command);
+		editor_t *prev_editor = interp_context_editor();
+		buffer_t *prev_buffer = interp_context_buffer();
+
+		interp_context_buffer_set(buffer);
+		if (editor != NULL) interp_context_editor_set(editor);
+		int r = shell_command_ex(NULL, command);
+
+		if (prev_editor != NULL) interp_context_editor_set(prev_editor);
+		else interp_context_buffer_set(prev_buffer);
+
+		return r;
 	}
 }
 

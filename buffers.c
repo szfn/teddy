@@ -83,7 +83,7 @@ static buffer_t *buffers_make(const char *name) {
 static void buffer_close_real(buffer_t *buffer, bool save_critbit) {
 	//printf("Removing buffer: <%s>\n", buffer->path);
 
-	ipc_event(buffer, "bufferclose", NULL);
+	ipc_event(&global_event_watchers, buffer, "bufferclose", "");
 
 	if (buffer == null_buffer()) return;
 
@@ -347,6 +347,7 @@ void buffers_add(buffer_t *b) {
 	for (i = 0; i < buffers_allocated; ++i) {
 		if (buffers[i] == NULL) {
 			buffers[i] = b;
+			ipc_event(&global_event_watchers, b, "new", "");
 			break;
 		}
 	}

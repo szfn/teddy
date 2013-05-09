@@ -7,6 +7,9 @@
 #include "interp.h"
 #include "buffers.h"
 #include "ipc.h"
+#include "mq.h"
+
+#define MAX_GLOBAL_EVENT_WATCHERS 20
 
 GtkClipboard *selection_clipboard;
 GtkClipboard *default_clipboard;
@@ -15,6 +18,8 @@ char *tied_session;
 
 bool fullscreen_on_startup = false;
 bool at_fullscreen = false;
+
+struct multiqueue global_event_watchers;
 
 GdkCursor *cursor_blank, *cursor_arrow, *cursor_hand, *cursor_xterm, *cursor_fleur, *cursor_top_left_corner;
 
@@ -56,6 +61,8 @@ void global_init() {
 	cursor_hand = gdk_cursor_new(GDK_HAND1);
 	cursor_fleur = gdk_cursor_new(GDK_FLEUR);
 	cursor_top_left_corner = gdk_cursor_new(GDK_TOP_LEFT_CORNER);
+
+	mq_alloc(&global_event_watchers, MAX_GLOBAL_EVENT_WATCHERS);
 }
 
 void global_free() {

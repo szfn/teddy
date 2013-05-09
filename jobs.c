@@ -390,6 +390,12 @@ static void job_attach_to_buffer(job_t *job, const char *command, buffer_t *buff
 			column_expand_frame(column, frame);
 		}
 	}
+
+	// job notification
+	char *msg;
+	asprintf(&msg, "j %s", command);
+	mq_broadcast(&buffer->watchers, msg);
+	free(msg);
 }
 
 static void job_create_buffer(job_t *job) {
@@ -534,8 +540,5 @@ int jobs_register(pid_t child_pid, int masterfd, buffer_t *buffer, const char *c
 		g_timeout_add(SHOWANYWAY_TIMO, (GSourceFunc)autoshow_job_buffer, (gpointer)(jobs+i));
 	}
 
-	ipc_event(buffer, "job", command);
-
 	return 1;
 }
-

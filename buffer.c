@@ -18,6 +18,7 @@
 #define SLOP 32
 
 #define MINIMUM_WORDCOMPL_WORD_LEN 3
+#define MAX_BUFFER_EVENT_WATCHERS 10
 
 static int phisical(buffer_t *encl, int point) {
 	return (point < encl->gap) ? point : point + encl->gapsz;
@@ -152,6 +153,8 @@ buffer_t *buffer_create(void) {
 	}
 	buffer->curjump = buffer->newjump = 0;
 
+	mq_alloc(&buffer->watchers, MAX_BUFFER_EVENT_WATCHERS);
+
 	return buffer;
 }
 
@@ -174,6 +177,10 @@ void buffer_free(buffer_t *buffer, bool save_critbit) {
 		nanosleep(&s, NULL);
 	}
 	pthread_rwlock_wrlock(&(buffer->rwlock));
+
+	if (!mq_dismiss(&buffer->watchers, "q\n")) {
+		quick_message("Internal error", "Event queue for filesystem interface is stuck - expect future breakage");
+	}
 
 	free(buffer->buf);
 
@@ -311,8 +318,6 @@ static int buffer_replace_selection_ex(buffer_t *buffer, const char *text, bool 
 int load_text_file(buffer_t *buffer, const char *filename) {
 	buffer->mtime = time(NULL);
 
-	ipc_event(buffer, "fileload", filename);
-
 	if (buffer->has_filename) {
 		return -1;
 	}
@@ -382,8 +387,6 @@ void load_empty(buffer_t *buffer) {
 }
 
 int load_dir(buffer_t *buffer, const char *dirname) {
-	ipc_event(buffer, "dirload", dirname);
-
 	buffer->has_filename = 0;
 	buffer->path = realpath(dirname, NULL);
 	if (buffer->path[strlen(buffer->path)-1] != '/') {
@@ -404,7 +407,7 @@ int load_dir(buffer_t *buffer, const char *dirname) {
 void save_to_text_file(buffer_t *buffer) {
 	if (buffer->path[0] == '+') return;
 
-	ipc_event(buffer, "filesave", buffer->path);
+	mq_broadcast(&buffer->watchers, "s\n");
 
 	FILE *file = fopen(buffer->path, "w");
 
@@ -1272,6 +1275,7 @@ bool buffer_modified(buffer_t *buffer) {
 }
 
 void buffer_record_jump(buffer_t *buffer) {
+	if (buffer->wandercount > 0) return;
 	buffer->jumpring[buffer->newjump] = buffer->cursor;
 	buffer->newjump = (buffer->newjump + 1) % JUMPRING_LEN;
 	buffer->curjump = buffer->newjump;
@@ -1311,4 +1315,209 @@ pid_t buffer_get_child_pid(buffer_t *buffer) {
 	pid_t pid = tcgetpgrp(buffer->job->masterfd);
 	if (pid < 0) pid = buffer->job->child_pid;
 	return pid;
+}
+
+static bool move_command_ex(buffer_t *buffer, const char *sin, int *p, int ref, enum movement_type_t default_glyph_motion, bool set_jump, bool seterr) {
+	if (strcmp(sin, "nil") == 0) {
+		if (ref < 0) {
+			Tcl_AddErrorInfo(interp, "Attempted to null cursor in 'm' command");
+			return false;
+		} else {
+			*p = -1;
+			return true;
+		}
+	}
+
+	if (sin[0] == '=') {
+		// exact positioning
+		int arg = atoi(sin+1);
+
+		if (arg == -1) {
+			*p = -1;
+		} else {
+			*p = 0;
+			bool r = buffer_move_point_glyph(buffer, p, MT_ABS, arg+1);
+			Tcl_SetResult(interp, r ? "true" : "false", TCL_VOLATILE);
+		}
+
+		return true;
+	}
+
+	char *s = strdup(sin);
+	alloc_assert(s);
+
+	char *saveptr;
+	char *first = strtok_r(s, ":", &saveptr);
+	char *second = strtok_r(NULL, ":", &saveptr);
+	char *expectfailure = (second != NULL) ? strtok_r(NULL, ":", &saveptr) : NULL;
+
+	if (first == NULL) goto move_command_ex_bad_argument;
+	if (expectfailure != NULL) goto move_command_ex_bad_argument;
+
+	enum movement_type_t lineflag = MT_ABS, colflag = MT_ABS;
+	int lineno = 0, colno = 0;
+
+	if (strcmp(first, "$") == 0) {
+		lineflag = MT_END;
+	} else {
+		bool forward = true;
+		switch (first[0]) {
+		case '+':
+			lineflag = MT_REL;
+			++first;
+			break;
+		case '-':
+			lineflag = MT_REL;
+			forward = false;
+			++first;
+			break;
+		default:
+			lineflag = MT_ABS;
+			break;
+		}
+
+		lineno = atoi(first);
+		if (lineno < 0) goto move_command_ex_bad_argument;
+		if (!forward) lineno = -lineno;
+	}
+
+	if (second == NULL) {
+		colflag = default_glyph_motion;
+		colno = 0;
+	} else if (strcmp(second, "$") == 0) {
+		colflag = MT_END;
+	} else if (strcmp(second, "^") == 0) {
+		colflag = MT_START;
+	} else if ((strcmp(second, "^1") == 0) || (strcmp(second, "1^") == 0)) {
+		colflag = MT_HOME;
+	} else if (strlen(second) == 0) {
+		goto move_command_ex_bad_argument;
+	} else {
+		bool words = false, forward = true;
+		if (second[strlen(second)-1] == 'w') {
+			words = true;
+			second[strlen(second)-1] = '\0';
+		}
+		switch (second[0]) {
+		case '+':
+			colflag = words ? MT_RELW : MT_REL;
+			++second;
+			break;
+		case '-':
+			colflag = words ? MT_RELW : MT_REL;
+			forward = false;
+			++second;
+			break;
+		default:
+			if (words) goto move_command_ex_bad_argument;
+			colflag = MT_ABS;
+			break;
+		}
+
+		colno = atoi(second);
+		if (colno < 0) goto move_command_ex_bad_argument;
+		if (!forward) colno = -colno;
+	}
+
+	if (*p < 0) {
+		if (ref >= 0) {
+			*p = ref;
+		}
+	}
+
+	if (*p < 0) {
+		if (lineflag == MT_REL) goto move_command_relative_with_nil;
+		if (colflag == MT_REL) goto move_command_relative_with_nil;
+	}
+
+	if ((lineflag != MT_REL) && set_jump) {
+		buffer_record_jump(buffer);
+	}
+
+	bool rl = buffer_move_point_line(buffer, p, lineflag, lineno);
+	bool rc = buffer_move_point_glyph(buffer, p, colflag, colno);
+
+	free(s);
+
+	Tcl_SetResult(interp, (rl && rc) ? "true" : "false", TCL_VOLATILE);
+
+	return true;
+
+move_command_ex_bad_argument:
+	if (seterr) {
+		char *msg;
+		asprintf(&msg, "Malformed argument passed to 'm' command: '%s'", sin);
+		alloc_assert(msg);
+		Tcl_AddErrorInfo(interp, msg);
+		free(msg);
+		free(s);
+	}
+	return false;
+
+move_command_relative_with_nil:
+	if (seterr) {
+		char *msg;
+		asprintf(&msg, "Argument passed to 'm' specifies relative movement but cursor isn't set: '%s'", sin);
+		alloc_assert(msg);
+		Tcl_AddErrorInfo(interp, msg);
+		free(msg);
+		free(s);
+	}
+	return false;
+}
+
+bool buffer_move_command(buffer_t *buffer, const char *arg1, const char *arg2, bool seterr) {
+#define MOVE_MARK(argument, d) { \
+	if (!move_command_ex(buffer, argument, &(buffer->mark), buffer->cursor, d, false, seterr)) { \
+		return false; \
+	} \
+}
+
+#define MOVE_CURSOR(argument, d, set_jump) {\
+	const char *arg = argument;\
+	if (argument[0] == 'm') {\
+		++arg;\
+		if (buffer->mark >= 0) buffer->cursor = buffer->mark;\
+	}\
+	if (!move_command_ex(buffer, arg, &(buffer->cursor), -1, d, set_jump, seterr)) { \
+		return false; \
+	} \
+}
+
+#define MOVE_MARK_CURSOR(mark_argument, cursor_argument, set_jump) {\
+	MOVE_MARK(mark_argument, MT_START);\
+	MOVE_CURSOR(cursor_argument, MT_END, set_jump);\
+	buffer->savedmark = buffer->mark;\
+}
+
+	if (arg2 == NULL) {
+		if (strcmp(arg1, "all") == 0) {
+			MOVE_MARK_CURSOR("1:1", "$:$", false);
+		} else if (strcmp(arg1, "sort") == 0) {
+			sort_mark_cursor(buffer);
+		} else if (strcmp(arg1, "line") == 0) {
+			sort_mark_cursor(buffer);
+			MOVE_MARK_CURSOR("+0:1", "+0:$", false);
+		} else {
+			// not a shortcut, actually movement command to execute
+			char *a = strdup(arg1);
+			alloc_assert(a);
+
+			char *saveptr;
+			char *one = strtok_r(a, " ", &saveptr);
+			char *two = strtok_r(NULL, " ", &saveptr);
+
+			if (two == NULL) {
+				MOVE_MARK("nil", MT_START);
+				MOVE_CURSOR(arg1, MT_START, true);
+			} else {
+				MOVE_MARK_CURSOR(one, two, true);
+			}
+			free(a);
+		}
+	} else {
+		MOVE_MARK_CURSOR(arg1, arg2, true);
+	}
+
+	return true;
 }
