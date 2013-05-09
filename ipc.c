@@ -103,9 +103,9 @@ static gboolean do_c_command(struct callback *cb) {
 	char *marg;
 	const char *txt = embedded_move_command(cb->arg, &marg);
 
-	int mark = cb->buf->mark, cursor = cb->buf->cursor;
-
+	int cursor = -1;
 	if (marg != NULL) {
+		if (cb->buf->mark < 0) cursor = cb->buf->cursor;
 		++(cb->buf->wandercount);
 		buffer_move_command(cb->buf, marg, NULL, false);
 		--(cb->buf->wandercount);
@@ -114,8 +114,9 @@ static gboolean do_c_command(struct callback *cb) {
 
 	buffer_replace_selection(cb->buf, txt);
 
-	cb->buf->mark = mark;
-	cb->buf->cursor = cursor;
+	if ((cursor >= 0) && (cursor <= BSIZE(cb->buf))) {
+		cb->buf->cursor = cursor;
+	}
 
 	editor_t *editor = NULL;
 	find_editor_for_buffer(cb->buf, NULL, NULL, &editor);
@@ -202,8 +203,6 @@ static int ipc_write(const char *path, const char *buf, size_t size, off_t offse
 }
 
 static int do_read_from_multiqueue(struct multiqueue *mq, char *buf, size_t size, struct fuse_file_info *fi) {
-	//TODO: register queue only once
-
 	GAsyncQueue *q = NULL;
 	if (fi->fh == 0xffff) {
 		q = mq_register(mq);

@@ -32,6 +32,9 @@ my_glyph_info_t *bat(buffer_t *encl, int point) {
 
 static void movegap(buffer_t *buffer, int point) {
 	int pp = phisical(buffer, point);
+	if (pp > buffer->size) {
+		fprintf(stderr, "Requested gap movement out of range: size %zd phisical %d point: %d\n", buffer->size, pp, point);
+	}
 	if (pp < buffer->gap) {
 		int size = buffer->gap - pp;
 		if (size > 0) memmove(buffer->buf + pp + buffer->gapsz, buffer->buf + pp, sizeof(my_glyph_info_t) * size);
@@ -1245,7 +1248,6 @@ int buffer_line_of(buffer_t *buffer, int p, bool fastbail) {
 		if (g == NULL) return line;
 		if (g->code == '\n') ++line;
 		if (fastbail && (line > 2000)) {
-			printf("fastbail\n");
 			return -1;
 		}
 	}
