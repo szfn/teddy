@@ -1,5 +1,7 @@
 #!/bin/bash
 
+echo -e '\00'
+
 function buffer_find {
 	for i in /tmp/teddy.$TEPID/*/; do
 		name=$(< $i/name)

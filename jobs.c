@@ -403,6 +403,7 @@ static void job_attach_to_buffer(job_t *job, const char *command, buffer_t *buff
 static void job_create_buffer(job_t *job) {
 	if (job->buffer != NULL) return;
 	if (job->terminating) return;
+	if (job->never_attach) return;
 
 	buffer_t *buffer = buffers_get_buffer_for_process(true);
 	job_attach_to_buffer(job, job->command, buffer);
@@ -420,6 +421,13 @@ static gboolean jobs_input_watch_function(GIOChannel *source, GIOCondition condi
 	bytes_read += strlen(job->utf8annoyance);
 
 	buf[bytes_read] = '\0';
+
+	if ((bytes_read > 0) && job->first_read) {
+		job->first_read = false;
+		if (buf[0] == 0x00) {
+			job->never_attach = true;
+		}
+	}
 
 	if (r != G_IO_STATUS_EOF) {
 		if ((r != G_IO_STATUS_ERROR) || !(condition & G_IO_HUP)) {
@@ -525,6 +533,9 @@ int jobs_register(pid_t child_pid, int masterfd, buffer_t *buffer, const char *c
 	jobs[i].ansi_state = ANSI_NORMAL;
 
 	jobs[i].reset_position = 0;
+
+	jobs[i].first_read = true;
+	jobs[i].never_attach = false;
 
 	{
 		GError *error = NULL;

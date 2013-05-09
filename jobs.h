@@ -41,6 +41,9 @@ typedef struct _job_t {
 	char utf8annoyance[12];
 
 	int reset_position;
+
+	bool never_attach;
+	bool first_read;
 } job_t;
 
 #define MAX_JOBS 128
