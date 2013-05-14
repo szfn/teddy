@@ -67,13 +67,13 @@ setcfg autocompl_popup 1\n\
 bindkey Ctrl-c {cb put [c]}\n\
 \n\
 # Ctrl-v paste from clipboard (bindent pasteq equalizes indentation levels)\n\
-bindkey Ctrl-v {bindent pasteq [cb get]}\n\
+bindkey Ctrl-v {pasteq [cb get]}\n\
 \n\
 # Ctrl-x cuts from clipboard\n\
 bindkey Ctrl-x {cb put [c]; c \"\"}\n\
 \n\
 # Ctrl-y pastes from primary selection (this is like the middle mouse button)\n\
-bindkey Ctrl-y {bindent pasteq [cb pget]}\n\
+bindkey Ctrl-y {pasteq [cb pget]}\n\
 \n\
 # Ctrl-z undoes last action\n\
 bindkey Ctrl-z undo\n\
@@ -115,8 +115,8 @@ bindkey Ctrl-l iopen\n\
 bindkey Ctrl-k kill_line\n\
 \n\
 # Ctrl-. / Ctrl-, add/remove one tab at the beginning of every line of the selected text\n\
-bindkey Ctrl-, {bindent decr}\n\
-bindkey Ctrl-. {bindent incr}\n\
+bindkey Ctrl-, {| Bindent -}\n\
+bindkey Ctrl-. {| Bindent +}\n\
 \n\
 # Ctrl-Delete kills attached process (if any)\n\
 bindkey Ctrl-Delete kill\n\
@@ -188,7 +188,7 @@ proc buffer_setup_hook {name} {\n\
 }\n\
 \n\
 # This procedure gets called after a new buffer is loaded\n\
-proc buffer_loaded_hook {name} { bindent guess }\n\
+proc buffer_loaded_hook {name} { Bindent guess }\n\
 \n\
 # This command is executed before a buffer is saved\n\
 proc buffer_save_hook {} {\n\

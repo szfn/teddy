@@ -32,109 +32,41 @@ proc wander {body} {
 	}
 }
 
-namespace eval bindent {
-	proc get_indentchar {} {
-		set indentchar [buffer propget [buffer current] indentchar]
-		if {$indentchar eq "" } {
-			return "\t"
-		} else {
-			return $indentchar
-		}
+proc get_current_line_indent {} {
+	wander {
+		m [s -l1k {^(?: |\t)+}]
+		return [c]
+	}
+}
+
+# Equalizes indentation for paste
+proc pasteq {text} {
+	if {[lindex [m] 0] ne "nil"} { c $text; return }
+
+	set cursor [m]
+	m +:1 +:$
+	if {![regexp {^(?: |\t)*$} [c]]} {
+		m {*}$cursor
+		c $text
+		return
 	}
 
-	# Adds an indentation level
-	namespace export incr
-	proc incr {} {
-		m line
-		set indentchar [get_indentchar]
-		teddy_intl::wandercount +1
-		set sm [m]
-		s {^.*$} { c "$indentchar[c]" }
-		m "[teddy::lineof [lindex $sm 0]]:1" "[teddy::lineof [lindex $sm 1]]:$"
-		teddy_intl::wandercount -1
-	}
-
-	# Removes an indentation level
-	namespace export descr
-	proc decr {} {
-		m line
-		set indentchar [get_indentchar]
-		teddy_intl::wandercount +1
-		set sm [m]
-		s "^$indentchar" {
-			c ""
-			m +:$
-		}
-		m "[teddy::lineof [lindex $sm 0]]:1" "[teddy::lineof [lindex $sm 1]]:$"
-		teddy_intl::wandercount -1
-	}
-
-	# Guesses indentation, saves the guess as the indentchar buffer property
-	namespace export guess
-	proc guess {} {
-		set count 0
-		set tabs 0
-		set spaces 0
-		forlines {
-			if {[::incr count] > 200} { break }
-			set text [c]
-			if {[string length $text] > 200} { continue }
-
-			if {[regexp {^(\s+)} $text -> s]} {
-				if {[string first "\t" $s] >= 0} {
-					::incr tabs
-				} elseif {[string length $s] > 1} {
-					::incr spaces
-				}
+	set dst_indent [get_current_line_indent]
+	buffer eval temp {
+		c $text
+		m 1:1
+		set src_indent [get_current_line_indent]
+		if {$src_indent ne "" || $dst_indent ne ""} {
+			s "^$src_indent" {
+				c $dst_indent
+				m +:$
 			}
 		}
-
-		if {$spaces > $tabs} {
-			buffer propset indentchar "  "
-		} else {
-			buffer propset indentchar "\t"
-		}
+		m all
+		set r [c]
 	}
-
-	proc get_current_line_indent {} {
-		wander {
-			m [s -l1k {^(?: |\t)+}]
-			return [c]
-		}
-	}
-
-	# Equalizes indentation for paste
-	namespace export pasteq
-	proc pasteq {text} {
-		if {[lindex [m] 0] ne "nil"} { c $text; return }
-
-		set cursor [m]
-		m +:1 +:$
-		if {![regexp {^(?: |\t)*$} [c]]} {
-			m {*}$cursor
-			c $text
-			return
-		}
-
-		set dst_indent [get_current_line_indent]
-		buffer eval temp {
-			c $text
-			m 1:1
-			set src_indent [get_current_line_indent]
-			if {$src_indent ne "" || $dst_indent ne ""} {
-				s "^$src_indent" {
-					c $dst_indent
-					m +:$
-				}
-			}
-			m all
-			set r [c]
-		}
-		m +:1 +:$
-		c $r
-	}
-
-	namespace ensemble create -subcommands {incr decr guess pasteq}
+	m +:1 +:$
+	c $r
 }
 
 # Opens man page in a new buffer
@@ -532,6 +464,7 @@ proc lexy::def {name args} {
 
 proc | {args} {
 	c [shellsync [c] {*}$args]
+	m [undo region after]
 }
 
 #### INTERNAL COMMANDS #####################################################
