@@ -185,7 +185,7 @@ proc buffer_setup_hook {name} {
 }
 
 # This procedure gets called after a new buffer is loaded
-proc buffer_loaded_hook {name} { Bindent guess }
+proc buffer_loaded_hook {name} { shell @b0 Bindent guess }
 
 # This command is executed before a buffer is saved
 proc buffer_save_hook {} {

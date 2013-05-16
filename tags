@@ -13,9 +13,9 @@ APPJUMP_LEN	buffer.h	/^enum appjumps { APPJUMP_INPUT = 0, APPJUMP_LEN };$/;"	e	e
 ARGNUM	interp.h	36;"	d
 AUTOCONF_TEDDY	autoconf.h	4;"	d
 AUTOSCROLL_TIMO	editor.h	11;"	d
-AUTOWRAP_INDICATOR_WIDTH	editor.c	1286;"	d	file:
+AUTOWRAP_INDICATOR_WIDTH	editor.c	1289;"	d	file:
 App	test/App.java	/^public class App $/;"	c
-BIDSZ	ipc.c	396;"	d	file:
+BIDSZ	ipc.c	398;"	d	file:
 BSIZE	buffer.h	196;"	d
 BST_LINES	buffer.h	/^enum select_type { BST_NORMAL = 0, BST_WORDS, BST_LINES };$/;"	e	enum:select_type
 BST_NORMAL	buffer.h	/^enum select_type { BST_NORMAL = 0, BST_WORDS, BST_LINES };$/;"	e	enum:select_type
@@ -68,7 +68,7 @@ CFG_TAG_FONT	cfg_auto.h	34;"	d
 CFG_UNDERLINE_LINKS	cfg_auto.h	10;"	d
 CFG_WARP_MOUSE	cfg_auto.h	13;"	d
 CFLAGS	Makefile	/^CFLAGS=`pkg-config --cflags gtk+-2.0` `pkg-config --cflags fuse` -g -Wall -D_GNU_SOURCE -I\/usr\/include\/tcl8.5 -std=c99 -pthread$/;"	m
-CLOSING_PARENTHESIS	buffer.c	1153;"	d	file:
+CLOSING_PARENTHESIS	buffer.c	1163;"	d	file:
 COLUMN_MINIMUM_WIDTH	column.c	5;"	d	file:
 CONFIG_NUM	cfg_auto.h	4;"	d
 CONTINUATION_STATUS	lexy.c	/^const char *CONTINUATION_STATUS = "continuation-state";$/;"	v
@@ -88,7 +88,10 @@ CS_OBUF_NAME	plumb.c	/^	CS_OBUF_NAME,$/;"	e	enum:cond_subject	file:
 CS_TEXT	plumb.c	/^	CS_TEXT,$/;"	e	enum:cond_subject	file:
 CS_TOKEN_TYPE	plumb.c	/^	CS_TOKEN_TYPE,$/;"	e	enum:cond_subject	file:
 CS_TYPE	plumb.c	/^	CS_TYPE = 0,$/;"	e	enum:cond_subject	file:
-CURSOR_WIDTH	editor.c	1415;"	d	file:
+CURSOR_WIDTH	editor.c	1418;"	d	file:
+CatchNewline	util/IOpen.go	/^func (t *TeddyBuffer) CatchNewline() {$/;"	d
+Close	util/IOpen.go	/^func (t *TeddyBuffer) Close() {$/;"	d
+DEFAULT_INDENT	util/Bindent.py	/^DEFAULT_INDENT = "\\t"$/;"	v
 DONTGET	research.c	/^	DONTGET = 0,$/;"	e	enum:research_get_type	file:
 DR_CHANGED	buffers.c	/^	DR_CHANGED = 3,$/;"	e	enum:dirty_reason_t	file:
 DR_DIRJOB	buffers.c	/^	DR_DIRJOB = 1,$/;"	e	enum:dirty_reason_t	file:
@@ -97,6 +100,7 @@ DR_NOT_DIRTY	buffers.c	/^	DR_NOT_DIRTY = 0,$/;"	e	enum:dirty_reason_t	file:
 ERRBUFLEN	interp.c	615;"	d	file:
 EVENTSIZE	client.c	20;"	d	file:
 FUSE_USE_VERSION	ipc.c	10;"	d	file:
+FindBuffer	util/IOpen.go	/^func FindBuffer(tepid string, name string) string {$/;"	d
 GET_BOTH	research.c	/^	GET_BOTH = 1,$/;"	e	enum:research_get_type	file:
 GET_END	research.c	/^	GET_END = 3$/;"	e	enum:research_get_type	file:
 GET_START	research.c	/^	GET_START = 2,$/;"	e	enum:research_get_type	file:
@@ -160,16 +164,16 @@ LOCKED_COMMAND_LINE_SIZE	editor.h	10;"	d
 MAXIMUM_FILE_SIZE	buffers.c	33;"	d	file:
 MAX_BUFFER_EVENT_WATCHERS	buffer.c	21;"	d	file:
 MAX_GLOBAL_EVENT_WATCHERS	global.c	12;"	d	file:
-MAX_JOBS	jobs.h	46;"	d
+MAX_JOBS	jobs.h	49;"	d
 MAX_LINES_HEIGHT_REQUEST	global.h	28;"	d
 MAX_MOUSE_SEQ	editor.h	12;"	d
 MAX_PLUMB_RULES	plumb.c	9;"	d	file:
 MINIMUM_WORDCOMPL_WORD_LEN	buffer.c	20;"	d	file:
 MIN_EM_COLUMN_SIZE_ATTEMPTED	global.h	30;"	d
 MIN_LINES_HEIGHT_REQUEST	global.h	29;"	d
-MOVE_CURSOR	buffer.c	1478;"	d	file:
-MOVE_MARK	buffer.c	1472;"	d	file:
-MOVE_MARK_CURSOR	buffer.c	1489;"	d	file:
+MOVE_CURSOR	buffer.c	1488;"	d	file:
+MOVE_MARK	buffer.c	1482;"	d	file:
+MOVE_MARK_CURSOR	buffer.c	1499;"	d	file:
 MT_ABS	buffer.h	/^	MT_ABS = 0, \/\/ move to absolute line\/column$/;"	e	enum:movement_type_t
 MT_END	buffer.h	/^	MT_END, \/\/ move to end$/;"	e	enum:movement_type_t
 MT_HOME	buffer.h	/^	MT_HOME, \/\/ toggle between first column and first non-whitespace character (buffer_move_point_glyph only)$/;"	e	enum:movement_type_t
@@ -180,13 +184,14 @@ MT_START	buffer.h	/^	MT_START, \/\/ move to first non-whitespace character (buff
 NMATCH	lexy.c	526;"	d	file:
 NMATCH	lexy.c	822;"	d	file:
 NMATCH	plumb.c	106;"	d	file:
+NewTeddyBuffer	util/IOpen.go	/^func NewTeddyBuffer(path string) (*TeddyBuffer, error) {$/;"	d
 O	builtin.tcl	/^proc O {args} {$/;"	p
 OBJS	Makefile	/^OBJS := obj\/teddy.o obj\/buffer.o obj\/editor.o obj\/buffers.o obj\/columns.o obj\/column.o obj\/interp.o obj\/global.o obj\/undo.o  obj\/history.o obj\/jobs.o obj\/colors.o obj\/cfg_auto.o obj\/cfg.o obj\/research.o obj\/compl.o obj\/lexy.o obj\/treint.o obj\/critbit.o obj\/tframe.o obj\/foundry.o obj\/top.o obj\/iopen.o obj\/tags.o obj\/oldscroll.o obj\/docs.o obj\/ipc.o obj\/client.o obj\/plumb.o obj\/mq.o$/;"	m
-OPENING_PARENTHESIS	buffer.c	1152;"	d	file:
+OPENING_PARENTHESIS	buffer.c	1162;"	d	file:
 OS	research.c	100;"	d	file:
 OVECTOR_SIZE	research.c	185;"	d	file:
 P	builtin.tcl	/^proc P {args} {$/;"	p
-PARMATCH_CHAR_LIMIT	buffer.c	1089;"	d	file:
+PARMATCH_CHAR_LIMIT	buffer.c	1099;"	d	file:
 PRS_MATCHING	plumb.c	/^	PRS_MATCHING = 0,$/;"	e	enum:plumb_resolve_state	file:
 PRS_MATCH_FAILED	plumb.c	/^	PRS_MATCH_FAILED,$/;"	e	enum:plumb_resolve_state	file:
 RATELIMIT_BUCKET_DURATION_SECS	jobs.h	11;"	d
@@ -205,7 +210,9 @@ SM_REGEXP	research.h	/^	SM_REGEXP = 2$/;"	e	enum:search_mode_t
 SSERR	interp.c	539;"	d	file:
 TRUNCATION	jobs.c	346;"	d	file:
 TYPING_FUSION_INTERVAL	undo.h	8;"	d
+TeddyBuffer	util/IOpen.go	/^type TeddyBuffer struct {$/;"	d
 WORDCOMPL_UPDATE_RADIUS	buffer.h	198;"	d
+WaitEvent	util/IOpen.go	/^func (t *TeddyBuffer) WaitEvent() string {$/;"	d
 __ACMACS_GLOBAL_H__	global.h	2;"	d
 __AUTOCONF_TEDDY__	autoconf.h	2;"	d
 __BUFFERS_H__	buffers.h	2;"	d
@@ -322,7 +329,6 @@ buffer_create	buffer.c	/^buffer_t *buffer_create(void) {$/;"	f
 buffer_directory	buffer.c	/^char *buffer_directory(buffer_t *buffer) {$/;"	f
 buffer_dirty_reason	buffers.c	/^static enum dirty_reason_t buffer_dirty_reason(buffer_t *buffer) {$/;"	f	file:
 buffer_extend_selection_by_select_type	buffer.c	/^void buffer_extend_selection_by_select_type(buffer_t *buffer) {$/;"	f
-buffer_find	util/g	/^function buffer_find {$/;"	f
 buffer_free	buffer.c	/^void buffer_free(buffer_t *buffer, bool save_critbit) {$/;"	f
 buffer_get_child_pid	buffer.c	/^pid_t buffer_get_child_pid(buffer_t *buffer) {$/;"	f
 buffer_get_extremes	buffer.c	/^void buffer_get_extremes(buffer_t *buffer, int *start, int *end) {$/;"	f
@@ -529,9 +535,9 @@ cut_to_working_directory	tframe.c	/^static const char *cut_to_working_directory(
 darken	editor.h	/^	bool darken;$/;"	m	struct:_editor_t
 debug_print_selection	undo.c	/^static void debug_print_selection(selection_t *selection) {$/;"	f	file:
 debug_print_undo	undo.c	/^static void debug_print_undo(undo_node_t *node) {$/;"	f	file:
-decr	builtin.tcl	/^	proc decr {} {$/;"	p
 default_clipboard	global.c	/^GtkClipboard *default_clipboard;$/;"	v
 default_color	buffer.h	/^	uint8_t default_color;$/;"	m	struct:_buffer_t
+deindent	util/Bindent.py	/^def deindent(indchar):$/;"	f
 delete_callback	iopen.c	/^static gboolean delete_callback(GtkWidget *widget, GdkEvent *event, gpointer data) {$/;"	f	file:
 delete_callback	teddy.c	/^static gboolean delete_callback(GtkWidget *widget, GdkEvent *event, gpointer data) {$/;"	f	file:
 delete_icon	tframe.c	/^static const guint8 delete_icon[] __attribute__ ((__aligned__ (4))) =$/;"	v	file:
@@ -623,6 +629,7 @@ find_editor_for_buffer	global.c	/^bool find_editor_for_buffer(buffer_t *buffer, 
 find_motion_frames	tframe.c	/^static void find_motion_frames(tframe_t *tf, tframe_t **prev, tframe_t **cur, bool increasing_prev) {$/;"	f	file:
 first_byte_result_to_mask	global.c	/^static char first_byte_result_to_mask[] = { 0xff, 0x3f, 0x1f, 0x0f, 0x07, 0x03, 0x00, 0x00, 0x00 };$/;"	v	file:
 first_exposed	editor.h	/^	int first_exposed;$/;"	m	struct:_editor_t
+first_read	jobs.h	/^	bool first_read;$/;"	m	struct:_job_t
 focus_can_follow_mouse	global.c	/^int focus_can_follow_mouse = 1;$/;"	v
 font_ctm	foundry.c	/^	cairo_matrix_t font_size_matrix, font_ctm;$/;"	m	struct:_teddy_font_t	file:
 font_options	foundry.c	/^	cairo_font_options_t *font_options;$/;"	m	struct:_teddy_font_t	file:
@@ -658,9 +665,9 @@ fusedir	ipc.c	/^char *fusedir = NULL;$/;"	v
 fusestart_fn	ipc.c	/^void *fusestart_fn(void *d) {$/;"	f
 gap	buffer.h	/^	my_glyph_info_t *buf; size_t size; int cursor; int mark; int gap; size_t gapsz;$/;"	m	struct:_buffer_t
 gapsz	buffer.h	/^	my_glyph_info_t *buf; size_t size; int cursor; int mark; int gap; size_t gapsz;$/;"	m	struct:_buffer_t
-get_current_line_indent	builtin.tcl	/^	proc get_current_line_indent {} {$/;"	p
-get_indentchar	builtin.tcl	/^	proc get_indentchar {} {$/;"	p
+get_current_line_indent	builtin.tcl	/^proc get_current_line_indent {} {$/;"	p
 get_selection_or_file_link	editor.c	/^static char *get_selection_or_file_link(editor_t *editor, bool *islink) {$/;"	f	file:
+getindent	util/Bindent.py	/^def getindent():$/;"	f
 global_config	cfg.c	/^config_t global_config;$/;"	v
 global_event_watchers	global.c	/^struct multiqueue global_event_watchers;$/;"	v	typeref:struct:multiqueue
 global_free	global.c	/^void global_free() {$/;"	f
@@ -696,7 +703,8 @@ gtk_tframe_get_type	tframe.c	/^GType gtk_tframe_get_type(void) {$/;"	f
 gtk_tframe_init	tframe.c	/^static void gtk_tframe_init(tframe_t *tframe) {$/;"	f	file:
 gtk_widget_like_editor	global.c	/^void gtk_widget_like_editor(config_t *config, GtkWidget *w) {$/;"	f
 gtk_widget_modify_bg_all	global.c	/^void gtk_widget_modify_bg_all(GtkWidget *w, GdkColor *c) {$/;"	f
-guess	builtin.tcl	/^	proc guess {} {$/;"	p
+guessindent	util/Bindent.py	/^def guessindent():$/;"	f
+guessindent_intl	util/Bindent.py	/^def guessindent_intl():$/;"	f
 hadjustment	editor.h	/^	GtkObject *adjustment, *hadjustment;$/;"	m	struct:_editor_t
 has_filename	buffer.h	/^	int has_filename;$/;"	m	struct:_buffer_t
 head	undo.h	/^	undo_node_t *head;$/;"	m	struct:_undo_t
@@ -716,7 +724,9 @@ history_substitute_with_index	top.c	/^static void history_substitute_with_index(
 ignore_next_entry_keyrelease	editor.h	/^	gboolean ignore_next_entry_keyrelease;$/;"	m	struct:_editor_t
 in_external_commands	compl.c	/^bool in_external_commands(const char *arg) {$/;"	f
 include_cursor_mode	editor.h	/^enum include_cursor_mode {$/;"	g
-incr	builtin.tcl	/^	proc incr {} {$/;"	p
+indent	util/Bindent.py	/^def indent(indchar):$/;"	f
+indent_from_arg	util/Bindent.py	/^def indent_from_arg(indarg):$/;"	f
+indent_from_buffer	util/Bindent.py	/^def indent_from_buffer():$/;"	f
 indentchar	editor.c	/^static const char *indentchar(editor_t *editor) {$/;"	f	file:
 index	history.h	/^	int index;$/;"	m	struct:history
 index_doc	docs.c	/^const unsigned char index_doc[] = "<html>\\n\\$/;"	v
@@ -877,6 +887,7 @@ magnify_box_button_press_callback	tframe.c	/^static gboolean magnify_box_button_
 main	critbit-test.cc	/^main() {$/;"	f
 main	teddy.c	/^int main(int argc, char *argv[]) {$/;"	f
 main	test/App.java	/^    public static void main( String[] args )$/;"	m	class:App
+main	util/IOpen.go	/^func main() {$/;"	d
 make_halfway_color	editor.c	/^static int make_halfway_color(int fgcolor, int bgcolor) {$/;"	f	file:
 man	builtin.tcl	/^proc man {args} {$/;"	p
 map	foundry.c	/^	uint8_t map[0xfffff+1];$/;"	m	struct:_teddy_fontset_t	file:
@@ -929,6 +940,7 @@ n	editor.c	/^	int n;$/;"	m	struct:growable_glyph_array	file:
 n	mq.h	/^	int n;$/;"	m	struct:multiqueue
 name	lexy.c	/^	char *name;$/;"	m	struct:lexy_status_pointer	file:
 name	plumb.c	/^	const char *name;$/;"	m	struct:subject_t	file:
+never_attach	jobs.h	/^	bool never_attach;$/;"	m	struct:_job_t
 new_column_mitem_callback	top.c	/^static void new_column_mitem_callback(GtkMenuItem *menuitem, gpointer data) {$/;"	f	file:
 new_editor	editor.c	/^editor_t *new_editor(buffer_t *buffer, bool single_line) {$/;"	f
 new_in_column	columns.c	/^tframe_t *new_in_column(columns_t *columns, column_t *column, buffer_t *buffer) {$/;"	f
@@ -959,6 +971,7 @@ open_link_menu_item_callback	editor.c	/^static void open_link_menu_item_callback
 open_mitem_callback	top.c	/^static void open_mitem_callback(GtkMenuItem *menuitem, gpointer data) {$/;"	f	file:
 origin_x	tframe.c	/^	double origin_x, origin_y;$/;"	m	struct:_tframe_t	file:
 origin_y	tframe.c	/^	double origin_x, origin_y;$/;"	m	struct:_tframe_t	file:
+os	util/Bindent.py	/^import os$/;"	i
 otherbits	critbit.c	/^uint8 otherbits;$/;"	m	struct:__anon1	file:
 output_bytes	create-conf.pl	/^sub output_bytes {$/;"	s
 output_text	create-conf.pl	/^sub output_text {$/;"	s
@@ -978,7 +991,7 @@ parse_file_or_line_token	lexy.c	/^static void parse_file_or_line_token(const cha
 parse_match_kind	lexy.c	/^static enum match_kind parse_match_kind(const char *match_kind) {$/;"	f	file:
 parse_signum	interp.c	/^static int parse_signum(const char *sigspec) {$/;"	f	file:
 parse_token_type_name	lexy.c	/^static int parse_token_type_name(const char *token_type_name, bool *check, int *file_group, int *lineno_group, int *colno_group) {$/;"	f	file:
-pasteq	builtin.tcl	/^	proc pasteq {text} {$/;"	p
+pasteq	builtin.tcl	/^proc pasteq {text} {$/;"	p
 path	buffer.h	/^	char *path;$/;"	m	struct:_buffer_t
 path	iopen.c	/^	char *path;$/;"	m	struct:iopen_result	file:
 path	tags.h	/^	char *path;$/;"	m	struct:tag_entry
@@ -1139,6 +1152,7 @@ strval	cfg.h	/^	char *strval;$/;"	m	struct:_config_item_t
 subject	plumb.c	/^	enum cond_subject subject;$/;"	m	struct:plumb_rule_t	typeref:enum:plumb_rule_t::cond_subject	file:
 subject_t	plumb.c	/^struct subject_t {$/;"	s	file:
 subject_table	plumb.c	/^const struct subject_t subject_table[] = {$/;"	v	typeref:struct:subject_t
+sys	util/Bindent.py	/^import sys$/;"	i
 table	editor.h	/^	GtkTable table;$/;"	m	struct:_editor_t
 table	tframe.c	/^	GtkTable table;$/;"	m	struct:_tframe_t	file:
 tag	tags.h	/^	char *tag;$/;"	m	struct:tag_entry

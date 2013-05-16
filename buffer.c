@@ -548,6 +548,11 @@ void buffer_undo(buffer_t *buffer, bool redo) {
 	undo_node_t *undo_node = redo ? undo_redo_pop(&(buffer->undo)) : undo_pop(&(buffer->undo));
 	if (undo_node == NULL) return;
 
+	char *msg;
+	asprintf(&msg, "u\n");
+	mq_broadcast(&buffer->watchers, msg);
+	free(msg);
+
 	buffer->release_read_lock = true;
 	pthread_rwlock_wrlock(&(buffer->rwlock));
 	buffer->release_read_lock = false;
@@ -581,6 +586,11 @@ void buffer_undo(buffer_t *buffer, bool redo) {
 
 void buffer_replace_selection(buffer_t *buffer, const char *new_text) {
 	if (!(buffer->editable)) return;
+
+	char *msg;
+	asprintf(&msg, "c %zd %d\n", strlen(new_text), new_text[0]);
+	mq_broadcast(&buffer->watchers, msg);
+	free(msg);
 
 	buffer->release_read_lock = true;
 	pthread_rwlock_wrlock(&(buffer->rwlock));

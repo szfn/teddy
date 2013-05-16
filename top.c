@@ -335,9 +335,8 @@ void top_start_command_line(editor_t *editor, const char *text) {
 	the_top_context_editor = editor;
 	buffer_get_extremes(cmdline_editor->buffer, &(cmdline_editor->buffer->mark), &(cmdline_editor->buffer->cursor));
 	if (text != NULL) {
-		buffer_replace_selection(cmdline_editor->buffer, " {");
+		buffer_replace_selection(cmdline_editor->buffer, " ");
 		buffer_replace_selection(cmdline_editor->buffer, text);
-		buffer_replace_selection(cmdline_editor->buffer, "}");
 		cmdline_editor->buffer->cursor = 0;
 	} else if (saved_cmdline != NULL) {
 		buffer_replace_selection(cmdline_editor->buffer, saved_cmdline);

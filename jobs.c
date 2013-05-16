@@ -548,7 +548,11 @@ int jobs_register(pid_t child_pid, int masterfd, buffer_t *buffer, const char *c
 	jobs[i].command = strdup(command);
 
 	if (buffer != NULL) {
-		job_attach_to_buffer(jobs+i, command, buffer);
+		if (buffer == buffers[0]) {
+			jobs[i].never_attach = true;
+		} else {
+			job_attach_to_buffer(jobs+i, command, buffer);
+		}
 	} else {
 		g_timeout_add(SHOWANYWAY_TIMO, (GSourceFunc)autoshow_job_buffer, (gpointer)(jobs+i));
 	}

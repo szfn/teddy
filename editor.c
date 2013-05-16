@@ -721,7 +721,10 @@ static gboolean key_press_callback(GtkWidget *widget, GdkEventKey *event, editor
 			} else {
 				dirty_line_update(editor);
 
-				if ((editor->buffer->job != NULL) && (editor->buffer->cursor == BSIZE(editor->buffer))) {
+				char *catchnl = g_hash_table_lookup(editor->buffer->props, "catchnl");
+				if (catchnl != NULL) {
+					mq_broadcast(&editor->buffer->watchers, "nl\n");
+				} else if ((editor->buffer->job != NULL) && (editor->buffer->cursor == BSIZE(editor->buffer))) {
 					// send input
 					job_send_input(editor->buffer->job, NULL);
 				} else if (config_intval(&(editor->buffer->config), CFG_AUTOINDENT)) {

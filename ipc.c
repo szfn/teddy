@@ -340,6 +340,8 @@ static int ipc_getattr_int(const char *path, struct stat *stbuf, bool creating) 
 		const char *v = g_hash_table_lookup(buffers[bid]->props, propname);
 		if (!creating) {
 			if (v == NULL) return -ENOENT;
+		} else {
+			g_hash_table_insert(buffers[bid]->props, (gpointer)strdup(propname), (gpointer)strdup(""));
 		}
 		stbuf->st_mode = S_IFREG | rdwr;
 		return 0;
