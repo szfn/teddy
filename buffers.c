@@ -780,6 +780,21 @@ int teddy_buffer_command(ClientData client_data, Tcl_Interp *interp, int argc, c
 			Tcl_AddErrorInfo(interp, "Unknown jumpring");
 			return TCL_ERROR;
 		}
+	} else if (strcmp(argv[1], "maximize") == 0) {
+		HASBUF("buffer maximize");
+		column_t *column;
+		tframe_t *frame;
+		find_editor_for_buffer(interp_context_buffer(), &column, &frame, NULL);
+		if ((column != NULL) && (frame != NULL)) {
+			column_hide_others(column, frame);
+		}
+	} else if (strcmp(argv[1], "restore") == 0) {
+		HASBUF("buffer restore");
+		column_t *column;
+		find_editor_for_buffer(interp_context_buffer(), &column, NULL, NULL);
+		if (column != NULL) {
+			column_restore_others(column);
+		}
 	} else {
 		Tcl_AddErrorInfo(interp, "Unknown subcommmand of 'buffer' command");
 		return TCL_ERROR;

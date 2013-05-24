@@ -8,6 +8,8 @@ typedef struct _column_t {
 	GtkBox box;
 
 	double fraction;
+	bool maximized;
+	double saved_fractions[512];
 } column_t;
 
 typedef struct _column_class {
@@ -59,6 +61,7 @@ column_t *column_new(gint spacing) {
 	GTK_BOX(column)->homogeneous = FALSE;
 
 	column->fraction = 1.0;
+	column->maximized = false;
 
 	return column;
 }
@@ -184,6 +187,8 @@ void column_add_after(column_t *column, tframe_t *before_tf, tframe_t *tf, bool 
 
 	gtk_widget_show_all(GTK_WIDGET(tf));
 	gtk_widget_queue_draw(GTK_WIDGET(column));
+
+	column->maximized = false;
 }
 
 void column_append(column_t *column, tframe_t *tf, bool set_fraction) {
@@ -254,27 +259,64 @@ bool column_remove(column_t *column, tframe_t *frame, bool reparenting, bool res
 
 	gtk_container_remove(GTK_CONTAINER(column), GTK_WIDGET(frame));
 
+	column->maximized = false;
+
 	return true;
 }
 
+int column_hide_or_restore_others(column_t *column, tframe_t *frame) {
+	if (column->maximized) {
+		column_restore_others(column);
+		return 0;
+	} else {
+		return column_hide_others(column, frame);
+	}
+}
+
 int column_hide_others(column_t *column, tframe_t *frame) {
-	int c = 0;
 	double fraction = tframe_fraction(frame);
+	int c = 0, i = 0;
 	GList *list = gtk_container_get_children(GTK_CONTAINER(column));
 	for (GList *cur = list; cur != NULL; cur = cur->next) {
+		double f = tframe_fraction(GTK_TFRAME(cur->data));
+		if (!column->maximized) {
+			column->saved_fractions[i] = f;
+			++i;
+		}
 		if (cur->data != frame) {
-			fraction += tframe_fraction(GTK_TFRAME(cur->data));
+			fraction += f;
 			tframe_fraction_set(GTK_TFRAME(cur->data), 0);
 			++c;
 		}
 	}
 	g_list_free(list);
 
+	column->maximized = true;
+
 	tframe_fraction_set(frame, fraction);
 
 	gtk_column_size_allocate(GTK_WIDGET(column), &(GTK_WIDGET(column)->allocation));
 
+	if (GTK_IS_TEDITOR(tframe_content(frame))) {
+		GTK_TEDITOR(tframe_content(frame))->center_on_cursor_after_next_expose = true;
+	}
+
 	return c;
+}
+
+void column_restore_others(column_t *column) {
+	if (!column->maximized) return;
+	column->maximized = false;
+
+	int i = 0;
+	GList *list = gtk_container_get_children(GTK_CONTAINER(column));
+	for (GList *cur = list; cur != NULL; cur = cur->next) {
+		tframe_fraction_set(GTK_TFRAME(cur->data), column->saved_fractions[i]);
+		++i;
+	}
+	g_list_free(list);
+
+	gtk_column_size_allocate(GTK_WIDGET(column), &(GTK_WIDGET(column)->allocation));
 }
 
 tframe_t *column_get_frame_from_position(column_t *column, double x, double y, bool *ontag) {
@@ -316,6 +358,8 @@ bool column_close(column_t *column) {
 
 void column_expand_frame(column_t *column, tframe_t *frame) {
 	if (tframe_fraction(frame) > 0.2) return;
+
+	column->maximized = false;
 
 	tframe_t *biggest = NULL;
 	double biggest_fraction = 0.0;

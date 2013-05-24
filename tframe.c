@@ -537,10 +537,7 @@ static gboolean label_button_press_callback(GtkWidget *widget, GdkEventButton *e
 	if (event->button == 1) {
 		if (event->type == GDK_2BUTTON_PRESS) {
 			dragging = false;
-			column_hide_others(col, frame);
-			if (GTK_IS_TEDITOR(tframe_content(frame))) {
-				GTK_TEDITOR(tframe_content(frame))->center_on_cursor_after_next_expose = true;
-			}
+			column_hide_or_restore_others(col, frame);
 			return TRUE;
 		} else {
 			dragging = false;
@@ -697,10 +694,7 @@ static gboolean close_box_button_press_callback(GtkWidget *widget, GdkEventButto
 static gboolean magnify_box_button_press_callback(GtkWidget *widget, GdkEventButton *event, tframe_t *tf) {
 	column_t *col;
 	if (!columns_find_frame(tf->columns, tf, NULL, &col, NULL, NULL, NULL)) return FALSE;
-	column_hide_others(col, tf);
-	if (GTK_IS_TEDITOR(tframe_content(tf))) {
-		GTK_TEDITOR(tframe_content(tf))->center_on_cursor_after_next_expose = true;
-	}
+	column_hide_or_restore_others(col, tf);
 	return TRUE;
 }
 

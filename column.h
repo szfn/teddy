@@ -21,7 +21,9 @@ column_t *column_new(gint spacing);
 void column_add_after(column_t *column, tframe_t *before_tf, tframe_t *tf, bool set_fraction);
 void column_append(column_t *column, tframe_t *tf, bool set_fraction);
 bool column_remove(column_t *column, tframe_t *frame, bool reparenting, bool resist);
+int column_hide_or_restore_others(column_t *column, tframe_t *frame);
 int column_hide_others(column_t *column, tframe_t *frame);
+void column_restore_others(column_t *column);
 
 double column_fraction(column_t *column);
 void column_fraction_set(column_t *column, double fraction);

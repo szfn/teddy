@@ -442,11 +442,13 @@ column_fraction	column.c	/^double column_fraction(column_t *column) {$/;"	f
 column_fraction_set	column.c	/^void column_fraction_set(column_t *column, double fraction) {$/;"	f
 column_frame_number	column.c	/^int column_frame_number(column_t *column) {$/;"	f
 column_get_frame_from_position	column.c	/^tframe_t *column_get_frame_from_position(column_t *column, double x, double y, bool *ontag) {$/;"	f
+column_hide_or_restore_others	column.c	/^int column_hide_or_restore_others(column_t *column, tframe_t *frame) {$/;"	f
 column_hide_others	column.c	/^int column_hide_others(column_t *column, tframe_t *frame) {$/;"	f
 column_new	column.c	/^column_t *column_new(gint spacing) {$/;"	f
 column_remove	column.c	/^bool column_remove(column_t *column, tframe_t *frame, bool reparenting, bool resist) {$/;"	f
 column_resize_frame_pair	tframe.c	/^static void column_resize_frame_pair(column_t *column, tframe_t *above, double new_above_size, tframe_t *below, double new_below_size) {$/;"	f	file:
 column_resize_resistence_overcome	tframe.c	/^	bool column_resize_resistence_overcome;$/;"	m	struct:_tframe_t	file:
+column_restore_others	column.c	/^void column_restore_others(column_t *column, tframe_t *frame) {$/;"	f
 column_t	column.c	/^} column_t;$/;"	t	typeref:struct:_column_t	file:
 column_t	column.h	/^typedef struct _column_t column_t;$/;"	t	typeref:struct:_column_t
 columns	tframe.c	/^	struct _columns_t *columns;$/;"	m	struct:_tframe_t	typeref:struct:_tframe_t::_columns_t	file:
@@ -900,6 +902,7 @@ match_kind	lexy.c	/^	enum match_kind match_kind;$/;"	m	struct:lexy_row	typeref:e
 match_kind	lexy.c	/^enum match_kind {$/;"	g	file:
 match_write_coverage	foundry.c	/^static void match_write_coverage(teddy_fontset_t *fontset, int idx, FcCharSet *cset, FcCharSet *accumulator) {$/;"	f	file:
 maximize_pixbuf	tframe.c	/^GdkPixbuf *maximize_pixbuf = NULL, *close_pixbuf = NULL;$/;"	v
+maximized	tframe.c	/^	bool maximized;$/;"	m	struct:_tframe_t	file:
 maybe_stale_buffer	buffers.c	/^static void maybe_stale_buffer(int wd) {$/;"	f	file:
 menu_position_function	editor.c	/^static void menu_position_function(GtkMenu *menu, gint *x, gint *y, gboolean *push_in, editor_t *editor) {$/;"	f	file:
 mode	research.h	/^	enum search_mode_t mode;$/;"	m	struct:research_t	typeref:enum:research_t::search_mode_t
@@ -1228,6 +1231,8 @@ tframe_close	tframe.c	/^bool tframe_close(tframe_t *tframe, bool resist) {$/;"	f
 tframe_content	tframe.c	/^GtkWidget *tframe_content(tframe_t *frame) {$/;"	f
 tframe_fraction	tframe.c	/^double tframe_fraction(tframe_t *tframe) {$/;"	f
 tframe_fraction_set	tframe.c	/^void tframe_fraction_set(tframe_t *tframe, double fraction) {$/;"	f
+tframe_is_maximized	tframe.c	/^bool tframe_is_maximized(tframe_t *tframe) {$/;"	f
+tframe_maximized_set	tframe.c	/^void tframe_maximized_set(tframe_t *tframe, bool m) {$/;"	f
 tframe_new	tframe.c	/^tframe_t *tframe_new(const char *title, GtkWidget *content, columns_t *columns) {$/;"	f
 tframe_recoloring	tframe.c	/^void tframe_recoloring(tframe_t *tframe) {$/;"	f
 tframe_set_modified	tframe.c	/^void tframe_set_modified(tframe_t *tframe, bool modified) {$/;"	f
