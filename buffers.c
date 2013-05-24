@@ -348,6 +348,8 @@ void buffers_add(buffer_t *b) {
 		if (buffers[i] == NULL) {
 			buffers[i] = b;
 			ipc_event(&global_event_watchers, b, "new", "");
+			const char *argv[] = { "buffer_loaded_hook", b->path };
+			interp_eval_command(NULL, b, 2, argv);
 			break;
 		}
 	}

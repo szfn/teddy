@@ -369,9 +369,6 @@ int load_text_file(buffer_t *buffer, const char *filename) {
 	buffer_wordcompl_update(buffer, &(buffer->cbt), WORDCOMPL_UPDATE_RADIUS);
 	lexy_update_starting_at(buffer, 0, false);
 
-	const char *argv[] = { "buffer_loaded_hook", buffer->path };
-	interp_eval_command(NULL, buffer, 2, argv);
-
 	buffer_setup_hook(buffer);
 
 	return 0;

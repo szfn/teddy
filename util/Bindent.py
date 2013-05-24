@@ -60,6 +60,7 @@ def guessindent_intl():
 					spaces = spaces + 1
 				elif line[0] == "\t":
 					tabs = tabs + 1
+		#print "spaces", spaces, "tabs", tabs
 		if spaces > tabs:
 			return "  "
 		else:
@@ -71,8 +72,9 @@ def guessindent():
 	indchar = guessindent_intl()
 	path = "/tmp/teddy." + os.environ["TEPID"] + "/" + os.environ["BUFID"] + "/prop/indentchar"
 	try:
-		with open(path) as f:
+		with open(path, "w") as f:
 			f.write(indchar)
+
 	except:
 		pass
 
