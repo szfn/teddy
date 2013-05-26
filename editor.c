@@ -1075,6 +1075,9 @@ static gboolean button_release_callback(GtkWidget *widget, GdkEventButton *event
 }
 
 static gboolean scroll_callback(GtkWidget *widget, GdkEventScroll *event, editor_t *editor) {
+	compl_wnd_hide(editor->completer);
+	compl_wnd_hide(editor->alt_completer);
+
 	switch(event->direction) {
 	case GDK_SCROLL_UP: {
 		double nv = gtk_adjustment_get_value(GTK_ADJUSTMENT(editor->adjustment)) - editor->buffer->line_height;
@@ -1122,6 +1125,9 @@ static void end_selection_scroll(editor_t *editor) {
 }
 
 static gboolean motion_callback(GtkWidget *widget, GdkEventMotion *event, editor_t *editor) {
+	compl_wnd_hide(editor->completer);
+	compl_wnd_hide(editor->alt_completer);
+
 	if (editor->mouse_marking) {
 		GtkAllocation allocation;
 		gtk_widget_get_allocation(editor->drar, &allocation);
