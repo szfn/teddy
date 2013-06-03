@@ -708,8 +708,12 @@ static gboolean key_press_callback(GtkWidget *widget, GdkEventKey *event, editor
 		}
 
 		case GDK_KEY_Menu: {
-			if ((editor->buffer->mark >= 0) || ((editor->buffer->cursor >= 0) && (bat(editor->buffer, editor->buffer->cursor)->color == (CFG_LEXY_FILE - CFG_LEXY_NOTHING))))
-				gtk_menu_popup(GTK_MENU(editor->context_menu), NULL, NULL, (GtkMenuPositionFunc)menu_position_function, editor, 0, event->time);
+			if ((editor->buffer->mark >= 0) && (editor->buffer->cursor >= 0)) {
+				my_glyph_info_t *g = bat(editor->buffer, editor->buffer->cursor);
+				if ((g != NULL) && (g->color == (CFG_LEXY_FILE - CFG_LEXY_NOTHING))) {
+					gtk_menu_popup(GTK_MENU(editor->context_menu), NULL, NULL, (GtkMenuPositionFunc)menu_position_function, editor, 0, event->time);
+				}
+			}
 			return TRUE;
 		}
 
