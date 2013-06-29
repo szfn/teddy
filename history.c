@@ -98,7 +98,7 @@ void history_add(struct history *h, time_t timestamp, const char *wd, const char
 		free(dst);
 
 		for (int i = 10; i > 0; --i) {
-			it = h->items + ((h->cap - i < 0) ? (HISTORY_SIZE - h->cap + i) : (h->cap - i));
+			it = h->items + ((h->cap - i < 0) ? (HISTORY_SIZE + (h->cap - i)) : (h->cap - i));
 			if (it->entry == NULL) continue;
 			fprintf(out, "%ld\t%s\t%s\n", it->timestamp, it->wd, it->entry);
 		}
